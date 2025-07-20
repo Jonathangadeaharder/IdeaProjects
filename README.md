@@ -24,13 +24,19 @@ This monorepo contains the following projects:
 - **test_pipeline_architecture.py** - Architecture validation
 - **validate_interfaces.py** - Interface validation utilities
 
-## Recent Restructuring (ARCH-01)
+## Recent Restructuring
 
-### Changes Made
+### ARCH-01: Repository Unification
 1. **Moved Excluded Projects**: `ImperioCasino` and `LatexStuff` have been moved to `../IdeaProjects_Excluded/` as they are not part of the core repository scope
 2. **Removed Nested .git Directories**: Eliminated all nested `.git` directories from subdirectories to resolve version control conflicts
 3. **Created Unified Repository**: Initialized a single git repository at the root level
 4. **Added Comprehensive .gitignore**: Created a unified `.gitignore` file covering all project types (Python, Node.js, React Native, etc.)
+
+### ARCH-02: Backend-for-Frontend Elimination
+1. **Removed Node.js BFF**: Eliminated the Node.js backend service that acted as an intermediary
+2. **Direct API Communication**: Frontend now communicates directly with the Python FastAPI server
+3. **Simplified Architecture**: Reduced system complexity by removing the middleware layer
+4. **Eliminated Dependencies**: Removed shared file system requirements between services
 
 ### Benefits
 - ✅ Unified version control across all projects
@@ -38,6 +44,9 @@ This monorepo contains the following projects:
 - ✅ Consistent dependency management
 - ✅ Cross-project code sharing and refactoring
 - ✅ Atomic commits across multiple projects
+- ✅ Simplified architecture with direct API communication
+- ✅ Reduced deployment complexity
+- ✅ Eliminated tight coupling between services
 
 ## Features
 
@@ -67,7 +76,7 @@ This monorepo contains the following projects:
 pip install -r requirements.txt
 ```
 
-### Node.js Dependencies
+### React Native Dependencies
 ```bash
 cd EpisodeGameApp
 npm install
@@ -174,10 +183,12 @@ With the unified monorepo structure, contributions can now span multiple project
 
 ## Architecture
 
-This monorepo follows a modular architecture with:
+This monorepo follows a simplified modular architecture with:
+- **Direct API Communication**: React Native frontend communicates directly with Python FastAPI backend
 - **Shared utilities** for common functionality
 - **Granular interfaces** for flexible processing pipelines
 - **Unified configuration** across all projects
 - **Consistent testing** and validation frameworks
+- **Eliminated Middleware**: No intermediate Node.js BFF service required
 
-For detailed architecture information, see the various `*_SUMMARY.md` files in the project directories.
+For detailed architecture information, see the various `*_SUMMARY.md` files in the project directories and `ARCH-02_BFF_ELIMINATION.md` for the latest architectural changes.

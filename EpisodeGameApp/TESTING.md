@@ -84,45 +84,31 @@ This command will:
 
 ## Test Configuration
 
-### Frontend Jest Config (`jest.config.js`)
+### Jest Configuration (`jest.config.js`)
 - **Environment**: React Native
 - **Setup**: `jest.setup.js` with mocks for React Native modules
 - **Coverage**: Collects from `src/` directory
 - **Transform**: Handles TypeScript and React Native modules
-
-### Backend Jest Config (`backend/jest.config.js`)
-- **Environment**: Node.js
-- **Setup**: `jest.setup.js` with environment configuration
-- **Coverage**: Collects from server files
-- **Mocks**: File system and child process modules
+- **Ignores**: Backend directory (eliminated in ARCH-02)
 
 ## Mock Strategy
 
-### Frontend Mocks
+### Mock Strategy
 - **React Native modules**: Animated, Alert, navigation
-- **Fetch API**: Using `jest-fetch-mock`
-- **PythonBridgeService**: Mocked in service tests
-
-### Backend Mocks
-- **File system**: Mock file existence checks
-- **Child process**: Mock Python script execution
-- **Express app**: Recreated for each test suite
+- **Fetch API**: Using `jest-fetch-mock` for Python API calls
+- **PythonBridgeService**: Mocked in service tests to simulate Python API responses
+- **Python API Endpoints**: Mocked to return expected response structures
 
 ## Coverage Reports
 
 Generate coverage reports:
 
 ```bash
-# Frontend coverage
+# Frontend and Python API integration coverage
 npm test -- --coverage
-
-# Backend coverage
-cd backend && npm test -- --coverage
 ```
 
-Coverage reports are generated in:
-- Frontend: `coverage/` directory
-- Backend: `backend/coverage/` directory
+Coverage reports are generated in the `coverage/` directory.
 
 ## Writing New Tests
 
@@ -153,31 +139,44 @@ describe('YourComponent', () => {
 });
 ```
 
-### Backend Test Template
-```javascript
-const request = require('supertest');
-const app = require('../server');
+### Python API Integration Test Template
+```typescript
+import { PythonBridgeService } from '../PythonBridgeService';
 
-describe('API Endpoint', () => {
+// Mock fetch for Python API calls
+jest.mock('jest-fetch-mock');
+const fetchMock = require('jest-fetch-mock');
+
+describe('Python API Integration', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    fetchMock.resetMocks();
   });
 
-  it('should return expected response', async () => {
-    const response = await request(app)
-      .get('/api/endpoint')
-      .expect(200);
+  it('should handle successful API response', async () => {
+    fetchMock.mockResponseOnce(JSON.stringify({
+      success: true,
+      message: 'Processing completed',
+      results: { /* expected data */ }
+    }));
 
-    expect(response.body).toHaveProperty('expectedProperty');
+    const service = new PythonBridgeService();
+    const result = await service.requestSubtitleCreation('test.mp4', 'de');
+    
+    expect(result.success).toBe(true);
+    expect(fetchMock).toHaveBeenCalledWith(
+      'http://localhost:8000/api/process',
+      expect.objectContaining({ method: 'POST' })
+    );
   });
 
-  it('should handle errors', async () => {
-    const response = await request(app)
-      .post('/api/endpoint')
-      .send({ invalid: 'data' })
-      .expect(400);
+  it('should handle API errors', async () => {
+    fetchMock.mockRejectOnce(new Error('Network error'));
 
-    expect(response.body).toHaveProperty('error');
+    const service = new PythonBridgeService();
+    const result = await service.requestSubtitleCreation('test.mp4', 'de');
+    
+    expect(result.success).toBe(false);
+    expect(result.error).toContain('Network error');
   });
 });
 ```
