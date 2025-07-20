@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import { useTheme } from '../theme/ThemeProvider';
 
 interface ProcessingStep {
   id: string;
@@ -28,15 +29,17 @@ const ProcessingStatusIndicator: React.FC<ProcessingStatusIndicatorProps> = ({
   isProcessing,
   steps = defaultSteps,
 }) => {
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
   const getProgressColor = () => {
-    if (!currentStage) return '#4CAF50';
+    if (!currentStage) return theme.colors.success;
     
     switch (currentStage) {
-      case 'transcription': return '#FF9800';
-      case 'filtering': return '#2196F3';
-      case 'translation': return '#9C27B0';
-      case 'complete': return '#4CAF50';
-      default: return '#4CAF50';
+      case 'transcription': return theme.colors.warning;
+      case 'filtering': return theme.colors.info;
+      case 'translation': return theme.colors.secondary;
+      case 'complete': return theme.colors.success;
+      default: return theme.colors.success;
     }
   };
 
@@ -105,60 +108,56 @@ const ProcessingStatusIndicator: React.FC<ProcessingStatusIndicatorProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any) => StyleSheet.create({
   container: {
-    padding: 20,
+    padding: theme.spacing.xl,
   },
   processingCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 24,
-    marginVertical: 20,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.xl,
+    padding: theme.spacing['2xl'],
+    marginVertical: theme.spacing.xl,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    ...theme.shadows.md,
   },
   stageTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333333',
-    marginBottom: 20,
+    fontSize: theme.typography.fontSize['2xl'],
+    fontWeight: theme.typography.fontWeight.bold,
+    color: theme.colors.onSurface,
+    marginBottom: theme.spacing.xl,
   },
   progressContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     width: '100%',
-    marginBottom: 16,
+    marginBottom: theme.spacing.lg,
   },
   progressBar: {
     flex: 1,
     height: 8,
-    backgroundColor: '#E0E0E0',
-    borderRadius: 4,
-    marginRight: 12,
+    backgroundColor: theme.colors.outline,
+    borderRadius: theme.borderRadius.sm,
+    marginRight: theme.spacing.md,
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#4CAF50',
-    borderRadius: 4,
+    backgroundColor: theme.colors.success,
+    borderRadius: theme.borderRadius.sm,
   },
   progressText: {
-    fontSize: 14,
-    color: '#666666',
-    fontWeight: '500',
+    fontSize: theme.typography.fontSize.base,
+    color: theme.colors.onSurfaceVariant,
+    fontWeight: theme.typography.fontWeight.medium,
     minWidth: 40,
   },
   progressMessage: {
-    fontSize: 16,
-    color: '#666666',
+    fontSize: theme.typography.fontSize.md,
+    color: theme.colors.onSurfaceVariant,
     textAlign: 'center',
-    marginBottom: 20,
+    marginBottom: theme.spacing.xl,
   },
   spinner: {
-    marginTop: 10,
+    marginTop: theme.spacing.md,
   },
   stageIndicators: {
     flexDirection: 'row',
@@ -173,14 +172,14 @@ const styles = StyleSheet.create({
     opacity: 1,
   },
   stageNumber: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#4CAF50',
-    marginBottom: 4,
+    fontSize: theme.typography.fontSize.lg,
+    fontWeight: theme.typography.fontWeight.bold,
+    color: theme.colors.success,
+    marginBottom: theme.spacing.xs,
   },
   stageName: {
-    fontSize: 12,
-    color: '#666666',
+    fontSize: theme.typography.fontSize.sm,
+    color: theme.colors.onSurfaceVariant,
   },
 });
 

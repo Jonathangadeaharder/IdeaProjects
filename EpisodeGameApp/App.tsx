@@ -4,6 +4,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { StatusBar } from 'react-native';
 
 import { GlobalStateProvider } from './src/context/GlobalStateProvider';
+import { ThemeProvider, useTheme } from './src/theme/ThemeProvider';
 import EpisodeSelectionScreen from './src/screens/EpisodeSelectionScreen';
 import GameScreen from './src/screens/GameScreen';
 import A1DeciderGameScreen from './src/screens/A1DeciderGameScreen';
@@ -12,32 +13,34 @@ import ResultsScreen from './src/screens/ResultsScreen';
 
 const Stack = createStackNavigator();
 
-function App(): React.JSX.Element {
+function AppContent(): React.JSX.Element {
+  const theme = useTheme();
+  
   return (
     <GlobalStateProvider>
       <NavigationContainer>
-        <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-        <Stack.Navigator
-          initialRouteName="EpisodeSelection"
-          screenOptions={{
-            headerStyle: {
-              backgroundColor: '#FFFFFF',
-            },
-            headerTintColor: '#333333',
-            headerTitleStyle: {
-              fontWeight: 'bold',
-            },
-          }}
-        >
+      <StatusBar barStyle="dark-content" backgroundColor={theme.colors.background.primary} />
+      <Stack.Navigator
+        initialRouteName="EpisodeSelection"
+        screenOptions={{
+          headerStyle: {
+            backgroundColor: theme.colors.background.primary,
+          },
+          headerTintColor: theme.colors.text.primary,
+          headerTitleStyle: {
+            fontWeight: 'bold',
+          },
+        }}
+      >
           <Stack.Screen
             name="EpisodeSelection"
             component={EpisodeSelectionScreen}
             options={{
               title: 'Episode Game',
               headerStyle: {
-                backgroundColor: '#4CAF50',
+                backgroundColor: theme.colors.primary.main,
               },
-              headerTintColor: '#FFFFFF',
+              headerTintColor: theme.colors.background.primary,
             }}
           />
           <Stack.Screen
@@ -62,9 +65,9 @@ function App(): React.JSX.Element {
             options={{
               title: 'Episode Video',
               headerStyle: {
-                backgroundColor: '#000000',
+                backgroundColor: theme.colors.surface.dark,
               },
-              headerTintColor: '#FFFFFF',
+              headerTintColor: theme.colors.background.primary,
             }}
           />
           <Stack.Screen
@@ -74,14 +77,22 @@ function App(): React.JSX.Element {
               title: 'Game Results',
               headerLeft: () => null, // Disable back button on results
               headerStyle: {
-                backgroundColor: '#4CAF50',
+                backgroundColor: theme.colors.primary.main,
               },
-              headerTintColor: '#FFFFFF',
+              headerTintColor: theme.colors.background.primary,
             }}
           />
         </Stack.Navigator>
-      </NavigationContainer>
-    </GlobalStateProvider>
+        </NavigationContainer>
+      </GlobalStateProvider>
+  );
+}
+
+function App(): React.JSX.Element {
+  return (
+    <ThemeProvider>
+      <AppContent />
+    </ThemeProvider>
   );
 }
 

@@ -1,5 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, ViewStyle } from 'react-native';
+import { useTheme } from '../theme/ThemeProvider';
+import { createCommonStyles, getSemanticColors } from '../theme/styleUtils';
 
 interface StatItem {
   label: string;
@@ -22,6 +24,10 @@ const StatsSummary: React.FC<StatsSummaryProps> = ({
   style,
   itemStyle,
 }) => {
+  const { theme } = useTheme();
+  const commonStyles = createCommonStyles(theme);
+  const semanticColors = getSemanticColors(theme);
+  const styles = createStyles(theme);
   const renderStatItem = (stat: StatItem, index: number) => (
     <React.Fragment key={index}>
       <View style={[styles.statItem, itemStyle]}>
@@ -67,7 +73,8 @@ export const createGameStats = ({
   incorrect = 0,
   total = 0,
   score = 0,
-  mode = 'vocabulary'
+  mode = 'vocabulary',
+  theme
 }: {
   known?: number;
   unknown?: number;
@@ -77,42 +84,51 @@ export const createGameStats = ({
   total?: number;
   score?: number;
   mode?: 'vocabulary' | 'game' | 'results';
+  theme?: any;
 }): StatItem[] => {
+  const colors = theme ? {
+    success: theme.colors.success,
+    error: theme.colors.error,
+    warning: theme.colors.warning,
+    neutral: theme.colors.onSurfaceVariant,
+  } : {
+    success: '#4CAF50',
+    error: '#F44336',
+    warning: '#FF9800',
+    neutral: '#666666',
+  };
+  
   switch (mode) {
     case 'vocabulary':
       return [
-        { label: 'Known', value: known, color: '#4CAF50' },
-        { label: 'Unknown', value: unknown, color: '#F44336' },
-        { label: 'Skipped', value: skipped, color: '#FF9800' },
+        { label: 'Known', value: known, color: colors.success },
+        { label: 'Unknown', value: unknown, color: colors.error },
+        { label: 'Skipped', value: skipped, color: colors.warning },
       ];
     case 'game':
       return [
-        { label: 'Correct', value: correct, color: '#4CAF50' },
-        { label: 'Incorrect', value: incorrect, color: '#F44336' },
-        { label: 'Total', value: total, color: '#666666' },
+        { label: 'Correct', value: correct, color: colors.success },
+        { label: 'Incorrect', value: incorrect, color: colors.error },
+        { label: 'Total', value: total, color: colors.neutral },
       ];
     case 'results':
       return [
-        { label: 'Score', value: score, color: '#4CAF50' },
-        { label: 'Correct', value: correct, color: '#4CAF50' },
-        { label: 'Incorrect', value: incorrect, color: '#F44336' },
-        { label: 'Total', value: total, color: '#666666' },
+        { label: 'Score', value: score, color: colors.success },
+        { label: 'Correct', value: correct, color: colors.success },
+        { label: 'Incorrect', value: incorrect, color: colors.error },
+        { label: 'Total', value: total, color: colors.neutral },
       ];
     default:
       return [];
   }
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any) => StyleSheet.create({
   container: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.lg,
+    ...theme.shadows.sm,
   },
   horizontalLayout: {
     flexDirection: 'row',
@@ -121,7 +137,7 @@ const styles = StyleSheet.create({
   },
   verticalLayout: {
     flexDirection: 'column',
-    gap: 16,
+    gap: theme.spacing.lg,
   },
   gridLayout: {
     flexDirection: 'row',
@@ -133,20 +149,20 @@ const styles = StyleSheet.create({
     minWidth: 60,
   },
   statNumber: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333333',
+    fontSize: theme.typography.fontSize['2xl'],
+    fontWeight: theme.typography.fontWeight.bold,
+    color: theme.colors.onSurface,
   },
   statLabel: {
-    fontSize: 12,
-    color: '#666666',
-    marginTop: 4,
+    fontSize: theme.typography.fontSize.sm,
+    color: theme.colors.onSurfaceVariant,
+    marginTop: theme.spacing.xs,
     textAlign: 'center',
   },
   statDivider: {
     width: 1,
     height: 40,
-    backgroundColor: '#E0E0E0',
+    backgroundColor: theme.colors.outline,
   },
 });
 

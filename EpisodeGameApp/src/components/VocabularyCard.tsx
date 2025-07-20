@@ -1,5 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ViewStyle } from 'react-native';
+import { useTheme } from '../theme/ThemeProvider';
+import { createCommonStyles, getOptionStateColors } from '../theme/styleUtils';
 
 interface VocabularyCardProps {
   word: string;
@@ -30,6 +32,10 @@ const VocabularyCard: React.FC<VocabularyCardProps> = ({
   mode = 'knowledge-check',
   style,
 }) => {
+  const { theme } = useTheme();
+  const commonStyles = createCommonStyles(theme);
+  const optionColors = getOptionStateColors(theme);
+  const styles = createStyles(theme);
   const renderKnowledgeCheckButtons = () => (
     <View style={styles.actionsContainer}>
       <TouchableOpacity
@@ -63,15 +69,24 @@ const VocabularyCard: React.FC<VocabularyCardProps> = ({
 
         if (showResult) {
           if (option === correctAnswer) {
-            buttonStyle.push(styles.correctOption);
-            textStyle.push(styles.correctOptionText);
+            buttonStyle.push({
+              backgroundColor: optionColors.correct.background,
+              borderColor: optionColors.correct.border,
+            });
+            textStyle.push({ color: optionColors.correct.text, fontWeight: theme.typography.fontWeight.medium });
           } else if (option === selectedAnswer && option !== correctAnswer) {
-            buttonStyle.push(styles.incorrectOption);
-            textStyle.push(styles.incorrectOptionText);
+            buttonStyle.push({
+              backgroundColor: optionColors.incorrect.background,
+              borderColor: optionColors.incorrect.border,
+            });
+            textStyle.push({ color: optionColors.incorrect.text, fontWeight: theme.typography.fontWeight.medium });
           }
         } else if (selectedAnswer === option) {
-          buttonStyle.push(styles.selectedOption);
-          textStyle.push(styles.selectedOptionText);
+          buttonStyle.push({
+            backgroundColor: optionColors.selected.background,
+            borderColor: optionColors.selected.border,
+          });
+          textStyle.push({ color: optionColors.selected.text, fontWeight: theme.typography.fontWeight.medium });
         }
 
         return (
@@ -108,103 +123,75 @@ const VocabularyCard: React.FC<VocabularyCardProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any) => StyleSheet.create({
   container: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 20,
-    marginVertical: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.xl,
+    padding: theme.spacing.xl,
+    marginVertical: theme.spacing.md,
+    ...theme.shadows.md,
   },
   questionContainer: {
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: theme.spacing.xl,
   },
   questionText: {
-    fontSize: 18,
-    color: '#666666',
-    marginBottom: 12,
+    fontSize: theme.typography.fontSize.lg,
+    color: theme.colors.onSurfaceVariant,
+    marginBottom: theme.spacing.md,
     textAlign: 'center',
   },
   wordText: {
-    fontSize: 36,
-    fontWeight: 'bold',
-    color: '#333333',
+    fontSize: theme.typography.fontSize['5xl'],
+    fontWeight: theme.typography.fontWeight.bold,
+    color: theme.colors.onSurface,
     textAlign: 'center',
   },
   actionsContainer: {
-    gap: 12,
+    gap: theme.spacing.md,
   },
   actionButton: {
-    padding: 16,
-    borderRadius: 12,
+    padding: theme.spacing.lg,
+    borderRadius: theme.borderRadius.lg,
     alignItems: 'center',
   },
   knownButton: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: theme.colors.success,
   },
   unknownButton: {
-    backgroundColor: '#F44336',
+    backgroundColor: theme.colors.error,
   },
   skipButton: {
-    backgroundColor: '#FF9800',
+    backgroundColor: theme.colors.warning,
   },
   actionButtonText: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: 'bold',
+    color: theme.colors.onPrimary,
+    fontSize: theme.typography.fontSize.lg,
+    fontWeight: theme.typography.fontWeight.bold,
   },
   optionsContainer: {
-    gap: 12,
+    gap: theme.spacing.md,
   },
   optionButton: {
-    backgroundColor: '#FFFFFF',
-    padding: 16,
-    borderRadius: 12,
+    backgroundColor: theme.colors.surface,
+    padding: theme.spacing.lg,
+    borderRadius: theme.borderRadius.lg,
     borderWidth: 2,
-    borderColor: '#E0E0E0',
-  },
-  selectedOption: {
-    borderColor: '#2196F3',
-    backgroundColor: '#E3F2FD',
-  },
-  correctOption: {
-    borderColor: '#4CAF50',
-    backgroundColor: '#E8F5E8',
-  },
-  incorrectOption: {
-    borderColor: '#F44336',
-    backgroundColor: '#FFEBEE',
+    borderColor: theme.colors.outline,
   },
   optionText: {
-    fontSize: 16,
-    color: '#333333',
+    fontSize: theme.typography.fontSize.md,
+    color: theme.colors.onSurface,
     textAlign: 'center',
-  },
-  selectedOptionText: {
-    color: '#2196F3',
-    fontWeight: '500',
-  },
-  correctOptionText: {
-    color: '#4CAF50',
-    fontWeight: '500',
-  },
-  incorrectOptionText: {
-    color: '#F44336',
-    fontWeight: '500',
   },
   displayContainer: {
     alignItems: 'center',
-    padding: 10,
+    padding: theme.spacing.md,
   },
   displayWord: {
-    fontSize: 18,
-    color: '#333333',
-    fontWeight: '500',
+    fontSize: theme.typography.fontSize.lg,
+    color: theme.colors.onSurface,
+    fontWeight: theme.typography.fontWeight.medium,
   },
 });
 

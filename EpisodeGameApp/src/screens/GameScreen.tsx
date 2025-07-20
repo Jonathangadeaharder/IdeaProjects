@@ -18,6 +18,10 @@ import {
   ActionButtonsRow,
   createGameStats,
   createCommonButtons,
+  useTheme,
+  createCommonStyles,
+  getSemanticColors,
+  getOptionStateColors,
 } from '../components';
 import { useGameLogic } from '../hooks';
 
@@ -31,6 +35,7 @@ interface Question {
 const { width } = Dimensions.get('window');
 
 export default function GameScreen({ navigation }: any) {
+  const theme = useTheme();
   const { state, startGame, answerQuestion, completeGame } = useGameSession();
   const [questions, setQuestions] = useState<Question[]>([]);
   
@@ -96,6 +101,8 @@ export default function GameScreen({ navigation }: any) {
     navigation.navigate('VideoPlayer');
   };
 
+  const styles = createStyles(theme);
+
   if (!state.selectedEpisode || questions.length === 0) {
     return (
       <SafeAreaView style={styles.container}>
@@ -119,7 +126,7 @@ export default function GameScreen({ navigation }: any) {
 
       <View style={styles.gameArea}>
         <View style={styles.timerContainer}>
-          <Text style={[styles.timer, { color: gameLogic.timeLeft <= 10 ? '#F44336' : '#4CAF50' }]}>
+          <Text style={[styles.timer, { color: gameLogic.timeLeft <= 10 ? getSemanticColors(theme).error : getSemanticColors(theme).success }]}>
             {gameLogic.timeLeft}s
           </Text>
         </View>
@@ -136,15 +143,18 @@ export default function GameScreen({ navigation }: any) {
 
             if (gameLogic.showResult) {
               if (option === currentQuestion.correctAnswer) {
-                buttonStyle.push(styles.correctOption);
-                textStyle.push(styles.correctOptionText);
+                const correctColors = getOptionStateColors(theme, 'correct');
+                buttonStyle.push({ borderColor: correctColors.border, backgroundColor: correctColors.background });
+                textStyle.push({ color: correctColors.text, fontWeight: '500' });
               } else if (option === gameLogic.selectedAnswer && option !== currentQuestion.correctAnswer) {
-                buttonStyle.push(styles.incorrectOption);
-                textStyle.push(styles.incorrectOptionText);
+                const incorrectColors = getOptionStateColors(theme, 'incorrect');
+                buttonStyle.push({ borderColor: incorrectColors.border, backgroundColor: incorrectColors.background });
+                textStyle.push({ color: incorrectColors.text, fontWeight: '500' });
               }
             } else if (gameLogic.selectedAnswer === option) {
-              buttonStyle.push(styles.selectedOption);
-              textStyle.push(styles.selectedOptionText);
+              const selectedColors = getOptionStateColors(theme, 'selected');
+              buttonStyle.push({ borderColor: selectedColors.border, backgroundColor: selectedColors.background });
+              textStyle.push({ color: selectedColors.text, fontWeight: '500' });
             }
 
             return (
@@ -171,7 +181,7 @@ export default function GameScreen({ navigation }: any) {
         ) : (
           <View style={styles.resultContainer}>
             <Text style={[styles.resultText, 
-              gameLogic.selectedAnswer === currentQuestion?.correctAnswer ? styles.correctText : styles.incorrectText
+              { color: gameLogic.selectedAnswer === currentQuestion?.correctAnswer ? getSemanticColors(theme).success : getSemanticColors(theme).error }
             ]}>
               {gameLogic.selectedAnswer === currentQuestion?.correctAnswer ? '✅ Correct!' : '❌ Incorrect'}
             </Text>
@@ -183,135 +193,103 @@ export default function GameScreen({ navigation }: any) {
             incorrect: gameLogic.stats.incorrectAnswers,
             total: questions.length,
             timeLeft: gameLogic.timeLeft,
-          }, 'game')}
+          }, 'game', theme)}
         />
       </View>
 
       <ActionButtonsRow
         buttons={createCommonButtons({
           onWatchVideo: handleWatchVideo,
-        }, 'game')}
+        }, 'game', theme)}
       />
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F5F5F5',
-  },
-  loadingText: {
-    fontSize: 18,
-    textAlign: 'center',
-    marginTop: 50,
-  },
-  header: {
-    backgroundColor: '#FFFFFF',
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
-  },
-  episodeTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333333',
-    marginBottom: 12,
-  },
-
-  gameArea: {
-    flex: 1,
-    padding: 20,
-  },
-  timerContainer: {
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  timer: {
-    fontSize: 32,
-    fontWeight: 'bold',
-  },
-  questionContainer: {
-    alignItems: 'center',
-    marginBottom: 30,
-  },
-  questionText: {
-    fontSize: 18,
-    color: '#666666',
-    marginBottom: 12,
-  },
-  wordText: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#333333',
-  },
-  optionsContainer: {
-    marginBottom: 30,
-  },
-  optionButton: {
-    backgroundColor: '#FFFFFF',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
-    borderWidth: 2,
-    borderColor: '#E0E0E0',
-  },
-  selectedOption: {
-    borderColor: '#2196F3',
-    backgroundColor: '#E3F2FD',
-  },
-  correctOption: {
-    borderColor: '#4CAF50',
-    backgroundColor: '#E8F5E8',
-  },
-  incorrectOption: {
-    borderColor: '#F44336',
-    backgroundColor: '#FFEBEE',
-  },
-  optionText: {
-    fontSize: 16,
-    color: '#333333',
-    textAlign: 'center',
-  },
-  selectedOptionText: {
-    color: '#2196F3',
-    fontWeight: '500',
-  },
-  correctOptionText: {
-    color: '#4CAF50',
-    fontWeight: '500',
-  },
-  incorrectOptionText: {
-    color: '#F44336',
-    fontWeight: '500',
-  },
-  submitButton: {
-    backgroundColor: '#4CAF50',
-    padding: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  disabledButton: {
-    backgroundColor: '#CCCCCC',
-  },
-  submitButtonText: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  resultContainer: {
-    alignItems: 'center',
-    padding: 16,
-  },
-  resultText: {
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  correctText: {
-    color: '#4CAF50',
-  },
-  incorrectText: {
-    color: '#F44336',
-  },
-
-});
+const createStyles = (theme: any) => {
+  const commonStyles = createCommonStyles(theme);
+  
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.colors.background.secondary,
+    },
+    loadingText: {
+      ...commonStyles.text.body,
+      textAlign: 'center',
+      marginTop: theme.spacing.xl,
+    },
+    header: {
+      backgroundColor: theme.colors.background.primary,
+      padding: theme.spacing.lg,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.border.light,
+    },
+    episodeTitle: {
+      ...commonStyles.text.title,
+      marginBottom: theme.spacing.sm,
+    },
+    gameArea: {
+      flex: 1,
+      padding: theme.spacing.lg,
+    },
+    timerContainer: {
+      alignItems: 'center',
+      marginBottom: theme.spacing.lg,
+    },
+    timer: {
+      fontSize: 32,
+      fontWeight: 'bold',
+    },
+    questionContainer: {
+      alignItems: 'center',
+      marginBottom: theme.spacing.xl,
+    },
+    questionText: {
+      ...commonStyles.text.body,
+      color: theme.colors.text.secondary,
+      marginBottom: theme.spacing.sm,
+    },
+    wordText: {
+      fontSize: 32,
+      fontWeight: 'bold',
+      color: theme.colors.text.primary,
+    },
+    optionsContainer: {
+      marginBottom: theme.spacing.xl,
+    },
+    optionButton: {
+      backgroundColor: theme.colors.background.primary,
+      padding: theme.spacing.md,
+      borderRadius: theme.borderRadius.md,
+      marginBottom: theme.spacing.sm,
+      borderWidth: 2,
+      borderColor: theme.colors.border.light,
+    },
+    optionText: {
+      fontSize: 16,
+      color: theme.colors.text.primary,
+      textAlign: 'center',
+    },
+    submitButton: {
+      ...commonStyles.button.primary,
+      alignItems: 'center',
+    },
+    disabledButton: {
+      backgroundColor: theme.colors.text.disabled,
+    },
+    submitButtonText: {
+      color: theme.colors.background.primary,
+      fontSize: 18,
+      fontWeight: 'bold',
+    },
+    resultContainer: {
+      alignItems: 'center',
+      padding: theme.spacing.md,
+    },
+    resultText: {
+      fontSize: 20,
+      fontWeight: 'bold',
+    },
+  });
+};

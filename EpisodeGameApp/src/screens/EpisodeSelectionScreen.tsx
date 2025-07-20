@@ -10,6 +10,8 @@ import {
 } from 'react-native';
 import { Episode, defaultEpisodes } from '../models/Episode';
 import { useGameSession } from '../context/GameSessionContext';
+import { useTheme } from '../theme/ThemeProvider';
+import { createCommonStyles, getDifficultyColors } from '../theme/styleUtils';
 
 interface EpisodeCardProps {
   episode: Episode;
@@ -17,17 +19,12 @@ interface EpisodeCardProps {
 }
 
 function EpisodeCard({ episode, onSelect }: EpisodeCardProps) {
+  const { theme } = useTheme();
+  const difficultyColors = getDifficultyColors(theme);
+  const styles = createStyles(theme);
+  
   const getDifficultyColor = (level: string) => {
-    switch (level) {
-      case 'beginner':
-        return '#4CAF50';
-      case 'intermediate':
-        return '#FF9800';
-      case 'advanced':
-        return '#F44336';
-      default:
-        return '#757575';
-    }
+    return difficultyColors[level as keyof typeof difficultyColors] || theme.colors.onSurfaceVariant;
   };
 
   return (
@@ -37,7 +34,7 @@ function EpisodeCard({ episode, onSelect }: EpisodeCardProps) {
       activeOpacity={0.7}
     >
       <View style={styles.thumbnailContainer}>
-        <View style={[styles.thumbnailPlaceholder, { backgroundColor: '#E0E0E0' }]}>
+        <View style={[styles.thumbnailPlaceholder, { backgroundColor: theme.colors.outline }]}>
           <Text style={styles.thumbnailText}>📺</Text>
         </View>
       </View>
@@ -75,6 +72,9 @@ function EpisodeCard({ episode, onSelect }: EpisodeCardProps) {
 
 export default function EpisodeSelectionScreen({ navigation }: any) {
   const { selectEpisode } = useGameSession();
+  const { theme } = useTheme();
+  const commonStyles = createCommonStyles(theme);
+  const styles = createStyles(theme);
 
   const handleEpisodeSelect = (episode: Episode) => {
     selectEpisode(episode);
@@ -105,101 +105,94 @@ export default function EpisodeSelectionScreen({ navigation }: any) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: theme.colors.background,
   },
   header: {
-    padding: 20,
-    backgroundColor: '#FFFFFF',
+    padding: theme.spacing.xl,
+    backgroundColor: theme.colors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
+    borderBottomColor: theme.colors.outline,
   },
   headerTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#333333',
-    marginBottom: 8,
+    fontSize: theme.typography.fontSize['3xl'],
+    fontWeight: theme.typography.fontWeight.bold,
+    color: theme.colors.onSurface,
+    marginBottom: theme.spacing.sm,
   },
   headerSubtitle: {
-    fontSize: 16,
-    color: '#666666',
+    fontSize: theme.typography.fontSize.md,
+    color: theme.colors.onSurfaceVariant,
   },
   episodeList: {
-    padding: 16,
+    padding: theme.spacing.lg,
   },
   episodeCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    marginBottom: 16,
-    padding: 16,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.lg,
+    marginBottom: theme.spacing.lg,
+    padding: theme.spacing.lg,
     flexDirection: 'row',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    ...theme.shadows.md,
   },
   thumbnailContainer: {
-    marginRight: 16,
+    marginRight: theme.spacing.lg,
   },
   thumbnailPlaceholder: {
     width: 80,
     height: 60,
-    borderRadius: 8,
+    borderRadius: theme.borderRadius.md,
     justifyContent: 'center',
     alignItems: 'center',
   },
   thumbnailText: {
-    fontSize: 24,
+    fontSize: theme.typography.fontSize['2xl'],
   },
   episodeInfo: {
     flex: 1,
   },
   episodeTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333333',
-    marginBottom: 8,
+    fontSize: theme.typography.fontSize.lg,
+    fontWeight: theme.typography.fontWeight.bold,
+    color: theme.colors.onSurface,
+    marginBottom: theme.spacing.sm,
   },
   episodeDescription: {
-    fontSize: 14,
-    color: '#666666',
-    marginBottom: 12,
-    lineHeight: 20,
+    fontSize: theme.typography.fontSize.base,
+    color: theme.colors.onSurfaceVariant,
+    marginBottom: theme.spacing.md,
+    lineHeight: theme.typography.fontSize.base * theme.typography.lineHeight.normal,
   },
   episodeDetails: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
+    gap: theme.spacing.md,
   },
   detailItem: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   detailLabel: {
-    fontSize: 12,
-    color: '#888888',
-    marginRight: 4,
+    fontSize: theme.typography.fontSize.sm,
+    color: theme.colors.onSurfaceVariant,
+    marginRight: theme.spacing.xs,
   },
   detailValue: {
-    fontSize: 12,
-    color: '#333333',
-    fontWeight: '500',
+    fontSize: theme.typography.fontSize.sm,
+    color: theme.colors.onSurface,
+    fontWeight: theme.typography.fontWeight.medium,
   },
   difficultyBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 12,
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: theme.spacing.xs / 2,
+    borderRadius: theme.borderRadius.lg,
   },
   difficultyText: {
-    fontSize: 10,
-    color: '#FFFFFF',
-    fontWeight: 'bold',
+    fontSize: theme.typography.fontSize.xs,
+    color: theme.colors.onPrimary,
+    fontWeight: theme.typography.fontWeight.bold,
     textTransform: 'uppercase',
   },
 });

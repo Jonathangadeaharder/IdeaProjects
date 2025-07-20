@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, ViewStyle } from 'react-native';
+import { useTheme } from '../theme/ThemeProvider';
 
 interface ProgressBarProps {
   progress: number; // 0-100
@@ -18,14 +19,19 @@ const ProgressBar: React.FC<ProgressBarProps> = ({
   progress,
   current,
   total,
-  color = '#4CAF50',
-  backgroundColor = '#E0E0E0',
+  color,
+  backgroundColor,
   height = 8,
   showPercentage = true,
   showFraction = false,
   style,
   textStyle,
 }) => {
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
+  
+  const progressColor = color || theme.colors.success;
+  const progressBgColor = backgroundColor || theme.colors.outline;
   const clampedProgress = Math.max(0, Math.min(100, progress));
   
   const renderText = () => {
@@ -42,13 +48,13 @@ const ProgressBar: React.FC<ProgressBarProps> = ({
 
   return (
     <View style={[styles.container, style]}>
-      <View style={[styles.progressBar, { height, backgroundColor }]}>
+      <View style={[styles.progressBar, { height, backgroundColor: progressBgColor }]}>
         <View 
           style={[
             styles.progressFill, 
             { 
               width: `${clampedProgress}%`,
-              backgroundColor: color,
+              backgroundColor: progressColor,
               height,
             }
           ]} 
@@ -63,7 +69,7 @@ const ProgressBar: React.FC<ProgressBarProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any) => StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -71,17 +77,17 @@ const styles = StyleSheet.create({
   },
   progressBar: {
     flex: 1,
-    backgroundColor: '#E0E0E0',
-    borderRadius: 4,
-    marginRight: 12,
+    backgroundColor: theme.colors.outline,
+    borderRadius: theme.borderRadius.sm,
+    marginRight: theme.spacing.md,
   },
   progressFill: {
-    borderRadius: 4,
+    borderRadius: theme.borderRadius.sm,
   },
   progressText: {
-    fontSize: 14,
-    color: '#666666',
-    fontWeight: '500',
+    fontSize: theme.typography.fontSize.base,
+    color: theme.colors.onSurfaceVariant,
+    fontWeight: theme.typography.fontWeight.medium,
     minWidth: 40,
   },
 });

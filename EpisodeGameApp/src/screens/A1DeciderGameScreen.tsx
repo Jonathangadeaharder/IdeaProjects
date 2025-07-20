@@ -25,6 +25,9 @@ import {
   ActionButtonsRow,
   createGameStats,
   createCommonButtons,
+  useTheme,
+  createCommonStyles,
+  getSemanticColors,
 } from '../components';
 import { useProcessingWorkflow } from '../hooks';
 
@@ -42,6 +45,7 @@ interface VocabularyWordWithStatus {
 const { width } = Dimensions.get('window');
 
 export default function A1DeciderGameScreen({ navigation }: any) {
+  const theme = useTheme();
   const { state, startGame, completeGame, updateEpisodeStatus } = useGameSession();
   const { state: processingState, startProcessing, updateProcessingProgress, completeProcessing } = useEpisodeProcessing();
   const { state: vocabularyState, addKnownWord, addUnknownWord, addSkippedWord, setVocabularyAnalysis } = useVocabularyLearning();
@@ -176,6 +180,8 @@ export default function A1DeciderGameScreen({ navigation }: any) {
 
 
 
+  const styles = createStyles(theme);
+
   if (!state.selectedEpisode) {
     return (
       <SafeAreaView style={styles.container}>
@@ -232,14 +238,14 @@ export default function A1DeciderGameScreen({ navigation }: any) {
               unknown: vocabularyState.unknownWords.length,
               skipped: vocabularyState.skippedWords.length,
               total: vocabularyWords.length,
-            }, 'vocabulary')}
+            }, 'vocabulary', theme)}
           />
         </View>
 
         <ActionButtonsRow
           buttons={createCommonButtons({
             onWatchVideo: handleWatchVideo,
-          }, 'vocabulary')}
+          }, 'vocabulary', theme)}
         />
       </SafeAreaView>
     );
@@ -256,70 +262,70 @@ export default function A1DeciderGameScreen({ navigation }: any) {
         <ActionButtonsRow
           buttons={createCommonButtons({
             onWatchVideo: handleWatchVideo,
-          }, 'complete')}
+          }, 'complete', theme)}
         />
       </View>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F5F5F5',
-  },
-  loadingText: {
-    fontSize: 18,
-    textAlign: 'center',
-    marginTop: 50,
-  },
-  processingContainer: {
-    flex: 1,
-    padding: 20,
-    justifyContent: 'center',
-  },
-
-  header: {
-    backgroundColor: '#FFFFFF',
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
-  },
-  episodeTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333333',
-    marginBottom: 4,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#666666',
-    marginBottom: 12,
-  },
-  gameArea: {
-    flex: 1,
-    padding: 20,
-    justifyContent: 'center',
-  },
-
-  completeContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  completeTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#4CAF50',
-    marginBottom: 16,
-    textAlign: 'center',
-  },
-  completeMessage: {
-    fontSize: 16,
-    color: '#666666',
-    textAlign: 'center',
-    marginBottom: 32,
-    lineHeight: 24,
-  },
-});
+const createStyles = (theme: any) => {
+  const commonStyles = createCommonStyles(theme);
+  
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.colors.background.secondary,
+    },
+    loadingText: {
+      ...commonStyles.text.body,
+      textAlign: 'center',
+      marginTop: theme.spacing.xl,
+    },
+    processingContainer: {
+      flex: 1,
+      padding: theme.spacing.lg,
+      justifyContent: 'center',
+    },
+    header: {
+      backgroundColor: theme.colors.background.primary,
+      padding: theme.spacing.lg,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.border.light,
+    },
+    episodeTitle: {
+      ...commonStyles.text.title,
+      marginBottom: theme.spacing.xs,
+    },
+    subtitle: {
+      ...commonStyles.text.body,
+      color: theme.colors.text.secondary,
+      marginBottom: theme.spacing.sm,
+    },
+    gameArea: {
+      flex: 1,
+      padding: theme.spacing.lg,
+      justifyContent: 'center',
+    },
+    completeContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: theme.spacing.lg,
+    },
+    completeTitle: {
+      fontSize: 28,
+      fontWeight: 'bold',
+      color: getSemanticColors(theme).success,
+      marginBottom: theme.spacing.md,
+      textAlign: 'center',
+    },
+    completeMessage: {
+      ...commonStyles.text.body,
+      color: theme.colors.text.secondary,
+      textAlign: 'center',
+      marginBottom: theme.spacing.xl,
+      lineHeight: 24,
+    },
+  });
+};
