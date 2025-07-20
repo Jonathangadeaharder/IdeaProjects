@@ -1,30 +1,76 @@
-# Unified Subtitle Processor
+# IdeaProjects - Unified Monorepo
 
-This script combines three separate subtitle processing tools into one unified workflow:
+This repository has been restructured from nested repositories into a unified monorepo structure to enable proper version control and CI/CD workflows.
 
-1. **Subtitle Creation** - Creates German subtitles from video files using OpenAI Whisper
-2. **A1 Level Filtering** - Filters subtitles to show only lines containing unknown words (based on A1 German vocabulary)
-3. **Translation** - Translates the filtered subtitles from German to Spanish
+## Repository Structure
+
+This monorepo contains the following projects:
+
+### Core Projects
+- **A1Decider/** - German vocabulary filtering tool for subtitle processing
+- **EpisodeGameApp/** - React Native application for episode-based vocabulary games
+- **SubtitleMaker/** - Video to subtitle conversion tool using OpenAI Whisper
+- **SubtitleTranslate/** - Subtitle translation service
+- **shared_utils/** - Shared utilities across projects
+
+### Unified Processing
+- **unified_subtitle_processor.py** - Combined workflow for subtitle creation, filtering, and translation
+- **processing_interfaces.py** - Granular processing interfaces
+- **processing_steps.py** - Modular processing steps
+- **pipeline_config_example.py** - Configuration examples
+
+### Testing & Validation
+- **test_granular_interfaces.py** - Interface testing
+- **test_pipeline_architecture.py** - Architecture validation
+- **validate_interfaces.py** - Interface validation utilities
+
+## Recent Restructuring (ARCH-01)
+
+### Changes Made
+1. **Moved Excluded Projects**: `ImperioCasino` and `LatexStuff` have been moved to `../IdeaProjects_Excluded/` as they are not part of the core repository scope
+2. **Removed Nested .git Directories**: Eliminated all nested `.git` directories from subdirectories to resolve version control conflicts
+3. **Created Unified Repository**: Initialized a single git repository at the root level
+4. **Added Comprehensive .gitignore**: Created a unified `.gitignore` file covering all project types (Python, Node.js, React Native, etc.)
+
+### Benefits
+- ✅ Unified version control across all projects
+- ✅ Simplified CI/CD pipeline setup
+- ✅ Consistent dependency management
+- ✅ Cross-project code sharing and refactoring
+- ✅ Atomic commits across multiple projects
 
 ## Features
 
-- **Automatic Processing**: Select a video file and the script handles all three steps automatically
-- **Default Settings**: Uses optimized default settings from the original scripts
-- **No Game Mode**: Filters subtitles without the interactive vocabulary game
+### Subtitle Processing Pipeline
+- **Automatic Processing**: Select a video file and the system handles subtitle creation, filtering, and translation
+- **A1 Level Filtering**: Filters subtitles to show only lines containing unknown words (based on A1 German vocabulary)
+- **Multi-language Translation**: Translates filtered subtitles between languages
 - **GPU Acceleration**: Uses CUDA when available for faster processing
 - **Multiple Formats**: Supports SRT and VTT subtitle formats
+
+### Episode Game Application
+- **React Native**: Cross-platform mobile application
+- **Vocabulary Games**: Interactive learning based on subtitle content
+- **Episode Management**: Organize content by episodes and series
+- **Progress Tracking**: Monitor learning progress
 
 ## Requirements
 
 ### System Requirements
 - Python 3.8+
+- Node.js 16+
 - CUDA-compatible GPU (recommended for faster processing)
 - FFmpeg installed and accessible in PATH
 
 ### Python Dependencies
-Install the required packages:
 ```bash
 pip install -r requirements.txt
+```
+
+### Node.js Dependencies
+```bash
+cd EpisodeGameApp
+npm install
 ```
 
 ### Additional Setup
@@ -35,34 +81,58 @@ pip install -r requirements.txt
    ```
 
 2. **Word Lists** (for A1 filtering):
-   The script expects these files in `G:/My Drive/`:
+   The system expects these files in `G:/My Drive/`:
    - `a1.txt` - A1 level German vocabulary
    - `charaktere.txt` - Character names and proper nouns
    - `giuliwords.txt` - Additional known words
-   
-   If these files don't exist, the script will continue but filtering may be less effective.
 
 ## Usage
 
-1. Run the script:
-   ```bash
-   python unified_subtitle_processor.py
-   ```
+### Unified Subtitle Processing
+```bash
+python unified_subtitle_processor.py
+```
 
-2. Select a video file when prompted
+### Individual Tools
+```bash
+# Subtitle creation
+python SubtitleMaker/subtitle_maker.py
 
-3. The script will automatically:
-   - Extract audio from the video
-   - Generate German subtitles using Whisper
-   - Filter subtitles to show only unknown words
-   - Translate filtered subtitles to Spanish
+# A1 filtering
+python A1Decider/a1decider.py
 
-## Output Files
+# Translation
+python SubtitleTranslate/subtitle_translate.py
+```
 
-For a video file named `example.mp4`, the script creates:
-- `example.srt` - Original German subtitles
-- `example_a1filtered.srt` - Filtered subtitles (unknown words only)
-- `example_a1filtered_es.srt` - Spanish translation of filtered subtitles
+### Episode Game App
+```bash
+cd EpisodeGameApp
+npm start
+```
+
+## Development
+
+### Running Tests
+```bash
+# Python tests
+python -m pytest
+
+# Interface validation
+python validate_interfaces.py
+
+# Architecture tests
+python test_pipeline_architecture.py
+
+# React Native tests
+cd EpisodeGameApp
+npm test
+```
+
+### Project Structure Validation
+```bash
+python test_granular_interfaces.py
+```
 
 ## Configuration
 
@@ -73,41 +143,41 @@ For a video file named `example.mp4`, the script creates:
 - **Device**: CUDA if available, otherwise CPU
 
 ### Customization
-To modify default settings, edit the following in the script:
-- Change `language="de"` in the `create_subtitles()` call
-- Modify `src_lang="de"` and `tgt_lang="es"` in the `translate_subtitle_file()` call
-- Update word list file paths in the `filter_subtitles()` function
+Refer to `pipeline_config_example.py` for configuration options and `processing_interfaces.py` for available processing modules.
 
 ## Troubleshooting
 
 ### Common Issues
 
 1. **CUDA Out of Memory**:
-   - The script will automatically fall back to CPU if CUDA fails
-   - Consider using a smaller Whisper model (change "turbo" to "base" or "small")
+   - The system will automatically fall back to CPU if CUDA fails
+   - Consider using a smaller Whisper model
 
 2. **Missing Word Lists**:
-   - The script will show warnings but continue processing
+   - The system will show warnings but continue processing
    - Filtering will be less effective without proper word lists
 
 3. **FFmpeg Not Found**:
    - Install FFmpeg and ensure it's in your system PATH
-   - On Windows, you can download from https://ffmpeg.org/
 
 4. **SpaCy Model Missing**:
    - Run: `python -m spacy download de_core_news_lg`
 
 ### Performance Tips
-
 - Use CUDA-compatible GPU for faster processing
 - For very long videos, consider splitting them first
 - Close other GPU-intensive applications during processing
 
-## Original Scripts
+## Contributing
 
-This unified script is based on three separate tools:
-- `SubtitleMaker/subtitle_maker.py` - Video to subtitle conversion
-- `A1Decider/a1decider.py` - Vocabulary-based subtitle filtering
-- `SubtitleTranslate/subtitle_translate.py` - Subtitle translation
+With the unified monorepo structure, contributions can now span multiple projects and maintain consistency across the entire codebase. Please ensure all tests pass before submitting pull requests.
 
-The unified version uses the same core functionality but removes interactive elements for automated processing.
+## Architecture
+
+This monorepo follows a modular architecture with:
+- **Shared utilities** for common functionality
+- **Granular interfaces** for flexible processing pipelines
+- **Unified configuration** across all projects
+- **Consistent testing** and validation frameworks
+
+For detailed architecture information, see the various `*_SUMMARY.md` files in the project directories.
