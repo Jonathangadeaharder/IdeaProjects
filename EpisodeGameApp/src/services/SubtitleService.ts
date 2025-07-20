@@ -1,11 +1,9 @@
 import { Episode, VocabularyWord } from '../models/Episode';
-import { 
-  PythonBridgeService,
-  RawApiResponse, 
-  RawVocabularyWord, 
-  RawA1DeciderResult, 
-  RawTranslationResult, 
-  RawSubtitleCreationResult 
+import PythonBridgeService, { 
+  ProcessingResult, 
+  A1DeciderResult, 
+  TranslationResult, 
+  VocabularyAnalysisResult
 } from './PythonBridgeService';
 
 interface SubtitleProcessingStatus {
@@ -30,7 +28,7 @@ export class SubtitleService {
   private processedEpisodes: Map<string, { hasFilteredSubtitles: boolean; hasTranslatedSubtitles: boolean }> = new Map();
 
   constructor() {
-    this.pythonBridge = new PythonBridgeService();
+    this.pythonBridge = PythonBridgeService;
   }
 
   static getInstance(): SubtitleService {
@@ -105,31 +103,26 @@ export class SubtitleService {
         });
         
         if (episode.subtitleUrl) {
-          const response = await this.pythonBridge.requestA1Processing({
-            subtitleFile: episode.subtitleUrl,
-            outputPath: `assets/subtitles/${episode.id}_a1filtered.srt`
-          });
+          const result = await this.pythonBridge.requestA1Processing(episode.subtitleUrl, false);
           
-          if (response.success && response.data) {
-            const result = response.data as RawA1DeciderResult;
-            
+          if (result.success) {
             this.updateProgress(episodeId, {
               stage: 'filtering',
               progress: 50,
-              message: `Found ${result.totalWords} words, ${result.unknownWords} unknown`
+              message: `Found ${result.statistics.totalWords} words, ${result.statistics.unknownWords} unknown`
             });
             
             this.updateProgress(episodeId, {
               stage: 'filtering',
               progress: 100,
-              message: `Difficulty: ${result.difficultyLevel}`
+              message: `Difficulty: ${result.statistics.difficultyLevel}`
             });
             
             // Mark episode as having filtered subtitles
             const currentState = this.processedEpisodes.get(episode.id) || { hasFilteredSubtitles: false, hasTranslatedSubtitles: false };
             this.processedEpisodes.set(episode.id, { ...currentState, hasFilteredSubtitles: true });
           } else {
-            console.error('A1 processing failed:', response.error);
+            console.error('A1 processing failed:', result.error);
             await this.filterSubtitles(episode);
           }
         } else {
@@ -150,15 +143,9 @@ export class SubtitleService {
         if (currentState?.hasFilteredSubtitles) {
           // Use real translation service
           const filteredPath = `assets/subtitles/${episode.id}_a1filtered.srt`;
-          const response = await this.pythonBridge.requestSubtitleTranslation({
-            inputFile: filteredPath,
-            outputFile: `assets/subtitles/${episode.id}_a1filtered_es.srt`,
-            targetLanguage: 'es'
-          });
+          const result = await this.pythonBridge.requestSubtitleTranslation(filteredPath, 'de', 'es');
           
-          if (response.success && response.data) {
-            const result = response.data as RawTranslationResult;
-            
+          if (result.success) {
             this.updateProgress(episodeId, {
               stage: 'translation',
               progress: 50,
@@ -174,7 +161,7 @@ export class SubtitleService {
             // Mark episode as having translated subtitles
             this.processedEpisodes.set(episode.id, { ...currentState, hasTranslatedSubtitles: true });
           } else {
-            console.error('Translation failed:', response.error);
+            console.error('Translation failed:', result.error);
             await this.translateSubtitles(episode);
           }
         } else {
@@ -256,15 +243,9 @@ export class SubtitleService {
     
     try {
       // Try real subtitle creation first
-      const response = await this.pythonBridge.requestSubtitleCreation({
-        videoFile: episode.videoUrl,
-        outputFile: `assets/subtitles/${episode.id}.srt`,
-        language: 'en'
-      });
+      const result = await this.pythonBridge.requestSubtitleCreation(episode.videoUrl, 'en');
       
-      if (response.success && response.data) {
-        const result = response.data as RawSubtitleCreationResult;
-        
+      if (result.success) {
         this.updateProgress(episode.id, {
           stage: 'transcription',
           progress: 50,
@@ -282,7 +263,7 @@ export class SubtitleService {
         console.log(`Created subtitles for ${episode.title}`);
         return;
       } else {
-        console.error('Subtitle creation failed:', response.error);
+        console.error('Subtitle creation failed:', result.error);
       }
     } catch (error) {
       console.error('Error in subtitle creation:', error);
@@ -397,27 +378,17 @@ export class SubtitleService {
       }
       
       // Get real vocabulary analysis from subtitle file
-      const response = await this.pythonBridge.requestVocabularyAnalysis({
-        subtitleFile: subtitlePath,
-        vocabularyOnly: true
-      });
+      const result = await this.pythonBridge.requestVocabularyAnalysis(subtitlePath);
       
-      if (!response.success || !response.data) {
-        console.error('Vocabulary analysis failed:', response.error);
+      if (!result.success) {
+        console.error('Vocabulary analysis failed:', result.error);
         return this.getFallbackVocabulary();
       }
       
-      const vocabularyWords = response.data as RawVocabularyWord[];
-      
-      // Convert to our VocabularyWord format
-      const allWords = vocabularyWords.map((word, index) => ({
-        id: `real_word_${index}`,
-        german: word.word,
-        english: word.translation,
-        difficulty: word.isRelevant ? 'A1' : 'A2',
-        frequency: word.frequency,
-        context: `Found in ${word.affectedSubtitles} subtitle${word.affectedSubtitles !== 1 ? 's' : ''}`,
-        relevanceScore: word.isRelevant ? word.frequency * 2 : word.frequency // Boost relevant words
+      // The vocabulary words are already mapped to our domain model
+      const allWords = result.vocabularyWords.map((word, index) => ({
+        ...word,
+        relevanceScore: word.difficulty === 'A1' ? word.frequency * 2 : word.frequency // Boost A1 words
       }));
       
       // Sort by relevance score (frequency + relevance boost) and return top 20
