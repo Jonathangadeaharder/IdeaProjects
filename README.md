@@ -7,11 +7,10 @@ This repository has been restructured from nested repositories into a unified mo
 This monorepo contains the following projects:
 
 ### Core Projects
-- **A1Decider/** - German vocabulary filtering tool for subtitle processing
+- **A1Decider/** - Unified subtitle processing engine with FastAPI server
 - **EpisodeGameApp/** - React Native application for episode-based vocabulary games
-- **SubtitleMaker/** - Video to subtitle conversion tool using OpenAI Whisper
-- **SubtitleTranslate/** - Subtitle translation service
 - **shared_utils/** - Shared utilities across projects
+- **archived_legacy_projects/** - Archived legacy projects (SubtitleMaker, SubtitleTranslate, etc.)
 
 ### Unified Processing
 - **unified_subtitle_processor.py** - Combined workflow for subtitle creation, filtering, and translation
@@ -38,6 +37,12 @@ This monorepo contains the following projects:
 3. **Simplified Architecture**: Reduced system complexity by removing the middleware layer
 4. **Eliminated Dependencies**: Removed shared file system requirements between services
 
+### ARCH-03: Legacy Python Projects Consolidation
+1. **Unified Processing Engine**: Consolidated SubtitleMaker, A1Decider, and SubtitleTranslate into a single API
+2. **Eliminated Code Duplication**: Single model management, unified configuration, shared utilities
+3. **RESTful API Architecture**: All functionality available via FastAPI endpoints with configurable pipelines
+4. **Archived Legacy Projects**: Safely preserved original projects in archived_legacy_projects/ directory
+
 ### Benefits
 - ✅ Unified version control across all projects
 - ✅ Simplified CI/CD pipeline setup
@@ -47,6 +52,10 @@ This monorepo contains the following projects:
 - ✅ Simplified architecture with direct API communication
 - ✅ Reduced deployment complexity
 - ✅ Eliminated tight coupling between services
+- ✅ Consolidated processing engine with single API
+- ✅ Eliminated code duplication across legacy projects
+- ✅ Unified model management and configuration
+- ✅ RESTful API architecture for all subtitle processing
 
 ## Features
 
@@ -102,16 +111,25 @@ npm install
 python unified_subtitle_processor.py
 ```
 
-### Individual Tools
+### Unified API Server
 ```bash
-# Subtitle creation
-python SubtitleMaker/subtitle_maker.py
+# Start the unified processing API
+python A1Decider/python_api_server.py
 
-# A1 filtering
-python A1Decider/a1decider.py
+# API endpoints available at http://localhost:8000
+# - POST /api/process - Main processing endpoint
+# - POST /api/upload-and-process - File upload and processing
+# - GET /api/health - Health check
+# - GET /api/pipelines - Available pipeline configurations
+```
 
-# Translation
-python SubtitleTranslate/subtitle_translate.py
+### Legacy Tools (Archived)
+```bash
+# Interactive A1 vocabulary game (preserved)
+python archived_legacy_projects/*/A1Decider_interactive_ui/a1decider.py
+
+# Note: SubtitleMaker and SubtitleTranslate functionality
+# is now available via the unified API with different pipeline configs
 ```
 
 ### Episode Game App
@@ -191,4 +209,7 @@ This monorepo follows a simplified modular architecture with:
 - **Consistent testing** and validation frameworks
 - **Eliminated Middleware**: No intermediate Node.js BFF service required
 
-For detailed architecture information, see the various `*_SUMMARY.md` files in the project directories and `ARCH-02_BFF_ELIMINATION.md` for the latest architectural changes.
+For detailed architecture information, see:
+- `ARCH-03_LEGACY_CONSOLIDATION.md` - Latest consolidation of legacy projects
+- `ARCH-02_BFF_ELIMINATION.md` - Backend-for-Frontend elimination
+- Various `*_SUMMARY.md` files in the A1Decider directory
