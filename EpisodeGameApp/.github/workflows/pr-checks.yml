@@ -1,0 +1,245 @@
+name: Pull Request Checks
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [ main, develop ]
+
+jobs:
+  pr-validation:
+    name: PR Validation
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Check PR title format
+        uses: amannn/action-semantic-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          types: |
+            feat
+            fix
+            docs
+            style
+            refactor
+            perf
+            test
+            chore
+            ci
+          requireScope: false
+          
+      - name: Check for merge conflicts
+        run: |
+          git merge-tree $(git merge-base HEAD main) HEAD main | grep -q "<<<<<<< " && echo "Merge conflicts detected" && exit 1 || echo "No merge conflicts"
+          
+      - name: Lint changed files only
+        run: |
+          # Get list of changed files
+          CHANGED_FILES=$(git diff --name-only origin/main...HEAD | grep -E '\.(js|jsx|ts|tsx)$' | tr '\n' ' ')
+          if [ ! -z "$CHANGED_FILES" ]; then
+            npx eslint $CHANGED_FILES
+          else
+            echo "No JavaScript/TypeScript files changed"
+          fi
+          
+      - name: Run tests for changed files
+        run: |
+          # Get list of changed test files
+          CHANGED_TEST_FILES=$(git diff --name-only origin/main...HEAD | grep -E '\.test\.(js|jsx|ts|tsx)$' | tr '\n' ' ')
+          if [ ! -z "$CHANGED_TEST_FILES" ]; then
+            npm test -- $CHANGED_TEST_FILES --passWithNoTests
+          else
+            echo "No test files changed, running related tests"
+            npm test -- --findRelatedTests $(git diff --name-only origin/main...HEAD | grep -E '\.(js|jsx|ts|tsx)$' | grep -v test | tr '\n' ' ') --passWithNoTests
+          fi
+          
+      - name: Check bundle size impact
+        run: |
+          # Build current branch
+          npm run build:web
+          CURRENT_SIZE=$(du -sb dist | cut -f1)
+          
+          # Switch to main and build
+          git stash
+          git checkout origin/main
+          npm ci
+          npm run build:web
+          MAIN_SIZE=$(du -sb dist | cut -f1)
+          
+          # Calculate difference
+          SIZE_DIFF=$((CURRENT_SIZE - MAIN_SIZE))
+          SIZE_DIFF_KB=$((SIZE_DIFF / 1024))
+          
+          echo "Bundle size change: ${SIZE_DIFF_KB}KB"
+          
+          # Fail if bundle size increased by more than 500KB
+          if [ $SIZE_DIFF_KB -gt 500 ]; then
+            echo "❌ Bundle size increased by more than 500KB. Please optimize."
+            exit 1
+          elif [ $SIZE_DIFF_KB -gt 100 ]; then
+            echo "⚠️ Bundle size increased by ${SIZE_DIFF_KB}KB. Consider optimization."
+          else
+            echo "✅ Bundle size change is acceptable."
+          fi
+
+  accessibility-check:
+    name: Accessibility Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Build web app
+        run: npm run build:web
+        
+      - name: Run accessibility tests
+        run: |
+          # Install axe-core for accessibility testing
+          npm install --no-save @axe-core/cli
+          
+          # Start a simple HTTP server
+          npx http-server dist -p 8080 &
+          SERVER_PID=$!
+          
+          # Wait for server to start
+          sleep 5
+          
+          # Run axe accessibility tests
+          npx axe http://localhost:8080 --exit
+          
+          # Clean up
+          kill $SERVER_PID
+
+  dependency-check:
+    name: Dependency Security Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          
+      - name: Check for vulnerable dependencies
+        run: |
+          # Install dependencies
+          npm ci
+          
+          # Run security audit
+          npm audit --audit-level=high
+          
+          # Check for outdated dependencies
+          npm outdated || true
+          
+      - name: License compliance check
+        run: |
+          # Install license checker
+          npm install --no-save license-checker
+          
+          # Check licenses
+          npx license-checker --onlyAllow 'MIT;Apache-2.0;BSD-2-Clause;BSD-3-Clause;ISC;0BSD' --excludePrivatePackages
+
+  performance-check:
+    name: Performance Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Build and analyze bundle
+        run: |
+          npm run build:web
+          
+          # Install bundle analyzer
+          npm install --no-save webpack-bundle-analyzer
+          
+          # Generate bundle analysis
+          npx webpack-bundle-analyzer dist/static/js/*.js --report --mode static --report-filename bundle-report.html
+          
+      - name: Upload bundle analysis
+        uses: actions/upload-artifact@v4
+        with:
+          name: bundle-analysis
+          path: bundle-report.html
+          retention-days: 7
+
+  code-quality:
+    name: Code Quality Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Run complexity analysis
+        run: |
+          # Install complexity analyzer
+          npm install --no-save complexity-report
+          
+          # Analyze complexity of changed files
+          CHANGED_FILES=$(git diff --name-only origin/main...HEAD | grep -E '\.(js|jsx|ts|tsx)$' | tr '\n' ' ')
+          if [ ! -z "$CHANGED_FILES" ]; then
+            for file in $CHANGED_FILES; do
+              if [ -f "$file" ]; then
+                echo "Analyzing complexity for: $file"
+                npx cr --format json --output complexity-$file.json $file || true
+              fi
+            done
+          fi
+          
+      - name: Check code duplication
+        run: |
+          # Install jscpd for duplicate detection
+          npm install --no-save jscpd
+          
+          # Check for code duplication
+          npx jscpd src/ --threshold 10 --format "javascript,typescript" --blame || true

@@ -1,4 +1,4 @@
-import { PythonBridgeService } from './PythonBridgeService';
+import { PythonBridgeService } from '../../src/services/PythonBridgeService';
 import type { 
   ProcessingResult, 
   A1DeciderResult, 
@@ -6,7 +6,7 @@ import type {
   VocabularyAnalysisResult,
   HealthStatus,
   PipelineConfiguration
-} from './PythonBridgeService';
+} from '../../src/services/PythonBridgeService';
 
 // Mock fetch for testing
 global.fetch = jest.fn();

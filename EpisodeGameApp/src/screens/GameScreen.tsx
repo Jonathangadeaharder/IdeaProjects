@@ -8,7 +8,7 @@ import {
   Alert,
   Dimensions,
 } from 'react-native';
-import { useGameSession, useGameSessionActions } from '../stores/useAppStore';
+import { useSelectedEpisode, useGameActions } from '../stores/useAppStore';
 
 // Import reusable components
 import {
@@ -36,8 +36,8 @@ const { width } = Dimensions.get('window');
 
 export default function GameScreen({ navigation }: any) {
   const theme = useTheme();
-  const gameState = useGameSession();
-  const { startGame, answerQuestion, completeGame } = useGameSessionActions();
+  const selectedEpisode = useSelectedEpisode();
+  const { startGame, answerQuestion, completeGame } = useGameActions();
   const [questions, setQuestions] = useState<Question[]>([]);
   
   // Use the new game logic hook
@@ -52,12 +52,12 @@ export default function GameScreen({ navigation }: any) {
   });
 
   useEffect(() => {
-    if (gameState.selectedEpisode) {
+    if (selectedEpisode) {
       generateQuestions();
       startGame();
       gameLogic.startGame();
     }
-  }, [gameState.selectedEpisode]);
+  }, [selectedEpisode]);
 
   useEffect(() => {
     if (questions.length > 0) {
@@ -66,9 +66,9 @@ export default function GameScreen({ navigation }: any) {
   }, [questions]);
 
   const generateQuestions = () => {
-    if (!gameState.selectedEpisode) return;
+    if (!selectedEpisode) return;
 
-    const generatedQuestions: Question[] = gameState.selectedEpisode.vocabularyWords.map((word, index) => {
+    const generatedQuestions: Question[] = selectedEpisode.vocabularyWords.map((word, index) => {
       // Generate fake options for multiple choice
       const fakeOptions = [
         'option1',
@@ -104,7 +104,7 @@ export default function GameScreen({ navigation }: any) {
 
   const styles = createStyles(theme);
 
-  if (!gameState.selectedEpisode || questions.length === 0) {
+  if (!selectedEpisode || questions.length === 0) {
     return (
       <SafeAreaView style={styles.container}>
         <Text style={styles.loadingText}>Loading...</Text>
@@ -118,7 +118,7 @@ export default function GameScreen({ navigation }: any) {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.episodeTitle}>{gameState.selectedEpisode.title}</Text>
+        <Text style={styles.episodeTitle}>{selectedEpisode.title}</Text>
         <ProgressBar
           progress={progress}
           label={`${gameLogic.currentQuestionIndex + 1} / ${questions.length}`}

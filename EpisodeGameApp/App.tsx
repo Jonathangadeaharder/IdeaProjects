@@ -18,14 +18,14 @@ function AppContent(): React.JSX.Element {
   
   return (
     <NavigationContainer>
-      <StatusBar barStyle="dark-content" backgroundColor={theme.colors.background.primary} />
+      <StatusBar barStyle="dark-content" backgroundColor={theme.theme.colors.background} />
       <Stack.Navigator
         initialRouteName="EpisodeSelection"
         screenOptions={{
           headerStyle: {
-            backgroundColor: theme.colors.background.primary,
+            backgroundColor: theme.theme.colors.background,
           },
-          headerTintColor: theme.colors.text.primary,
+          headerTintColor: theme.theme.colors.onBackground,
           headerTitleStyle: {
             fontWeight: 'bold',
           },
@@ -37,9 +37,9 @@ function AppContent(): React.JSX.Element {
             options={{
               title: 'Episode Game',
               headerStyle: {
-                backgroundColor: theme.colors.primary.main,
+                backgroundColor: theme.theme.colors.primary,
               },
-              headerTintColor: theme.colors.background.primary,
+              headerTintColor: theme.theme.colors.onPrimary,
             }}
           />
           <Stack.Screen
@@ -64,9 +64,9 @@ function AppContent(): React.JSX.Element {
             options={{
               title: 'Episode Video',
               headerStyle: {
-                backgroundColor: theme.colors.surface.dark,
+                backgroundColor: theme.theme.colors.surface,
               },
-              headerTintColor: theme.colors.background.primary,
+              headerTintColor: theme.theme.colors.onSurface,
             }}
           />
           <Stack.Screen
@@ -76,9 +76,9 @@ function AppContent(): React.JSX.Element {
               title: 'Game Results',
               headerLeft: () => null, // Disable back button on results
               headerStyle: {
-                backgroundColor: theme.colors.primary.main,
+                backgroundColor: theme.theme.colors.primary,
               },
-              headerTintColor: theme.colors.background.primary,
+              headerTintColor: theme.theme.colors.onPrimary,
             }}
           />
         </Stack.Navigator>

@@ -5,7 +5,11 @@
  * React Context API and Zustand implementations.
  */
 
+import React from 'react';
 import { performance } from 'perf_hooks';
+
+// Declare __DEV__ for React Native
+declare const __DEV__: boolean;
 
 interface PerformanceMetrics {
   renderCount: number;
@@ -238,11 +242,12 @@ export const runPerformanceBenchmark = async (testDuration: number = 5000) => {
  * Memory usage tracking (React Native specific)
  */
 export const trackMemoryUsage = () => {
-  if (typeof global !== 'undefined' && global.performance && global.performance.memory) {
+  if (typeof global !== 'undefined' && global.performance && 'memory' in global.performance) {
+    const memory = (global.performance as any).memory;
     return {
-      usedJSHeapSize: global.performance.memory.usedJSHeapSize,
-      totalJSHeapSize: global.performance.memory.totalJSHeapSize,
-      jsHeapSizeLimit: global.performance.memory.jsHeapSizeLimit,
+      usedJSHeapSize: memory.usedJSHeapSize,
+      totalJSHeapSize: memory.totalJSHeapSize,
+      jsHeapSizeLimit: memory.jsHeapSizeLimit,
     };
   }
   return null;

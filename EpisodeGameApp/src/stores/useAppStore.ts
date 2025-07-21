@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
+import { useShallow } from 'zustand/react/shallow';
 import { Episode } from '../models/Episode';
 
 // Types from existing contexts
@@ -85,7 +86,7 @@ const initialVocabularyLearningState: VocabularyLearningState = {
 };
 
 // Create the Zustand store
-export const useAppStore = create<AppStore>()(devtools((set, get) => ({
+export const useAppStore = create<AppStore>()(devtools((set, _get) => ({
   // Initial state
   gameSession: initialGameSessionState,
   episodeProcessing: initialEpisodeProcessingState,
@@ -93,7 +94,7 @@ export const useAppStore = create<AppStore>()(devtools((set, get) => ({
   
   // Game Session Actions
   selectEpisode: (episode: Episode) => {
-    set((state) => ({
+    set((_state) => ({
       gameSession: {
         ...initialGameSessionState,
         selectedEpisode: episode,
@@ -268,3 +269,81 @@ export const useAllStates = () => useAppStore((state) => ({
   episodeProcessing: state.episodeProcessing,
   vocabularyLearning: state.vocabularyLearning,
 }));
+
+// Phase 4: Optimized selectors using useShallow for better performance
+
+// Selective subscriptions - only subscribe to specific fields
+export const useSelectedEpisode = () => useAppStore((state) => state.gameSession.selectedEpisode);
+export const useGameProgress = () => useAppStore(
+  useShallow((state) => ({
+    currentScore: state.gameSession.currentScore,
+    correctAnswers: state.gameSession.correctAnswers,
+    totalQuestions: state.gameSession.totalQuestions,
+    gameStarted: state.gameSession.gameStarted,
+    gameCompleted: state.gameSession.gameCompleted,
+  }))
+);
+
+export const useProcessingStatus = () => useAppStore(
+  useShallow((state) => ({
+    isProcessing: state.episodeProcessing.isProcessing,
+    processingStage: state.episodeProcessing.processingStage,
+  }))
+);
+
+export const useVocabularyProgress = () => useAppStore(
+  useShallow((state) => ({
+    knownWords: state.vocabularyLearning.knownWords,
+    unknownWords: state.vocabularyLearning.unknownWords,
+    skippedWords: state.vocabularyLearning.skippedWords,
+  }))
+);
+
+// Action-only subscriptions - components that only need actions
+export const useGameActions = () => useAppStore(
+  useShallow((state) => ({
+    selectEpisode: state.selectEpisode,
+    startGame: state.startGame,
+    answerQuestion: state.answerQuestion,
+    completeGame: state.completeGame,
+    resetGame: state.resetGame,
+    updateEpisodeStatus: state.updateEpisodeStatus,
+  }))
+);
+
+export const useProcessingActions = () => useAppStore(
+  useShallow((state) => ({
+    startProcessing: state.startProcessing,
+    updateProcessingProgress: state.updateProcessingProgress,
+    completeProcessing: state.completeProcessing,
+  }))
+);
+
+export const useVocabularyActions = () => useAppStore(
+  useShallow((state) => ({
+    addKnownWord: state.addKnownWord,
+    addUnknownWord: state.addUnknownWord,
+    addSkippedWord: state.addSkippedWord,
+    setVocabularyAnalysis: state.setVocabularyAnalysis,
+  }))
+);
+
+// Combined optimized selectors for components using multiple state slices
+export const useGameAndProcessingOptimized = () => useAppStore(
+  useShallow((state) => ({
+    selectedEpisode: state.gameSession.selectedEpisode,
+    gameStarted: state.gameSession.gameStarted,
+    gameCompleted: state.gameSession.gameCompleted,
+    isProcessing: state.episodeProcessing.isProcessing,
+    processingStage: state.episodeProcessing.processingStage,
+  }))
+);
+
+export const useGameStatsOptimized = () => useAppStore(
+  useShallow((state) => ({
+    currentScore: state.gameSession.currentScore,
+    correctAnswers: state.gameSession.correctAnswers,
+    totalQuestions: state.gameSession.totalQuestions,
+    userAnswers: state.gameSession.userAnswers,
+  }))
+);

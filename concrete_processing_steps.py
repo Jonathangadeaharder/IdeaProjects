@@ -33,7 +33,7 @@ from shared_utils.subtitle_utils import (
     dict_to_srt,
     load_word_list,
 )
-from config import get_config, get_global_unknowns_file
+from A1Decider.config import get_config, get_global_unknowns_file
 
 class PreviewTranscriptionStep(BaseTranscriptionStep):
     """Step to create 10-minute preview subtitles for long videos."""

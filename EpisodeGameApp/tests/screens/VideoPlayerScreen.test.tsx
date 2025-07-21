@@ -1,12 +1,12 @@
 import React from 'react';
-import { render, fireEvent, waitFor } from '@testing-library/react-native';
-import VideoPlayerScreen from '../VideoPlayerScreen.web';
-import { useAppStore } from '../../store/useAppStore';
-import { SubtitleService } from '../../services/SubtitleService';
-import { defaultEpisodes } from '../../models/Episode';
+import { render, fireEvent, waitFor } from '../setup/test-utils';
+import VideoPlayerScreen from '../../src/screens/VideoPlayerScreen.web';
+import { useAppStore } from '../../src/stores/useAppStore';
+import { SubtitleService } from '../../src/services/SubtitleService';
+import { defaultEpisodes } from '../../src/models/Episode';
 
 // Mock services
-jest.mock('../../services/SubtitleService');
+jest.mock('../../src/services/SubtitleService');
 const mockSubtitleService = SubtitleService as jest.Mocked<typeof SubtitleService>;
 
 // Mock navigation
@@ -40,13 +40,21 @@ Object.defineProperty(HTMLMediaElement.prototype, 'load', {
 
 const renderWithProvider = () => {
   // Initialize Zustand store with test data
-  const { selectEpisode } = useAppStore.getState();
-  selectEpisode({
-    ...defaultEpisodes[0],
+  const testEpisode = {
+    id: 'test-episode',
+    title: 'Test Episode',
+    description: 'A test episode',
+    videoUrl: 'test-video.mp4',
     subtitleUrl: '/path/to/subtitle.srt',
     hasFilteredSubtitles: true,
     hasTranslatedSubtitles: true,
-  });
+    vocabularyWords: [
+      { word: 'hello', definition: 'greeting' },
+      { word: 'world', definition: 'earth' },
+    ],
+  };
+  const { selectEpisode } = useAppStore.getState();
+  selectEpisode(testEpisode);
   
   return render(<VideoPlayerScreen />);
 };
@@ -61,10 +69,17 @@ describe('VideoPlayerScreen', () => {
     mockUseRoute.mockReturnValue({
       params: {
         episode: {
-          ...defaultEpisodes[0],
+          id: 'test-episode',
+          title: 'Test Episode',
+          description: 'A test episode',
+          videoUrl: 'test-video.mp4',
           subtitleUrl: '/path/to/subtitle.srt',
           hasFilteredSubtitles: true,
           hasTranslatedSubtitles: true,
+          vocabularyWords: [
+            { word: 'hello', definition: 'greeting' },
+            { word: 'world', definition: 'earth' },
+          ],
         },
       },
     });
@@ -90,8 +105,8 @@ describe('VideoPlayerScreen', () => {
     const { getByText, getByTestId } = renderWithProvider();
 
     expect(getByText('Video Player')).toBeTruthy();
-    expect(getByText(defaultEpisodes[0].title)).toBeTruthy();
-    expect(getByText(defaultEpisodes[0].description)).toBeTruthy();
+    expect(getByText('Test Episode')).toBeTruthy();
+    expect(getByText('A test episode')).toBeTruthy();
     expect(getByTestId('video-element')).toBeTruthy();
   });
 
@@ -171,7 +186,7 @@ describe('VideoPlayerScreen', () => {
     const { getByTestId } = renderWithProvider();
 
     const videoElement = getByTestId('video-element');
-    expect(videoElement.props.src).toBe(defaultEpisodes[0].videoUrl);
+    expect(videoElement.props.src).toBe('test-video.mp4');
   });
 
   it('should show processing status for partially processed episode', () => {

@@ -8,13 +8,13 @@ import {
   Dimensions,
   ScrollView,
 } from 'react-native';
-import { useGameSession } from '../context/GameSessionContext';
+import { useSelectedEpisode } from '../stores/useAppStore';
 import SubtitleService from '../services/SubtitleService';
 
 const { width, height } = Dimensions.get('window');
 
 export default function VideoPlayerScreen({ navigation }: any) {
-  const { state } = useGameSession();
+  const selectedEpisode = useSelectedEpisode();
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -42,10 +42,10 @@ export default function VideoPlayerScreen({ navigation }: any) {
   useEffect(() => {
     // Load subtitle status when component mounts
     const loadSubtitleStatus = async () => {
-      if (state.selectedEpisode) {
+      if (selectedEpisode) {
         try {
           setIsLoadingSubtitles(true);
-          const status = await SubtitleService.checkSubtitleStatus(state.selectedEpisode);
+          const status = await SubtitleService.checkSubtitleStatus(selectedEpisode);
           setSubtitleStatus(status);
         } catch (error) {
           console.error('Error loading subtitle status:', error);
@@ -56,7 +56,7 @@ export default function VideoPlayerScreen({ navigation }: any) {
     };
 
     loadSubtitleStatus();
-  }, [state.selectedEpisode]);
+  }, [selectedEpisode]);
 
   const handlePlayPause = () => {
     const video = videoRef.current;
@@ -88,7 +88,7 @@ export default function VideoPlayerScreen({ navigation }: any) {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  if (!state.selectedEpisode) {
+  if (!selectedEpisode) {
     return (
       <SafeAreaView style={styles.container}>
         <Text style={styles.errorText}>No episode selected</Text>
@@ -104,7 +104,7 @@ export default function VideoPlayerScreen({ navigation }: any) {
         <TouchableOpacity onPress={handleBackToGame} style={styles.backButton}>
           <Text style={styles.backButtonText}>← Back to Game</Text>
         </TouchableOpacity>
-        <Text style={styles.episodeTitle}>{state.selectedEpisode.title}</Text>
+        <Text style={styles.episodeTitle}>{selectedEpisode.title}</Text>
       </View>
 
       <View style={styles.videoContainer}>
@@ -129,7 +129,7 @@ export default function VideoPlayerScreen({ navigation }: any) {
             onPlay={() => setIsPlaying(true)}
             onPause={() => setIsPlaying(false)}
           >
-            <source src={state.selectedEpisode.videoUrl} type="video/mp4" />
+            <source src={selectedEpisode.videoUrl} type="video/mp4" />
             Your browser does not support the video tag.
           </video>
         </div>
