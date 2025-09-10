@@ -21,6 +21,7 @@ share/python-wheels/
 .installed.cfg
 *.egg
 PIPFILE.lock
+.pytest_cache/
 
 # Virtual environments
 venv/
@@ -35,6 +36,8 @@ venv.bak/
 *.swp
 *.swo
 *~
+*.iml
+*.code-workspace
 
 # OS
 .DS_Store
@@ -163,6 +166,13 @@ public
 # Temporary folders
 tmp/
 temp/
+cache/
+logs/
+output/
+**/cache/
+**/temp/
+**/logs/
+**/output/
 
 # Editor directories and files
 .vscode/*
@@ -202,6 +212,23 @@ concatenated_code.txt
 # Repomix outputs
 *repomix*
 repomix-output.txt
+repomix.config.json
+
+# Backup and temporary files
+*.backup
+*.bak
+*.old
+*.new
+*.original
+*.tmp
+backup_*/
+**/backup_*/
+
+# Windows system files  
+*.lnk
+
+# CUDA installation files
+*.deb
 
 # Benchmarks
 .benchmarks/
@@ -229,6 +256,11 @@ ENV/
 env.bak/
 venv.bak/
 serverenv/
+api_venv/
+venv_new/
+**/api_venv/
+**/venv_new/
+**/venv/
 
 # Spyder project settings
 .spyderproject
@@ -259,3 +291,13 @@ cython_debug/
 
 # Excluded projects (moved out of main repo)
 IdeaProjects_Excluded/
+
+# Server state files
+server_state.json
+nul
+
+# Test HTML files
+test_*.html
+
+# Repomix output
+repomix-output.xml
