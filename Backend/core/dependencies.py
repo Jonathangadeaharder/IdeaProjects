@@ -200,7 +200,7 @@ def init_services():
                     logger.info("Creating admin user...")
                     # Register admin user with admin/admin credentials
                     try:
-                        admin_user = auth_service.register_user("admin", "admin", email="admin@langplug.local")
+                        auth_service.register_user("admin", "admin", email="admin@langplug.local")
                         # Update user to be admin
                         conn.execute(
                             "UPDATE users SET is_admin = 1 WHERE username = ?",

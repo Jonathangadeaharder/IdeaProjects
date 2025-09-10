@@ -24,7 +24,7 @@ def main():
         
         # Step 2: Initialize logging
         print("📝 Setting up logging...")
-        logger = setup_logging()
+        setup_logging()
         print("✅ Logging configured")
         
         # Step 3: Test database and services initialization

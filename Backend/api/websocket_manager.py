@@ -5,6 +5,7 @@ WebSocket connection manager for real-time updates
 import logging
 from typing import Dict, Set, Optional
 from fastapi import WebSocket
+from websockets.exceptions import ConnectionClosed
 from datetime import datetime
 import asyncio
 
@@ -189,7 +190,8 @@ class ConnectionManager:
                                     "type": "heartbeat",
                                     "timestamp": current_time.isoformat()
                                 })
-                            except:
+                            except (ConnectionClosed, RuntimeError, Exception) as e:
+                                logger.warning(f"Failed to send heartbeat to websocket: {e}")
                                 disconnected.append(websocket)
                     
                     # Clean up disconnected connections

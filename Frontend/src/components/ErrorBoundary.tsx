@@ -1,7 +1,5 @@
-import React from 'react';
-import { ErrorBoundary as ReactErrorBoundary } from 'react-error-boundary';
+import React, { Component, ErrorInfo, ReactNode } from 'react';
 import styled from 'styled-components';
-import { useNavigate } from 'react-router-dom';
 
 const ErrorContainer = styled.div`
   display: flex;
@@ -28,186 +26,77 @@ const ErrorMessage = styled.p`
   opacity: 0.9;
 `;
 
-const ErrorDetails = styled.details`
-  background: rgba(0, 0, 0, 0.2);
-  border-radius: 8px;
-  padding: 1rem;
-  margin-bottom: 2rem;
-  max-width: 800px;
-  width: 100%;
-  text-align: left;
-`;
-
-const ErrorSummary = styled.summary`
-  cursor: pointer;
-  font-weight: bold;
-  margin-bottom: 0.5rem;
-  
-  &:hover {
-    opacity: 0.8;
-  }
-`;
-
-const ErrorStack = styled.pre`
-  overflow-x: auto;
-  font-family: 'Courier New', monospace;
-  font-size: 0.875rem;
-  line-height: 1.5;
-  margin-top: 1rem;
-  white-space: pre-wrap;
-  word-wrap: break-word;
-`;
-
-const ButtonGroup = styled.div`
-  display: flex;
-  gap: 1rem;
-  flex-wrap: wrap;
-  justify-content: center;
-`;
-
-const Button = styled.button`
-  background: white;
-  color: #764ba2;
-  border: none;
-  padding: 0.75rem 2rem;
+const ErrorButton = styled.button`
+  background: rgba(255, 255, 255, 0.2);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  padding: 1rem 2rem;
   border-radius: 50px;
-  font-size: 1rem;
-  font-weight: bold;
+  font-size: 1.1rem;
+  font-weight: 600;
   cursor: pointer;
+  backdrop-filter: blur(10px);
   transition: all 0.3s ease;
-  
+
   &:hover {
+    background: rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.5);
     transform: translateY(-2px);
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
   }
-  
+
   &:active {
     transform: translateY(0);
   }
 `;
 
-interface ErrorFallbackProps {
-  error: Error;
-  resetErrorBoundary: () => void;
+interface State {
+  hasError: boolean;
+  error?: Error;
 }
 
-function ErrorFallback({ error, resetErrorBoundary }: ErrorFallbackProps) {
-  const navigate = useNavigate();
-  
-  const handleGoHome = () => {
-    resetErrorBoundary();
-    navigate('/');
-  };
-  
-  const handleReload = () => {
-    window.location.reload();
-  };
-  
-  // Log error to console and potentially to a service
-  React.useEffect(() => {
-    console.error('Error caught by error boundary:', error);
-    
-    // TODO: Send error to logging service
-    // logErrorToService(error);
-  }, [error]);
-  
-  return (
-    <ErrorContainer role="alert">
-      <ErrorTitle>Oops! Something went wrong</ErrorTitle>
-      <ErrorMessage>
-        We're sorry, but something unexpected happened. The error has been logged 
-        and we'll look into it.
-      </ErrorMessage>
-      
-      {process.env.NODE_ENV === 'development' && (
-        <ErrorDetails>
-          <ErrorSummary>Error Details (Development Only)</ErrorSummary>
-          <div>
-            <strong>{error.name}:</strong> {error.message}
-          </div>
-          {error.stack && (
-            <ErrorStack>{error.stack}</ErrorStack>
-          )}
-        </ErrorDetails>
-      )}
-      
-      <ButtonGroup>
-        <Button onClick={resetErrorBoundary}>Try Again</Button>
-        <Button onClick={handleGoHome}>Go Home</Button>
-        <Button onClick={handleReload}>Reload Page</Button>
-      </ButtonGroup>
-    </ErrorContainer>
-  );
-}
-
-interface ErrorBoundaryProps {
-  children: React.ReactNode;
-  fallback?: React.ComponentType<ErrorFallbackProps>;
-  onError?: (error: Error, errorInfo: { componentStack: string }) => void;
-  onReset?: () => void;
-}
-
-export function ErrorBoundary({ 
-  children, 
-  fallback = ErrorFallback,
-  onError,
-  onReset
-}: ErrorBoundaryProps) {
-  return (
-    <ReactErrorBoundary
-      FallbackComponent={fallback}
-      onError={onError}
-      onReset={onReset}
-    >
-      {children}
-    </ReactErrorBoundary>
-  );
-}
-
-// Specialized error boundary for specific sections
-export function SectionErrorBoundary({ 
-  children,
-  sectionName = 'This section'
-}: { 
-  children: React.ReactNode;
+interface Props {
+  children: ReactNode;
   sectionName?: string;
-}) {
-  return (
-    <ReactErrorBoundary
-      FallbackComponent={({ error, resetErrorBoundary }) => (
-        <div style={{ 
-          padding: '2rem', 
-          background: '#f8f9fa', 
-          borderRadius: '8px',
-          margin: '1rem 0',
-          border: '1px solid #dee2e6'
-        }}>
-          <h3 style={{ color: '#dc3545', marginBottom: '1rem' }}>
-            {sectionName} couldn't load
-          </h3>
-          <p style={{ color: '#6c757d', marginBottom: '1rem' }}>
-            {error.message}
-          </p>
-          <button
-            onClick={resetErrorBoundary}
-            style={{
-              background: '#007bff',
-              color: 'white',
-              border: 'none',
-              padding: '0.5rem 1rem',
-              borderRadius: '4px',
-              cursor: 'pointer'
-            }}
-          >
-            Retry
-          </button>
-        </div>
-      )}
-    >
-      {children}
-    </ReactErrorBoundary>
-  );
 }
+
+class ErrorBoundary extends Component<Props, State> {
+  constructor(props: Props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error: Error): State {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error('ErrorBoundary caught an error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <ErrorContainer>
+          <ErrorTitle>😵</ErrorTitle>
+          <ErrorTitle>Oops!</ErrorTitle>
+          <ErrorMessage>
+            {this.props.sectionName || 'Something'} encountered an unexpected error. 
+            Don't worry, it happens to the best of us!
+          </ErrorMessage>
+          <ErrorButton
+            onClick={() => window.location.reload()}
+          >
+            🔄 Refresh Page
+          </ErrorButton>
+        </ErrorContainer>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
+export { ErrorBoundary };
 
 // Hook for imperatively throwing errors to the nearest error boundary
 export function useErrorHandler() {

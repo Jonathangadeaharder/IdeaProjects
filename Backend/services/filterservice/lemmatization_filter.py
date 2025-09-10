@@ -1,16 +1,16 @@
-import logging
-
-logger = logging.getLogger(__name__)
-
+"""
 Lemmatization Filter
 Converts words to their lemmatized forms using spaCy
 This filter should run before the user knowledge filter since the database contains lemmas
 """
 
+import logging
 import spacy
 from typing import List
-from .interface import FilteredSubtitle, FilteredWord
+from .interface import FilteredSubtitle
 from .filter_chain import BaseSubtitleFilter
+
+logger = logging.getLogger(__name__)
 
 
 class LemmatizationFilter(BaseSubtitleFilter):

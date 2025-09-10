@@ -6,13 +6,11 @@ This script adds a flag to track which users need to update their passwords.
 
 import sqlite3
 import sys
-import os
 from pathlib import Path
 
 # Add Backend to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from core.database.database_manager import DatabaseManager
 from datetime import datetime
 
 def migrate_password_system():

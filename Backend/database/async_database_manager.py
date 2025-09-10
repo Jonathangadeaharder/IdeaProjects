@@ -5,14 +5,12 @@ Provides proper connection pooling and async operations for better performance
 """
 
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, AsyncEngine, async_sessionmaker
-from sqlalchemy import text, pool
-from sqlalchemy.pool import NullPool, QueuePool
-from contextlib import asynccontextmanager
-from typing import Any, Dict, List, Optional, Tuple
+from sqlalchemy import text
+from sqlalchemy.pool import QueuePool
+from contextlib import asynccontextmanager, contextmanager
+from typing import Any, Dict, List
 import logging
 from pathlib import Path
-import aiosqlite
-from datetime import datetime
 
 class AsyncDatabaseManager:
     """Async database manager with proper connection pooling using SQLAlchemy"""
@@ -272,11 +270,9 @@ class DatabaseManagerAdapter:
     @contextmanager
     def get_connection(self):
         """Compatibility method - returns self as connection-like object"""
-        from contextlib import contextmanager
         yield self
     
     @contextmanager
     def transaction(self):
         """Compatibility method for transaction context"""
-        from contextlib import contextmanager
         yield self

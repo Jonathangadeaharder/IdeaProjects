@@ -310,3 +310,11 @@ debug_*.py
 **/test_*.py
 **/*.backup
 test_video.mp4
+
+# Cache directories
+**/__pycache__/
+**/.pytest_cache/
+**/.ruff_cache/
+.mypy_cache/
+.dmypy.json
+dmypy.json

@@ -1,18 +1,17 @@
-import logging
-
-logger = logging.getLogger(__name__)
-
 """
 NVIDIA Parakeet Transcription Service Implementation
 High-performance ASR using NVIDIA NeMo
 """
 
+import logging
 import os
 import tempfile
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 
 from .interface import ITranscriptionService, TranscriptionResult, TranscriptionSegment
+
+logger = logging.getLogger(__name__)
 
 
 class ParakeetTranscriptionService(ITranscriptionService):
@@ -278,7 +277,8 @@ class ParakeetTranscriptionService(ITranscriptionService):
             from moviepy import AudioFileClip
             with AudioFileClip(audio_path) as audio:
                 return audio.duration
-        except:
+        except (ImportError, OSError, Exception) as e:
+            logger.warning(f"Could not get audio duration from {audio_path}: {e}")
             return 0.0
     
     def _extract_segments(self, transcription) -> List[TranscriptionSegment]:

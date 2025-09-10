@@ -1,12 +1,9 @@
-import logging
-
-logger = logging.getLogger(__name__)
-
 """
 OpenAI Whisper Transcription Service Implementation
 State-of-the-art speech recognition
 """
 
+import logging
 import os
 import tempfile
 from pathlib import Path
@@ -14,6 +11,8 @@ from typing import List, Dict, Any, Optional
 import whisper
 
 from .interface import ITranscriptionService, TranscriptionResult, TranscriptionSegment
+
+logger = logging.getLogger(__name__)
 
 
 class WhisperTranscriptionService(ITranscriptionService):

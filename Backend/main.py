@@ -4,10 +4,6 @@ LangPlug - German Language Learning Platform
 Entry point for the FastAPI server
 """
 
-# Ensure we're using the correct virtual environment
-from venv_utils import ensure_venv, print_venv_status
-ensure_venv()
-
 import uvicorn
 from core.app import create_app
 from core.config import settings
@@ -16,9 +12,6 @@ from core.config import settings
 app = create_app()
 
 if __name__ == "__main__":
-    # Print virtual environment status
-    print_venv_status()
-    
     # Run the server
     uvicorn.run(
         "main:app",

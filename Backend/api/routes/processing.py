@@ -415,7 +415,8 @@ async def run_chunk_processing(
         )
 
         video_file = Path(video_path)
-        chunk_duration = end_time - start_time
+        # Calculate chunk duration for processing
+        # chunk_duration = end_time - start_time  # Will be used for actual processing
 
         # Step 1: Extract audio chunk (20% progress)
         task_progress[task_id].progress = 20.0
@@ -445,7 +446,8 @@ async def run_chunk_processing(
         task_progress[task_id].current_step = "Analyzing vocabulary..."
         task_progress[task_id].message = "Identifying difficult words"
 
-        filter_chain = get_filter_chain()
+        # Get filter chain for vocabulary processing (currently mocked)
+        # filter_chain = get_filter_chain()  # Will be used for actual filtering
         # Simulate filtering process - in real implementation you'd filter the chunk subtitles
         await asyncio.sleep(2)
 
