@@ -1,0 +1,122 @@
+import React from 'react'
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { Toaster } from 'react-hot-toast'
+import { GlobalStyle } from '@/styles/GlobalStyles'
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
+import { LoginForm } from '@/components/auth/LoginForm'
+import { RegisterForm } from '@/components/auth/RegisterForm'
+import { VideoSelection } from '@/components/VideoSelection'
+import { EpisodeSelection } from '@/components/EpisodeSelection'
+import { LearningPlayer } from '@/components/LearningPlayer'
+import { PipelineProgress } from '@/components/PipelineProgress'
+import { ChunkedLearningPage } from '@/components/ChunkedLearningPage'
+import { VocabularyLibrary } from '@/components/VocabularyLibrary'
+import { useAuthStore } from '@/store/useAuthStore'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
+
+const App: React.FC = () => {
+  const { isAuthenticated } = useAuthStore()
+
+  return (
+    <ErrorBoundary>
+      <GlobalStyle />
+      <Router>
+        <Routes>
+          {/* Public routes */}
+          <Route 
+            path="/login" 
+            element={
+              isAuthenticated ? <Navigate to="/" replace /> : <LoginForm />
+            } 
+          />
+          <Route 
+            path="/register" 
+            element={
+              isAuthenticated ? <Navigate to="/" replace /> : <RegisterForm />
+            } 
+          />
+          
+          {/* Protected routes */}
+          <Route 
+            path="/" 
+            element={
+              <ProtectedRoute>
+                <VideoSelection />
+              </ProtectedRoute>
+            } 
+          />
+          
+          <Route 
+            path="/episodes/:series" 
+            element={
+              <ProtectedRoute>
+                <EpisodeSelection />
+              </ProtectedRoute>
+            } 
+          />
+          
+          <Route 
+            path="/learn/:series/:episode" 
+            element={
+              <ProtectedRoute>
+                <ChunkedLearningPage />
+              </ProtectedRoute>
+            } 
+          />
+          
+          <Route 
+            path="/pipeline/:series/:episode" 
+            element={
+              <ProtectedRoute>
+                <PipelineProgress />
+              </ProtectedRoute>
+            } 
+          />
+          
+          <Route 
+            path="/vocabulary" 
+            element={
+              <ProtectedRoute>
+                <VocabularyLibrary />
+              </ProtectedRoute>
+            } 
+          />
+          
+          {/* Fallback route */}
+          <Route 
+            path="*" 
+            element={
+              <Navigate to={isAuthenticated ? "/" : "/login"} replace />
+            } 
+          />
+        </Routes>
+      </Router>
+      
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          duration: 4000,
+          style: {
+            background: '#363636',
+            color: '#fff',
+            fontFamily: 'Helvetica Neue, Arial, sans-serif'
+          },
+          success: {
+            iconTheme: {
+              primary: '#46d369',
+              secondary: '#fff'
+            }
+          },
+          error: {
+            iconTheme: {
+              primary: '#ef4444',
+              secondary: '#fff'
+            }
+          }
+        }}
+      />
+    </ErrorBoundary>
+  )
+}
+
+export default App

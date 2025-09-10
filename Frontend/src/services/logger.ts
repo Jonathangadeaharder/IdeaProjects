@@ -1,0 +1,261 @@
+/**
+ * Frontend logging service for debugging and monitoring
+ * Logs to console and can send logs to backend for file storage
+ */
+
+export enum LogLevel {
+  DEBUG = 0,
+  INFO = 1,
+  WARN = 2,
+  ERROR = 3,
+}
+
+interface LogEntry {
+  timestamp: string
+  level: string
+  category: string
+  message: string
+  data?: any
+  error?: string
+  stack?: string
+  url?: string
+  userAgent?: string
+  userId?: string
+}
+
+class Logger {
+  private logLevel: LogLevel = LogLevel.DEBUG
+  private logs: LogEntry[] = []
+  private maxLogs: number = 1000
+  private apiEnabled: boolean = true
+
+  constructor() {
+    // Set log level based on environment
+    const envLogLevel = import.meta.env.VITE_LOG_LEVEL || 'DEBUG'
+    this.logLevel = LogLevel[envLogLevel as keyof typeof LogLevel] || LogLevel.DEBUG
+    
+    // Disable API logging for now due to backend timeout issues
+    // TODO: Re-enable when backend logging endpoint is fixed
+    this.apiEnabled = false
+
+    // Set up global error handler
+    this.setupGlobalErrorHandler()
+    
+    // Set up unhandled promise rejection handler
+    this.setupUnhandledRejectionHandler()
+    
+    // Log frontend startup
+    this.info('Frontend Logger', 'Logger initialized', {
+      logLevel: LogLevel[this.logLevel],
+      apiEnabled: this.apiEnabled,
+      maxLogs: this.maxLogs
+    })
+  }
+
+  private setupGlobalErrorHandler() {
+    window.addEventListener('error', (event) => {
+      this.error('Global Error', 'Uncaught error', {
+        message: event.message,
+        filename: event.filename,
+        lineno: event.lineno,
+        colno: event.colno,
+        error: event.error?.toString(),
+        stack: event.error?.stack
+      })
+    })
+  }
+
+  private setupUnhandledRejectionHandler() {
+    window.addEventListener('unhandledrejection', (event) => {
+      this.error('Unhandled Promise', 'Promise rejection', {
+        reason: event.reason?.toString(),
+        stack: event.reason?.stack
+      })
+    })
+  }
+
+  private createLogEntry(level: LogLevel, category: string, message: string, data?: any, error?: Error): LogEntry {
+    const entry: LogEntry = {
+      timestamp: new Date().toISOString(),
+      level: LogLevel[level],
+      category,
+      message,
+      url: window.location.href,
+      userAgent: navigator.userAgent
+    }
+
+    if (data !== undefined) {
+      entry.data = data
+    }
+
+    if (error) {
+      entry.error = error.toString()
+      entry.stack = error.stack
+    }
+
+    // Add user ID if available
+    const authStore = localStorage.getItem('auth-store')
+    if (authStore) {
+      try {
+        const parsed = JSON.parse(authStore)
+        if (parsed.state?.user?.id) {
+          entry.userId = parsed.state.user.id.toString()
+        }
+      } catch (e) {
+        // Ignore parsing errors
+      }
+    }
+
+    return entry
+  }
+
+  private shouldLog(level: LogLevel): boolean {
+    return level >= this.logLevel
+  }
+
+  private addLogEntry(entry: LogEntry) {
+    // Add to memory buffer
+    this.logs.push(entry)
+    
+    // Keep only recent logs
+    if (this.logs.length > this.maxLogs) {
+      this.logs = this.logs.slice(-this.maxLogs)
+    }
+
+    // Send to backend if enabled
+    if (this.apiEnabled) {
+      this.sendLogToBackend(entry).catch(() => {
+        // Silently fail if backend logging fails
+      })
+    }
+  }
+
+  private async sendLogToBackend(entry: LogEntry) {
+    try {
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
+      
+      // Only send INFO and above to backend to avoid spam
+      if (LogLevel[entry.level as keyof typeof LogLevel] < LogLevel.INFO) {
+        return
+      }
+
+      // Use fetch with timeout and proper error handling
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 5000) // 5 second timeout
+
+      await fetch(`${API_BASE_URL}/debug/frontend-logs`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(entry),
+        signal: controller.signal
+      })
+      
+      clearTimeout(timeoutId)
+    } catch (error) {
+      // Silently fail backend logging to avoid disrupting user experience
+      // Only log to console in development
+      if (import.meta.env.DEV) {
+        console.warn('Frontend log backend sync failed:', error)
+      }
+    }
+  }
+
+  debug(category: string, message: string, data?: any) {
+    if (!this.shouldLog(LogLevel.DEBUG)) return
+    
+    const entry = this.createLogEntry(LogLevel.DEBUG, category, message, data)
+    if (import.meta.env.DEV) {
+      console.debug(`[${category}] ${message}`, data || '')
+    }
+    this.addLogEntry(entry)
+  }
+
+  info(category: string, message: string, data?: any) {
+    if (!this.shouldLog(LogLevel.INFO)) return
+    
+    const entry = this.createLogEntry(LogLevel.INFO, category, message, data)
+    if (import.meta.env.DEV) {
+      console.info(`[${category}] ${message}`, data || '')
+    }
+    this.addLogEntry(entry)
+  }
+
+  warn(category: string, message: string, data?: any) {
+    if (!this.shouldLog(LogLevel.WARN)) return
+    
+    const entry = this.createLogEntry(LogLevel.WARN, category, message, data)
+    console.warn(`[${category}] ${message}`, data || '')
+    this.addLogEntry(entry)
+  }
+
+  error(category: string, message: string, data?: any, error?: Error) {
+    if (!this.shouldLog(LogLevel.ERROR)) return
+    
+    const entry = this.createLogEntry(LogLevel.ERROR, category, message, data, error)
+    console.error(`[${category}] ${message}`, data || '', error || '')
+    this.addLogEntry(entry)
+  }
+
+  // API-specific logging methods
+  apiRequest(method: string, url: string, data?: any) {
+    this.debug('API', `Request: ${method} ${url}`, { method, url, data })
+  }
+
+  apiResponse(method: string, url: string, status: number, data?: any, duration?: number) {
+    const level = status >= 400 ? LogLevel.ERROR : LogLevel.DEBUG
+    const entry = this.createLogEntry(level, 'API', `Response: ${status} ${method} ${url}`, {
+      method,
+      url,
+      status,
+      data,
+      duration
+    })
+    
+    if (import.meta.env.DEV) {
+      const logFn = status >= 400 ? console.error : console.debug
+      logFn(`[API] ${status} ${method} ${url}${duration ? ` (${duration}ms)` : ''}`, { data })
+    }
+    this.addLogEntry(entry)
+  }
+
+  // User interaction logging
+  userAction(action: string, component: string, data?: any) {
+    this.info('User Action', `${action} in ${component}`, data)
+  }
+
+  // Navigation logging
+  navigation(from: string, to: string, data?: any) {
+    this.info('Navigation', `${from} → ${to}`, data)
+  }
+
+  // Performance logging
+  performance(metric: string, value: number, unit: string = 'ms') {
+    this.debug('Performance', `${metric}: ${value}${unit}`, { metric, value, unit })
+  }
+
+  // Get recent logs for debugging
+  getRecentLogs(count: number = 50): LogEntry[] {
+    return this.logs.slice(-count)
+  }
+
+  // Clear logs
+  clearLogs() {
+    this.logs = []
+    this.info('Logger', 'Logs cleared')
+  }
+
+  // Export logs as JSON
+  exportLogs(): string {
+    return JSON.stringify(this.logs, null, 2)
+  }
+}
+
+// Create singleton instance
+export const logger = new Logger()
+
+// Add to window for debugging
+if (typeof window !== 'undefined') {
+  (window as any).logger = logger
+}
