@@ -1,80 +1,132 @@
-# A1Decider - German Language Learning Subtitle Processor
+# LangPlug Backend
 
-A comprehensive subtitle processing system for German language learning, featuring AI-powered transcription, translation, and vocabulary analysis.
-
-## Features
-
-- 🎯 **Multiple Transcription Services**: Whisper, Canary, Parakeet
-- 🌐 **Translation Support**: Marian, HuggingFace Pipeline
-- 🏃 **High Performance**: Caching, batch processing, parallel execution
-- 🔌 **Plugin System**: Easy to add new services
-- 📊 **Vocabulary Analysis**: A1-level filtering and analysis
-- 🖥️ **REST API**: FastAPI server with WebSocket support
-- 🎮 **React Frontend**: EpisodeGameApp integration
-
-## Quick Start
-
-### Installation
-
-```bash
-# Install dependencies
-pip install -r requirements.txt
-
-# Start the API server
-python unified_api_server.py
-```
-
-### CLI Usage
-
-```bash
-# Transcribe a video
-python processing/unified_cli.py transcribe video.mp4
-
-# Translate subtitles
-python processing/unified_cli.py translate subtitle.srt --source de --target en
-
-# Full processing pipeline
-python processing/unified_cli.py process video.mp4 --target es
-```
-
-### API Usage
-
-```python
-from processing.services import ServiceFacade
-
-facade = ServiceFacade()
-result = facade.transcribe('audio.wav', service='whisper')
-```
+The backend for LangPlug, a German language learning platform that combines video content with intelligent subtitle filtering and vocabulary tracking.
 
 ## Project Structure
 
 ```
-A1Decider/
-├── processing/           # Core processing modules
-│   ├── services/        # Service implementations
-│   └── unified_cli.py   # CLI interface
-├── config/              # Configuration files
-├── data/               # Data files
-├── tests/              # Test suites
-├── docs/               # Documentation
-└── unified_api_server.py  # FastAPI server
+Backend/
+├── api/                 # API route definitions
+│   └── routes/          # Individual route modules
+├── core/                # Core application components
+├── data/                # Data files and databases
+├── database/            # Database management and migrations
+├── logs/                # Application logs
+├── scripts/             # Utility scripts
+├── services/            # Business logic and service layers
+│   ├── authservice/     # Authentication service
+│   ├── dataservice/     # Data management services
+│   ├── filterservice/   # Subtitle filtering services
+│   ├── loggingservice/  # Logging services
+│   ├── transcriptionservice/ # Audio transcription services
+│   ├── translationservice/   # Language translation services
+│   └── utils/           # Utility functions
+├── tests/               # Unit and integration tests
+├── videos/              # Video storage (symlink)
+├── main.py             # Application entry point
+├── requirements.txt    # Python dependencies
+└── README.md          # This file
 ```
 
-## Configuration
+## Getting Started
 
-Edit `config/config.py` or use environment variables:
+### Prerequisites
+- Python 3.11+
+- FFmpeg
+- Git
+
+### Installation
+
+1. Clone the repository:
+```bash
+git clone <repository-url>
+cd LangPlug/Backend
+```
+
+2. Create a virtual environment:
+```bash
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+```
+
+3. Install dependencies:
+```bash
+pip install -r requirements.txt
+```
+
+4. Set up environment variables (see Configuration section)
+
+5. Run the development server:
+```bash
+uvicorn main:app --reload
+```
+
+### Configuration
+
+Create a `.env` file in the Backend directory with the following variables:
+
+```
+LANGPLUG_HOST=0.0.0.0
+LANGPLUG_PORT=8000
+LANGPLUG_DEBUG=True
+LANGPLUG_VIDEOS_PATH=../videos
+LANGPLUG_DATA_PATH=./data
+LANGPLUG_LOGS_PATH=./logs
+LANGPLUG_TRANSCRIPTION_SERVICE=whisper
+LANGPLUG_TRANSLATION_SERVICE=nllb
+LANGPLUG_DEFAULT_LANGUAGE=de
+LANGPLUG_SESSION_TIMEOUT_HOURS=24
+LANGPLUG_LOG_LEVEL=INFO
+```
+
+## API Documentation
+
+Once the server is running, visit `http://localhost:8000/docs` for interactive API documentation.
+
+## Development
+
+### Running Tests
 
 ```bash
-export A1DECIDER_WHISPER_MODEL_SIZE=large
-export A1DECIDER_PROFILE=fast
+pytest
 ```
 
-## Documentation
+### Code Quality
 
-- [Architecture Overview](processing/services/ARCHITECTURE.md)
-- [API Documentation](http://localhost:8000/docs)
-- [Integration Guide](../EpisodeGameApp/ARCHITECTURE_INTEGRATION.md)
+```bash
+# Run linter
+ruff check .
+
+# Format code
+ruff format .
+```
+
+## Services
+
+### Transcription Service
+- Uses OpenAI Whisper for speech-to-text conversion
+- Supports multiple model sizes (tiny, base, small, medium, large)
+
+### Translation Service
+- Uses Facebook's NLLB (No Language Left Behind) for translation
+- Supports German to English translation
+
+### Filtering Service
+- Filters subtitles based on user's vocabulary knowledge
+- Identifies "blocking words" that may impede comprehension
+
+## Logging
+
+Logs are written to the `logs/` directory with both file and console output. Log levels can be configured via the `LANGPLUG_LOG_LEVEL` environment variable.
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a pull request
 
 ## License
 
-MIT License - See LICENSE file for details
+[License information to be added]
