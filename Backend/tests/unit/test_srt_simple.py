@@ -2,9 +2,18 @@
 """
 Simple test to verify SRT generation from Whisper transcription
 """
+import pytest
+pytestmark = pytest.mark.slow
 
 import sys
 from pathlib import Path
+import pytest
+
+# Skip entire module if whisper is not installed
+try:
+    import whisper  # noqa: F401
+except Exception:
+    pytest.skip("whisper not installed; skipping heavy SRT test", allow_module_level=True)
 
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent))

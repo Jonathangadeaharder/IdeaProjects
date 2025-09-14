@@ -302,6 +302,50 @@ test_*.html
 # Repomix output
 repomix-output.xml
 
+# Qwen Code CLI
+.qwen/cache/
+.qwen/logs/
+.qwen/temp/
+
+# Additional development tools
+.swc/
+.turbo/
+.rush/
+.pnp.*
+.yarn/
+
+# IDE and editor specific
+*.sublime-*
+.vscode/settings.json
+.vscode/tasks.json
+.vscode/launch.json
+.vscode/extensions.json
+.history/
+
+# OS generated files
+.fuse_hidden*
+.directory
+.Trash-*
+nohup.out
+
+# Package managers
+pnpm-lock.yaml
+bun.lockb
+
+# Build tools
+.parcel-cache/
+.rollup.cache/
+.rts2_cache*/
+.rpt2_cache*/
+
+# Testing
+.jest/
+.vitest/
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+
 # Test and debug files
 test_results_*.json
 test_output/
@@ -318,3 +362,12 @@ test_video.mp4
 .mypy_cache/
 .dmypy.json
 dmypy.json
+
+# Coverage reports
+htmlcov/
+
+# Claude AI tool
+.claude/
+
+# Test temporary files
+testsprite_tests/tmp/

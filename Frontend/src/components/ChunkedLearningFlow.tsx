@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
 import { ProcessingScreen } from './ProcessingScreen'
 import { VocabularyGame } from './VocabularyGame'
 import { ChunkedLearningPlayer } from './ChunkedLearningPlayer'
 import { videoService, handleApiError } from '@/services/api'
+import { logger } from '@/utils/logger'
 import type { VideoInfo, ProcessingStatus, VocabularyWord } from '@/types'
 
 interface ChunkData {
@@ -13,17 +14,20 @@ interface ChunkData {
   endTime: number // in seconds
   vocabulary: VocabularyWord[]
   subtitlePath?: string
+  translationPath?: string
   isProcessed: boolean
 }
 
 interface ChunkedLearningFlowProps {
   videoInfo: VideoInfo
   chunkDurationMinutes?: number // Default 5 minutes
+  onComplete?: () => void // Called when entire episode is completed
 }
 
 export const ChunkedLearningFlow: React.FC<ChunkedLearningFlowProps> = ({ 
   videoInfo, 
-  chunkDurationMinutes = 5 
+  chunkDurationMinutes = 5,
+  onComplete
 }) => {
   const navigate = useNavigate()
   const { series, episode } = useParams<{ series: string; episode: string }>()
@@ -44,11 +48,11 @@ export const ChunkedLearningFlow: React.FC<ChunkedLearningFlowProps> = ({
 
   // Calculate total chunks based on video duration
   useEffect(() => {
-    console.log(`[ChunkedLearningFlow] 🎬 Initializing chunks for video: ${videoInfo.path}`)
+    logger.info('ChunkedLearningFlow', `🎬 Initializing chunks for video: ${videoInfo.path}`)
     const videoDurationMinutes = videoInfo.duration || 25 // Assume 25 minutes if not provided
     const totalChunks = Math.ceil(videoDurationMinutes / chunkDurationMinutes)
     
-    console.log(`[ChunkedLearningFlow] Video duration: ${videoDurationMinutes} min, Chunk size: ${chunkDurationMinutes} min, Total chunks: ${totalChunks}`)
+    logger.info('ChunkedLearningFlow', `Video duration: ${videoDurationMinutes} min, Chunk size: ${chunkDurationMinutes} min, Total chunks: ${totalChunks}`)
     
     const newChunks: ChunkData[] = []
     for (let i = 0; i < totalChunks; i++) {
@@ -79,7 +83,60 @@ export const ChunkedLearningFlow: React.FC<ChunkedLearningFlowProps> = ({
       console.log(`[ChunkedLearningFlow] 🎉 All chunks processed! Episode completed!`)
       // All chunks processed
       toast.success('Episode completed!')
-      navigate(`/series/${series}`)
+      const handleProcessChunk = async () => {
+        if (!videoInfo) return
+        
+        logger.userAction(`Start processing chunk ${currentChunk + 1}`, {
+          chunkRange: `${formatTime(chunks[currentChunk].startTime)} - ${formatTime(chunks[currentChunk].endTime)}`,
+          videoTitle: videoInfo.title
+        })
+        
+        setCurrentPhase('processing')
+        const chunk = chunks[currentChunk]
+        
+        try {
+          logger.chunkProcessing(`Starting chunk ${currentChunk + 1} processing`, {
+            startTime: chunk.startTime,
+            endTime: chunk.endTime,
+            videoPath: videoInfo.path,
+            totalChunks: chunks.length
+          })
+        
+          console.log(`[ChunkedLearningFlow] Setting phase to PROCESSING`)
+          setCurrentPhase('processing')
+          setProcessingStatus({
+            status: 'processing',
+            progress: 0,
+            current_step: 'Processing chunk',
+            message: `Processing segment ${formatTime(chunk.startTime)} - ${formatTime(chunk.endTime)}`
+          })
+
+          try {
+            console.log(`[ChunkedLearningFlow] 📡 Calling backend to process chunk...`)
+            // Call backend to process this specific chunk
+            const response = await videoService.processChunk(videoInfo.path, chunk.startTime, chunk.endTime)
+            setTaskId(response.task_id)
+            
+            logger.chunkProcessing('Backend task started', {
+              taskId: response.task_id,
+              chunkIndex: currentChunk + 1,
+              status: response.status
+            })
+            console.log(`[ChunkedLearningFlow] Task ID received: ${response.task_id}`)
+            
+            // Start polling for progress
+            console.log(`[ChunkedLearningFlow] Starting progress polling...`)
+            pollProgress(response.task_id, chunkIndex)
+          } catch (error) {
+            console.error('[ChunkedLearningFlow] ❌ Failed to start chunk processing:', error)
+            handleApiError(error)
+            toast.error('Failed to process chunk')
+          }
+        } catch (error) {
+          console.error('[ChunkedLearningFlow] ❌ Error processing chunk:', error)
+        }
+      }
+      handleProcessChunk()
       return
     }
 
@@ -103,15 +160,15 @@ export const ChunkedLearningFlow: React.FC<ChunkedLearningFlowProps> = ({
     try {
       console.log(`[ChunkedLearningFlow] 📡 Calling backend to process chunk...`)
       // Call backend to process this specific chunk
-      const response = await videoService.processChunk(
-        videoInfo.path,
-        chunk.startTime,
-        chunk.endTime
-      )
-      
-      console.log(`[ChunkedLearningFlow] Backend response:`, response)
-      console.log(`[ChunkedLearningFlow] Task ID received: ${response.task_id}`)
+      const response = await videoService.processChunk(videoInfo.path, chunk.startTime, chunk.endTime)
       setTaskId(response.task_id)
+      
+      logger.chunkProcessing('Backend task started', {
+        taskId: response.task_id,
+        chunkIndex: currentChunk + 1,
+        status: response.status
+      })
+      console.log(`[ChunkedLearningFlow] Task ID received: ${response.task_id}`)
       
       // Start polling for progress
       console.log(`[ChunkedLearningFlow] Starting progress polling...`)
@@ -131,15 +188,23 @@ export const ChunkedLearningFlow: React.FC<ChunkedLearningFlowProps> = ({
 
     const poll = async () => {
       try {
-        console.log(`[ChunkedLearningFlow] Polling attempt ${attempts + 1}/${maxAttempts} for task: ${taskId}`)
+        logger.debug('ChunkedLearningFlow', `Polling attempt ${attempts + 1}/${maxAttempts}`, { taskId })
         const progress = await videoService.getTaskProgress(taskId)
-        console.log('[ChunkedLearningFlow] Progress received:', JSON.stringify(progress, null, 2))
+        logger.chunkProcessing('Progress update', {
+          status: progress.status,
+          progress: progress.progress,
+          step: progress.current_step,
+          vocabularyCount: progress.vocabulary?.length || 0
+        })
         setProcessingStatus(progress)
 
         if (progress.status === 'completed') {
-          console.log(`[ChunkedLearningFlow] ✅ Processing COMPLETED for chunk ${chunkIndex}!`)
-          console.log(`[ChunkedLearningFlow] Vocabulary items received: ${progress.vocabulary?.length || 0}`)
-          console.log(`[ChunkedLearningFlow] Subtitle path: ${progress.subtitle_path}`)
+          logger.chunkProcessing('✅ PROCESSING COMPLETED!', {
+            chunkIndex: currentChunk + 1,
+            vocabularyCount: progress.vocabulary?.length || 0,
+            subtitlePath: progress.subtitle_path,
+            translationPath: progress.translation_path
+          })
           
           // Update chunk data with results
           const updatedChunks = [...chunks]
@@ -147,12 +212,16 @@ export const ChunkedLearningFlow: React.FC<ChunkedLearningFlowProps> = ({
             ...updatedChunks[chunkIndex],
             vocabulary: progress.vocabulary || [],
             subtitlePath: progress.subtitle_path,
+            translationPath: progress.translation_path,
             isProcessed: true
           }
           setChunks(updatedChunks)
           setGameWords(progress.vocabulary || [])
           
-          console.log(`[ChunkedLearningFlow] 🎮 Transitioning to GAME phase from PROCESSING phase`)
+          logger.userAction('🎮 Entering vocabulary game phase', {
+            wordsToLearn: progress.vocabulary?.length || 0,
+            chunkIndex: currentChunk + 1
+          })
           // Move to game phase
           setCurrentPhase('game')
           return
@@ -189,36 +258,64 @@ export const ChunkedLearningFlow: React.FC<ChunkedLearningFlowProps> = ({
 
   // Handle game completion
   const handleGameComplete = (knownWords: string[], unknownWords: string[]) => {
-    console.log(`[ChunkedLearningFlow] 🎮 Game completed!`)
-    console.log(`[ChunkedLearningFlow] Known words: ${knownWords.length}, Unknown words: ${unknownWords.length}`)
+    logger.userAction('🎮 Vocabulary game completed', {
+      knownWords: knownWords.length,
+      unknownWords: unknownWords.length,
+      totalWords: knownWords.length + unknownWords.length,
+      chunkIndex: currentChunk + 1
+    })
     
-    // Add known words to learned set
-    knownWords.forEach(word => learnedWords.add(word))
-    setLearnedWords(new Set(learnedWords))
+    setLearnedWords(prev => new Set([...prev, ...knownWords]))
+    logger.userAction('📺 Entering video playback phase', {
+      chunkIndex: currentChunk + 1,
+      totalLearnedWords: learnedWords.size + knownWords.length
+    })
+    setCurrentPhase('video')
+  }
+
+  // Handle skipping vocabulary game
+  const handleSkipGame = () => {
+    // Copy subtitle paths from processing status to chunk data
+    if (processingStatus && currentChunk < chunks.length) {
+      const updatedChunks = [...chunks]
+      updatedChunks[currentChunk] = {
+        ...updatedChunks[currentChunk],
+        subtitlePath: processingStatus.subtitle_path,
+        translationPath: processingStatus.translation_path
+      }
+      setChunks(updatedChunks)
+      logger.chunkProcessing('Updated chunk with subtitle paths', {
+        chunkIndex: currentChunk + 1,
+        subtitlePath: processingStatus.subtitle_path,
+        translationPath: processingStatus.translation_path
+      })
+    }
     
-    console.log(`[ChunkedLearningFlow] 📺 Transitioning to VIDEO phase from GAME phase`)
-    // Move to video phase
+    logger.userAction('⏭️ Skipped vocabulary game', {
+      chunkIndex: currentChunk + 1,
+      vocabularyCount: processingStatus?.vocabulary?.length || 0
+    })
     setCurrentPhase('video')
   }
 
   // Handle video completion
   const handleVideoComplete = () => {
-    console.log(`[ChunkedLearningFlow] 📺 Video phase completed for chunk ${currentChunk}`)
-    
-    // Move to next chunk
-    const nextChunk = currentChunk + 1
-    console.log(`[ChunkedLearningFlow] Moving to chunk ${nextChunk}/${chunks.length}`)
-    setCurrentChunk(nextChunk)
-    
-    if (nextChunk < chunks.length) {
-      console.log(`[ChunkedLearningFlow] 🔄 Processing next chunk: ${nextChunk}`)
-      // Process next chunk
-      processChunk(nextChunk)
+    if (currentChunk < chunks.length - 1) {
+      logger.userAction('📹 Chunk video completed, advancing', {
+        completedChunk: currentChunk + 1,
+        nextChunk: currentChunk + 2,
+        totalChunks: chunks.length,
+        progressPercent: Math.round(((currentChunk + 1) / chunks.length) * 100)
+      })
+      setCurrentChunk(prev => prev + 1)
+      setCurrentPhase('processing')
     } else {
-      console.log(`[ChunkedLearningFlow] 🎉 All chunks completed! Episode finished!`)
-      // All chunks completed
-      toast.success('🎉 Episode completed! Great job!')
-      navigate(`/series/${series}`)
+      logger.userAction('🎉 Episode completed!', {
+        totalChunks: chunks.length,
+        totalLearnedWords: learnedWords.size,
+        videoTitle: videoInfo?.title
+      })
+      onComplete?.()
     }
   }
 
@@ -252,6 +349,7 @@ export const ChunkedLearningFlow: React.FC<ChunkedLearningFlowProps> = ({
           <VocabularyGame 
             words={gameWords}
             onComplete={handleGameComplete}
+            onSkip={handleSkipGame}
             episodeTitle={videoInfo.title}
             chunkInfo={{
               current: currentChunk + 1,
@@ -262,12 +360,18 @@ export const ChunkedLearningFlow: React.FC<ChunkedLearningFlowProps> = ({
         )
       
       case 'video':
+        logger.info('ChunkedLearningFlow', 'Rendering video player', {
+          subtitlePath: chunk.subtitlePath,
+          translationPath: chunk.translationPath,
+          chunkIndex: currentChunk
+        })
         return (
           <ChunkedLearningPlayer
             videoPath={videoInfo.path}
             series={videoInfo.series}
             episode={videoInfo.episode}
             subtitlePath={chunk.subtitlePath}
+            translationPath={chunk.translationPath}
             startTime={chunk.startTime}
             endTime={chunk.endTime}
             onComplete={handleVideoComplete}

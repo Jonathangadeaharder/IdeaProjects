@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 """Test authentication endpoint speed"""
 
+import pytest
 import requests
 import time
 import random
 
 BASE_URL = "http://localhost:8000"
+
+pytestmark = pytest.mark.performance
 
 def test_auth_speed():
     """Test authentication endpoints for speed"""

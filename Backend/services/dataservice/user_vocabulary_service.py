@@ -146,18 +146,65 @@ class SQLiteUserVocabularyService:
         return True
     
     def add_known_words(self, user_id: str, words: List[str], language: str = "en") -> bool:
-        """Add multiple words to user's known vocabulary"""
+        """Add multiple words to user's known vocabulary using batch operations"""
         try:
-            success_count = 0
-            for word in words:
-                if self.mark_word_learned(user_id, word, language):
-                    success_count += 1
+            if not words:
+                return True
             
-            self.logger.info(f"Added {success_count}/{len(words)} words for user {user_id}")
+            # Normalize words
+            normalized_words = [word.lower().strip() for word in words if word.strip()]
+            if not normalized_words:
+                return True
+            
+            # Step 1: Ensure all words exist in vocabulary table (batch operation)
+            word_ids = self._ensure_words_exist_batch(normalized_words, language)
+            if not word_ids:
+                self.logger.error("Failed to ensure words exist in vocabulary")
+                return False
+            
+            # Step 2: Get existing learning progress for these words
+            existing_progress = self._get_existing_progress_batch(user_id, list(word_ids.values()))
+            
+            # Step 3: Prepare batch operations
+            now = datetime.now().isoformat()
+            updates_params = []
+            inserts_params = []
+            
+            for word, word_id in word_ids.items():
+                if word_id in existing_progress:
+                    # Update existing record
+                    updates_params.append((now, user_id, word_id))
+                else:
+                    # Insert new learning record
+                    inserts_params.append((user_id, word_id, now, 1, 1))
+            
+            # Step 4: Execute batch operations
+            success_count = 0
+            
+            if updates_params:
+                update_query = """
+                    UPDATE user_learning_progress 
+                    SET confidence_level = confidence_level + 1,
+                        review_count = review_count + 1,
+                        last_reviewed = ?
+                    WHERE user_id = ? AND word_id = ?
+                """
+                updated_count = self.db.execute_many(update_query, updates_params)
+                success_count += updated_count
+            
+            if inserts_params:
+                insert_query = """
+                    INSERT INTO user_learning_progress (user_id, word_id, learned_at, confidence_level, review_count)
+                    VALUES (?, ?, ?, ?, ?)
+                """
+                inserted_count = self.db.execute_many(insert_query, inserts_params)
+                success_count += inserted_count
+            
+            self.logger.info(f"Batch added {success_count}/{len(normalized_words)} words for user {user_id}")
             return success_count > 0
             
         except Exception as e:
-            self.logger.error(f"Error adding known words: {e}")
+            self.logger.error(f"Error adding known words in batch: {e}")
             return False
     
     def get_learning_statistics(self, user_id: str, language: str = "en") -> Dict[str, Any]:
@@ -247,6 +294,75 @@ class SQLiteUserVocabularyService:
         except Exception as e:
             self.logger.error(f"Error ensuring word exists: {e}")
             return None
+    
+    def _ensure_words_exist_batch(self, words: List[str], language: str = "en") -> Dict[str, int]:
+        """Ensure multiple words exist in vocabulary table and return word->id mapping"""
+        try:
+            if not words:
+                return {}
+            
+            # Step 1: Check which words already exist
+            placeholders = ','.join(['?' for _ in words])
+            existing_query = f"""
+                SELECT word, id FROM vocabulary 
+                WHERE word IN ({placeholders}) AND language = ?
+            """
+            params = words + [language]
+            existing_results = self.db.execute_query(existing_query, tuple(params))
+            
+            # Build mapping of existing words
+            word_ids = {row['word']: row['id'] for row in existing_results}
+            existing_words = set(word_ids.keys())
+            
+            # Step 2: Insert missing words in batch
+            missing_words = [word for word in words if word not in existing_words]
+            if missing_words:
+                now = datetime.now().isoformat()
+                insert_query = """
+                    INSERT INTO vocabulary (word, language, created_at, updated_at)
+                    VALUES (?, ?, ?, ?)
+                """
+                insert_params = [(word, language, now, now) for word in missing_words]
+                self.db.execute_many(insert_query, insert_params)
+                
+                # Get IDs of newly inserted words
+                new_placeholders = ','.join(['?' for _ in missing_words])
+                new_query = f"""
+                    SELECT word, id FROM vocabulary 
+                    WHERE word IN ({new_placeholders}) AND language = ?
+                """
+                new_params = missing_words + [language]
+                new_results = self.db.execute_query(new_query, tuple(new_params))
+                
+                # Add new word IDs to mapping
+                for row in new_results:
+                    word_ids[row['word']] = row['id']
+            
+            return word_ids
+            
+        except Exception as e:
+            self.logger.error(f"Error ensuring words exist in batch: {e}")
+            return {}
+    
+    def _get_existing_progress_batch(self, user_id: str, word_ids: List[int]) -> Set[int]:
+        """Get existing learning progress for multiple word IDs"""
+        try:
+            if not word_ids:
+                return set()
+            
+            placeholders = ','.join(['?' for _ in word_ids])
+            query = f"""
+                SELECT word_id FROM user_learning_progress 
+                WHERE user_id = ? AND word_id IN ({placeholders})
+            """
+            params = [user_id] + word_ids
+            results = self.db.execute_query(query, tuple(params))
+            
+            return {row['word_id'] for row in results}
+            
+        except Exception as e:
+            self.logger.error(f"Error getting existing progress in batch: {e}")
+            return set()
     
     def get_word_learning_history(self, user_id: str, word: str, language: str = "en") -> List[Dict[str, Any]]:
         """Get learning history for a specific word"""

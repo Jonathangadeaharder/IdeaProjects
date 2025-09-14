@@ -3,59 +3,30 @@ Simple and clean authentication service for LangPlug
 No complex dependencies, no fancy logging, just works
 """
 
+import bcrypt
 import secrets
-import hashlib
-from typing import Optional, Dict, Any
+import time
 from datetime import datetime, timedelta
-from dataclasses import dataclass
+from typing import Dict, Optional, Any
 from passlib.context import CryptContext
 
-@dataclass
-class AuthUser:
-    """Represents an authenticated user"""
-    id: int
-    username: str
-    is_admin: bool = False
-    is_active: bool = True
-    created_at: str = ""
-    last_login: Optional[str] = None
-    native_language: str = "en"
-    target_language: str = "de"
-
-@dataclass
-class AuthSession:
-    """Represents a user session"""
-    session_token: str
-    user: AuthUser
-    expires_at: datetime
-    created_at: datetime
-
-class AuthenticationError(Exception):
-    """Base exception for authentication errors"""
-    pass
-
-class InvalidCredentialsError(AuthenticationError):
-    """Raised when login credentials are invalid"""
-    pass
-
-class UserAlreadyExistsError(AuthenticationError):
-    """Raised when trying to register a user that already exists"""
-    pass
-
-class SessionExpiredError(AuthenticationError):
-    """Raised when a session token has expired"""
-    pass
+from database.database_manager import DatabaseManager
+from services.repository.user_repository import UserRepository, User
+from .models import (
+    AuthUser, AuthSession, AuthenticationError, 
+    InvalidCredentialsError, UserAlreadyExistsError, SessionExpiredError
+)
 
 class AuthService:
     """
     Simple authentication service with secure bcrypt password hashing
+    Uses database-based session storage for scalability and persistence
     """
     
-    def __init__(self, db_manager, session_lifetime_hours: int = 24):
-        self.db = db_manager
-        self.session_lifetime_hours = session_lifetime_hours
-        # In-memory session storage for fast access
-        self.sessions: Dict[str, Dict[str, Any]] = {}
+    def __init__(self, db_manager: DatabaseManager):
+        self.db_manager = db_manager
+        self.user_repository = UserRepository(db_manager)
+        self._sessions: Dict[str, AuthSession] = {}
         # Initialize password context with bcrypt
         self.pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
     
@@ -111,7 +82,8 @@ class AuthService:
             raise InvalidCredentialsError("Invalid username or password")
         
         # Check if user needs password migration (from SHA256 to bcrypt)
-        needs_migration = user_data.get('needs_password_migration', False)
+        # For legacy users with salt, assume they need migration
+        needs_migration = bool(user_data.get('salt'))
         
         if needs_migration and user_data.get('salt'):
             # Old SHA256 verification for legacy users
@@ -124,7 +96,7 @@ class AuthService:
             now = datetime.now().isoformat()
             self.db.execute_update("""
                 UPDATE users 
-                SET password_hash = ?, salt = '', needs_password_migration = 0, updated_at = ?
+                SET password_hash = ?, salt = '', updated_at = ?
                 WHERE id = ?
             """, (new_hash, now, user_data['id']))
             
@@ -133,16 +105,19 @@ class AuthService:
             if not self._verify_password(password, user_data['password_hash']):
                 raise InvalidCredentialsError("Invalid username or password")
         
-        # Create session
+        # Create session token
         session_token = secrets.token_urlsafe(32)
         expires_at = datetime.now() + timedelta(hours=self.session_lifetime_hours)
         
-        # Store session in memory
-        self.sessions[session_token] = {
-            'user_data': user_data,
-            'expires_at': expires_at,
-            'created_at': datetime.now()
-        }
+        # Store session in database
+        try:
+            now = datetime.now().isoformat()
+            self.db.execute_insert("""
+                INSERT INTO user_sessions (user_id, session_token, expires_at, created_at, last_used, is_active)
+                VALUES (?, ?, ?, ?, ?, ?)
+            """, (user_data['id'], session_token, expires_at.isoformat(), now, now, True))
+        except Exception as e:
+            raise AuthenticationError(f"Failed to create session: {e}")
         
         # Update last login
         now = datetime.now().isoformat()
@@ -171,33 +146,63 @@ class AuthService:
     
     def validate_session(self, session_token: str) -> AuthUser:
         """Validate session token and return user"""
-        session_data = self.sessions.get(session_token)
-        if not session_data:
-            raise SessionExpiredError("Invalid or expired session")
-        
-        # Check expiry
-        if datetime.now() > session_data['expires_at']:
-            del self.sessions[session_token]
-            raise SessionExpiredError("Session has expired")
-        
-        user_data = session_data['user_data']
-        return AuthUser(
-            id=user_data['id'],
-            username=user_data['username'],
-            is_admin=bool(user_data.get('is_admin', False)),
-            is_active=bool(user_data.get('is_active', True)),
-            created_at=user_data.get('created_at', ''),
-            last_login=user_data.get('last_login'),
-            native_language=user_data.get('native_language', 'en'),
-            target_language=user_data.get('target_language', 'de')
-        )
+        # Get session from database
+        try:
+            results = self.db.execute_query("""
+                SELECT us.session_token, us.expires_at, us.last_used, us.is_active,
+                       u.id, u.username, u.is_admin, u.is_active as user_is_active,
+                       u.created_at, u.last_login, u.native_language, u.target_language
+                FROM user_sessions us
+                JOIN users u ON us.user_id = u.id
+                WHERE us.session_token = ? AND us.is_active = 1
+            """, (session_token,))
+            
+            if not results:
+                raise SessionExpiredError("Invalid or expired session")
+            
+            session_data = results[0]
+            
+            # Check if session is expired
+            expires_at = datetime.fromisoformat(session_data['expires_at'])
+            if datetime.now() > expires_at:
+                # Mark session as inactive
+                self.db.execute_update("""
+                    UPDATE user_sessions SET is_active = 0 WHERE session_token = ?
+                """, (session_token,))
+                raise SessionExpiredError("Session has expired")
+            
+            # Update last used timestamp
+            now = datetime.now().isoformat()
+            self.db.execute_update("""
+                UPDATE user_sessions SET last_used = ? WHERE session_token = ?
+            """, (now, session_token))
+            
+            return AuthUser(
+                id=session_data['id'],
+                username=session_data['username'],
+                is_admin=bool(session_data.get('is_admin', False)),
+                is_active=bool(session_data.get('user_is_active', True)),
+                created_at=session_data.get('created_at', ''),
+                last_login=session_data.get('last_login'),
+                native_language=session_data.get('native_language', 'en'),
+                target_language=session_data.get('target_language', 'de')
+            )
+        except SessionExpiredError:
+            raise
+        except Exception as e:
+            raise AuthenticationError(f"Failed to validate session: {e}")
     
     def logout(self, session_token: str) -> bool:
-        """Logout user by removing session"""
-        if session_token in self.sessions:
-            del self.sessions[session_token]
-            return True
-        return False
+        """Logout user by deactivating session"""
+        try:
+            # Mark session as inactive in database
+            rows_affected = self.db.execute_update("""
+                UPDATE user_sessions SET is_active = 0 WHERE session_token = ?
+            """, (session_token,))
+            
+            return rows_affected > 0
+        except Exception as e:
+            raise AuthenticationError(f"Failed to logout: {e}")
     
     def update_language_preferences(self, user_id: int, native_language: str, target_language: str) -> bool:
         """Update user's language preferences"""
@@ -209,12 +214,6 @@ class AuthService:
                 WHERE id = ?
             """, (native_language, target_language, now, user_id))
             
-            # Update any cached sessions
-            for token, session_data in self.sessions.items():
-                if session_data['user_data']['id'] == user_id:
-                    session_data['user_data']['native_language'] = native_language
-                    session_data['user_data']['target_language'] = target_language
-            
             return True
         except Exception as e:
             raise AuthenticationError(f"Failed to update language preferences: {e}")
@@ -223,8 +222,7 @@ class AuthService:
         """Get user from database by username"""
         results = self.db.execute_query("""
             SELECT id, username, password_hash, salt, is_admin, is_active, created_at, updated_at, last_login,
-                   native_language, target_language, 
-                   COALESCE(needs_password_migration, 0) as needs_password_migration
+                   native_language, target_language
             FROM users WHERE username = ?
         """, (username,))
         

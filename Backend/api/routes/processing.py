@@ -10,6 +10,7 @@ from datetime import datetime, timedelta
 from typing import Dict, Any
 
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
+from fastapi.security import HTTPAuthorizationCredentials
 
 from ..models.processing import (
     TranscribeRequest,
@@ -23,14 +24,16 @@ from core.dependencies import (
     get_current_user,
     get_transcription_service,
     get_filter_chain,
+    get_user_filter_chain,
     get_task_progress_registry,
+    security,
 )
 from core.config import settings
-from services.authservice.auth_service import AuthUser
+from services.authservice.models import AuthUser
 from services.translationservice.factory import get_translation_service
 
 logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/process", tags=["processing"])
+router = APIRouter(tags=["processing"])
 
 
 def _format_srt_timestamp(seconds: float) -> str:
@@ -247,11 +250,9 @@ async def run_translation(
         task_progress[task_id].current_step = "Initializing translation service..."
         task_progress[task_id].message = "Loading translation model"
 
-        # Get translation service
         translation_service = get_translation_service()
         if not translation_service.is_initialized:
             translation_service.initialize()
-        await asyncio.sleep(3)  # Simulate model loading
 
         # Step 3: Translate subtitles (80% progress)
         task_progress[task_id].progress = 80.0
@@ -260,10 +261,29 @@ async def run_translation(
             f"Translating from {source_lang} to {target_lang}"
         )
 
-        # In a real implementation, you would read the SRT file, extract the text,
-        # translate it, and save the translated subtitles to a new file.
-        # For this example, we'll just simulate the translation process.
-        await asyncio.sleep(5)  # Simulate translation process
+        # Read and parse the SRT file
+        from services.utils.srt_parser import SRTParser, SRTSegment
+        
+        srt_parser = SRTParser()
+        segments = srt_parser.parse_file(str(srt_file))
+        
+        # Extract text for translation
+        texts_to_translate = [segment.text for segment in segments]
+        
+        # Translate in batches for efficiency
+        translated_results = translation_service.translate_batch(
+            texts_to_translate,
+            source_lang,
+            target_lang
+        )
+        
+        # Update segments with translated text
+        for segment, translation_result in zip(segments, translated_results):
+            segment.text = translation_result.translated_text
+        
+        # Save translated subtitles to new file
+        output_path = str(srt_file).replace('.srt', f'_{target_lang}.srt')
+        srt_parser.save_segments(segments, output_path)
 
         # Complete (100% progress)
         task_progress[task_id].status = "completed"
@@ -392,130 +412,23 @@ async def run_chunk_processing(
     task_id: str,
     task_progress: Dict[str, Any],
     user_id: int,
+    session_token: str = None,
 ) -> None:
-    """Process a specific chunk of video for vocabulary learning"""
+    """Process a specific chunk of video for vocabulary learning - REFACTORED"""
+    from services.processing.chunk_processor import ChunkProcessingService
+    
     try:
-        logger.info(
-            f"🎬 [CHUNK PROCESSING START] Task: {task_id}"
+        # All business logic is now handled by the dedicated service
+        chunk_processor = ChunkProcessingService()
+        await chunk_processor.process_chunk(
+            video_path=video_path,
+            start_time=start_time,
+            end_time=end_time,
+            user_id=user_id,
+            task_id=task_id,
+            task_progress=task_progress,
+            session_token=session_token
         )
-        logger.info(
-            f"📹 [CHUNK PROCESSING] Video: {video_path}"
-        )
-        logger.info(
-            f"⏱️ [CHUNK PROCESSING] Time range: {start_time}-{end_time}s"
-        )
-
-        # Initialize progress tracking
-        task_progress[task_id] = ProcessingStatus(
-            status="processing",
-            progress=0.0,
-            current_step="Initializing chunk processing...",
-            message=f"Processing segment {int(start_time//60)}:{int(start_time%60):02d} - {int(end_time//60)}:{int(end_time%60):02d}",
-            started_at=int(time.time()),
-        )
-
-        video_file = Path(video_path)
-        # Calculate chunk duration for processing
-        # chunk_duration = end_time - start_time  # Will be used for actual processing
-
-        # Step 1: Extract audio chunk (20% progress)
-        task_progress[task_id].progress = 20.0
-        task_progress[task_id].current_step = "Extracting audio chunk..."
-        task_progress[task_id].message = "Isolating audio for this segment"
-        await asyncio.sleep(2)  # Simulate audio extraction
-
-        # Step 2: Transcribe chunk (50% progress)
-        task_progress[task_id].progress = 50.0
-        task_progress[task_id].current_step = "Transcribing audio..."
-        task_progress[task_id].message = "Converting speech to text"
-
-        transcription_service = get_transcription_service()
-        if not transcription_service:
-            task_progress[task_id].status = "error"
-            task_progress[task_id].current_step = "Service unavailable"
-            task_progress[task_id].message = "Transcription service is not available. Please check server configuration."
-            logger.error("Transcription service not available - check Whisper installation")
-            return
-
-        # In real implementation, you'd extract and transcribe just the chunk
-        # For now, we'll simulate getting chunk subtitles
-        await asyncio.sleep(3)
-
-        # Step 3: Filter for vocabulary (70% progress)
-        task_progress[task_id].progress = 70.0
-        task_progress[task_id].current_step = "Analyzing vocabulary..."
-        task_progress[task_id].message = "Identifying difficult words"
-
-        # Get filter chain for vocabulary processing (currently mocked)
-        # filter_chain = get_filter_chain()  # Will be used for actual filtering
-        # Simulate filtering process - in real implementation you'd filter the chunk subtitles
-        await asyncio.sleep(2)
-
-        # Mock vocabulary data for testing
-        chunk_vocabulary = [
-            VocabularyWord(
-                word="schwierig",
-                definition="difficult",
-                difficulty_level="B1",
-                known=False,
-            ),
-            VocabularyWord(
-                word="verstehen",
-                definition="to understand",
-                difficulty_level="A2",
-                known=False,
-            ),
-            VocabularyWord(
-                word="Gelegenheit",
-                definition="opportunity",
-                difficulty_level="B2",
-                known=False,
-            ),
-        ]
-
-        # Step 4: Generate filtered subtitles (90% progress)
-        task_progress[task_id].progress = 90.0
-        task_progress[task_id].current_step = "Creating filtered subtitles..."
-        task_progress[task_id].message = "Generating subtitles for difficult parts only"
-
-        # Create chunk-specific subtitle file
-        chunk_srt_path = (
-            video_file.parent
-            / f"{video_file.stem}_chunk_{int(start_time)}_{int(end_time)}.srt"
-        )
-
-        # Mock filtered subtitles (only difficult parts)
-        with open(chunk_srt_path, "w", encoding="utf-8") as f:
-            f.write("1\n")
-            f.write(
-                f"00:{int(start_time//60):02d}:{int(start_time%60):02d},000 --> 00:{int((start_time+5)//60):02d}:{int((start_time+5)%60):02d},000\n"
-            )
-            f.write(
-                "Das ist sehr schwierig zu verstehen.|This is very difficult to understand.\n\n"
-            )
-            f.write("2\n")
-            f.write(
-                f"00:{int((start_time+10)//60):02d}:{int((start_time+10)%60):02d},000 --> 00:{int((start_time+15)//60):02d}:{int((start_time+15)%60):02d},000\n"
-            )
-            f.write("Eine großartige Gelegenheit.|A great opportunity.\n\n")
-
-        await asyncio.sleep(1)
-
-        # Complete (100% progress)
-        logger.info(f"✅ [CHUNK PROCESSING] Setting task {task_id} to COMPLETED status")
-        task_progress[task_id].status = "completed"
-        task_progress[task_id].progress = 100.0
-        task_progress[task_id].current_step = "Chunk processing completed"
-        task_progress[task_id].message = "Chunk is ready for learning!"
-
-        # Store results in the progress object
-        task_progress[task_id].vocabulary = chunk_vocabulary
-        task_progress[task_id].subtitle_path = str(chunk_srt_path)
-
-        logger.info(f"🎉 [CHUNK PROCESSING COMPLETE] Task: {task_id}")
-        logger.info(f"📊 [CHUNK PROCESSING] Vocabulary items: {len(chunk_vocabulary)}")
-        logger.info(f"📝 [CHUNK PROCESSING] Subtitle path: {chunk_srt_path}")
-        logger.info("✅ [CHUNK PROCESSING] Task registry updated with COMPLETED status")
 
     except Exception as e:
         logger.error(f"Chunk processing failed for task {task_id}: {e}", exc_info=True)
@@ -541,13 +454,13 @@ async def process_chunk(
             if request.video_path.startswith("/")
             else settings.get_videos_path() / request.video_path
         )
+        # Validate chunk timing first
+        if request.start_time < 0 or request.end_time <= request.start_time:
+            raise HTTPException(status_code=400, detail="Invalid chunk timing")
+
         if not full_path.exists():
             logger.error(f"Video file not found: {full_path}")
             raise HTTPException(status_code=404, detail="Video file not found")
-
-        # Validate chunk timing
-        if request.start_time < 0 or request.end_time <= request.start_time:
-            raise HTTPException(status_code=400, detail="Invalid chunk timing")
 
         # Start chunk processing in background
         task_id = f"chunk_{current_user.id}_{int(request.start_time)}_{int(request.end_time)}_{datetime.now().timestamp()}"
@@ -559,11 +472,14 @@ async def process_chunk(
             task_id,
             task_progress,
             current_user.id,
+            None,  # session_token - will generate fallback token in function
         )
 
         logger.info(f"Started chunk processing task: {task_id}")
         return {"task_id": task_id, "status": "started"}
 
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Failed to start chunk processing: {str(e)}", exc_info=True)
         raise HTTPException(
@@ -654,12 +570,16 @@ async def transcribe_video(
 async def filter_subtitles(
     request: FilterRequest,
     background_tasks: BackgroundTasks,
+    credentials: HTTPAuthorizationCredentials = Depends(security),
     current_user: AuthUser = Depends(get_current_user),
-    filter_chain=Depends(get_filter_chain),
     task_progress: Dict[str, Any] = Depends(get_task_progress_registry),
 ):
     """Filter subtitles based on user's vocabulary knowledge"""
     try:
+        # Create user-specific filter chain with authentication
+        session_token = credentials.credentials
+        user_filter_chain = get_user_filter_chain(current_user, session_token)
+        
         # Start filtering in background
         task_id = f"filter_{current_user.id}_{datetime.now().timestamp()}"
         background_tasks.add_task(
@@ -667,7 +587,7 @@ async def filter_subtitles(
             request.video_path,
             task_id,
             task_progress,
-            filter_chain,
+            user_filter_chain,
             current_user,
         )
 
@@ -740,6 +660,9 @@ async def prepare_episode_for_learning(
         logger.info(f"Started episode preparation task: {task_id}")
         return {"task_id": task_id, "status": "started"}
 
+    except HTTPException:
+        # Preserve intended HTTP errors (e.g., 404 for missing file)
+        raise
     except Exception as e:
         logger.error(f"Failed to start episode preparation: {str(e)}", exc_info=True)
         raise HTTPException(
@@ -799,5 +722,7 @@ async def get_task_progress(
             logger.info(f"[PROGRESS CHECK] Vocabulary items: {len(progress_data.vocabulary) if progress_data.vocabulary else 0}")
         if hasattr(progress_data, 'subtitle_path'):
             logger.info(f"[PROGRESS CHECK] Subtitle path: {progress_data.subtitle_path}")
+        if hasattr(progress_data, 'translation_path'):
+            logger.info(f"[PROGRESS CHECK] Translation path: {getattr(progress_data, 'translation_path', None)}")
     
     return progress_data

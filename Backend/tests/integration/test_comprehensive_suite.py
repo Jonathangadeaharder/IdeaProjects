@@ -1,9 +1,20 @@
 #!/usr/bin/env python3
 """
-Comprehensive automated test suite for LangPlug backend and frontend
-Tests all endpoints, workflows, and integrations without user input
+Comprehensive automated test suite for LangPlug backend and frontend (live HTTP).
+Skipped by default unless RUN_LIVE_HTTP=1 is set.
 """
 
+import os
+import pytest
+
+pytestmark = pytest.mark.integration
+if os.environ.get("RUN_LIVE_HTTP") != "1":
+    pytest.skip(
+        "Skipping live HTTP integration tests; set RUN_LIVE_HTTP=1 to run.",
+        allow_module_level=True,
+    )
+
+import venv_activator  # Auto-activate virtual environment
 import os
 import sys
 import time
@@ -617,3 +628,12 @@ def main():
 
 if __name__ == "__main__":
     main()
+import os
+import pytest
+
+pytestmark = pytest.mark.integration
+if os.environ.get("RUN_LIVE_HTTP") != "1":
+    pytest.skip(
+        "Skipping live HTTP integration tests; set RUN_LIVE_HTTP=1 to run.",
+        allow_module_level=True,
+    )

@@ -11,6 +11,12 @@ from pydantic import Field, field_validator
 class Settings(BaseSettings):
     """Application settings with environment variable support"""
     
+    model_config = {
+        "env_file": ".env",
+        "env_file_encoding": "utf-8",
+        "extra": "ignore"
+    }
+    
     # Server settings
     host: str = Field(default="0.0.0.0", env="LANGPLUG_HOST")
     port: int = Field(default=8000, env="LANGPLUG_PORT")
@@ -19,6 +25,14 @@ class Settings(BaseSettings):
     
     # Database settings
     database_url: Optional[str] = Field(default=None, env="LANGPLUG_DATABASE_URL")
+    db_type: str = Field(default="sqlite", env="LANGPLUG_DB_TYPE")  # sqlite or postgresql
+    postgres_host: str = Field(default="localhost", env="LANGPLUG_POSTGRES_HOST")
+    postgres_port: int = Field(default=5432, env="LANGPLUG_POSTGRES_PORT")
+    postgres_db: str = Field(default="langplug", env="LANGPLUG_POSTGRES_DB")
+    postgres_user: str = Field(default="langplug_user", env="LANGPLUG_POSTGRES_USER")
+    postgres_password: str = Field(default="langplug_password", env="LANGPLUG_POSTGRES_PASSWORD")
+    postgres_pool_size: int = Field(default=10, env="LANGPLUG_POSTGRES_POOL_SIZE")
+    postgres_max_overflow: int = Field(default=20, env="LANGPLUG_POSTGRES_MAX_OVERFLOW")
     
     # CORS settings
     cors_origins: List[str] = Field(
@@ -78,13 +92,24 @@ class Settings(BaseSettings):
                 return [origin.strip() for origin in v.split(',') if origin.strip()]
         return v
         
-    def get_database_path(self) -> Path:
-        """Get the database file path"""
+    def get_database_url(self) -> str:
+        """Get the database connection URL"""
         if self.database_url:
-            # Handle file:// URLs or return as-is for other schemes
-            if self.database_url.startswith("sqlite:///"):
-                return Path(self.database_url.replace("sqlite:///", ""))
-            return Path(self.database_url)
+            return self.database_url
+        
+        if self.db_type == "postgresql":
+            return f"postgresql://{self.postgres_user}:{self.postgres_password}@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
+        else:
+            # Default SQLite database path
+            base_path = Path(self.data_path) if self.data_path else Path(__file__).parent.parent / "data"
+            base_path.mkdir(exist_ok=True)
+            db_path = base_path / "langplug.db"
+            return f"sqlite:///{db_path}"
+    
+    def get_database_path(self) -> Path:
+        """Get the database file path (for SQLite only)"""
+        if self.database_url and self.database_url.startswith("sqlite:///"):
+            return Path(self.database_url.replace("sqlite:///", ""))
         
         # Default database path
         base_path = Path(self.data_path) if self.data_path else Path(__file__).parent.parent / "data"
@@ -102,7 +127,9 @@ class Settings(BaseSettings):
     def get_data_path(self) -> Path:
         """Get the data directory path"""
         if self.data_path:
-            return Path(self.data_path)
+            path = Path(self.data_path)
+            path.mkdir(exist_ok=True)
+            return path
         
         # Default data path
         path = Path(__file__).parent.parent / "data"

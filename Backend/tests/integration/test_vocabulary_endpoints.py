@@ -1,9 +1,18 @@
 """
-Test vocabulary management endpoints
+Test vocabulary management endpoints (live HTTP).
+Skipped by default unless RUN_LIVE_HTTP=1 is set.
 """
 
+import os
 import pytest
 import requests
+
+pytestmark = pytest.mark.integration
+if os.environ.get("RUN_LIVE_HTTP") != "1":
+    pytest.skip(
+        "Skipping live HTTP integration tests; set RUN_LIVE_HTTP=1 to run.",
+        allow_module_level=True,
+    )
 
 BASE_URL = "http://localhost:8000"
 
@@ -318,3 +327,12 @@ class TestVocabularyValidation:
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
+import os
+import pytest
+
+pytestmark = pytest.mark.integration
+if os.environ.get("RUN_LIVE_HTTP") != "1":
+    pytest.skip(
+        "Skipping live HTTP integration tests; set RUN_LIVE_HTTP=1 to run.",
+        allow_module_level=True,
+    )

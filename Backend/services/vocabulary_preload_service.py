@@ -56,27 +56,34 @@ class VocabularyPreloadService:
                     if word:  # Skip empty lines
                         words.append(word)
 
-            # Insert words into database
-            loaded_count = 0
-            for word in words:
+            # Insert words into database using batch operation
+            if words:
+                query = """
+                    INSERT OR IGNORE INTO vocabulary 
+                    (word, difficulty_level, language, word_type, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, datetime('now'), datetime('now'))
+                """
+                
+                # Prepare batch parameters
+                params_list = [
+                    (word.lower(), level, "de", "unknown")
+                    for word in words
+                ]
+                
                 try:
-                    self.db.execute_update(
-                        """
-                        INSERT OR IGNORE INTO vocabulary 
-                        (word, difficulty_level, language, word_type, created_at, updated_at)
-                        VALUES (?, ?, ?, ?, datetime('now'), datetime('now'))
-                    """,
-                        (word.lower(), level, "de", "unknown"),
-                    )
-                    loaded_count += 1
+                    loaded_count = self.db.execute_many(query, params_list)
+                    logger.info(f"Batch inserted {loaded_count} words for level {level}")
                 except Exception as e:
-                    logger.error(f"Failed to insert word '{word}': {e}")
+                    logger.error(f"Failed to batch insert words for level {level}: {e}")
+                    loaded_count = 0
+            else:
+                loaded_count = 0
 
             return loaded_count
 
         except Exception as e:
             logger.error(f"Error loading vocabulary from {file_path}: {e}")
-            return 0
+            raise Exception(f"Failed to load vocabulary from {file_path}: {e}") from e
 
     def get_level_words(self, level: str) -> List[Dict[str, str]]:
         """Get all words for a specific difficulty level"""
@@ -106,7 +113,7 @@ class VocabularyPreloadService:
             return words
         except Exception as e:
             logger.error(f"Error getting {level} words: {e}")
-            return []
+            raise Exception(f"Failed to get {level} words: {e}") from e
 
     def get_user_known_words(self, user_id: int, level: str = None) -> Set[str]:
         """Get words that a user has marked as known"""
@@ -135,7 +142,7 @@ class VocabularyPreloadService:
             return {row["word"] for row in results}
         except Exception as e:
             logger.error(f"Error getting user known words: {e}")
-            return set()
+            raise Exception(f"Failed to get user known words: {e}") from e
 
     def mark_user_word_known(self, user_id: int, word: str, known: bool = True) -> bool:
         """Mark a word as known/unknown for a specific user"""
@@ -199,7 +206,7 @@ class VocabularyPreloadService:
             return success_count
         except Exception as e:
             logger.error(f"Error bulk marking {level} words: {e}")
-            return 0
+            raise Exception(f"Failed to bulk mark {level} words: {e}") from e
 
     def get_vocabulary_stats(self) -> Dict[str, Dict[str, int]]:
         """Get vocabulary statistics by level"""
@@ -232,7 +239,7 @@ class VocabularyPreloadService:
             return stats
         except Exception as e:
             logger.error(f"Error getting vocabulary stats: {e}")
-            return {}
+            raise Exception(f"Failed to get vocabulary stats: {e}") from e
 
 
 # Utility function for easy access

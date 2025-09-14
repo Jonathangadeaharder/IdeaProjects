@@ -1,45 +1,28 @@
-#!/usr/bin/env python3
-"""Test the debug endpoint directly"""
+"""In-process tests for debug endpoints using httpx async client fixture."""
 
-import requests
 from datetime import datetime
+import pytest
 
-# Test data
-log_entry = {
-    "timestamp": datetime.now().isoformat(),
-    "level": "INFO",
-    "category": "Test",
-    "message": "Test log from direct API call",
-    "data": {"test": True},
-    "url": "http://localhost:3000/test",
-    "userAgent": "TestScript/1.0"
-}
 
-try:
-    # Test the endpoint
-    response = requests.post(
-        "http://localhost:8000/debug/frontend-logs",
-        json=log_entry,
-        headers={
-            "Content-Type": "application/json",
-            "Origin": "http://localhost:3000"
-        },
-        timeout=5
-    )
-    
-    print(f"Status Code: {response.status_code}")
-    print(f"Response: {response.json()}")
-    
-    if response.status_code == 200:
-        print("[OK] Debug endpoint is working!")
-    else:
-        print(f"[ERROR] Debug endpoint returned {response.status_code}")
-        
-except requests.exceptions.ConnectionError as e:
-    print("[ERROR] Cannot connect to backend at localhost:8000")
-    print(f"Error: {e}")
-except requests.exceptions.Timeout as e:
-    print("[ERROR] Request timed out")
-    print(f"Error: {e}")
-except Exception as e:
-    print(f"[ERROR] Unexpected error: {e}")
+@pytest.mark.anyio
+async def test_debug_frontend_logs(async_client):
+    log_entry = {
+        "timestamp": datetime.now().isoformat(),
+        "level": "INFO",
+        "category": "Test",
+        "message": "Test log from direct API call",
+        "data": {"test": True},
+        "url": "http://localhost:3000/test",
+        "userAgent": "TestScript/1.0",
+    }
+    r = await async_client.post("/debug/frontend-logs", json=log_entry)
+    assert r.status_code == 200
+    assert r.json().get("success") is True
+
+
+@pytest.mark.anyio
+async def test_debug_health(async_client):
+    r = await async_client.get("/debug/health")
+    assert r.status_code == 200
+    data = r.json()
+    assert data["status"] == "healthy"

@@ -8,7 +8,7 @@ Chain of Command pattern for processing subtitles
 """
 
 from typing import List, Dict, Any
-from .interface import ISubtitleFilter, ISubtitleFilterChain, FilteredSubtitle, FilteringResult, FilteredWord
+from .interface import ISubtitleFilter, ISubtitleFilterChain, FilteredSubtitle, FilteringResult, FilteredWord, WordStatus
 
 
 class SubtitleFilterChain(ISubtitleFilterChain):
@@ -62,35 +62,63 @@ class SubtitleFilterChain(ISubtitleFilterChain):
             Dictionary with filtered results
         """
         try:
-            # For now, return mock filtered data
-            # In a real implementation, this would:
+            # Import SRT parser and vocabulary model
+            from ..utils.srt_parser import SRTParser
+            from api.models.vocabulary import VocabularyWord
+            import re
+            
+            logger.info(f"Processing SRT file: {srt_file_path}")
+            
             # 1. Parse the SRT file
-            # 2. Convert to FilteredSubtitle objects  
+            srt_segments = SRTParser.parse_file(srt_file_path)
+            logger.info(f"Parsed {len(srt_segments)} subtitle segments")
+            
+            # 2. Convert to FilteredSubtitle objects
+            filtered_subtitles = []
+            for segment in srt_segments:
+                # Extract words from the text
+                words = self._extract_words_from_text(segment.text, segment.start_time, segment.end_time)
+                
+                # Create FilteredSubtitle object
+                filtered_subtitle = FilteredSubtitle(
+                    original_text=segment.text,
+                    start_time=segment.start_time,
+                    end_time=segment.end_time,
+                    words=words
+                )
+                filtered_subtitles.append(filtered_subtitle)
+            
+            logger.info(f"Created {len(filtered_subtitles)} FilteredSubtitle objects")
+            
             # 3. Run through the filter chain
-            # 4. Return categorized results
+            filtering_result = self.process(filtered_subtitles)
             
-            # Mock vocabulary words that would be extracted
-            from ...api.models.vocabulary import VocabularyWord
-            blocking_words = [
-                VocabularyWord(word="schwierig", definition="difficult", difficulty_level="B2", known=False),
-                VocabularyWord(word="verstehen", definition="to understand", difficulty_level="A2", known=False),
-                VocabularyWord(word="komplex", definition="complex", difficulty_level="B1", known=False)
-            ]
+            # 4. Convert blocker words to VocabularyWord objects
+            blocking_words = []
+            for word in filtering_result.blocker_words:
+                vocab_word = VocabularyWord(
+                    word=word.text,
+                    definition="",  # Definition would be filled by vocabulary service
+                    difficulty_level="Unknown",  # Would be determined by difficulty analysis
+                    known=False
+                )
+                blocking_words.append(vocab_word)
             
+            # 5. Return categorized results
             return {
                 "blocking_words": blocking_words,
-                "learning_subtitles": [],
-                "empty_subtitles": [],
+                "learning_subtitles": filtering_result.learning_subtitles,
+                "empty_subtitles": filtering_result.empty_subtitles,
                 "statistics": {
-                    "total_words": 150,
-                    "filtered_words": 3,
+                    **filtering_result.statistics,
                     "user_id": user_id,
-                    "file_processed": srt_file_path
+                    "file_processed": srt_file_path,
+                    "segments_parsed": len(srt_segments)
                 }
             }
             
         except Exception as e:
-            logger.error(f"Error processing file {srt_file_path}: {e}")
+            logger.error(f"Error processing file {srt_file_path}: {e}", exc_info=True)
             return {
                 "blocking_words": [],
                 "learning_subtitles": [], 
@@ -144,6 +172,49 @@ class SubtitleFilterChain(ISubtitleFilterChain):
             empty_subtitles=empty_subtitles,
             statistics=statistics
         )
+    
+    def _extract_words_from_text(self, text: str, start_time: float, end_time: float) -> List[FilteredWord]:
+        """Extract words from subtitle text and create FilteredWord objects
+        
+        Args:
+            text: Subtitle text
+            start_time: Start time of subtitle
+            end_time: End time of subtitle
+            
+        Returns:
+            List of FilteredWord objects
+        """
+        import re
+        
+        # Simple word extraction - split by whitespace and punctuation
+        # This could be enhanced with more sophisticated tokenization
+        word_pattern = re.compile(r'\b\w+\b')
+        word_matches = word_pattern.finditer(text.lower())
+        
+        words = []
+        total_words = len(list(word_pattern.finditer(text.lower())))
+        
+        # Estimate timing for each word (simple linear distribution)
+        duration = end_time - start_time
+        word_duration = duration / max(total_words, 1)
+        
+        for i, match in enumerate(word_pattern.finditer(text.lower())):
+            word_text = match.group()
+            word_start = start_time + (i * word_duration)
+            word_end = word_start + word_duration
+            
+            filtered_word = FilteredWord(
+                text=word_text,
+                start_time=word_start,
+                end_time=word_end,
+                status=WordStatus.ACTIVE,  # Start as active, filters will modify
+                filter_reason=None,
+                confidence=None,
+                metadata={}
+            )
+            words.append(filtered_word)
+            
+        return words
 
 
 class BaseSubtitleFilter(ISubtitleFilter):

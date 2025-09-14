@@ -1,8 +1,18 @@
 #!/usr/bin/env python
 """
-Complete workflow test for LangPlug backend
-Tests all major API endpoints and user flows
+Complete workflow test for LangPlug backend (live HTTP).
+Tests major API endpoints and user flows. Skipped by default unless RUN_LIVE_HTTP=1.
 """
+
+import os
+import pytest
+
+pytestmark = pytest.mark.integration
+if os.environ.get("RUN_LIVE_HTTP") != "1":
+    pytest.skip(
+        "Skipping live HTTP integration tests; set RUN_LIVE_HTTP=1 to run.",
+        allow_module_level=True,
+    )
 
 import requests
 import json
@@ -174,6 +184,7 @@ def test_processing(headers: Dict[str, str]) -> bool:
 
 def main() -> None:
     """Run all tests"""
+    import venv_activator  # Auto-activate virtual environment
     print("\n" + "=" * 80)
     print("LANGPLUG BACKEND WORKFLOW TEST")
     print("=" * 80)
@@ -208,3 +219,12 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+import os
+import pytest
+
+pytestmark = pytest.mark.integration
+if os.environ.get("RUN_LIVE_HTTP") != "1":
+    pytest.skip(
+        "Skipping live HTTP integration tests; set RUN_LIVE_HTTP=1 to run.",
+        allow_module_level=True,
+    )

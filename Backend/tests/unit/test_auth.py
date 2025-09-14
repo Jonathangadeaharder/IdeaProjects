@@ -1,8 +1,16 @@
-"""Test authentication endpoints"""
+"""Test authentication endpoints against live server (integration)."""
+import os
+import pytest
 import requests
 from datetime import datetime
 
 BASE_URL = "http://localhost:8000"
+pytestmark = pytest.mark.integration
+if os.environ.get("RUN_LIVE_HTTP") != "1":
+    pytest.skip(
+        "Skipping live HTTP unit/auth test; set RUN_LIVE_HTTP=1 to run.",
+        allow_module_level=True,
+    )
 
 def test_health():
     """Test GET /health endpoint"""

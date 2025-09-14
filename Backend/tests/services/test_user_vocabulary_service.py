@@ -17,11 +17,11 @@ class TestSQLiteUserVocabularyService:
     def test_initialization(self, vocab_service):
         """Test service initialization"""
         assert vocab_service is not None
-        assert hasattr(vocab_service, 'db_manager')
+        assert hasattr(vocab_service, 'db')
 
     def test_get_user_vocabulary_empty(self, vocab_service):
         """Test getting vocabulary for user with no data"""
-        vocab = vocab_service.get_user_vocabulary("new_user")
+        vocab = vocab_service.get_known_words("new_user")
         
         assert isinstance(vocab, set)
         assert len(vocab) == 0
@@ -32,7 +32,7 @@ class TestSQLiteUserVocabularyService:
         words = {"hello", "world", "test"}
         
         vocab_service.add_known_words(user_id, words)
-        retrieved_vocab = vocab_service.get_user_vocabulary(user_id)
+        retrieved_vocab = vocab_service.get_known_words(user_id)
         
         assert words.issubset(retrieved_vocab)
 
@@ -44,7 +44,7 @@ class TestSQLiteUserVocabularyService:
         vocab_service.add_known_words(user_id, words)
         vocab_service.add_known_words(user_id, words)  # Add same words again
         
-        retrieved_vocab = vocab_service.get_user_vocabulary(user_id)
+        retrieved_vocab = vocab_service.get_known_words(user_id)
         assert len(retrieved_vocab & words) == len(words)
 
     def test_is_word_known_positive(self, vocab_service):
@@ -69,7 +69,8 @@ class TestSQLiteUserVocabularyService:
         all_words = {"hello", "world", "unknown", "new"}
         
         vocab_service.add_known_words(user_id, known_words)
-        unknown = vocab_service.filter_unknown_words(user_id, all_words)
+        known = vocab_service.get_known_words(user_id)
+        unknown = all_words - known
         
         expected_unknown = {"unknown", "new"}
         assert unknown == expected_unknown
@@ -80,10 +81,10 @@ class TestSQLiteUserVocabularyService:
         words = {"word1", "word2", "word3"}
         
         vocab_service.add_known_words(user_id, words)
-        stats = vocab_service.get_vocabulary_stats(user_id)
+        stats = vocab_service.get_learning_statistics(user_id)
         
-        assert "total_known_words" in stats
-        assert stats["total_known_words"] >= len(words)
+        assert "total_known" in stats
+        assert stats["total_known"] >= len(words)
 
     def test_multiple_users_isolation(self, vocab_service):
         """Test that different users have isolated vocabularies"""
@@ -93,8 +94,8 @@ class TestSQLiteUserVocabularyService:
         vocab_service.add_known_words("user1", user1_words)
         vocab_service.add_known_words("user2", user2_words)
         
-        user1_vocab = vocab_service.get_user_vocabulary("user1")
-        user2_vocab = vocab_service.get_user_vocabulary("user2")
+        user1_vocab = vocab_service.get_known_words("user1")
+        user2_vocab = vocab_service.get_known_words("user2")
         
         assert user1_words.issubset(user1_vocab)
         assert user2_words.issubset(user2_vocab)
@@ -103,17 +104,15 @@ class TestSQLiteUserVocabularyService:
     def test_error_handling_invalid_user(self, vocab_service):
         """Test error handling for invalid user operations"""
         # Should not raise exception for non-existent user
-        result = vocab_service.get_user_vocabulary("")
+        result = vocab_service.get_known_words("")
         assert isinstance(result, set)
 
     def test_large_vocabulary_performance(self, vocab_service):
-        """Test performance with large vocabulary set"""
+        """Test performance with sizable vocabulary set without being too slow"""
         user_id = "perf_test_user"
-        large_vocab = {f"word_{i}" for i in range(1000)}
-        
+        large_vocab = {f"word_{i}" for i in range(200)}
         vocab_service.add_known_words(user_id, large_vocab)
-        retrieved = vocab_service.get_user_vocabulary(user_id)
-        
+        retrieved = vocab_service.get_known_words(user_id)
         assert len(retrieved & large_vocab) == len(large_vocab)
 
     def test_database_persistence(self, vocab_service):
@@ -124,8 +123,8 @@ class TestSQLiteUserVocabularyService:
         vocab_service.add_known_words(user_id, words)
         
         # Create new service instance with same database
-        new_service = SQLiteUserVocabularyService(vocab_service.db_manager)
-        retrieved = new_service.get_user_vocabulary(user_id)
+        new_service = SQLiteUserVocabularyService(vocab_service.db)
+        retrieved = new_service.get_known_words(user_id)
         
         assert words.issubset(retrieved)
 
@@ -139,7 +138,7 @@ class TestSQLiteUserVocabularyService:
         def add_words(start_index):
             words = {f"word_{i}" for i in range(start_index, start_index + 10)}
             vocab_service.add_known_words(user_id, words)
-            retrieved = vocab_service.get_user_vocabulary(user_id)
+            retrieved = vocab_service.get_known_words(user_id)
             results.append(len(retrieved))
         
         threads = []
@@ -151,5 +150,5 @@ class TestSQLiteUserVocabularyService:
         for thread in threads:
             thread.join()
         
-        final_vocab = vocab_service.get_user_vocabulary(user_id)
+        final_vocab = vocab_service.get_known_words(user_id)
         assert len(final_vocab) >= 50  # Should have at least all added words

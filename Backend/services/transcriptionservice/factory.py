@@ -1,12 +1,12 @@
 """
 Transcription Service Factory
-Creates and manages transcription service instances
+Creates and manages transcription service instances.
+Uses lazy imports to avoid importing heavy ML dependencies at module import time.
 """
 
-from typing import Dict, Type, Optional
+from typing import Dict, Type, Optional, Union
+from importlib import import_module
 from .interface import ITranscriptionService
-from .whisper_implementation import WhisperTranscriptionService
-from .parakeet_implementation import ParakeetTranscriptionService
 
 
 class TranscriptionServiceFactory:
@@ -16,18 +16,19 @@ class TranscriptionServiceFactory:
     """
     
     # Registry of available transcription services
-    _services: Dict[str, Type[ITranscriptionService]] = {
-        "whisper": WhisperTranscriptionService,
-        "whisper-tiny": WhisperTranscriptionService,
-        "whisper-base": WhisperTranscriptionService,
-        "whisper-small": WhisperTranscriptionService,
-        "whisper-medium": WhisperTranscriptionService,
-        "whisper-large": WhisperTranscriptionService,
-        "parakeet": ParakeetTranscriptionService,
-        "parakeet-tdt-1.1b": ParakeetTranscriptionService,
-        "parakeet-ctc-1.1b": ParakeetTranscriptionService,
-        "parakeet-ctc-0.6b": ParakeetTranscriptionService,
-        "parakeet-tdt-0.6b": ParakeetTranscriptionService,
+    _services: Dict[str, Union[str, Type[ITranscriptionService]]] = {
+        # Lazy string paths for heavy services
+        "whisper": "services.transcriptionservice.whisper_implementation.WhisperTranscriptionService",
+        "whisper-tiny": "services.transcriptionservice.whisper_implementation.WhisperTranscriptionService",
+        "whisper-base": "services.transcriptionservice.whisper_implementation.WhisperTranscriptionService",
+        "whisper-small": "services.transcriptionservice.whisper_implementation.WhisperTranscriptionService",
+        "whisper-medium": "services.transcriptionservice.whisper_implementation.WhisperTranscriptionService",
+        "whisper-large": "services.transcriptionservice.whisper_implementation.WhisperTranscriptionService",
+        "parakeet": "services.transcriptionservice.parakeet_implementation.ParakeetTranscriptionService",
+        "parakeet-tdt-1.1b": "services.transcriptionservice.parakeet_implementation.ParakeetTranscriptionService",
+        "parakeet-ctc-1.1b": "services.transcriptionservice.parakeet_implementation.ParakeetTranscriptionService",
+        "parakeet-ctc-0.6b": "services.transcriptionservice.parakeet_implementation.ParakeetTranscriptionService",
+        "parakeet-tdt-0.6b": "services.transcriptionservice.parakeet_implementation.ParakeetTranscriptionService",
     }
     
     # Default configurations for each service
@@ -92,13 +93,16 @@ class TranscriptionServiceFactory:
         """
         service_name = service_name.lower()
         
-        # Determine the service class
-        if service_name.startswith("whisper"):
-            service_class = WhisperTranscriptionService
-        elif service_name.startswith("parakeet"):
-            service_class = ParakeetTranscriptionService
-        elif service_name in cls._services:
-            service_class = cls._services[service_name]
+        # Determine the service class (resolve lazily)
+        if service_name in cls._services:
+            cls_or_path = cls._services[service_name]
+            if isinstance(cls_or_path, str):
+                module_path, class_name = cls_or_path.rsplit(".", 1)
+                module = import_module(module_path)
+                service_class = getattr(module, class_name)
+                cls._services[service_name] = service_class
+            else:
+                service_class = cls_or_path
         else:
             available = ", ".join(cls._services.keys())
             raise ValueError(

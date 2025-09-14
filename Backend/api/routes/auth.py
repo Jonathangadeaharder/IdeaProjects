@@ -11,8 +11,13 @@ from core.dependencies import get_auth_service, get_current_user, security
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["authentication"])
 
+@router.get("/test-prefix")
+async def test_prefix_endpoint():
+    """Test endpoint to verify router prefix configuration"""
+    return {"message": "Auth router is working", "prefix": "should be /auth", "timestamp": "2025-01-14"}
 
-@router.post("/auth/register", response_model=UserResponse)
+
+@router.post("/register", response_model=UserResponse)
 async def register(
     request: RegisterRequest,
     auth_service = Depends(get_auth_service)
@@ -44,7 +49,7 @@ async def register(
             raise HTTPException(status_code=500, detail="Registration failed")
 
 
-@router.post("/auth/login", response_model=AuthResponse)
+@router.post("/login", response_model=AuthResponse)
 async def login(
     request: LoginRequest,
     auth_service = Depends(get_auth_service)
@@ -76,7 +81,7 @@ async def login(
             raise HTTPException(status_code=500, detail="Login failed")
 
 
-@router.post("/auth/logout")
+@router.post("/logout")
 async def logout(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     auth_service = Depends(get_auth_service)
@@ -88,7 +93,7 @@ async def logout(
     return {"success": success}
 
 
-@router.get("/auth/me", response_model=UserResponse)
+@router.get("/me", response_model=UserResponse)
 async def get_current_user_info(current_user = Depends(get_current_user)):
     """Get current user information"""
     return UserResponse(

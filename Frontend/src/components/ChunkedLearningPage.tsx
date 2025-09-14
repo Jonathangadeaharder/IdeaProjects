@@ -24,5 +24,5 @@ export const ChunkedLearningPage: React.FC = () => {
     )
   }
 
-  return <ChunkedLearningFlow videoInfo={videoInfo} chunkDurationMinutes={5} />
+  return <ChunkedLearningFlow videoInfo={videoInfo} chunkDurationMinutes={10} />
 }

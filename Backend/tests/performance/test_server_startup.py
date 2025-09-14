@@ -3,6 +3,7 @@
 Test server startup time and implement proper monitoring
 """
 
+import pytest
 import os
 import sys
 import time
@@ -10,6 +11,8 @@ import subprocess
 import requests
 from pathlib import Path
 from datetime import datetime
+
+pytestmark = pytest.mark.performance
 
 def measure_startup_time():
     """Measure actual server startup time"""

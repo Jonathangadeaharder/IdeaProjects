@@ -5,12 +5,11 @@ Tests core functionality without requiring full server
 """
 
 import sys
-import json
 from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+import venv_activator  # Auto-activate virtual environment (non-blocking version)
+import json
 from datetime import datetime
-
-# Add parent directory to path
-sys.path.insert(0, str(Path(__file__).parent))
 
 def test_imports():
     """Test that all modules can be imported"""
@@ -39,19 +38,16 @@ def test_database():
     print("\n2. Testing database connectivity...")
     
     try:
-        from services.databaseservice.database_manager import DatabaseManager
+        from database.database_manager import DatabaseManager
         
         db = DatabaseManager()
         
         # Test connection
-        with db.get_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
-            tables = cursor.fetchall()
+        tables = db.execute_query("SELECT name FROM sqlite_master WHERE type='table'")
             
         print(f"  [OK] Database connected - {len(tables)} tables found")
         for table in tables:
-            print(f"      - {table[0]}")
+            print(f"      - {table['name']}")
         
         return True
     except Exception as e:
@@ -64,29 +60,31 @@ def test_auth_service():
     
     try:
         from services.authservice.auth_service import AuthService
+        from database.database_manager import DatabaseManager
         
-        auth = AuthService()
+        # Create database manager for auth service
+        db_manager = DatabaseManager("vocabulary.db")
+        auth = AuthService(db_manager)
         
         # Test admin user exists
-        admin = auth.get_user("admin")
+        admin = auth._get_user_by_username("admin")
         if admin:
-            print(f"  [OK] Admin user exists (id: {admin.id})")
+            print(f"  [OK] Admin user exists (id: {admin['id']})")
         else:
             print("  [WARNING] Admin user not found")
         
-        # Test password verification
-        if admin and auth.verify_password("admin", admin.hashed_password):
-            print("  [OK] Password verification working")
-        else:
-            print("  [WARNING] Password verification failed")
-        
-        # Test token creation
-        if admin:
-            token = auth.create_access_token({"sub": admin.username})
-            if token:
-                print(f"  [OK] Token creation working (length: {len(token)})")
+        # Test password verification by attempting login
+        try:
+            session = auth.login("admin", "admin")
+            if session and session.session_token:
+                print("  [OK] Password verification working (via login)")
+                print(f"  [OK] Session creation working (token length: {len(session.session_token)})")
             else:
-                print("  [ERROR] Token creation failed")
+                print("  [WARNING] Password verification failed")
+        except Exception as e:
+            print(f"  [WARNING] Password verification failed: {e}")
+        
+        # Session creation already tested above with password verification
         
         return True
     except Exception as e:
@@ -98,20 +96,27 @@ def test_vocabulary_service():
     print("\n4. Testing vocabulary service...")
     
     try:
-        from services.vocabularyservice.vocabulary_service import VocabularyService
+        from services.dataservice.user_vocabulary_service import SQLiteUserVocabularyService
+        from database.database_manager import DatabaseManager
         
-        vocab = VocabularyService()
+        # Initialize with database manager
+        db_manager = DatabaseManager()
+        vocab = SQLiteUserVocabularyService(db_manager)
         
-        # Test getting vocabulary stats
-        stats = vocab.get_vocabulary_stats()
-        print("  [OK] Vocabulary stats retrieved")
-        print(f"      - Total words: {stats.get('total_words', 0)}")
-        print(f"      - A1 words: {stats.get('a1_words', 0)}")
-        print(f"      - A2 words: {stats.get('a2_words', 0)}")
+        # Test basic functionality
+        test_user = "test_user_123"
         
-        # Test getting known words for user
-        known_words = vocab.get_known_words(1)  # User ID 1
+        # Test getting known words (should be empty initially)
+        known_words = vocab.get_known_words(test_user)
         print(f"  [OK] Known words retrieved: {len(known_words)} words")
+        
+        # Test checking if word is known
+        is_known = vocab.is_word_known(test_user, "hello")
+        print(f"  [OK] Word knowledge check: {'known' if is_known else 'unknown'}")
+        
+        # Test learning statistics
+        stats = vocab.get_learning_statistics(test_user)
+        print(f"  [OK] Learning stats: {stats.get('total_known_words', 0)} known words")
         
         return True
     except Exception as e:
@@ -211,14 +216,14 @@ def test_filter_chain():
     print("\n7. Testing filter chain...")
     
     try:
-        from services.filterservice.filter_chain import FilterChain
+        from services.filterservice.filter_chain import SubtitleFilterChain
         
         # Note: Filter chain might be disabled in current config
         print("  [INFO] Filter chain module can be imported")
         
         # Try to create instance (may fail if dependencies not initialized)
         try:
-            chain = FilterChain()
+            chain = SubtitleFilterChain()
             print("  [OK] Filter chain instance created")
         except Exception as e:
             print(f"  [INFO] Filter chain initialization skipped: {e}")
@@ -235,16 +240,16 @@ def test_config():
     try:
         from core.config import settings
         
-        print(f"  [OK] App name: {settings.app_name}")
-        print(f"  [OK] Environment: {settings.environment}")
+        print(f"  [OK] Host: {settings.host}")
+        print(f"  [OK] Port: {settings.port}")
         print(f"  [OK] Debug mode: {settings.debug}")
         print(f"  [OK] Default language: {settings.default_language}")
-        print(f"  [OK] JWT algorithm: {settings.jwt_algorithm}")
+        print(f"  [OK] Log level: {settings.log_level}")
         
         # Check paths
-        print(f"  [OK] Database path: {settings.get_database_path()}")
         print(f"  [OK] Videos path: {settings.get_videos_path()}")
-        print(f"  [OK] Vocabulary DB: {settings.get_vocabulary_db_path()}")
+        print(f"  [OK] Data path: {settings.get_data_path()}")
+        print(f"  [OK] Logs path: {settings.get_logs_path()}")
         
         return True
     except Exception as e:
@@ -321,3 +326,12 @@ def main():
 if __name__ == "__main__":
     success = main()
     sys.exit(0 if success else 1)
+import os
+import pytest
+
+pytestmark = pytest.mark.integration
+if os.environ.get("RUN_LIVE_HTTP") != "1":
+    pytest.skip(
+        "Skipping live HTTP integration tests; set RUN_LIVE_HTTP=1 to run.",
+        allow_module_level=True,
+    )

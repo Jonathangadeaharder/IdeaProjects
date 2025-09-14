@@ -3,171 +3,98 @@ Video management API routes
 """
 import logging
 from pathlib import Path
-from typing import List, Dict
+from typing import List, Dict, Any
+from fastapi import APIRouter, HTTPException, Depends, Query, UploadFile, File
+from fastapi.responses import FileResponse
 
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query
-from fastapi.responses import FileResponse, PlainTextResponse
-
-from ..models.video import VideoInfo
-from core.dependencies import get_current_user, get_auth_service
+from core.dependencies import get_database_manager, get_auth_service, get_current_user
 from core.config import settings
-from core.constants import MAX_VIDEO_SIZE_MB, MAX_SUBTITLE_SIZE_KB, CHUNK_SIZE
-from services.authservice.auth_service import AuthUser, AuthService
+from services.authservice.models import AuthUser
+from services.videoservice.video_service import VideoService
+from api.models.video import VideoInfo
 
 logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/videos", tags=["videos"])
+router = APIRouter(tags=["videos"])
 
 
-def parse_episode_filename(filename: str) -> Dict[str, str]:
-    """Parse episode information from filename"""
-    # Simple parsing - can be enhanced
-    parts = filename.split()
-    episode_info = {"title": filename}
-    
-    for i, part in enumerate(parts):
-        if "episode" in part.lower() and i + 1 < len(parts):
-            episode_info["episode"] = parts[i + 1]
-        elif "staffel" in part.lower() and i + 1 < len(parts):
-            episode_info["season"] = parts[i + 1]
-    
-    return episode_info
+def get_video_service(
+    db_manager=Depends(get_database_manager)
+) -> VideoService:
+    """Get video service instance"""
+    return VideoService(db_manager, None)
 
 
-@router.get("", response_model=List[VideoInfo])
-async def get_available_videos(current_user: AuthUser = Depends(get_current_user)):
+@router.get("", response_model=List[Dict[str, Any]])
+async def get_available_videos(
+    current_user: AuthUser = Depends(get_current_user),
+    video_service: VideoService = Depends(get_video_service)
+):
     """Get list of available videos/series"""
+    return video_service.get_videos_list()
+
+
+@router.get("/subtitles/{subtitle_path:path}")
+async def get_subtitles(
+    subtitle_path: str,
+    current_user: AuthUser = Depends(get_current_user),
+    video_service: VideoService = Depends(get_video_service)
+):
+    """Serve subtitle files - Requires authentication"""
     try:
-        videos_path = settings.get_videos_path()
-        videos = []
-        
-        logger.info(f"Scanning for videos in: {videos_path}")
-        
-        if not videos_path.exists():
-            logger.warning(f"Videos path does not exist: {videos_path}")
-            return videos
-        
-        # First, scan for video files directly in videos_path
-        for video_file in videos_path.glob("*.mp4"):
-            # Check for corresponding subtitle file
-            srt_file = video_file.with_suffix(".srt")
-            has_subtitles = srt_file.exists()
-            
-            # Extract episode information from filename
-            filename = video_file.stem
-            episode_info = parse_episode_filename(filename)
-            
-            video_info = VideoInfo(
-                series="Default",
-                season=episode_info.get("season", "1"),
-                episode=episode_info.get("episode", filename),
-                title=episode_info.get("title", filename),
-                path=str(video_file.relative_to(videos_path)),
-                has_subtitles=has_subtitles
-            )
-            videos.append(video_info)
-            logger.debug(f"Added video: {video_info.title}")
-        
-        # Also scan for series directories
-        for series_dir in videos_path.iterdir():
-            if series_dir.is_dir():
-                series_name = series_dir.name
-                logger.debug(f"Found series directory: {series_name}")
-                
-                # Scan for video files
-                for video_file in series_dir.glob("*.mp4"):
-                    # Check for corresponding subtitle file
-                    srt_file = video_file.with_suffix(".srt")
-                    has_subtitles = srt_file.exists()
-                    
-                    # Extract episode information from filename
-                    filename = video_file.stem
-                    episode_info = parse_episode_filename(filename)
-                    
-                    video_info = VideoInfo(
-                        series=series_name,
-                        season=episode_info.get("season", "1"),
-                        episode=episode_info.get("episode", "Unknown"),
-                        title=episode_info.get("title", filename),
-                        path=str(video_file.relative_to(videos_path)),
-                        has_subtitles=has_subtitles
-                    )
-                    videos.append(video_info)
-                    logger.debug(f"Added video: {video_info.title}")
-        
-        logger.info(f"Found {len(videos)} videos")
-        return videos
-        
+        logger.info(f"Serving subtitles: {subtitle_path}")
+
+        subtitle_file = video_service.get_subtitle_file_path(subtitle_path)
+
+        # Verify file exists and is readable
+        if not subtitle_file.exists():
+            logger.warning(f"Subtitle file not found: {subtitle_file}")
+            raise HTTPException(status_code=404, detail="Subtitle file not found")
+
+        if not subtitle_file.is_file():
+            logger.warning(f"Subtitle path is not a file: {subtitle_file}")
+            raise HTTPException(status_code=404, detail="Invalid subtitle file")
+
+        logger.info(f"Successfully serving subtitle file: {subtitle_file}")
+        return FileResponse(
+            path=str(subtitle_file),
+            media_type="text/plain",
+            headers={"Content-Type": "text/plain; charset=utf-8"}
+        )
+
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Error scanning videos: {str(e)}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Error scanning videos: {str(e)}")
+        logger.error(f"Error serving subtitles {subtitle_path}: {e}")
+        raise HTTPException(status_code=500, detail=f"Error serving subtitles: {str(e)}")
 
 
 @router.get("/{series}/{episode}")
 async def stream_video(
     series: str, 
     episode: str,
-    token: str = Query(None, description="Authentication token for video streaming"),
-    auth_service: AuthService = Depends(get_auth_service)
+    current_user: AuthUser = Depends(get_current_user),
+    video_service: VideoService = Depends(get_video_service)
 ):
-    """Stream video file - Supports token-based authentication via query parameter"""
+    """Stream video file - Requires authentication"""
     try:
-        # Validate token if provided
-        if token:
-            try:
-                await auth_service.validate_token(token)
-            except Exception as e:
-                logger.warning(f"Invalid token provided for video streaming: {e}")
-                # For now, allow access even with invalid token to support development
-                pass
-        # No authentication required for now to support development
-        videos_path = settings.get_videos_path() / series
-        logger.info(f"Looking for video in: {videos_path}")
+        video_file = video_service.get_video_file_path(series, episode)
         
-        if not videos_path.exists():
-            logger.warning(f"Series path does not exist: {videos_path}")
-            raise HTTPException(status_code=404, detail=f"Series '{series}' not found")
+        if not video_file.exists():
+            logger.error(f"Video file exists check failed: {video_file}")
+            raise HTTPException(status_code=404, detail="Video file not accessible")
         
-        # Find matching video file
-        found_files = []
-        for video_file in videos_path.glob("*.mp4"):
-            found_files.append(video_file.name)
-            # More flexible matching - check if episode number is in filename
-            # This handles both "1" matching "Episode 1" and full episode names
-            filename_lower = video_file.name.lower()
-            episode_lower = episode.lower()
-            
-            # Try different matching patterns
-            matches = (
-                f"episode {episode_lower}" in filename_lower or  # "episode 1"
-                f"episode_{episode_lower}" in filename_lower or  # "episode_1"
-                f"e{episode_lower}" in filename_lower or         # "e1"
-                episode_lower in filename_lower                  # direct match
-            )
-            
-            if matches:
-                logger.info(f"Found matching video: {video_file} for episode: {episode}")
-                if not video_file.exists():
-                    logger.error(f"Video file exists check failed: {video_file}")
-                    raise HTTPException(status_code=404, detail="Video file not accessible")
-                
-                # Return video with proper headers for streaming
-                response = FileResponse(
-                    video_file, 
-                    media_type="video/mp4",
-                    headers={
-                        "Accept-Ranges": "bytes",
-                        "Access-Control-Allow-Origin": "*",
-                        "Access-Control-Allow-Methods": "GET, OPTIONS",
-                        "Access-Control-Allow-Headers": "Range"
-                    }
-                )
-                return response
-        
-        logger.warning(f"No matching video found for episode '{episode}'. Available files: {found_files}")
-        raise HTTPException(
-            status_code=404, 
-            detail=f"Episode '{episode}' not found in series '{series}'. Available: {found_files}"
+        # Return video with proper headers for streaming
+        response = FileResponse(
+            video_file, 
+            media_type="video/mp4",
+            headers={
+                "Accept-Ranges": "bytes",
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "GET, OPTIONS",
+                "Access-Control-Allow-Headers": "Range"
+            }
         )
+        return response
         
     except HTTPException:
         raise
@@ -176,64 +103,13 @@ async def stream_video(
         raise HTTPException(status_code=500, detail=f"Error streaming video: {str(e)}")
 
 
-@router.get("/subtitles/{subtitle_path:path}")
-async def get_subtitles(
-    subtitle_path: str,
-    token: str = Query(None, description="Authentication token for subtitle access")
-):
-    """Serve subtitle files - Supports token-based authentication via query parameter"""
-    try:
-        # No authentication required for now to support development
-        logger.info(f"Serving subtitles: {subtitle_path}")
-        
-        # CRITICAL FIX: Handle Windows absolute paths by converting to relative paths
-        # The frontend may send Windows absolute paths like C:\Users\...\videos\Superstore\file.srt
-        videos_root = settings.get_videos_path()
-        
-        if subtitle_path.startswith(("C:", "D:", "/mnt/c/", "/mnt/d/")) or "\\" in subtitle_path:
-            # This is an absolute Windows path - convert to relative
-            path_obj = Path(subtitle_path.replace("\\", "/"))
-            
-            # Find the videos directory in the path and get the relative part
-            path_parts = path_obj.parts
-            try:
-                videos_index = next(i for i, part in enumerate(path_parts) if part.lower() == "videos")
-                relative_path = Path(*path_parts[videos_index + 1:])
-                subtitle_file = videos_root / relative_path
-                logger.info(f"Converted absolute path {subtitle_path} to relative: {relative_path}")
-            except (StopIteration, IndexError):
-                logger.warning(f"Could not find 'videos' directory in path: {subtitle_path}")
-                subtitle_file = videos_root / Path(subtitle_path).name
-        else:
-            # Regular relative path handling
-            subtitle_file = videos_root / subtitle_path
-        
-        logger.info(f"Looking for subtitle file at: {subtitle_file}")
-        
-        if not subtitle_file.exists():
-            logger.error(f"Subtitle file not found: {subtitle_file}")
-            raise HTTPException(status_code=404, detail=f"Subtitle file not found: {subtitle_file}")
-        
-        # Read and return the SRT content
-        with open(subtitle_file, 'r', encoding='utf-8') as f:
-            content = f.read()
-        
-        return PlainTextResponse(content, media_type="text/plain")
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error serving subtitles: {str(e)}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Error serving subtitles: {str(e)}")
-
-
 @router.post("/subtitle/upload")
 async def upload_subtitle(
     video_path: str,
     subtitle_file: UploadFile = File(...),
     current_user: AuthUser = Depends(get_current_user)
 ):
-    """Upload subtitle file for a video"""
+    """Upload subtitle file for a video - Requires authentication"""
     try:
         # Validate file type
         if not subtitle_file.filename.endswith(('.srt', '.vtt', '.sub')):
@@ -243,6 +119,7 @@ async def upload_subtitle(
         content = await subtitle_file.read()
         file_size_kb = len(content) / 1024
         
+        MAX_SUBTITLE_SIZE_KB = 1024  # 1MB limit for subtitles
         if file_size_kb > MAX_SUBTITLE_SIZE_KB:
             raise HTTPException(
                 status_code=413,
@@ -250,7 +127,7 @@ async def upload_subtitle(
             )
         
         # Get video file path
-        videos_path = settings.get_videos_path()
+        videos_path = settings.videos_path
         video_file = videos_path / video_path
         
         if not video_file.exists():
@@ -278,20 +155,150 @@ async def upload_subtitle(
         raise HTTPException(status_code=500, detail=f"Error uploading subtitle: {str(e)}")
 
 
+@router.post("/scan")
+async def scan_videos(
+    current_user: AuthUser = Depends(get_current_user),
+    video_service: VideoService = Depends(get_video_service)
+):
+    """Scan videos directory for new videos - Requires authentication"""
+    return video_service.scan_videos_directory()
+
+
+@router.get("/user", response_model=List[Dict[str, Any]])
+async def get_user_videos(
+    current_user: AuthUser = Depends(get_current_user),
+    video_service: VideoService = Depends(get_video_service)
+):
+    """Get videos for the current user (alias for get_available_videos)"""
+    return video_service.get_videos_list()
+
+
+from api.models.vocabulary import VocabularyWord
+from typing import List
+
+@router.get("/{video_id}/vocabulary", response_model=List[VocabularyWord])
+async def get_video_vocabulary(
+    video_id: str,
+    current_user: AuthUser = Depends(get_current_user)
+):
+    """Get vocabulary words extracted from a video"""
+    try:
+        # Convert video_id to video path
+        videos_path = settings.videos_path
+        video_path = videos_path / video_id
+        
+        if not video_path.exists():
+            raise HTTPException(status_code=404, detail="Video not found")
+        
+        # Check for corresponding subtitle file
+        srt_path = video_path.with_suffix(".srt")
+        if not srt_path.exists():
+            raise HTTPException(status_code=404, detail="Subtitles not found for this video")
+        
+        # Extract vocabulary using the existing vocabulary extraction logic
+        from api.routes.vocabulary import extract_blocking_words_for_segment
+        
+        # Extract vocabulary for the entire video (0 to large duration)
+        vocabulary_words = await extract_blocking_words_for_segment(
+            str(srt_path), 0, 999999, current_user.id
+        )
+        
+        logger.info(f"Extracted {len(vocabulary_words)} vocabulary words for video {video_id}")
+        return vocabulary_words
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error extracting vocabulary for video {video_id}: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error extracting vocabulary: {str(e)}")
+
+
+from core.dependencies import get_task_progress_registry
+from typing import Dict, Any
+from pydantic import BaseModel
+
+class ProcessingStatus(BaseModel):
+    status: str
+    progress: float
+    current_step: str
+    message: str = ""
+    subtitle_path: str = ""
+
+@router.get("/{video_id}/status", response_model=ProcessingStatus)
+async def get_video_status(
+    video_id: str,
+    current_user: AuthUser = Depends(get_current_user),
+    task_progress: Dict[str, Any] = Depends(get_task_progress_registry)
+):
+    """Get processing status for a video"""
+    try:
+        # Look for any processing tasks related to this video
+        video_tasks = [
+            (task_id, progress) for task_id, progress in task_progress.items()
+            if video_id in task_id or video_id in str(progress.get('video_path', ''))
+        ]
+        
+        if not video_tasks:
+            # No active processing, check if video exists and has been processed
+            videos_path = settings.videos_path
+            video_path = videos_path / video_id
+            
+            if not video_path.exists():
+                raise HTTPException(status_code=404, detail="Video not found")
+            
+            # Check if subtitles exist (indicates processing completed)
+            srt_path = video_path.with_suffix(".srt")
+            if srt_path.exists():
+                return ProcessingStatus(
+                    status="completed",
+                    progress=100.0,
+                    current_step="Processing completed",
+                    message="Video has been fully processed",
+                    subtitle_path=str(srt_path.relative_to(videos_path))
+                )
+            else:
+                return ProcessingStatus(
+                    status="completed",
+                    progress=0.0,
+                    current_step="Not processed",
+                    message="Video has not been processed yet"
+                )
+        
+        # Return the most recent task status
+        latest_task_id, latest_progress = video_tasks[-1]
+        return latest_progress
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting video status for {video_id}: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error getting video status: {str(e)}")
+
+
+@router.post("/upload")
+async def upload_video_generic(
+    video_file: UploadFile = File(...),
+    series: str = "Default",
+    current_user: AuthUser = Depends(get_current_user)
+):
+    """Upload a new video file (generic endpoint) - Requires authentication"""
+    return await upload_video(series, video_file, current_user)
+
+
 @router.post("/upload/{series}")
 async def upload_video(
     series: str,
     video_file: UploadFile = File(...),
     current_user: AuthUser = Depends(get_current_user)
 ):
-    """Upload a new video file to a series"""
+    """Upload a new video file to a series - Requires authentication"""
     try:
         # Validate file type
         if not video_file.content_type or not video_file.content_type.startswith('video/'):
             raise HTTPException(status_code=400, detail="File must be a video")
         
         # Get series directory
-        series_path = settings.get_videos_path() / series
+        series_path = settings.videos_path / series
         series_path.mkdir(parents=True, exist_ok=True)
         
         # Generate safe filename
@@ -308,6 +315,8 @@ async def upload_video(
         
         # Read and validate file size in chunks
         total_size = 0
+        MAX_VIDEO_SIZE_MB = 500  # 500MB limit for videos
+        CHUNK_SIZE = 1024 * 1024  # 1MB chunks
         max_size_bytes = MAX_VIDEO_SIZE_MB * 1024 * 1024
         
         with open(file_path, "wb") as buffer:
@@ -331,14 +340,18 @@ async def upload_video(
         logger.info(f"Uploaded video: {file_path}")
         
         # Return video info
-        episode_info = parse_episode_filename(file_path.stem)
+        from services.videoservice.video_service import VideoService
+        video_service = VideoService(None, None)  # We only need the parsing method
+        episode_info = video_service._parse_episode_filename(file_path.stem)
+
         return VideoInfo(
             series=series,
             season=episode_info.get("season", "1"),
             episode=episode_info.get("episode", "Unknown"),
             title=episode_info.get("title", file_path.stem),
-            path=str(file_path.relative_to(settings.get_videos_path())),
-            has_subtitles=False  # New uploads won't have subtitles initially
+            path=str(file_path.relative_to(settings.videos_path)),
+            has_subtitles=False,  # New uploads won't have subtitles initially
+            duration=0
         )
         
     except HTTPException:

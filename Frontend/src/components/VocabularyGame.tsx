@@ -294,9 +294,37 @@ export const VocabularyGame: React.FC<VocabularyGameProps> = ({
     }
   }
 
-  const handleSkip = () => {
-    if (onSkip) {
-      onSkip()
+  const handleSkip = async () => {
+    if (isProcessing) return
+
+    setIsProcessing(true)
+
+    try {
+      // Mark all remaining words as unknown
+      const remainingWords = words.slice(currentIndex)
+      const newUnknownWords = [...unknownWords]
+      
+      for (const word of remainingWords) {
+        // Call onWordAnswered for each remaining word as unknown
+        if (onWordAnswered) {
+          await onWordAnswered(word.word, false)
+        }
+        newUnknownWords.push(word.word)
+      }
+
+      // Update final counts
+      const finalAnsweredWords = answeredWords + remainingWords.length
+      
+      // Complete the game with all remaining words marked as unknown
+      onComplete(knownWords, newUnknownWords)
+      
+    } catch (error) {
+      setIsProcessing(false)
+      console.error('Failed to process remaining words:', error)
+      // Still allow skip even if word processing fails
+      if (onSkip) {
+        onSkip()
+      }
     }
   }
 
@@ -425,7 +453,7 @@ export const VocabularyGame: React.FC<VocabularyGameProps> = ({
 
       <div style={{ marginTop: '24px' }}>
         <NetflixButton variant="secondary" onClick={handleSkip}>
-          Skip Vocabulary Check
+          Skip Remaining
         </NetflixButton>
       </div>
     </GameContainer>

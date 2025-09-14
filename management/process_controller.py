@@ -123,3 +123,54 @@ class ProcessController:
         except Exception as e:
             logger.error(f"Failed to start process {' '.join(cmd)}: {e}")
             raise
+    
+    @staticmethod
+    def comprehensive_cleanup(ports: List[int] = None) -> bool:
+        """Perform comprehensive cleanup of LangPlug processes and ports"""
+        try:
+            success = True
+            
+            # Default ports if none specified
+            if ports is None:
+                ports = [8000, 3000]
+            
+            logger.info("Starting comprehensive cleanup...")
+            
+            # Clean up specified ports
+            for port in ports:
+                if not ProcessController.cleanup_port(port):
+                    success = False
+            
+            # Kill LangPlug-specific processes by name patterns
+            process_patterns = [
+                'run_backend.py',
+                'main.py',
+                'uvicorn',
+                'npm run dev',
+                'vite'
+            ]
+            
+            for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
+                try:
+                    cmdline = ' '.join(proc.info['cmdline']) if proc.info['cmdline'] else ''
+                    
+                    # Check if this process matches any of our patterns
+                    for pattern in process_patterns:
+                        if pattern in cmdline:
+                            pid = proc.info['pid']
+                            logger.info(f"Killing LangPlug process: {cmdline[:100]}... (PID {pid})")
+                            ProcessController.kill_process_tree(pid)
+                            break
+                            
+                except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+                    continue
+                except Exception as e:
+                    logger.warning(f"Error checking process: {e}")
+                    continue
+            
+            logger.info("Comprehensive cleanup completed")
+            return success
+            
+        except Exception as e:
+            logger.error(f"Error during comprehensive cleanup: {e}")
+            return False

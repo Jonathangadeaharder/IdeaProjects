@@ -123,8 +123,8 @@ class ProfessionalServerManager:
         try:
             # Clean up port if needed
             if server.is_port_in_use():
-                logger.info(f"Port {server.port} is in use, cleaning up...")
-                ProcessController.cleanup_port(server.port)
+                logger.info(f"Port {server.port} is in use, performing comprehensive cleanup...")
+                ProcessController.comprehensive_cleanup([server.port])
                 time.sleep(3)
             
             # Start the process
@@ -233,13 +233,19 @@ class ProfessionalServerManager:
         return success
     
     def stop_all(self) -> bool:
-        """Stop all servers"""
+        """Stop all servers with comprehensive cleanup"""
         logger.info("Stopping all servers")
         success = True
         
+        # First try to stop servers gracefully
         for name in self.servers.keys():
             if not self.stop_server(name):
                 success = False
+        
+        # Then perform comprehensive cleanup to ensure everything is stopped
+        logger.info("Performing comprehensive cleanup...")
+        if not ProcessController.comprehensive_cleanup():
+            success = False
         
         return success
     

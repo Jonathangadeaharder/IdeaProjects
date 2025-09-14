@@ -2,6 +2,8 @@
 """
 Test script to verify real SRT generation from Whisper transcription
 """
+import pytest
+pytestmark = pytest.mark.slow
 
 import sys
 import requests

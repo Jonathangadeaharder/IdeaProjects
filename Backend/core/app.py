@@ -7,13 +7,15 @@ from datetime import datetime
 from fastapi import FastAPI
 
 from .config import settings
-from .logging import setup_logging
+from .logging_config import setup_logging
 from .middleware import setup_middleware
 from .dependencies import init_services, cleanup_services
-from api.routes import auth, videos, processing, vocabulary, debug, user_profile, websocket
+from api.routes import auth, videos, processing, vocabulary, debug, user_profile, websocket, logs, progress, game
 
 # Initialize logging first
-logger = setup_logging()
+log_file = setup_logging()
+import logging
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
@@ -23,7 +25,7 @@ async def lifespan(app: FastAPI):
         logger.info("Starting LangPlug API server...")
         
         # Initialize all services
-        init_services()
+        await init_services()
         
         logger.info("LangPlug API server started successfully")
         yield
@@ -63,17 +65,26 @@ def create_app() -> FastAPI:
             "debug": settings.debug
         }
     
-    # Include API routers without prefix (proxy will handle /api routing)
-    app.include_router(auth.router)
-    app.include_router(videos.router)
-    app.include_router(processing.router)
-    app.include_router(vocabulary.router)
-    app.include_router(user_profile.router)
-    app.include_router(websocket.router)
+    # Simple test endpoint
+    @app.get("/test")
+    async def test_endpoint():
+        """Simple test endpoint"""
+        return {"message": "Test endpoint is working!", "timestamp": datetime.now().isoformat()}
+    
+    # Include API routers with /api prefix
+    app.include_router(auth.router, prefix="/api/auth")
+    app.include_router(videos.router, prefix="/api/videos")
+    app.include_router(processing.router, prefix="/api/process")
+    app.include_router(vocabulary.router, prefix="/api/vocabulary")
+    app.include_router(user_profile.router, prefix="/api/profile")
+    app.include_router(websocket.router, prefix="/api/ws")
+    app.include_router(logs.router, prefix="/api/logs")
+    app.include_router(progress.router, prefix="/api/progress")
+    app.include_router(game.router, prefix="/api/game")
     
     # Only include debug routes in debug mode
     if settings.debug:
-        app.include_router(debug.router)
+        app.include_router(debug.router, prefix="/api/debug")
         logger.info("Debug routes enabled (debug mode)")
     else:
         logger.info("Debug routes disabled (production mode)")

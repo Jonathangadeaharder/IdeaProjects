@@ -73,6 +73,7 @@ export interface ProcessingStatus {
   started_at?: number
   vocabulary?: VocabularyWord[]
   subtitle_path?: string
+  translation_path?: string
 }
 
 export interface VideoSegment {

@@ -1,7 +1,6 @@
-"""
-Vocabulary management API routes
-"""
+"""Vocabulary management API routes"""
 import logging
+import json
 from pathlib import Path
 from typing import List
 
@@ -11,13 +10,14 @@ from ..models.vocabulary import (
     VocabularyWord, MarkKnownRequest, VocabularyLibraryWord, 
     VocabularyLevel, BulkMarkRequest, VocabularyStats
 )
-from core.dependencies import get_current_user, get_database_manager
+from core.dependencies import get_current_user, get_database_manager, get_filter_chain
 from core.config import settings
-from services.authservice.auth_service import AuthUser
+from services.authservice.models import AuthUser
 from services.vocabulary_preload_service import VocabularyPreloadService
+from services.utils.srt_parser import SRTParser
 
 logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/vocabulary", tags=["vocabulary"])
+router = APIRouter(tags=["vocabulary"])
 
 
 async def extract_blocking_words_for_segment(
@@ -25,42 +25,139 @@ async def extract_blocking_words_for_segment(
 ) -> List[VocabularyWord]:
     """Extract blocking words from a specific time segment"""
     try:
-        # This is a simplified implementation
-        # In practice, you'd parse the SRT file, extract text for the time range,
-        # and analyze vocabulary difficulty
+        # Parse the SRT file
+        srt_parser = SRTParser()
+        segments = srt_parser.parse_file(srt_path)
         
-        # Mock implementation - replace with actual SRT parsing
-        # Different mock words based on segment for variety
-        mock_word_sets = [
-            [
-                VocabularyWord(word="schwierig", difficulty_level="B2", known=False),
-                VocabularyWord(word="verstehen", difficulty_level="A2", known=False),
-                VocabularyWord(word="kompliziert", difficulty_level="B1", known=False),
-            ],
-            [
-                VocabularyWord(word="aufregend", difficulty_level="B1", known=False),
-                VocabularyWord(word="beeindruckend", difficulty_level="B2", known=False),
-                VocabularyWord(word="überraschen", difficulty_level="A2", known=False),
-            ],
-            [
-                VocabularyWord(word="entwickeln", difficulty_level="B1", known=False),
-                VocabularyWord(word="entscheiden", difficulty_level="A2", known=False),
-                VocabularyWord(word="gesellschaft", difficulty_level="B2", known=False),
-            ]
+        # Filter segments within the time range
+        end_time = start + duration
+        relevant_segments = [
+            seg for seg in segments 
+            if seg.start_time <= end_time and seg.end_time >= start
         ]
         
-        # Use start time to select different word sets
-        word_set_index = (start // 300) % len(mock_word_sets)
-        return mock_word_sets[word_set_index]
+        if not relevant_segments:
+            logger.warning(f"No segments found for time range {start}-{end_time}")
+            return []
+        
+        # Get user-specific filter chain for processing
+        from core.dependencies import get_user_filter_chain, get_auth_service
+        from services.authservice.models import AuthUser
+        
+        # Get the actual user from database using user_id
+        auth_service = get_auth_service()
+        try:
+            # Get user by ID from database
+            with auth_service.db_manager.get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT id, username, email FROM users WHERE id = ?", (user_id,))
+                user_row = cursor.fetchone()
+                
+                if user_row:
+                    current_user = AuthUser(
+                        id=user_row[0],
+                        username=user_row[1]
+                    )
+                else:
+                    # Fallback to mock user if not found
+                    current_user = AuthUser(id=user_id, username=f"user_{user_id}")
+        except Exception as e:
+            logger.warning(f"Could not get user from database: {e}, using mock user")
+            current_user = AuthUser(id=user_id, username=f"user_{user_id}")
+        
+        # Use user-specific filter chain with proper user context and difficulty filtering
+        filter_chain = get_user_filter_chain(current_user, f"session_{user_id}")
+        
+        # Process segments through filter chain to get blocking words
+        result = await filter_chain.process_file(srt_path, user_id)
+        
+        # Check for filter chain errors first
+        if "error" in result.get("statistics", {}):
+            error_msg = result["statistics"]["error"]
+            logger.error(f"[VOCABULARY ERROR] Filter chain failed: {error_msg}")
+            raise HTTPException(status_code=500, detail=f"Vocabulary extraction failed: {error_msg}")
+        
+        # Extract blocking words from the result
+        blocking_words = result.get("blocking_words", [])
+        
+        logger.info(f"Found {len(blocking_words)} blocking words for user {user_id} in segment {start}-{end_time}")
+        
+        # Filter words that fall within our time segment
+        # Note: This is a simplified approach - in a more sophisticated implementation,
+        # you'd track word timing more precisely
+        segment_words = []
+        for word in blocking_words:
+            # For now, include all blocking words from relevant segments
+            # This could be enhanced to check actual word timing
+            segment_words.append(word)
+        
+        return segment_words[:10]  # Limit to 10 words for UI performance
         
     except Exception as e:
         logger.error(f"Error in extract_blocking_words_for_segment: {str(e)}", exc_info=True)
-        # Return basic fallback words if there's any error
-        return [
-            VocabularyWord(word="deutsch", difficulty_level="A1", known=False),
-            VocabularyWord(word="lernen", difficulty_level="A1", known=False),
-            VocabularyWord(word="sprache", difficulty_level="A2", known=False),
-        ]
+        raise HTTPException(status_code=500, detail=f"Vocabulary extraction failed: {str(e)}")
+
+
+@router.get("/stats", response_model=VocabularyStats)
+async def get_vocabulary_stats_endpoint(
+    current_user: AuthUser = Depends(get_current_user),
+    db_manager = Depends(get_database_manager)
+):
+    """Get vocabulary statistics for the current user"""
+    try:
+        
+        # Get user's vocabulary data from database or file system
+        user_vocab_path = settings.get_user_data_path() / str(current_user.id) / "vocabulary"
+        
+        # Initialize default stats
+        stats = VocabularyStats(
+            total_words=0,
+            known_words=0,
+            learning_words=0,
+            mastered_words=0,
+            words_today=0,
+            streak_days=0,
+            level_progress=0.0
+        )
+        
+        if user_vocab_path.exists():
+            # Count vocabulary files or database entries
+            vocab_files = list(user_vocab_path.glob("*.json"))
+            stats.total_words = len(vocab_files)
+            
+            # Calculate known/learning/mastered based on file contents
+            known_count = 0
+            learning_count = 0
+            mastered_count = 0
+            
+            for vocab_file in vocab_files:
+                try:
+                    with open(vocab_file, 'r', encoding='utf-8') as f:
+                        vocab_data = json.load(f)
+                        status = vocab_data.get('status', 'learning')
+                        if status == 'known':
+                            known_count += 1
+                        elif status == 'mastered':
+                            mastered_count += 1
+                        else:
+                            learning_count += 1
+                except Exception:
+                    learning_count += 1  # Default to learning if file is corrupted
+            
+            stats.known_words = known_count
+            stats.learning_words = learning_count
+            stats.mastered_words = mastered_count
+            
+            # Calculate level progress (percentage of known + mastered words)
+            if stats.total_words > 0:
+                stats.level_progress = ((known_count + mastered_count) / stats.total_words) * 100
+        
+        logger.info(f"Retrieved vocabulary stats for user {current_user.id}: {stats}")
+        return stats
+        
+    except Exception as e:
+        logger.error(f"Error getting vocabulary stats for user {current_user.id}: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error retrieving vocabulary stats: {str(e)}")
 
 
 @router.get("/blocking-words")

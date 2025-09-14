@@ -1,8 +1,18 @@
-"""
-Comprehensive Backend Integration Test
+"""Comprehensive Backend Integration Test
 Tests all API routes as they would be called from the frontend in a full QA workflow
 """
 
+import os
+import pytest
+
+pytestmark = pytest.mark.integration
+if os.environ.get("RUN_LIVE_HTTP") != "1":
+    pytest.skip(
+        "Skipping live HTTP integration tests; set RUN_LIVE_HTTP=1 to run.",
+        allow_module_level=True,
+    )
+
+import venv_activator  # Auto-activate virtual environment
 import requests
 import json
 import time

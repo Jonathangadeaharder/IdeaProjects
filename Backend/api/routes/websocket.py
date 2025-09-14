@@ -9,7 +9,7 @@ from typing import Optional
 from api.websocket_manager import manager
 
 logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/ws", tags=["websocket"])
+router = APIRouter(tags=["websocket"])
 
 
 @router.websocket("/connect")

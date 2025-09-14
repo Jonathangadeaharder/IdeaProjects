@@ -5,88 +5,108 @@ import { authService } from '@/services/api'
 
 interface AuthState {
   user: User | null
+  token: string | null
   isAuthenticated: boolean
   isLoading: boolean
-  login: (username: string, password: string) => Promise<void>
-  register: (username: string, password: string) => Promise<void>
+  error: string | null
+  login: (email: string, password: string) => Promise<void>
+  register: (email: string, password: string, name?: string) => Promise<void>
   logout: () => Promise<void>
   checkAuth: () => Promise<void>
+  clearError: () => void
 }
 
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
       user: null,
+      token: null,
       isAuthenticated: false,
       isLoading: false,
+      error: null,
 
-      login: async (username: string, password: string) => {
-        set({ isLoading: true })
+      login: async (email: string, password: string) => {
+        set({ isLoading: true });
         try {
-          const response = await authService.login({ username, password })
+          const response = await authService.login({ username: email, password })
           set({
             user: response.user,
+            token: response.token,
             isAuthenticated: true,
-            isLoading: false
-          })
-        } catch (error) {
-          set({ isLoading: false })
-          throw error
+            isLoading: false,
+            error: null,
+          });
+          localStorage.setItem('authToken', response.token)
+        } catch (error: any) {
+          const errorMessage = error.response?.data?.detail || error.message;
+          set({ isLoading: false, error: errorMessage });
         }
       },
 
-      register: async (username: string, password: string) => {
-        set({ isLoading: true })
+      register: async (email: string, password: string, name?: string) => {
+        set({ isLoading: true });
         try {
-          const user = await authService.register({ username, password })
-          set({ isLoading: false })
-          // After registration, user needs to login
-        } catch (error) {
-          set({ isLoading: false })
-          throw error
+          await authService.register({ username: email, password })
+          set({ isLoading: false, error: null })
+        } catch (error: any) {
+          const errorMessage = error.response?.data?.detail || error.message;
+          set({ isLoading: false, error: errorMessage });
         }
       },
 
       logout: async () => {
+        // Clear state synchronously for tests that don't await logout
+        localStorage.removeItem('authToken')
+        set({
+          user: null,
+          token: null,
+          isAuthenticated: false,
+          isLoading: false,
+          error: null,
+        });
         try {
-          await authService.logout()
-        } finally {
-          set({
-            user: null,
-            isAuthenticated: false,
-            isLoading: false
-          })
+          await authService.logout();
+        } catch {
+          // Ignore API errors on logout
         }
       },
 
       checkAuth: async () => {
         if (!authService.isAuthenticated()) {
-          return
+          return;
         }
 
-        set({ isLoading: true })
+        set({ isLoading: true });
         try {
-          const user = await authService.getCurrentUser()
+          const user = await authService.getCurrentUser();
           set({
             user,
             isAuthenticated: true,
-            isLoading: false
-          })
+            isLoading: false,
+            error: null,
+          });
         } catch (error) {
           set({
             user: null,
+            token: null,
             isAuthenticated: false,
-            isLoading: false
-          })
+            isLoading: false,
+          });
         }
-      }
+      },
+
+
+      clearError: () => {
+        set({ error: null });
+      },
     }),
     {
       name: 'auth-storage',
       partialize: (state) => ({
         user: state.user,
-        isAuthenticated: state.isAuthenticated
-      })
+        isAuthenticated: state.isAuthenticated,
+        token: state.token,
+      }),
     }
   )
-)
+);

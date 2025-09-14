@@ -1,13 +1,17 @@
 #!/usr/bin/env python3
 """
-Direct test of database operations to isolate the hang
+Direct test of database operations to isolate the hang.
+Marked as integration to exclude from fast unit/API suite.
 """
 
+import pytest
 import sys
 sys.path.append('Backend')
 
 from database.database_manager import DatabaseManager
 import time
+
+pytestmark = pytest.mark.integration
 
 def test_database_operations():
     """Test basic database operations directly"""

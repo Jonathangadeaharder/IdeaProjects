@@ -1,11 +1,12 @@
 """
 Translation Service Factory
-Creates and manages translation service instances
+Creates and manages translation service instances with lazy imports to avoid
+pulling heavy ML dependencies at import time.
 """
 
-from typing import Dict, Type
+from typing import Dict, Type, Union
+from importlib import import_module
 from .interface import ITranslationService
-from .nllb_implementation import NLLBTranslationService
 
 
 class TranslationServiceFactory:
@@ -15,9 +16,10 @@ class TranslationServiceFactory:
     """
     
     # Registry of available translation services
-    _services: Dict[str, Type[ITranslationService]] = {
-        "nllb": NLLBTranslationService,
-        "nllb-200": NLLBTranslationService,
+    _services: Dict[str, Union[str, Type[ITranslationService]]] = {
+        # Lazy string paths to avoid importing torch/transformers unless needed
+        "nllb": "services.translationservice.nllb_implementation.NLLBTranslationService",
+        "nllb-200": "services.translationservice.nllb_implementation.NLLBTranslationService",
     }
     
     # Cache of instantiated services
@@ -69,6 +71,17 @@ class TranslationServiceFactory:
                 f"Available services: {available}"
             )
         
+        # Resolve class lazily if necessary
+        cls_or_path = cls._services[service_name]
+        if isinstance(cls_or_path, str):
+            module_path, class_name = cls_or_path.rsplit(".", 1)
+            module = import_module(module_path)
+            service_class = getattr(module, class_name)
+            # Cache resolved class to avoid repeated imports
+            cls._services[service_name] = service_class
+        else:
+            service_class = cls_or_path
+
         # Check if we already have an instance
         cache_key = f"{service_name}_{str(kwargs)}"
         if cache_key in cls._instances:

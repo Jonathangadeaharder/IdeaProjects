@@ -1,7 +1,7 @@
-"""
-Unit tests for Server Manager
+"""Unit tests for Server Manager
 Tests server lifecycle management and monitoring
 """
+import venv_activator  # Auto-activate virtual environment
 import pytest
 from unittest.mock import Mock, patch
 from pathlib import Path
@@ -80,6 +80,7 @@ class TestProfessionalServerManager:
         """Test successful server startup"""
         with patch.object(mock_manager.servers["backend"], 'is_port_in_use', return_value=False), \
              patch.object(mock_manager.servers["backend"], 'check_health', return_value=True), \
+             patch.object(mock_manager.servers["backend"], 'is_process_alive', return_value=True), \
              patch('management.server_manager.ProcessController.start_process') as mock_start:
             
             # Mock successful process start
@@ -97,6 +98,7 @@ class TestProfessionalServerManager:
         """Test server startup when port is in use"""
         with patch.object(mock_manager.servers["backend"], 'is_port_in_use', return_value=True), \
              patch.object(mock_manager.servers["backend"], 'check_health', return_value=True), \
+             patch.object(mock_manager.servers["backend"], 'is_process_alive', return_value=True), \
              patch('management.server_manager.ProcessController.cleanup_port') as mock_cleanup, \
              patch('management.server_manager.ProcessController.start_process') as mock_start, \
              patch('time.sleep'):  # Speed up tests
@@ -224,6 +226,7 @@ class TestProfessionalServerManager:
         def start_server_thread(name):
             with patch.object(mock_manager.servers[name], 'is_port_in_use', return_value=False), \
                  patch.object(mock_manager.servers[name], 'check_health', return_value=True), \
+                 patch.object(mock_manager.servers[name], 'is_process_alive', return_value=True), \
                  patch('management.server_manager.ProcessController.start_process') as mock_start:
                 
                 mock_process = Mock()

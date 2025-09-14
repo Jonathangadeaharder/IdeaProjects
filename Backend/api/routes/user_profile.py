@@ -2,16 +2,18 @@
 User profile management API routes
 """
 import logging
-from typing import Dict, Any
+from typing import Dict, Any, Optional, List
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, field_validator
 
 from core.dependencies import get_current_user, get_auth_service
-from services.authservice.auth_service import AuthUser, AuthService
+from services.authservice.models import AuthUser
+from services.authservice.auth_service import AuthService
+from core.config import settings
 
 logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/profile", tags=["profile"])
+router = APIRouter(tags=["profile"])
 
 # Supported languages
 SUPPORTED_LANGUAGES = {
@@ -133,3 +135,75 @@ async def update_language_preferences(
 async def get_supported_languages():
     """Get list of supported languages"""
     return SUPPORTED_LANGUAGES
+
+
+class UserSettings(BaseModel):
+    """User settings model"""
+    theme: Optional[str] = "light"
+    notifications_enabled: Optional[bool] = True
+    auto_play: Optional[bool] = True
+    subtitle_size: Optional[str] = "medium"
+    playback_speed: Optional[float] = 1.0
+    vocabulary_difficulty: Optional[str] = "intermediate"
+    daily_goal: Optional[int] = 10
+    language_preferences: Optional[LanguagePreferences] = None
+
+
+@router.get("/settings", response_model=UserSettings)
+async def get_user_settings(
+    current_user: AuthUser = Depends(get_current_user)
+):
+    """Get user settings"""
+    try:
+        # Get user settings from database or file system
+        user_settings_path = settings.get_user_data_path() / str(current_user.id) / "settings.json"
+        
+        # Default settings
+        default_settings = UserSettings()
+        
+        if user_settings_path.exists():
+            try:
+                import json
+                with open(user_settings_path, 'r', encoding='utf-8') as f:
+                    settings_data = json.load(f)
+                    # Merge with defaults
+                    for key, value in settings_data.items():
+                        if hasattr(default_settings, key):
+                            setattr(default_settings, key, value)
+            except Exception as e:
+                logger.warning(f"Error loading user settings: {str(e)}")
+        
+        logger.info(f"Retrieved settings for user {current_user.id}")
+        return default_settings
+        
+    except Exception as e:
+        logger.error(f"Error getting user settings: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error retrieving user settings: {str(e)}")
+
+
+@router.put("/settings", response_model=UserSettings)
+async def update_user_settings(
+    settings_update: UserSettings,
+    current_user: AuthUser = Depends(get_current_user)
+):
+    """Update user settings"""
+    try:
+        # Ensure user data directory exists
+        user_data_path = settings.get_user_data_path() / str(current_user.id)
+        user_data_path.mkdir(parents=True, exist_ok=True)
+        
+        user_settings_path = user_data_path / "settings.json"
+        
+        # Save settings to file
+        import json
+        settings_dict = settings_update.dict(exclude_none=True)
+        
+        with open(user_settings_path, 'w', encoding='utf-8') as f:
+            json.dump(settings_dict, f, indent=2, ensure_ascii=False)
+        
+        logger.info(f"Updated settings for user {current_user.id}")
+        return settings_update
+        
+    except Exception as e:
+        logger.error(f"Error updating user settings: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error updating user settings: {str(e)}")

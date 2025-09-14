@@ -4,7 +4,9 @@ LangPlug - German Language Learning Platform
 Entry point for the FastAPI server
 """
 
+import venv_activator  # Auto-activate virtual environment
 import uvicorn
+from pathlib import Path
 from core.app import create_app
 from core.config import settings
 
@@ -13,10 +15,40 @@ app = create_app()
 
 if __name__ == "__main__":
     # Run the server
+    # Only watch specific directories to avoid SQLite WAL file spam
+    reload_dirs = [
+        str(Path(__file__).parent / "api"),
+        str(Path(__file__).parent / "core"),
+        str(Path(__file__).parent / "services")
+    ] if settings.reload else None
+    
+    # Configure reload with conservative settings to minimize watchfiles spam
+    reload_config = {
+        "reload": settings.reload,
+        "reload_delay": 2.0,  # Add delay to reduce sensitivity
+        "reload_dirs": reload_dirs if settings.reload else None,
+        "reload_includes": ["**/*.py"] if settings.reload else None,
+        "reload_excludes": [
+            "**/__pycache__/**",
+            "**/*.pyc",
+            "**/*.pyo",
+            "**/*.db",
+            "**/*.db-shm",
+            "**/*.db-wal",
+            "**/*.db-journal",
+            "**/logs/**",
+            "**/*.log"
+        ] if settings.reload else None
+    }
+    
+    if reload_dirs:
+        print(f"📁 Watching directories: {reload_dirs}")
+    
     uvicorn.run(
-        "main:app",
+        "core.app:create_app",
         host=settings.host,
         port=settings.port,
-        reload=settings.reload,
-        reload_dirs=[str(settings.get_data_path().parent)]
+        log_level="info",
+        factory=True,
+        **reload_config
     )

@@ -10,6 +10,7 @@ import {
 } from '@heroicons/react/24/solid'
 import axios from 'axios'
 import { videoService } from '@/services/api'
+import { logger } from '@/utils/logger'
 
 const PlayerContainer = styled.div`
   background: #000;
@@ -259,6 +260,7 @@ interface ChunkedLearningPlayerProps {
   series: string
   episode: string
   subtitlePath?: string
+  translationPath?: string
   startTime: number
   endTime: number
   onComplete: () => void
@@ -275,6 +277,7 @@ export const ChunkedLearningPlayer: React.FC<ChunkedLearningPlayerProps> = ({
   series,
   episode,
   subtitlePath,
+  translationPath,
   startTime,
   endTime,
   onComplete,
@@ -290,6 +293,7 @@ export const ChunkedLearningPlayer: React.FC<ChunkedLearningPlayerProps> = ({
   const [showCompletion, setShowCompletion] = useState(false)
   const [currentSubtitle, setCurrentSubtitle] = useState<{ original: string; translation: string }>({ original: '', translation: '' })
   const [subtitles, setSubtitles] = useState<SubtitleEntry[]>([])
+  const [translations, setTranslations] = useState<SubtitleEntry[]>([])
   const controlsTimeoutRef = useRef<NodeJS.Timeout>()
 
   // Calculate duration of this chunk
@@ -338,51 +342,94 @@ export const ChunkedLearningPlayer: React.FC<ChunkedLearningPlayerProps> = ({
     return entries
   }
 
-  // Load subtitles
-  useEffect(() => {
-    if (subtitlePath) {
-      // Build subtitle URL - the subtitlePath should be relative to the videos directory
-      // If it's an absolute path, extract the relative part
-      let subtitleUrl = ''
-      if (subtitlePath.includes('\\') || subtitlePath.includes(':')) {
-        // This is a Windows absolute path - extract series and filename
-        const pathParts = subtitlePath.replace(/\\/g, '/').split('/')
-        const videosIndex = pathParts.findIndex(p => p.toLowerCase() === 'videos')
-        if (videosIndex !== -1 && videosIndex < pathParts.length - 1) {
-          const relativePath = pathParts.slice(videosIndex + 1).join('/')
-          subtitleUrl = `/api/videos/subtitles/${encodeURIComponent(relativePath)}`
-        } else {
-          // Fallback: try to construct from series
-          const filename = pathParts[pathParts.length - 1]
-          subtitleUrl = `/api/videos/subtitles/${encodeURIComponent(`${series}/${filename}`)}`
-        }
+  // Helper function to build subtitle URL
+  const buildSubtitleUrl = (path: string): string => {
+    let subtitleUrl = ''
+    if (path.includes('\\') || path.includes(':')) {
+      // This is a Windows absolute path - extract series and filename
+      const pathParts = path.replace(/\\/g, '/').split('/')
+      const videosIndex = pathParts.findIndex(p => p.toLowerCase() === 'videos')
+      if (videosIndex !== -1 && videosIndex < pathParts.length - 1) {
+        const relativePath = pathParts.slice(videosIndex + 1).join('/')
+        subtitleUrl = `/api/videos/subtitles/${encodeURIComponent(relativePath)}`
       } else {
-        // Already a relative path
-        subtitleUrl = `/api/videos/subtitles/${encodeURIComponent(subtitlePath)}`
+        // Fallback: try to construct from series
+        const filename = pathParts[pathParts.length - 1]
+        subtitleUrl = `/api/videos/subtitles/${encodeURIComponent(`${series}/${filename}`)}`
       }
-      
-      // Use backend URL with token
-      const token = localStorage.getItem('authToken')
-      const fullSubtitleUrl = subtitleUrl.startsWith('http') 
-        ? subtitleUrl 
-        : `${import.meta.env.VITE_API_BASE_URL || 'http://172.30.96.1:8000'}${subtitleUrl.replace('/api', '')}`
+    } else {
+      // Already a relative path
+      subtitleUrl = `/api/videos/subtitles/${encodeURIComponent(path)}`
+    }
+    
+    // Use backend URL with token
+    const fullSubtitleUrl = subtitleUrl.startsWith('http') 
+      ? subtitleUrl 
+      : `${import.meta.env.VITE_API_BASE_URL || 'http://172.30.96.1:8000'}${subtitleUrl.replace('/api', '')}`
+    
+    return fullSubtitleUrl
+  }
+
+  // Load subtitles and translations
+  useEffect(() => {
+    logger.info('ChunkedLearningPlayer', 'Loading subtitles...', {
+      subtitlePath,
+      translationPath,
+      startTime,
+      endTime
+    })
+    
+    const token = localStorage.getItem('authToken')
+    
+    // Load main subtitles (German transcription)
+    if (subtitlePath) {
+      logger.info('ChunkedLearningPlayer', 'Building subtitle URL for:', subtitlePath)
+      const fullSubtitleUrl = buildSubtitleUrl(subtitlePath)
+      logger.info('ChunkedLearningPlayer', 'Full subtitle URL:', fullSubtitleUrl)
       
       axios.get(fullSubtitleUrl, {
-        params: token ? { token } : {}
+        params: token ? { token, _ts: Date.now() } : { _ts: Date.now() }
       })
         .then(response => {
+          logger.info('ChunkedLearningPlayer', `Subtitle response received, length: ${response.data.length}`)
           const parsedSubs = parseSRT(response.data)
+          logger.info('ChunkedLearningPlayer', `Parsed subtitles before filtering: ${parsedSubs.length}`)
           // Filter subtitles for this chunk
           const chunkSubs = parsedSubs.filter(sub => 
             sub.start >= startTime && sub.end <= endTime
           )
           setSubtitles(chunkSubs)
+          logger.info('ChunkedLearningPlayer', `Loaded German subtitles: ${chunkSubs.length} entries`)
         })
         .catch(error => {
-          console.error('Failed to load subtitles:', error)
+          logger.error('ChunkedLearningPlayer', 'Failed to load subtitles', error)
+        })
+    } else {
+      logger.warn('ChunkedLearningPlayer', 'No subtitle path provided')
+    }
+    
+    // Load translations (English translation for difficult segments)
+    if (translationPath) {
+      const fullTranslationUrl = buildSubtitleUrl(translationPath)
+      
+      axios.get(fullTranslationUrl, {
+        params: token ? { token, _ts: Date.now() } : { _ts: Date.now() }
+      })
+        .then(response => {
+          const parsedTranslations = parseSRT(response.data)
+          // Filter translations for this chunk
+          const chunkTranslations = parsedTranslations.filter(trans => 
+            trans.start >= startTime && trans.end <= endTime
+          )
+          setTranslations(chunkTranslations)
+          console.log('[ChunkedLearningPlayer] Loaded English translations:', chunkTranslations.length, 'entries')
+        })
+        .catch(error => {
+          console.error('Failed to load translations:', error)
+          // Translation file is optional, so don't show error to user
         })
     }
-  }, [subtitlePath, series, startTime, endTime])
+  }, [subtitlePath, translationPath, series, startTime, endTime])
 
   // Auto-hide controls
   useEffect(() => {
@@ -420,18 +467,20 @@ export const ChunkedLearningPlayer: React.FC<ChunkedLearningPlayerProps> = ({
     setCurrentTime(state.playedSeconds)
     
     // Update current subtitle based on playback time
+    // Find current German subtitle (always shown)
     const currentSub = subtitles.find(sub => 
       state.playedSeconds >= sub.start && state.playedSeconds <= sub.end
     )
     
-    if (currentSub) {
-      setCurrentSubtitle({
-        original: currentSub.text,
-        translation: currentSub.translation || ''
-      })
-    } else {
-      setCurrentSubtitle({ original: '', translation: '' })
-    }
+    // Find current English translation (only shown when available)
+    const currentTranslation = translations.find(trans => 
+      state.playedSeconds >= trans.start && state.playedSeconds <= trans.end
+    )
+    
+    setCurrentSubtitle({
+      original: currentSub?.text || '',
+      translation: currentTranslation?.text || ''
+    })
     
     // Check if we've reached the end of the chunk
     if (state.playedSeconds >= endTime && !showCompletion) {
@@ -461,7 +510,6 @@ export const ChunkedLearningPlayer: React.FC<ChunkedLearningPlayerProps> = ({
   // Construct video URL from backend API
   // Pass the full episode title as the backend matches by checking if it's in the filename
   const videoUrl = videoService.getVideoStreamUrl(series, episode)
-  console.log('Video URL:', videoUrl, 'Series:', series, 'Episode:', episode)
 
   return (
     <PlayerContainer>
@@ -474,7 +522,7 @@ export const ChunkedLearningPlayer: React.FC<ChunkedLearningPlayerProps> = ({
           playing={playing}
           volume={volume}
           muted={muted}
-          controls={true}
+          controls={false}
           onProgress={handleProgress}
           progressInterval={100}
         />

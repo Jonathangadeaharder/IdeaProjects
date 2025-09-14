@@ -2,6 +2,16 @@
 Test WebSocket connections and real-time updates
 """
 
+import os
+import pytest
+
+pytestmark = pytest.mark.integration
+if os.environ.get("RUN_LIVE_HTTP") != "1":
+    pytest.skip(
+        "Skipping live WebSocket integration tests; set RUN_LIVE_HTTP=1 to run.",
+        allow_module_level=True,
+    )
+
 import pytest
 from unittest.mock import MagicMock, patch
 import websocket

@@ -2,13 +2,22 @@
 """
 Test real SRT generation from Whisper transcription using actual Superstore videos
 """
+import pytest
+pytestmark = pytest.mark.slow
 
 import sys
 import time
 from pathlib import Path
+import pytest
 
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent))
+
+# Skip entire module if whisper is not installed
+try:
+    import whisper  # noqa: F401
+except Exception:
+    pytest.skip("whisper not installed; skipping real SRT generation test", allow_module_level=True)
 
 # Import the transcription service directly
 from services.transcriptionservice.whisper_implementation import WhisperTranscriptionService

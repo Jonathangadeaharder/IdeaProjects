@@ -1,8 +1,10 @@
 """Test if server is responding to requests"""
+import pytest
 import requests
 from datetime import datetime
 
 BASE_URL = "http://localhost:8000"
+pytestmark = pytest.mark.performance
 
 def test_health():
     """Test GET /health endpoint"""

@@ -10,12 +10,15 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 from .config import settings
 from database.database_manager import DatabaseManager
-from services.authservice.auth_service import (
-    AuthService, AuthUser, SessionExpiredError
-)
+from services.authservice.auth_service import AuthService, SessionExpiredError
+from services.authservice.models import AuthUser
 from services.dataservice.authenticated_user_vocabulary_service import AuthenticatedUserVocabularyService
 from services.transcriptionservice.factory import TranscriptionServiceFactory
 from services.filterservice.filter_chain import SubtitleFilterChain
+from services.filterservice.vocabulary_filter import VocabularyFilter
+from services.filterservice.user_knowledge_filter import UserKnowledgeFilter
+from services.filterservice.spacy_vocabulary_filter import SpacyVocabularyFilter
+from services.filterservice.difficulty_level_filter import DifficultyLevelFilter
 
 
 # Global service registry
@@ -78,10 +81,15 @@ def get_transcription_service() -> Optional[object]:
 
 
 def get_filter_chain() -> SubtitleFilterChain:
-    """Get filter chain instance"""
+    """Get filter chain instance (without user-specific filters)"""
     if "filter_chain" not in _service_registry:
         logger.info("Creating filter chain...")
         filter_chain = SubtitleFilterChain()
+        
+        # Add basic vocabulary filter
+        vocabulary_filter = VocabularyFilter(language="en")
+        filter_chain.add_filter(vocabulary_filter)
+        logger.info("Added VocabularyFilter to chain")
         
         # Temporarily disable SpaCy filter to isolate timeout issue
         logger.info("SpaCy filter temporarily disabled for debugging")
@@ -89,6 +97,38 @@ def get_filter_chain() -> SubtitleFilterChain:
         _service_registry["filter_chain"] = filter_chain
         logger.info("Filter chain created successfully")
     return _service_registry["filter_chain"]
+
+
+def get_user_filter_chain(current_user: AuthUser, session_token: str) -> SubtitleFilterChain:
+    """Get filter chain with user-specific filters"""
+    # Create a new chain for this user session
+    filter_chain = SubtitleFilterChain()
+    
+    # Add basic vocabulary filter (removes interjections, proper names, etc.)
+    vocabulary_filter = VocabularyFilter(language="de")  # German for Superstore
+    filter_chain.add_filter(vocabulary_filter)
+    
+    # Add user knowledge filter (removes words user already knows)
+    vocabulary_service = get_vocabulary_service()
+    user_knowledge_filter = UserKnowledgeFilter(
+        vocabulary_service=vocabulary_service,
+        session_token=session_token,
+        user_id=current_user.id,
+        language="de"  # German for Superstore
+    )
+    filter_chain.add_filter(user_knowledge_filter)
+    
+    # Add difficulty level filter (identifies words above user's level as blocking words)
+    db_manager = get_database_manager()
+    # For now, assume A1 level - this should be made configurable per user
+    difficulty_filter = DifficultyLevelFilter(
+        db_manager=db_manager,
+        user_level="A1",  # This should come from user profile
+        target_language="de"  # German for Superstore
+    )
+    filter_chain.add_filter(difficulty_filter)
+    
+    return filter_chain
 
 
 # Progress tracking for background tasks
@@ -145,8 +185,10 @@ def cleanup_services():
     _service_registry.clear()
 
 
-def init_services():
-    """Initialize all services at startup"""
+async def init_services():
+    """Initialize all core services"""
+    global _service_registry
+    
     try:
         logger.info("Initializing core services...")
         
@@ -158,7 +200,6 @@ def init_services():
         
         # CRITICAL FIX: Use pooled database manager with backward compatibility
         logger.info("Creating pooled database manager...")
-        import asyncio
         from database.async_database_manager import AsyncDatabaseManager, DatabaseManagerAdapter
         
         # Create async database manager with connection pooling
@@ -171,9 +212,7 @@ def init_services():
         )
         
         # Initialize the async manager
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        loop.run_until_complete(async_db_manager.initialize())
+        await async_db_manager.initialize()
         
         # Create backward-compatible adapter for existing sync code
         db_manager = DatabaseManagerAdapter(async_db_manager)
@@ -236,9 +275,10 @@ def init_services():
         except Exception as e:
             logger.warning(f"Could not check vocabulary database: {e}")
         
-        # Temporarily skip filter chain initialization to test core async/sync fix
-        logger.info("Skipping filter chain initialization to test async/sync authentication fix")
-        logger.info("Filter chain will be re-enabled once authentication is confirmed working")
+        # Skip filter chain initialization to avoid potential hang
+        logger.info("Skipping filter chain initialization (will load on-demand)")
+        # NOTE: Filter chain was potentially causing startup hang
+        # It will be initialized on first use instead
         
         # Skip transcription service initialization to avoid startup hang
         logger.info("Skipping transcription service initialization (will load on-demand)")

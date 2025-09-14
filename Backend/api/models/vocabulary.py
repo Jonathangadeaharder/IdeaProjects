@@ -2,43 +2,162 @@
 Vocabulary API models
 """
 from typing import Optional, List, Dict
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, validator
 
 
 class VocabularyWord(BaseModel):
-    word: str
-    definition: Optional[str] = None
-    difficulty_level: str
-    known: bool = False
+    word: str = Field(
+        ...,
+        min_length=1,
+        max_length=100,
+        description="The vocabulary word"
+    )
+    definition: Optional[str] = Field(
+        None,
+        max_length=500,
+        description="Definition of the word"
+    )
+    difficulty_level: str = Field(
+        ...,
+        pattern=r"^(A1|A2|B1|B2|C1|C2)$",
+        description="CEFR difficulty level (A1, A2, B1, B2, C1, C2)"
+    )
+    known: bool = Field(
+        False,
+        description="Whether the user knows this word"
+    )
+    
+    @validator('word')
+    def validate_word(cls, v):
+        if not v.strip():
+            raise ValueError('Word cannot be empty or whitespace')
+        return v.strip().lower()
 
 
 class MarkKnownRequest(BaseModel):
-    word: str
-    known: bool
+    word: str = Field(
+        ...,
+        min_length=1,
+        max_length=100,
+        description="The word to mark as known/unknown"
+    )
+    known: bool = Field(
+        ...,
+        description="Whether to mark the word as known (true) or unknown (false)"
+    )
+    
+    @validator('word')
+    def validate_word(cls, v):
+        if not v.strip():
+            raise ValueError('Word cannot be empty or whitespace')
+        return v.strip().lower()
 
 
 class VocabularyLibraryWord(BaseModel):
-    id: int
-    word: str
-    difficulty_level: str
-    part_of_speech: str
-    definition: Optional[str] = None
-    known: bool = False
+    id: int = Field(
+        ...,
+        gt=0,
+        description="Unique identifier for the vocabulary word"
+    )
+    word: str = Field(
+        ...,
+        min_length=1,
+        max_length=100,
+        description="The vocabulary word"
+    )
+    difficulty_level: str = Field(
+        ...,
+        pattern=r"^(A1|A2|B1|B2|C1|C2)$",
+        description="CEFR difficulty level (A1, A2, B1, B2, C1, C2)"
+    )
+    part_of_speech: str = Field(
+        ...,
+        min_length=1,
+        max_length=50,
+        description="Part of speech (noun, verb, adjective, etc.)"
+    )
+    definition: Optional[str] = Field(
+        None,
+        max_length=500,
+        description="Definition of the word"
+    )
+    known: bool = Field(
+        False,
+        description="Whether the user knows this word"
+    )
 
 
 class VocabularyLevel(BaseModel):
-    level: str
-    words: List[VocabularyLibraryWord]
-    total_count: int
-    known_count: int
+    level: str = Field(
+        ...,
+        pattern=r"^(A1|A2|B1|B2|C1|C2)$",
+        description="CEFR difficulty level (A1, A2, B1, B2, C1, C2)"
+    )
+    words: List[VocabularyLibraryWord] = Field(
+        ...,
+        description="List of vocabulary words at this level"
+    )
+    total_count: int = Field(
+        ...,
+        ge=0,
+        description="Total number of words at this level"
+    )
+    known_count: int = Field(
+        ...,
+        ge=0,
+        description="Number of known words at this level"
+    )
+    
+    @validator('known_count')
+    def validate_known_count(cls, v, values):
+        if 'total_count' in values and v > values['total_count']:
+            raise ValueError('Known count cannot exceed total count')
+        return v
 
 
 class BulkMarkRequest(BaseModel):
-    level: str
-    known: bool
+    level: str = Field(
+        ...,
+        pattern=r"^(A1|A2|B1|B2|C1|C2)$",
+        description="CEFR difficulty level to mark (A1, A2, B1, B2, C1, C2)"
+    )
+    known: bool = Field(
+        ...,
+        description="Whether to mark all words in the level as known (true) or unknown (false)"
+    )
 
 
 class VocabularyStats(BaseModel):
-    levels: Dict[str, Dict[str, int]]
-    total_words: int
-    total_known: int
+    levels: Dict[str, Dict[str, int]] = Field(
+        ...,
+        description="Statistics by CEFR level with total and known counts"
+    )
+    total_words: int = Field(
+        ...,
+        ge=0,
+        description="Total number of vocabulary words across all levels"
+    )
+    total_known: int = Field(
+        ...,
+        ge=0,
+        description="Total number of known words across all levels"
+    )
+    
+    @validator('total_known')
+    def validate_total_known(cls, v, values):
+        if 'total_words' in values and v > values['total_words']:
+            raise ValueError('Total known cannot exceed total words')
+        return v
+    
+    class Config:
+        schema_extra = {
+            "example": {
+                "levels": {
+                    "A1": {"total": 100, "known": 80},
+                    "A2": {"total": 150, "known": 60},
+                    "B1": {"total": 200, "known": 40}
+                },
+                "total_words": 450,
+                "total_known": 180
+            }
+        }

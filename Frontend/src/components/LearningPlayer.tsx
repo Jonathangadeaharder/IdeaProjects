@@ -198,19 +198,61 @@ const RightControls = styled.div`
   gap: 16px;
 `
 
-const SubtitleToggle = styled(NetflixButton)<{ $active: boolean }>`
+const SubtitleToggle = styled(NetflixButton)<{ $mode: string }>`
   padding: 8px 16px;
   font-size: 14px;
-  background: ${props => props.$active ? '#e50914' : 'rgba(255, 255, 255, 0.2)'};
+  background: ${props => props.$mode !== 'OFF' ? '#e50914' : 'rgba(255, 255, 255, 0.2)'};
+  min-width: 80px;
   
   &:hover {
-    background: ${props => props.$active ? '#f40612' : 'rgba(255, 255, 255, 0.3)'};
+    background: ${props => props.$mode !== 'OFF' ? '#f40612' : 'rgba(255, 255, 255, 0.3)'};
   }
 `
 
 const NextSegmentButton = styled(NetflixButton)`
   padding: 8px 16px;
   font-size: 14px;
+`
+
+const FileInput = styled.input`
+  display: none;
+`
+
+const SubtitleDisplay = styled.div`
+  position: absolute;
+  bottom: 150px;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 80%;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+`
+
+const SubtitleLine = styled.div<{ $language: 'DE' | 'ES' | 'UPLOAD' }>`
+  background: rgba(0, 0, 0, 0.85);
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 18px;
+  font-weight: 500;
+  border-left: 4px solid ${props => {
+    switch (props.$language) {
+      case 'DE': return '#ffd700'; // Gold for German
+      case 'ES': return '#00ff88'; // Green for Spanish/English
+      case 'UPLOAD': return '#ff6b35'; // Orange for uploaded
+      default: return '#ffffff';
+    }
+  }};
+  color: ${props => {
+    switch (props.$language) {
+      case 'DE': return '#ffd700';
+      case 'ES': return '#00ff88';
+      case 'UPLOAD': return '#ff6b35';
+      default: return '#ffffff';
+    }
+  }};
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
 `
 
 const LoadingOverlay = styled.div`
@@ -247,6 +289,16 @@ export const LearningPlayer: React.FC = () => {
   const [segmentWords, setSegmentWords] = useState<VocabularyWord[]>([])
   const [showVocabularyGame, setShowVocabularyGame] = useState(false)
   const [segmentComplete, setSegmentComplete] = useState(false)
+  
+  // Subtitle system state
+  type SubtitleMode = 'OFF' | 'DE' | 'ES' | 'DE+ES' | 'UPLOAD'
+  const [subtitleMode, setSubtitleMode] = useState<SubtitleMode>('OFF')
+  const [uploadedSubtitles, setUploadedSubtitles] = useState<Array<{start: number, end: number, text: string}>>([])
+  const [currentUploadedSubtitle, setCurrentUploadedSubtitle] = useState('')
+  const [originalSubtitles, setOriginalSubtitles] = useState<Array<{start: number, end: number, text: string}>>([])
+  const [currentOriginalSubtitle, setCurrentOriginalSubtitle] = useState('')
+  const [translatedSubtitles, setTranslatedSubtitles] = useState<Array<{start: number, end: number, text: string}>>([])
+  const [currentTranslatedSubtitle, setCurrentTranslatedSubtitle] = useState('')
   
   const { showSubtitles, toggleSubtitles, markWordKnown } = useGameStore()
   const playerRef = useRef<ReactPlayer>(null)
@@ -303,6 +355,28 @@ export const LearningPlayer: React.FC = () => {
   const handleProgress = (state: { played: number; playedSeconds: number }) => {
     setProgress(state.played * 100)
     setCurrentTime(state.playedSeconds)
+    
+    // Update subtitles based on mode
+    if (subtitleMode === 'UPLOAD' && uploadedSubtitles.length > 0) {
+      const currentSub = uploadedSubtitles.find(sub => 
+        state.playedSeconds >= sub.start && state.playedSeconds <= sub.end
+      )
+      setCurrentUploadedSubtitle(currentSub?.text || '')
+    }
+    
+    if ((subtitleMode === 'DE' || subtitleMode === 'DE+ES') && originalSubtitles.length > 0) {
+      const currentSub = originalSubtitles.find(sub => 
+        state.playedSeconds >= sub.start && state.playedSeconds <= sub.end
+      )
+      setCurrentOriginalSubtitle(currentSub?.text || '')
+    }
+    
+    if ((subtitleMode === 'ES' || subtitleMode === 'DE+ES') && translatedSubtitles.length > 0) {
+      const currentSub = translatedSubtitles.find(sub => 
+        state.playedSeconds >= sub.start && state.playedSeconds <= sub.end
+      )
+      setCurrentTranslatedSubtitle(currentSub?.text || '')
+    }
     
     // Check if we've completed the current 5-minute segment
     const segmentEnd = (currentSegment + 1) * SEGMENT_DURATION
@@ -378,6 +452,60 @@ export const LearningPlayer: React.FC = () => {
     return `${mins}:${secs.toString().padStart(2, '0')}`
   }
 
+  const parseSRT = (srtContent: string) => {
+    const subtitles: Array<{start: number, end: number, text: string}> = []
+    const blocks = srtContent.trim().split(/\n\s*\n/)
+    
+    for (const block of blocks) {
+      const lines = block.split('\n')
+      if (lines.length >= 3) {
+        const timeMatch = lines[1].match(/(\d{2}):(\d{2}):(\d{2}),(\d{3}) --> (\d{2}):(\d{2}):(\d{2}),(\d{3})/)
+        if (timeMatch) {
+          const start = parseInt(timeMatch[1]) * 3600 + parseInt(timeMatch[2]) * 60 + parseInt(timeMatch[3]) + parseInt(timeMatch[4]) / 1000
+          const end = parseInt(timeMatch[5]) * 3600 + parseInt(timeMatch[6]) * 60 + parseInt(timeMatch[7]) + parseInt(timeMatch[8]) / 1000
+          const text = lines.slice(2).join(' ').trim()
+          
+          subtitles.push({ start, end, text })
+        }
+      }
+    }
+    
+    return subtitles
+  }
+
+  const handleSRTUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (file && file.name.endsWith('.srt')) {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        const content = e.target?.result as string
+        const parsedSubtitles = parseSRT(content)
+        setUploadedSubtitles(parsedSubtitles)
+        setSubtitleMode('UPLOAD')
+        console.log('Loaded uploaded subtitles:', parsedSubtitles.length, 'entries')
+      }
+      reader.readAsText(file)
+    }
+  }
+
+  const cycleSubtitleMode = () => {
+    const modes: SubtitleMode[] = ['OFF', 'DE', 'ES', 'DE+ES', 'UPLOAD']
+    const currentIndex = modes.indexOf(subtitleMode)
+    const nextIndex = (currentIndex + 1) % modes.length
+    setSubtitleMode(modes[nextIndex])
+  }
+
+  const getSubtitleModeDisplay = () => {
+    switch (subtitleMode) {
+      case 'OFF': return 'Off'
+      case 'DE': return 'DE'
+      case 'ES': return 'ES' 
+      case 'DE+ES': return 'DE+ES'
+      case 'UPLOAD': return 'Upload'
+      default: return 'Off'
+    }
+  }
+
   const getCurrentSegmentTime = () => {
     const segmentStart = currentSegment * SEGMENT_DURATION
     const segmentProgress = Math.max(0, currentTime - segmentStart)
@@ -402,6 +530,7 @@ export const LearningPlayer: React.FC = () => {
           playing={playing}
           volume={volume}
           muted={muted}
+          controls={false}
           onProgress={handleProgress}
           onDuration={setDuration}
           onReady={() => setLoading(false)}
@@ -485,12 +614,26 @@ export const LearningPlayer: React.FC = () => {
               
               <RightControls>
                 <SubtitleToggle
-                  $active={showSubtitles}
-                  onClick={toggleSubtitles}
+                  $mode={subtitleMode}
+                  onClick={() => {
+                    if (subtitleMode === 'UPLOAD') {
+                      // Trigger file upload when in upload mode and clicked again
+                      document.getElementById('srt-upload')?.click()
+                    } else {
+                      cycleSubtitleMode()
+                    }
+                  }}
                 >
                   <LanguageIcon className="w-4 h-4 inline mr-2" />
-                  Subtitles
+                  {getSubtitleModeDisplay()}
                 </SubtitleToggle>
+                
+                <FileInput
+                  type="file"
+                  accept=".srt"
+                  id="srt-upload"
+                  onChange={handleSRTUpload}
+                />
                 
                 <NextSegmentButton onClick={() => {
                   const nextSegment = currentSegment + 1
@@ -505,6 +648,33 @@ export const LearningPlayer: React.FC = () => {
             </Controls>
           </BottomControls>
         </ControlsOverlay>
+        
+        {subtitleMode !== 'OFF' && (
+          <SubtitleDisplay>
+            {subtitleMode === 'DE' && currentOriginalSubtitle && (
+              <SubtitleLine $language="DE">{currentOriginalSubtitle}</SubtitleLine>
+            )}
+            
+            {subtitleMode === 'ES' && currentTranslatedSubtitle && (
+              <SubtitleLine $language="ES">{currentTranslatedSubtitle}</SubtitleLine>
+            )}
+            
+            {subtitleMode === 'DE+ES' && (
+              <>
+                {currentOriginalSubtitle && (
+                  <SubtitleLine $language="DE">{currentOriginalSubtitle}</SubtitleLine>
+                )}
+                {currentTranslatedSubtitle && (
+                  <SubtitleLine $language="ES">{currentTranslatedSubtitle}</SubtitleLine>
+                )}
+              </>
+            )}
+            
+            {subtitleMode === 'UPLOAD' && currentUploadedSubtitle && (
+              <SubtitleLine $language="UPLOAD">{currentUploadedSubtitle}</SubtitleLine>
+            )}
+          </SubtitleDisplay>
+        )}
       </VideoWrapper>
       
       {showVocabularyGame && (

@@ -6,7 +6,7 @@ Provides proper connection pooling and async operations for better performance
 
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, AsyncEngine, async_sessionmaker
 from sqlalchemy import text
-from sqlalchemy.pool import QueuePool
+from sqlalchemy.pool import StaticPool
 from contextlib import asynccontextmanager, contextmanager
 from typing import Any, Dict, List
 import logging
@@ -43,10 +43,7 @@ class AsyncDatabaseManager:
         # Create async engine with connection pooling
         self.engine: AsyncEngine = create_async_engine(
             f"sqlite+aiosqlite:///{self.db_path}",
-            poolclass=QueuePool,  # Use queue pool for connection pooling
-            pool_size=pool_size,
-            max_overflow=max_overflow,
-            pool_timeout=pool_timeout,
+            poolclass=StaticPool,  # Use static pool for SQLite async connections
             pool_pre_ping=True,  # Verify connections before using
             echo=enable_logging,  # SQL logging
             connect_args={
@@ -276,3 +273,39 @@ class DatabaseManagerAdapter:
     def transaction(self):
         """Compatibility method for transaction context"""
         yield self
+    
+    def cursor(self):
+        """Return a cursor-like object for compatibility"""
+        return DatabaseCursor(self)
+    
+    def commit(self):
+        """Compatibility method for commit (no-op since we auto-commit)"""
+        pass
+
+
+class DatabaseCursor:
+    """Cursor-like object for compatibility with existing sync code"""
+    
+    def __init__(self, adapter):
+        self.adapter = adapter
+        self._last_result = None
+    
+    def execute(self, query: str, params: tuple = ()):
+        """Execute a query and store results"""
+        if query.strip().upper().startswith('SELECT'):
+            self._last_result = self.adapter.execute_query(query, params)
+        else:
+            self._last_result = self.adapter.execute_update(query, params)
+        return self
+    
+    def fetchone(self):
+        """Fetch one result"""
+        if isinstance(self._last_result, list) and self._last_result:
+            return self._last_result[0]
+        return None
+    
+    def fetchall(self):
+        """Fetch all results"""
+        if isinstance(self._last_result, list):
+            return self._last_result
+        return []

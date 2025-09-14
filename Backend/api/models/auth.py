@@ -3,29 +3,90 @@ Authentication API models
 """
 from __future__ import annotations
 from typing import Optional
-from pydantic import BaseModel
+from datetime import datetime
+from pydantic import BaseModel, Field, validator
+import re
 
 
 class RegisterRequest(BaseModel):
-    username: str
-    password: str
+    username: str = Field(
+        ...,
+        min_length=3,
+        max_length=50,
+        pattern=r"^[a-zA-Z0-9_-]+$",
+        description="Username must be 3-50 characters, alphanumeric with underscores and hyphens only"
+    )
+    password: str = Field(
+        ...,
+        min_length=8,
+        max_length=128,
+        description="Password must be at least 8 characters long"
+    )
+    
+    @validator('password')
+    def validate_password_strength(cls, v):
+        if not re.search(r'[A-Z]', v):
+            raise ValueError('Password must contain at least one uppercase letter')
+        if not re.search(r'[a-z]', v):
+            raise ValueError('Password must contain at least one lowercase letter')
+        if not re.search(r'\d', v):
+            raise ValueError('Password must contain at least one digit')
+        return v
 
 
 class LoginRequest(BaseModel):
-    username: str
-    password: str
-
-
-class AuthResponse(BaseModel):
-    token: str
-    user: "UserResponse"
-    expires_at: str
+    username: str = Field(
+        ...,
+        min_length=1,
+        max_length=50,
+        description="Username for authentication"
+    )
+    password: str = Field(
+        ...,
+        min_length=1,
+        max_length=128,
+        description="Password for authentication"
+    )
 
 
 class UserResponse(BaseModel):
-    id: int
-    username: str
-    is_admin: bool
-    is_active: bool
-    created_at: str
-    last_login: Optional[str] = None
+    id: int = Field(..., gt=0, description="Unique user identifier")
+    username: str = Field(..., min_length=3, max_length=50, description="Username")
+    is_admin: bool = Field(..., description="Whether user has admin privileges")
+    is_active: bool = Field(..., description="Whether user account is active")
+    created_at: str = Field(..., description="Account creation timestamp (ISO format)")
+    last_login: Optional[str] = Field(None, description="Last login timestamp (ISO format)")
+    
+    class Config:
+        schema_extra = {
+            "example": {
+                "id": 1,
+                "username": "john_doe",
+                "is_admin": False,
+                "is_active": True,
+                "created_at": "2024-01-15T10:30:00Z",
+                "last_login": "2024-01-20T14:45:00Z"
+            }
+        }
+
+
+class AuthResponse(BaseModel):
+    token: str = Field(..., min_length=1, description="JWT authentication token")
+    user: "UserResponse" = Field(..., description="User information")
+    expires_at: str = Field(..., description="Token expiration timestamp (ISO format)")
+    
+    class Config:
+        schema_extra = {
+            "example": {
+                "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                "user": {
+                    "id": 1,
+                    "username": "john_doe",
+                    "is_admin": False,
+                    "is_active": True,
+                    "created_at": "2024-01-15T10:30:00Z",
+                    "last_login": "2024-01-20T14:45:00Z"
+                },
+                "expires_at": "2024-01-21T14:45:00Z"
+            }
+        }

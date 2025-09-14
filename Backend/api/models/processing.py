@@ -2,41 +2,182 @@
 Processing API models
 """
 from typing import Optional, List, Literal
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, validator
+import os
 
 
 class TranscribeRequest(BaseModel):
-    video_path: str
+    video_path: str = Field(
+        ...,
+        min_length=1,
+        description="Path to the video file to transcribe"
+    )
+    
+    @validator('video_path')
+    def validate_video_path(cls, v):
+        if not v.strip():
+            raise ValueError('Video path cannot be empty or whitespace')
+        # Check for common video file extensions
+        valid_extensions = {'.mp4', '.avi', '.mkv', '.mov', '.wmv', '.flv', '.webm'}
+        if not any(v.lower().endswith(ext) for ext in valid_extensions):
+            raise ValueError(f'Path must end with a valid video extension: {", ".join(valid_extensions)}')
+        return v
 
 
 class VocabularyWord(BaseModel):
-    word: str
-    definition: Optional[str] = None
-    difficulty_level: str
-    known: bool
+    word: str = Field(
+        ...,
+        min_length=1,
+        max_length=100,
+        description="The vocabulary word"
+    )
+    definition: Optional[str] = Field(
+        None,
+        max_length=500,
+        description="Definition of the word"
+    )
+    difficulty_level: str = Field(
+        ...,
+        pattern=r"^(A1|A2|B1|B2|C1|C2)$",
+        description="CEFR difficulty level (A1, A2, B1, B2, C1, C2)"
+    )
+    known: bool = Field(
+        ...,
+        description="Whether the user knows this word"
+    )
 
 
 class ProcessingStatus(BaseModel):
-    status: Literal["starting", "processing", "completed", "error"]
-    progress: float  # 0-100
-    current_step: str
-    message: Optional[str] = None
-    started_at: Optional[int] = None  # timestamp
-    vocabulary: Optional[List[VocabularyWord]] = None  # Vocabulary words for completed chunks
-    subtitle_path: Optional[str] = None     # Path to filtered subtitle file
+    status: Literal["starting", "processing", "completed", "error"] = Field(
+        ...,
+        description="Current processing status"
+    )
+    progress: float = Field(
+        ...,
+        ge=0,
+        le=100,
+        description="Processing progress percentage (0-100)"
+    )
+    current_step: str = Field(
+        ...,
+        min_length=1,
+        max_length=200,
+        description="Description of the current processing step"
+    )
+    message: Optional[str] = Field(
+        None,
+        max_length=500,
+        description="Additional status message or error details"
+    )
+    started_at: Optional[int] = Field(
+        None,
+        ge=0,
+        description="Unix timestamp when processing started"
+    )
+    vocabulary: Optional[List[VocabularyWord]] = Field(
+        None,
+        description="Vocabulary words extracted from completed chunks"
+    )
+    subtitle_path: Optional[str] = Field(
+        None,
+        description="Path to German transcription subtitle file (yellow)"
+    )
+    translation_path: Optional[str] = Field(
+        None,
+        description="Path to English translation subtitle file (white)"
+    )
+    
+    class Config:
+        schema_extra = {
+            "example": {
+                "status": "processing",
+                "progress": 45.5,
+                "current_step": "Transcribing audio segment 3/8",
+                "message": "Processing video chunks...",
+                "started_at": 1640995200,
+                "vocabulary": None,
+                "subtitle_path": "/subtitles/video_german.srt",
+                "translation_path": "/subtitles/video_english.srt"
+            }
+        }
 
 
 class FilterRequest(BaseModel):
-    video_path: str
+    video_path: str = Field(
+        ...,
+        min_length=1,
+        description="Path to the video file to filter subtitles for"
+    )
+    
+    @validator('video_path')
+    def validate_video_path(cls, v):
+        if not v.strip():
+            raise ValueError('Video path cannot be empty or whitespace')
+        return v
 
 
 class TranslateRequest(BaseModel):
-    video_path: str
-    source_lang: str
-    target_lang: str
+    video_path: str = Field(
+        ...,
+        min_length=1,
+        description="Path to the video file to translate subtitles for"
+    )
+    source_lang: str = Field(
+        ...,
+        min_length=2,
+        max_length=5,
+        pattern=r"^[a-z]{2}(-[A-Z]{2})?$",
+        description="Source language code (e.g., 'de', 'en-US')"
+    )
+    target_lang: str = Field(
+        ...,
+        min_length=2,
+        max_length=5,
+        pattern=r"^[a-z]{2}(-[A-Z]{2})?$",
+        description="Target language code (e.g., 'en', 'de-DE')"
+    )
+    
+    @validator('video_path')
+    def validate_video_path(cls, v):
+        if not v.strip():
+            raise ValueError('Video path cannot be empty or whitespace')
+        return v
 
 
 class ChunkProcessingRequest(BaseModel):
-    video_path: str
-    start_time: float  # seconds
-    end_time: float    # seconds
+    video_path: str = Field(
+        ...,
+        min_length=1,
+        description="Path to the video file to process"
+    )
+    start_time: float = Field(
+        ...,
+        ge=0,
+        description="Start time of the chunk in seconds"
+    )
+    end_time: float = Field(
+        ...,
+        gt=0,
+        description="End time of the chunk in seconds"
+    )
+    
+    @validator('video_path')
+    def validate_video_path(cls, v):
+        if not v.strip():
+            raise ValueError('Video path cannot be empty or whitespace')
+        return v
+    
+    @validator('end_time')
+    def validate_time_range(cls, v, values):
+        if 'start_time' in values and v <= values['start_time']:
+            raise ValueError('End time must be greater than start time')
+        return v
+    
+    class Config:
+        schema_extra = {
+            "example": {
+                "video_path": "/videos/Superstore/S01/E01.mp4",
+                "start_time": 120.5,
+                "end_time": 180.0
+            }
+        }

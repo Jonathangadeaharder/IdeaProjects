@@ -264,8 +264,8 @@ export const VideoSelection: React.FC = () => {
     }
   }
 
-  // Group videos by series
-  const seriesList = videos.reduce((acc, video) => {
+  // Group videos by series (guard against undefined in tests)
+  const seriesList = (videos ?? []).reduce((acc, video) => {
     const existing = acc.find(s => s.name === video.series)
     if (existing) {
       existing.episodes.push(video)

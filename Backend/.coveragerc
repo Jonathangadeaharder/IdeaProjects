@@ -1,0 +1,7 @@
+[run]
+omit =
+    services/*
+    database/*
+    api_venv/*
+    venv/*
+

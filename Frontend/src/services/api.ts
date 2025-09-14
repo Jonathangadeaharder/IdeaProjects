@@ -244,3 +244,7 @@ export const handleApiError = (error: any) => {
   toast.error(message)
   console.error('API Error:', error)
 }
+
+// Legacy API wrapper functions for test compatibility
+export const getProcessingStatus = (taskId: string) => 
+  api.get(`/processing/${taskId}/status`).then(res => res.data)

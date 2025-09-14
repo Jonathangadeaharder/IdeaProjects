@@ -9,7 +9,7 @@ from pydantic import BaseModel
 
 logger = logging.getLogger("api.debug")
 frontend_logger = logging.getLogger("frontend")
-router = APIRouter(prefix="/debug", tags=["debug"])
+router = APIRouter(tags=["debug"])
 
 
 class FrontendLogEntry(BaseModel):

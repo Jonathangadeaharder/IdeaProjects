@@ -1,245 +1,193 @@
 """
-Unit tests for Authentication Service
-Tests user authentication, session management, and security features
+Unit tests for AuthService
 """
 import pytest
-from unittest.mock import patch
-from services.authservice.auth_service import AuthService, AuthUser, SessionExpiredError
+from datetime import datetime, timedelta
+from unittest.mock import Mock, patch
+
+from services.authservice.auth_service import (
+    AuthService, AuthUser, AuthSession, 
+    AuthenticationError, InvalidCredentialsError, 
+    UserAlreadyExistsError, SessionExpiredError
+)
+
+
+@pytest.fixture
+def mock_db_manager():
+    """Mock database manager for testing"""
+    return Mock()
+
+
+@pytest.fixture
+def auth_service(mock_db_manager):
+    """Create AuthService instance with mock database"""
+    return AuthService(mock_db_manager)
 
 
 class TestAuthService:
-    """Test cases for AuthService"""
-
-    @pytest.fixture
-    def auth_service(self, temp_db):
-        """Create authentication service with temp database"""
-        return AuthService(temp_db)
-
-    def test_initialization(self, auth_service):
-        """Test service initialization"""
-        assert auth_service is not None
-        assert hasattr(auth_service, 'db_manager')
-
-    def test_create_user_success(self, auth_service):
-        """Test successful user creation"""
-        username = "testuser"
-        password = "securepassword123"
-        email = "test@example.com"
+    """Test suite for AuthService"""
+    
+    def test_init(self, auth_service):
+        """Test AuthService initialization"""
+        assert auth_service.session_lifetime_hours == 24
+        assert auth_service.db is not None
+        assert auth_service.pwd_context is not None
+    
+    def test_hash_password(self, auth_service):
+        """Test password hashing"""
+        password = "test_password"
+        hashed = auth_service._hash_password(password)
+        assert hashed != password
+        assert auth_service._verify_password(password, hashed)
+        assert not auth_service._verify_password("wrong_password", hashed)
+    
+    def test_register_user_success(self, auth_service, mock_db_manager):
+        """Test successful user registration"""
+        # Mock database response and _get_user_by_username
+        mock_db_manager.execute_insert.return_value = 1
+        auth_service._get_user_by_username = Mock(return_value=None)  # User doesn't exist
         
-        user = auth_service.create_user(username, email, password)
-        
-        assert isinstance(user, AuthUser)
-        assert user.username == username
-        assert user.email == email
-        assert user.user_id is not None
-
-    def test_create_user_duplicate_username(self, auth_service):
-        """Test creating user with duplicate username fails"""
-        username = "testuser"
-        password = "securepassword123"
-        email = "test@example.com"
-        
-        # Create first user
-        auth_service.create_user(username, email, password)
-        
-        # Attempt to create second user with same username
-        with pytest.raises(ValueError, match="already exists"):
-            auth_service.create_user(username, "other@example.com", password)
-
-    def test_authenticate_valid_credentials(self, auth_service):
-        """Test authentication with valid credentials"""
-        username = "testuser"
-        password = "securepassword123"
-        email = "test@example.com"
-        
-        # Create user
-        auth_service.create_user(username, email, password)
-        
-        # Authenticate
-        user = auth_service.authenticate(username, password)
+        user = auth_service.register_user("testuser", "password123")
         
         assert isinstance(user, AuthUser)
-        assert user.username == username
-
-    def test_authenticate_invalid_username(self, auth_service):
-        """Test authentication with invalid username"""
-        with pytest.raises(ValueError, match="Invalid credentials"):
-            auth_service.authenticate("nonexistent", "password")
-
-    def test_authenticate_invalid_password(self, auth_service):
-        """Test authentication with invalid password"""
-        username = "testuser"
-        password = "securepassword123"
-        email = "test@example.com"
+        assert user.username == "testuser"
+        assert user.id == 1
+        mock_db_manager.execute_insert.assert_called_once()
+    
+    def test_register_user_invalid_username(self, auth_service):
+        """Test user registration with invalid username"""
+        with pytest.raises(ValueError, match="Username must be at least 3 characters long"):
+            auth_service.register_user("ab", "password123")
+    
+    def test_register_user_invalid_password(self, auth_service):
+        """Test user registration with invalid password"""
+        with pytest.raises(ValueError, match="Password must be at least 6 characters long"):
+            auth_service.register_user("testuser", "123")
+    
+    def test_register_user_already_exists(self, auth_service, mock_db_manager):
+        """Test user registration when user already exists"""
+        # Mock that user already exists
+        auth_service._get_user_by_username = Mock(return_value={"id": 1})
         
-        # Create user
-        auth_service.create_user(username, email, password)
+        with pytest.raises(UserAlreadyExistsError):
+            auth_service.register_user("existinguser", "password123")
+    
+    def test_login_success(self, auth_service, mock_db_manager):
+        """Test successful login"""
+        # Mock user data
+        user_data = {
+            'id': 1,
+            'username': 'testuser',
+            'password_hash': auth_service._hash_password('password123'),
+            'salt': '',
+            'is_admin': False,
+            'is_active': True,
+            'created_at': datetime.now().isoformat(),
+            'last_login': None,
+            'native_language': 'en',
+            'target_language': 'de'
+        }
         
-        # Try with wrong password
-        with pytest.raises(ValueError, match="Invalid credentials"):
-            auth_service.authenticate(username, "wrongpassword")
-
-    def test_create_session(self, auth_service):
-        """Test session creation"""
-        username = "testuser"
-        password = "securepassword123"
-        email = "test@example.com"
+        # Mock database responses
+        auth_service._get_user_by_username = Mock(return_value=user_data)
+        mock_db_manager.execute_insert.return_value = 1  # Session creation
+        mock_db_manager.execute_update.return_value = 1  # Last login update
         
-        # Create and authenticate user
-        user = auth_service.create_user(username, email, password)
+        session = auth_service.login("testuser", "password123")
         
-        # Create session
-        session_id, token = auth_service.create_session(user.user_id)
+        assert isinstance(session, AuthSession)
+        assert session.user.username == "testuser"
+        assert len(session.session_token) > 0
+        # Verify session was inserted into database
+        mock_db_manager.execute_insert.assert_called_once()
+    
+    def test_login_invalid_credentials(self, auth_service, mock_db_manager):
+        """Test login with invalid credentials"""
+        # Mock that user doesn't exist
+        auth_service._get_user_by_username = Mock(return_value=None)
         
-        assert session_id is not None
-        assert token is not None
-        assert len(token) > 20  # Should be a substantial token
-
-    def test_verify_valid_token(self, auth_service):
-        """Test verifying valid token"""
-        username = "testuser"
-        password = "securepassword123"
-        email = "test@example.com"
+        with pytest.raises(InvalidCredentialsError):
+            auth_service.login("nonexistent", "password123")
+    
+    def test_validate_session_success(self, auth_service, mock_db_manager):
+        """Test successful session validation"""
+        session_token = "test_token"
+        expires_at = datetime.now() + timedelta(hours=1)
         
-        # Create user and session
-        user = auth_service.create_user(username, email, password)
-        session_id, token = auth_service.create_session(user.user_id)
+        # Mock database response for valid session
+        session_data = {
+            'session_token': session_token,
+            'expires_at': expires_at.isoformat(),
+            'last_used': datetime.now().isoformat(),
+            'is_active': True,
+            'id': 1,
+            'username': 'testuser',
+            'is_admin': False,
+            'user_is_active': True,
+            'created_at': datetime.now().isoformat(),
+            'last_login': None,
+            'native_language': 'en',
+            'target_language': 'de'
+        }
         
-        # Verify token
-        token_data = auth_service.verify_token(token)
+        mock_db_manager.execute_query.return_value = [session_data]
+        mock_db_manager.execute_update.return_value = 1  # Update last_used
         
-        assert token_data is not None
-        assert "user_id" in token_data
-        assert token_data["user_id"] == user.user_id
-
-    def test_verify_invalid_token(self, auth_service):
-        """Test verifying invalid token"""
-        with pytest.raises(ValueError, match="Invalid or expired token"):
-            auth_service.verify_token("invalid_token")
-
-    def test_session_expiration(self, auth_service):
-        """Test session expiration handling"""
-        username = "testuser"
-        password = "securepassword123"
-        email = "test@example.com"
+        user = auth_service.validate_session(session_token)
         
-        # Create user and session
-        user = auth_service.create_user(username, email, password)
-        session_id, token = auth_service.create_session(user.user_id)
+        assert isinstance(user, AuthUser)
+        assert user.username == "testuser"
+        assert user.id == 1
+    
+    def test_validate_session_expired(self, auth_service, mock_db_manager):
+        """Test session validation with expired session"""
+        session_token = "expired_token"
+        expired_at = datetime.now() - timedelta(hours=1)
         
-        # Mock expired session in database
-        with patch.object(auth_service, '_is_session_expired', return_value=True):
-            with pytest.raises(SessionExpiredError):
-                auth_service.verify_token(token)
-
-    def test_revoke_session(self, auth_service):
-        """Test session revocation"""
-        username = "testuser"
-        password = "securepassword123"
-        email = "test@example.com"
+        # Mock database response for expired session
+        session_data = {
+            'session_token': session_token,
+            'expires_at': expired_at.isoformat(),
+            'last_used': datetime.now().isoformat(),
+            'is_active': True,
+            'id': 1,
+            'username': 'testuser',
+            'is_admin': False,
+            'user_is_active': True,
+            'created_at': datetime.now().isoformat(),
+            'last_login': None,
+            'native_language': 'en',
+            'target_language': 'de'
+        }
         
-        # Create user and session
-        user = auth_service.create_user(username, email, password)
-        session_id, token = auth_service.create_session(user.user_id)
+        mock_db_manager.execute_query.return_value = [session_data]
+        mock_db_manager.execute_update.return_value = 1  # Deactivate session
         
-        # Verify token works initially
-        token_data = auth_service.verify_token(token)
-        assert token_data is not None
+        with pytest.raises(SessionExpiredError):
+            auth_service.validate_session(session_token)
         
-        # Revoke session
-        auth_service.revoke_session(session_id)
+        # Verify session was deactivated in database
+        mock_db_manager.execute_update.assert_called_once()
+    
+    def test_logout(self, auth_service, mock_db_manager):
+        """Test user logout"""
+        session_token = "test_token"
         
-        # Verify token no longer works
-        with pytest.raises(ValueError, match="Invalid or expired token"):
-            auth_service.verify_token(token)
-
-    def test_password_security(self, auth_service):
-        """Test password hashing and security"""
-        username = "testuser"
-        password = "securepassword123"
-        email = "test@example.com"
+        # Mock successful logout (session found and deactivated)
+        mock_db_manager.execute_update.return_value = 1
+        result = auth_service.logout(session_token)
+        assert result is True
         
-        # Create user
-        user = auth_service.create_user(username, email, password)
+        # Test logout with non-existent session
+        mock_db_manager.execute_update.return_value = 0
+        result = auth_service.logout("nonexistent_token")
+        assert result is False
+    
+    def test_update_language_preferences(self, auth_service, mock_db_manager):
+        """Test updating user language preferences"""
+        mock_db_manager.execute_update.return_value = 1
         
-        # Verify password is not stored in plain text
-        # This assumes we can access the database directly for verification
-        with auth_service.db_manager.get_connection() as conn:
-            cursor = conn.execute(
-                "SELECT password_hash FROM users WHERE user_id = ?", 
-                (user.user_id,)
-            )
-            stored_hash = cursor.fetchone()
-            
-            # Password should be hashed, not plain text
-            assert stored_hash is not None
-            assert stored_hash[0] != password
-            assert len(stored_hash[0]) > 50  # Hash should be substantial
-
-    def test_multiple_sessions_per_user(self, auth_service):
-        """Test that users can have multiple active sessions"""
-        username = "testuser"
-        password = "securepassword123"
-        email = "test@example.com"
+        result = auth_service.update_language_preferences(1, "es", "fr")
         
-        # Create user
-        user = auth_service.create_user(username, email, password)
-        
-        # Create multiple sessions
-        session1_id, token1 = auth_service.create_session(user.user_id)
-        session2_id, token2 = auth_service.create_session(user.user_id)
-        
-        # Both tokens should be valid
-        token1_data = auth_service.verify_token(token1)
-        token2_data = auth_service.verify_token(token2)
-        
-        assert token1_data["user_id"] == user.user_id
-        assert token2_data["user_id"] == user.user_id
-        assert session1_id != session2_id
-
-    def test_user_data_privacy(self, auth_service):
-        """Test that sensitive user data is properly handled"""
-        username = "testuser"
-        password = "securepassword123"
-        email = "test@example.com"
-        
-        # Create user
-        user = auth_service.create_user(username, email, password)
-        
-        # Verify AuthUser object doesn't contain password
-        user_dict = user.__dict__
-        assert "password" not in user_dict
-        assert "password_hash" not in user_dict
-
-    def test_concurrent_authentication(self, auth_service):
-        """Test concurrent authentication attempts"""
-        import threading
-        username = "testuser"
-        password = "securepassword123"
-        email = "test@example.com"
-        
-        # Create user
-        auth_service.create_user(username, email, password)
-        
-        results = []
-        
-        def authenticate_user():
-            try:
-                user = auth_service.authenticate(username, password)
-                results.append(("success", user.user_id))
-            except Exception as e:
-                results.append(("error", str(e)))
-        
-        # Run multiple authentication attempts concurrently
-        threads = []
-        for _ in range(5):
-            thread = threading.Thread(target=authenticate_user)
-            threads.append(thread)
-            thread.start()
-        
-        for thread in threads:
-            thread.join()
-        
-        # All should succeed
-        successes = [r for r in results if r[0] == "success"]
-        assert len(successes) == 5
+        assert result is True
+        mock_db_manager.execute_update.assert_called_once()

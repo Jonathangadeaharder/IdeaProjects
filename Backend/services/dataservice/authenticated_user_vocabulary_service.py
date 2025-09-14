@@ -8,7 +8,8 @@ import logging
 
 try:
     from .user_vocabulary_service import SQLiteUserVocabularyService
-    from ..authservice.auth_service import AuthService, AuthUser
+    from ..authservice.auth_service import AuthService
+    from ..authservice.models import AuthUser
     from ..filterservice.interface import IUserVocabularyService
     from ...database.database_manager import DatabaseManager
 except ImportError:
@@ -18,7 +19,8 @@ except ImportError:
     project_root = Path(__file__).parent.parent.parent
     sys.path.insert(0, str(project_root))
     from services.dataservice.user_vocabulary_service import SQLiteUserVocabularyService
-    from services.authservice.auth_service import AuthService, AuthUser
+    from services.authservice.auth_service import AuthService
+    from services.authservice.models import AuthUser
     from services.filterservice.interface import IUserVocabularyService
     from database.database_manager import DatabaseManager
 
