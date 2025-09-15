@@ -3,11 +3,11 @@ Simple and clean authentication service for LangPlug
 No complex dependencies, no fancy logging, just works
 """
 
-import bcrypt
+import hashlib
 import secrets
 import time
 from datetime import datetime, timedelta
-from typing import Dict, Optional, Any
+from typing import Optional, Any, Dict
 from passlib.context import CryptContext
 
 from database.database_manager import DatabaseManager
@@ -26,9 +26,10 @@ class AuthService:
     def __init__(self, db_manager: DatabaseManager):
         self.db_manager = db_manager
         self.user_repository = UserRepository(db_manager)
-        self._sessions: Dict[str, AuthSession] = {}
         # Initialize password context with bcrypt
         self.pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+        # Set default session lifetime
+        self.session_lifetime_hours = 24
     
     def _hash_password(self, password: str) -> str:
         """Hash password using bcrypt"""
@@ -46,8 +47,8 @@ class AuthService:
         if not password or len(password) < 6:
             raise ValueError("Password must be at least 6 characters long")
         
-        # Check if user exists
-        existing_user = self._get_user_by_username(username)
+        # Check if user exists using UserRepository
+        existing_user = self.user_repository.find_by_username(username)
         if existing_user:
             raise UserAlreadyExistsError(f"User '{username}' already exists")
         
@@ -55,18 +56,21 @@ class AuthService:
         password_hash = self._hash_password(password)
         
         try:
-            now = datetime.now().isoformat()
-            user_id = self.db.execute_insert("""
-                INSERT INTO users (username, password_hash, salt, is_admin, is_active, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-            """, (username, password_hash, "", False, True, now, now))  # Empty salt field for bcrypt
+            # Use UserRepository to create user
+            user_id = self.user_repository.create_from_data(
+                username=username,
+                password_hash=password_hash,
+                is_active=True,
+                native_language="en",
+                target_language="de"
+            )
             
             return AuthUser(
                 id=user_id,
                 username=username,
                 is_admin=False,
                 is_active=True,
-                created_at=now,
+                created_at=datetime.now().isoformat(),
                 native_language="en",
                 target_language="de"
             )
@@ -76,10 +80,25 @@ class AuthService:
     
     def login(self, username: str, password: str) -> AuthSession:
         """Login user and create session"""
-        # Get user from database
-        user_data = self._get_user_by_username(username)
-        if not user_data:
+        # Get user from database using UserRepository
+        user = self.user_repository.find_by_username(username)
+        if not user:
             raise InvalidCredentialsError("Invalid username or password")
+        
+        # Convert User to dict for compatibility with existing code
+        user_data = {
+            'id': user.id,
+            'username': user.username,
+            'password_hash': user.password_hash,
+            'salt': getattr(user, 'salt', ''),  # For legacy users
+            'is_admin': user.is_admin,
+            'is_active': user.is_active,
+            'created_at': user.created_at.isoformat() if user.created_at else '',
+            'updated_at': getattr(user, 'updated_at', datetime.now()).isoformat() if getattr(user, 'updated_at') else '',
+            'last_login': getattr(user, 'last_login', None),
+            'native_language': getattr(user, 'native_language', 'en'),
+            'target_language': getattr(user, 'target_language', 'de')
+        }
         
         # Check if user needs password migration (from SHA256 to bcrypt)
         # For legacy users with salt, assume they need migration
@@ -93,12 +112,7 @@ class AuthService:
             
             # Migrate to bcrypt on successful login
             new_hash = self._hash_password(password)
-            now = datetime.now().isoformat()
-            self.db.execute_update("""
-                UPDATE users 
-                SET password_hash = ?, salt = '', updated_at = ?
-                WHERE id = ?
-            """, (new_hash, now, user_data['id']))
+            self.user_repository.update_password_hash(user.id, new_hash)
             
         else:
             # Verify password using bcrypt for new/migrated users
@@ -111,71 +125,51 @@ class AuthService:
         
         # Store session in database
         try:
-            now = datetime.now().isoformat()
-            self.db.execute_insert("""
-                INSERT INTO user_sessions (user_id, session_token, expires_at, created_at, last_used, is_active)
-                VALUES (?, ?, ?, ?, ?, ?)
-            """, (user_data['id'], session_token, expires_at.isoformat(), now, now, True))
+            expires_at_iso = expires_at.isoformat()
+            self.user_repository.create_session(user_data['id'], session_token, expires_at_iso)
         except Exception as e:
             raise AuthenticationError(f"Failed to create session: {e}")
         
-        # Update last login
-        now = datetime.now().isoformat()
-        self.db.execute_update("""
-            UPDATE users SET last_login = ?, updated_at = ? WHERE id = ?
-        """, (now, now, user_data['id']))
+        # Update last login using UserRepository
+        self.user_repository.update_last_login(user.id)
         
-        # Create user object
-        user = AuthUser(
-            id=user_data['id'],
-            username=user_data['username'],
-            is_admin=bool(user_data.get('is_admin', False)),
-            is_active=bool(user_data.get('is_active', True)),
-            created_at=user_data.get('created_at', ''),
-            last_login=now,
-            native_language=user_data.get('native_language', 'en'),
-            target_language=user_data.get('target_language', 'de')
+        # Create AuthUser object for session
+        auth_user = AuthUser(
+            id=user.id,
+            username=user.username,
+            is_admin=user.is_admin,
+            is_active=user.is_active,
+            created_at=user.created_at.isoformat() if user.created_at else '',
+            native_language=getattr(user, 'native_language', 'en'),
+            target_language=getattr(user, 'target_language', 'de'),
+            last_login=getattr(user, 'last_login', None)
         )
         
         return AuthSession(
             session_token=session_token,
-            user=user,
+            user=auth_user,
             expires_at=expires_at,
             created_at=datetime.now()
         )
     
     def validate_session(self, session_token: str) -> AuthUser:
         """Validate session token and return user"""
-        # Get session from database
+        # Get session from database using UserRepository
         try:
-            results = self.db.execute_query("""
-                SELECT us.session_token, us.expires_at, us.last_used, us.is_active,
-                       u.id, u.username, u.is_admin, u.is_active as user_is_active,
-                       u.created_at, u.last_login, u.native_language, u.target_language
-                FROM user_sessions us
-                JOIN users u ON us.user_id = u.id
-                WHERE us.session_token = ? AND us.is_active = 1
-            """, (session_token,))
+            session_data = self.user_repository.get_active_session_with_user(session_token)
             
-            if not results:
+            if not session_data:
                 raise SessionExpiredError("Invalid or expired session")
-            
-            session_data = results[0]
             
             # Check if session is expired
             expires_at = datetime.fromisoformat(session_data['expires_at'])
             if datetime.now() > expires_at:
-                # Mark session as inactive
-                self.db.execute_update("""
-                    UPDATE user_sessions SET is_active = 0 WHERE session_token = ?
-                """, (session_token,))
+                # Mark session as inactive using UserRepository
+                self.user_repository.mark_session_inactive(session_token)
                 raise SessionExpiredError("Session has expired")
             
-            # Update last used timestamp
-            now = datetime.now().isoformat()
-            self.db.execute_update("""
-                UPDATE user_sessions SET last_used = ? WHERE session_token = ?
-            """, (now, session_token))
+            # Update last used timestamp using UserRepository
+            self.user_repository.update_session_last_used(session_token)
             
             return AuthUser(
                 id=session_data['id'],
@@ -195,35 +189,35 @@ class AuthService:
     def logout(self, session_token: str) -> bool:
         """Logout user by deactivating session"""
         try:
-            # Mark session as inactive in database
-            rows_affected = self.db.execute_update("""
-                UPDATE user_sessions SET is_active = 0 WHERE session_token = ?
-            """, (session_token,))
-            
-            return rows_affected > 0
+            # Use UserRepository to deactivate session
+            return self.user_repository.deactivate_session(session_token)
         except Exception as e:
             raise AuthenticationError(f"Failed to logout: {e}")
     
     def update_language_preferences(self, user_id: int, native_language: str, target_language: str) -> bool:
         """Update user's language preferences"""
         try:
-            now = datetime.now().isoformat()
-            self.db.execute_update("""
-                UPDATE users 
-                SET native_language = ?, target_language = ?, updated_at = ?
-                WHERE id = ?
-            """, (native_language, target_language, now, user_id))
-            
-            return True
+            # Use UserRepository to update language preferences
+            return self.user_repository.update_language_preference(user_id, native_language, target_language)
         except Exception as e:
             raise AuthenticationError(f"Failed to update language preferences: {e}")
     
     def _get_user_by_username(self, username: str) -> Optional[Dict[str, Any]]:
-        """Get user from database by username"""
-        results = self.db.execute_query("""
-            SELECT id, username, password_hash, salt, is_admin, is_active, created_at, updated_at, last_login,
-                   native_language, target_language
-            FROM users WHERE username = ?
-        """, (username,))
-        
-        return dict(results[0]) if results else None
+        """Get user from database by username using UserRepository"""
+        user = self.user_repository.find_by_username(username)
+        if user:
+            # Convert User object to dict for compatibility
+            return {
+                'id': user.id,
+                'username': user.username,
+                'password_hash': user.password_hash,
+                'salt': getattr(user, 'salt', ''),  # For legacy users
+                'is_admin': user.is_admin,
+                'is_active': user.is_active,
+                'created_at': user.created_at.isoformat() if user.created_at else '',
+                'updated_at': getattr(user, 'updated_at', None),
+                'last_login': getattr(user, 'last_login', None),
+                'native_language': getattr(user, 'native_language', 'en'),
+                'target_language': getattr(user, 'target_language', 'de')
+            }
+        return None
