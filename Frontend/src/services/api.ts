@@ -1,9 +1,6 @@
-import axios, { AxiosRequestConfig } from 'axios'
 import { toast } from 'react-hot-toast'
 import { logger } from './logger'
 import type { 
-  LoginRequest, 
-  RegisterRequest, 
   AuthResponse, 
   User, 
   VideoInfo, 
@@ -13,238 +10,318 @@ import type {
   VocabularyStats
 } from '@/types'
 
-// Extend AxiosRequestConfig to include metadata
-interface ExtendedAxiosRequestConfig extends AxiosRequestConfig {
-  metadata?: {
-    startTime: number
-  }
-}
+// Import the generated client and SDK
+import { client, createConfig } from '@/client/client.gen'
+import * as sdk from '@/client/sdk.gen'
 
 // Get API base URL from environment variables
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
-
-const api = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json'
-  }
-})
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
 
 // Token management
 let authToken: string | null = localStorage.getItem('authToken')
 
-api.interceptors.request.use((config) => {
-  const startTime = Date.now()
-  const extendedConfig = config as ExtendedAxiosRequestConfig
-  extendedConfig.metadata = { startTime }
+// Configure the client with proper setup
+client.setConfig(createConfig({
+  baseUrl: API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  interceptors: {
+    request: [
+      (request, options) => {
+        const startTime = Date.now()
+        
+        // Add auth token if available
+        if (authToken) {
+          request.headers.set('Authorization', `Bearer ${authToken}`)
+        }
+        
+        // Log API request
+        const method = options.method?.toUpperCase() || 'UNKNOWN'
+        const url = request.url
+        logger.apiRequest(method, url, options.body)
+        
+        // Store start time for duration calculation
+        ;(request as any)._startTime = startTime
+        
+        return request
+      }
+    ],
+    response: [
+      {
+        onFulfilled: (response, request, options) => {
+          // Log successful response
+          const duration = (request as any)._startTime ? Date.now() - (request as any)._startTime : undefined
+          const method = options.method?.toUpperCase() || 'UNKNOWN'
+          const url = request.url
+          
+          logger.apiResponse(method, url, response.status, null, duration)
+          
+          return response
+        },
+        onRejected: (error, request, options) => {
+          // Log error response
+          const duration = (request as any)._startTime ? Date.now() - (request as any)._startTime : undefined
+          const method = options?.method?.toUpperCase() || 'UNKNOWN'
+          const url = request?.url || 'unknown'
+          
+          logger.apiResponse(method, url, error.status || 0, error, duration)
+          
+          // Handle auth errors
+          if (error.status === 401) {
+            authToken = null
+            localStorage.removeItem('authToken')
+            toast.error('Session expired. Please log in again.')
+          }
+          
+          throw error
+        }
+      }
+    ]
+  }
+}))
+
+// Helper function to handle API errors
+const handleApiError = (error: any, context: string) => {
+  logger.error(`API Error in ${context}:`, error)
   
-  if (authToken) {
-    config.headers.Authorization = `Bearer ${authToken}`
+  if (error.status === 401) {
+    toast.error('Authentication required')
+  } else if (error.status === 403) {
+    toast.error('Access denied')
+  } else if (error.status === 404) {
+    toast.error('Resource not found')
+  } else if (error.status >= 500) {
+    toast.error('Server error. Please try again later.')
+  } else {
+    toast.error(error.message || 'An unexpected error occurred')
   }
   
-  // Log API request
-  logger.apiRequest(config.method?.toUpperCase() || 'UNKNOWN', config.url || 'unknown', config.data)
-  
-  return config
-})
+  throw error
+}
 
-api.interceptors.response.use(
-  (response) => {
-    // Log successful response
-    const extendedConfig = response.config as ExtendedAxiosRequestConfig
-    const duration = extendedConfig.metadata ? Date.now() - extendedConfig.metadata.startTime : undefined
-    logger.apiResponse(
-      response.config.method?.toUpperCase() || 'UNKNOWN',
-      response.config.url || 'unknown',
-      response.status,
-      response.data,
-      duration
-    )
-    return response
-  },
-  (error) => {
-    // Log error response
-    const extendedConfig = error.config as ExtendedAxiosRequestConfig
-    const duration = extendedConfig?.metadata ? Date.now() - extendedConfig.metadata.startTime : undefined
-    logger.apiResponse(
-      error.config?.method?.toUpperCase() || 'UNKNOWN',
-      error.config?.url || 'unknown',
-      error.response?.status || 0,
-      error.response?.data,
-      duration
-    )
+// Authentication API
+export const login = async (email: string, password: string): Promise<AuthResponse> => {
+  try {
+    const response = await sdk.loginApiAuthLoginPost({
+      body: { username: email, password }
+    })
     
-    if (error.response?.status === 401) {
-      logger.warn('Auth', 'Unauthorized - redirecting to login', { error: error.response?.data })
-      localStorage.removeItem('authToken')
-      authToken = null
-      window.location.href = '/login'
+    if (response.data?.access_token) {
+      authToken = response.data.access_token
+      localStorage.setItem('authToken', authToken)
     }
-    return Promise.reject(error)
-  }
-)
-
-export const authService = {
-  async login(credentials: LoginRequest): Promise<AuthResponse> {
-    const { data } = await api.post<AuthResponse>('/auth/login', credentials)
-    authToken = data.token
-    localStorage.setItem('authToken', data.token)
-    return data
-  },
-
-  async register(userData: RegisterRequest): Promise<User> {
-    const { data } = await api.post<User>('/auth/register', userData)
-    return data
-  },
-
-  async logout(): Promise<void> {
-    try {
-      await api.post('/auth/logout')
-    } catch (error) {
-      console.error('Logout error:', error)
-    } finally {
-      authToken = null
-      localStorage.removeItem('authToken')
+    
+    return {
+      token: response.data?.access_token || '',
+      user: {
+        id: response.data?.user?.id || '',
+        email: response.data?.user?.email || email,
+        name: response.data?.user?.name || ''
+      }
     }
-  },
-
-  async getCurrentUser(): Promise<User> {
-    const { data } = await api.get<User>('/auth/me')
-    return data
-  },
-
-  isAuthenticated(): boolean {
-    return !!authToken
+  } catch (error) {
+    return handleApiError(error, 'login')
   }
 }
 
-export const videoService = {
-  async getVideos(): Promise<VideoInfo[]> {
-    const { data } = await api.get<VideoInfo[]>('/videos')
-    return data
-  },
+export const register = async (email: string, password: string, name: string): Promise<AuthResponse> => {
+  try {
+    const response = await sdk.registerApiAuthRegisterPost({
+      body: { email, password, name }
+    })
+    
+    if (response.data?.access_token) {
+      authToken = response.data.access_token
+      localStorage.setItem('authToken', authToken)
+    }
+    
+    return {
+      token: response.data?.access_token || '',
+      user: {
+        id: response.data?.user?.id || '',
+        email: response.data?.user?.email || email,
+        name: response.data?.user?.name || name
+      }
+    }
+  } catch (error) {
+    return handleApiError(error, 'register')
+  }
+}
 
-  getVideoStreamUrl(series: string, episode: string): string {
-    const token = localStorage.getItem('authToken')
-    const baseUrl = `${API_BASE_URL}/videos/${encodeURIComponent(series)}/${encodeURIComponent(episode)}`
-    return token ? `${baseUrl}?token=${encodeURIComponent(token)}` : baseUrl
-  },
+export const logout = async (): Promise<void> => {
+  try {
+    await sdk.logoutApiAuthLogoutPost()
+  } catch (error) {
+    logger.warn('Logout API call failed:', error)
+  } finally {
+    authToken = null
+    localStorage.removeItem('authToken')
+  }
+}
 
-  async uploadVideo(series: string, videoFile: File): Promise<VideoInfo> {
+export const getProfile = async (): Promise<User> => {
+  try {
+    const response = await sdk.getCurrentUserInfoApiAuthMeGet()
+    return {
+      id: response.data?.id || '',
+      email: response.data?.email || '',
+      name: response.data?.name || ''
+    }
+  } catch (error) {
+    return handleApiError(error, 'getProfile')
+  }
+}
+
+// Video API
+export const getVideos = async (): Promise<VideoInfo[]> => {
+  try {
+    const response = await sdk.getAvailableVideosApiVideosGet()
+    return response.data || []
+  } catch (error) {
+    return handleApiError(error, 'getVideos')
+  }
+}
+
+export const getVideoDetails = async (videoId: string): Promise<VideoInfo> => {
+  try {
+    const response = await sdk.getVideoStatusApiVideosVideoIdStatusGet({
+      path: { video_id: videoId }
+    })
+    return response.data as VideoInfo
+  } catch (error) {
+    return handleApiError(error, 'getVideoDetails')
+  }
+}
+
+export const uploadVideo = async (file: File, series?: string, episode?: string): Promise<any> => {
+  try {
     const formData = new FormData()
-    formData.append('video_file', videoFile)
+    formData.append('file', file)
+    if (series) formData.append('series', series)
+    if (episode) formData.append('episode', episode)
     
-    const { data } = await api.post<VideoInfo>(`/videos/upload/${encodeURIComponent(series)}`, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      }
-    })
-    return data
-  },
-
-  // MODIFIED: This function will now start the full pipeline
-  async prepareEpisode(videoPath: string): Promise<{ task_id: string; status: string }> {
-    const { data } = await api.post('/process/prepare-episode', { video_path: videoPath })
-    return data
-  },
-
-  // The old transcribeVideo can be removed or kept for other purposes
-  // async transcribeVideo(videoPath: string): Promise<{ task_id: string; status: string }> { ... }
-
-  async filterSubtitles(videoPath: string): Promise<{ task_id: string; status: string }> {
-    const { data } = await api.post('/process/filter-subtitles', { video_path: videoPath })
-    return data
-  },
-
-  async translateSubtitles(videoPath: string, sourceLang: string, targetLang: string): Promise<{ task_id: string; status: string }> {
-    const { data } = await api.post('/process/translate-subtitles', { video_path: videoPath, source_lang: sourceLang, target_lang: targetLang })
-    return data
-  },
-
-  async getTaskProgress(taskId: string): Promise<ProcessingStatus> {
-    const { data } = await api.get(`/process/progress/${taskId}`)
-    return data
-  },
-
-  async processChunk(videoPath: string, startTime: number, endTime: number): Promise<{ task_id: string; status: string }> {
-    const { data } = await api.post('/process/chunk', { 
-      video_path: videoPath,
-      start_time: startTime,
-      end_time: endTime
-    })
-    return data
-  }
-}
-
-export const vocabularyService = {
-  async getBlockingWords(
-    videoPath: string, 
-    segmentStart: number = 0, 
-    segmentDuration: number = 300
-  ): Promise<VocabularyWord[]> {
-    const { data } = await api.get('/vocabulary/blocking-words', {
-      params: {
-        video_path: videoPath,
-        segment_start: segmentStart,
-        segment_duration: segmentDuration
-      }
-    })
-    return data.blocking_words
-  },
-
-  async markWordAsKnown(word: string, known: boolean): Promise<void> {
-    await api.post('/vocabulary/mark-known', { word, known })
-  },
-
-  // Vocabulary Library APIs
-  async preloadVocabulary(): Promise<{ success: boolean; message: string; levels: Record<string, number> }> {
-    const { data } = await api.post('/vocabulary/preload')
-    return data
-  },
-
-  async getVocabularyLevel(level: string): Promise<VocabularyLevel> {
-    const { data } = await api.get<VocabularyLevel>(`/vocabulary/library/${level}`)
-    return data
-  },
-
-  async bulkMarkLevel(level: string, known: boolean): Promise<{ success: boolean; message: string; word_count: number }> {
-    const { data } = await api.post('/vocabulary/library/bulk-mark', { level, known })
-    return data
-  },
-
-  async getVocabularyStats(): Promise<VocabularyStats> {
-    const { data } = await api.get<VocabularyStats>('/vocabulary/library/stats')
-    return data
-  }
-}
-
-// Export the api instance for direct use when needed
-export { api }
-
-export const handleApiError = (error: any) => {
-  let message = 'An error occurred'
-  
-  if (error.response?.data) {
-    const data = error.response.data
+    const response = series 
+      ? await sdk.uploadVideoApiVideosUploadSeriesPost({ body: formData })
+      : await sdk.uploadVideoGenericApiVideosUploadPost({ body: formData })
     
-    // Handle Pydantic validation errors
-    if (Array.isArray(data) && data[0]?.type && data[0]?.msg) {
-      message = `Validation error: ${data[0].msg}`
-    }
-    // Handle standard FastAPI errors
-    else if (data.detail) {
-      message = typeof data.detail === 'string' ? data.detail : 'Request validation failed'
-    }
+    return response.data
+  } catch (error) {
+    return handleApiError(error, 'uploadVideo')
   }
-  // Handle network errors
-  else if (error.message) {
-    message = error.message
-  }
-  
-  toast.error(message)
-  console.error('API Error:', error)
 }
 
-// Legacy API wrapper functions for test compatibility
-export const getProcessingStatus = (taskId: string) => 
-  api.get(`/processing/${taskId}/status`).then(res => res.data)
+export const processVideo = async (videoId: string): Promise<any> => {
+  try {
+    const response = await sdk.fullPipelineApiProcessFullPipelinePost({
+      body: { video_id: videoId }
+    })
+    return response.data
+  } catch (error) {
+    return handleApiError(error, 'processVideo')
+  }
+}
+
+export const getProcessingStatus = async (taskId: string): Promise<ProcessingStatus> => {
+  try {
+    const response = await sdk.getTaskProgressApiProcessProgressTaskIdGet({
+      path: { task_id: taskId }
+    })
+    return response.data as ProcessingStatus
+  } catch (error) {
+    return handleApiError(error, 'getProcessingStatus')
+  }
+}
+
+// Subtitle API
+export const getSubtitles = async (subtitlePath: string): Promise<any> => {
+  try {
+    const response = await sdk.getSubtitlesApiVideosSubtitlesSubtitlePathGet({
+      path: { subtitle_path: subtitlePath }
+    })
+    return response.data
+  } catch (error) {
+    return handleApiError(error, 'getSubtitles')
+  }
+}
+
+export const filterSubtitles = async (data: any): Promise<any> => {
+  try {
+    const response = await sdk.filterSubtitlesApiProcessFilterSubtitlesPost({
+      body: data
+    })
+    return response.data
+  } catch (error) {
+    return handleApiError(error, 'filterSubtitles')
+  }
+}
+
+export const translateSubtitles = async (data: any): Promise<any> => {
+  try {
+    const response = await sdk.translateSubtitlesApiProcessTranslateSubtitlesPost({
+      body: data
+    })
+    return response.data
+  } catch (error) {
+    return handleApiError(error, 'translateSubtitles')
+  }
+}
+
+// Vocabulary API
+export const getVocabularyStats = async (): Promise<VocabularyStats> => {
+  try {
+    const response = await sdk.getVocabularyStatsEndpointApiVocabularyStatsGet()
+    return response.data as VocabularyStats
+  } catch (error) {
+    return handleApiError(error, 'getVocabularyStats')
+  }
+}
+
+export const getBlockingWords = async (): Promise<VocabularyWord[]> => {
+  try {
+    const response = await sdk.getBlockingWordsApiVocabularyBlockingWordsGet()
+    return response.data || []
+  } catch (error) {
+    return handleApiError(error, 'getBlockingWords')
+  }
+}
+
+export const markWordAsKnown = async (word: string): Promise<void> => {
+  try {
+    await sdk.markWordAsKnownApiVocabularyMarkKnownPost({
+      body: { word }
+    })
+  } catch (error) {
+    return handleApiError(error, 'markWordAsKnown')
+  }
+}
+
+export const preloadVocabulary = async (): Promise<void> => {
+  try {
+    await sdk.preloadVocabularyApiVocabularyPreloadPost()
+  } catch (error) {
+    return handleApiError(error, 'preloadVocabulary')
+  }
+}
+
+export const getVocabularyLevel = async (): Promise<VocabularyLevel> => {
+  try {
+    const response = await sdk.getVocabularyLevelApiVocabularyLibraryLevelGet()
+    return response.data as VocabularyLevel
+  } catch (error) {
+    return handleApiError(error, 'getVocabularyLevel')
+  }
+}
+
+export const bulkMarkLevelKnown = async (level: string): Promise<void> => {
+  try {
+    await sdk.bulkMarkLevelKnownApiVocabularyLibraryBulkMarkPost({
+      body: { level }
+    })
+  } catch (error) {
+    return handleApiError(error, 'bulkMarkLevelKnown')
+  }
+}
+
+// Export the configured client and utilities
+export { client as apiClient, handleApiError }
