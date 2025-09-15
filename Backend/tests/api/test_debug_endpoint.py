@@ -15,14 +15,14 @@ async def test_debug_frontend_logs(async_client):
         "url": "http://localhost:3000/test",
         "userAgent": "TestScript/1.0",
     }
-    r = await async_client.post("/debug/frontend-logs", json=log_entry)
+    r = await async_client.post("/api/debug/frontend-logs", json=log_entry)
     assert r.status_code == 200
     assert r.json().get("success") is True
 
 
 @pytest.mark.anyio
 async def test_debug_health(async_client):
-    r = await async_client.get("/debug/health")
+    r = await async_client.get("/api/debug/health")
     assert r.status_code == 200
     data = r.json()
     assert data["status"] == "healthy"
