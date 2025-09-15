@@ -144,6 +144,49 @@ class TranslateRequest(BaseModel):
         return v
 
 
+class FullPipelineRequest(BaseModel):
+    video_path: str = Field(
+        ...,
+        min_length=1,
+        description="Path to the video file to process"
+    )
+    source_lang: str = Field(
+        "de",
+        min_length=2,
+        max_length=5,
+        pattern=r"^[a-z]{2}(-[A-Z]{2})?$",
+        description="Source language code (e.g., 'de', 'en-US')"
+    )
+    target_lang: str = Field(
+        "en",
+        min_length=2,
+        max_length=5,
+        pattern=r"^[a-z]{2}(-[A-Z]{2})?$",
+        description="Target language code (e.g., 'en', 'de-DE')"
+    )
+    
+    @validator('video_path')
+    def validate_video_path(cls, v):
+        if not v.strip():
+            raise ValueError('Video path cannot be empty or whitespace')
+        return v
+    
+    @validator('source_lang', 'target_lang')
+    def validate_language_codes(cls, v):
+        # List of valid ISO 639-1 language codes
+        valid_codes = {'en', 'de', 'es', 'fr', 'it', 'pt', 'ru', 'ja', 'ko', 'zh', 'ar', 'hi', 'nl', 'sv', 'no', 'da', 'fi', 'pl', 'cs', 'hu', 'ro', 'bg', 'hr', 'sk', 'sl', 'et', 'lv', 'lt', 'mt', 'ga', 'cy', 'eu', 'ca', 'gl', 'tr', 'el', 'he', 'fa', 'ur', 'th', 'vi', 'id', 'ms', 'tl', 'sw', 'am', 'zu', 'xh', 'af', 'is', 'fo', 'kl'}
+        base_code = v.split('-')[0].lower()
+        if base_code not in valid_codes:
+            raise ValueError(f'Invalid language code: {v}')
+        return v
+    
+    @validator('target_lang')
+    def validate_different_languages(cls, v, values):
+        if 'source_lang' in values and v == values['source_lang']:
+            raise ValueError('Source and target languages must be different')
+        return v
+
+
 class ChunkProcessingRequest(BaseModel):
     video_path: str = Field(
         ...,
