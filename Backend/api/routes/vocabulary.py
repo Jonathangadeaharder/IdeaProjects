@@ -10,7 +10,7 @@ from ..models.vocabulary import (
     VocabularyWord, MarkKnownRequest, VocabularyLibraryWord, 
     VocabularyLevel, BulkMarkRequest, VocabularyStats
 )
-from core.dependencies import get_current_user, get_database_manager, get_filter_chain
+from core.dependencies import get_current_user, get_database_manager, get_subtitle_processor
 from core.config import settings
 from services.authservice.models import AuthUser
 from services.vocabulary_preload_service import VocabularyPreloadService
@@ -40,8 +40,8 @@ async def extract_blocking_words_for_segment(
             logger.warning(f"No segments found for time range {start}-{end_time}")
             return []
         
-        # Get user-specific filter chain for processing
-        from core.dependencies import get_user_filter_chain, get_auth_service
+        # Get subtitle processor for processing
+        from core.dependencies import get_subtitle_processor, get_auth_service
         from services.authservice.models import AuthUser
         
         # Get the actual user from database using user_id
@@ -59,22 +59,22 @@ async def extract_blocking_words_for_segment(
                         username=user_row[1]
                     )
                 else:
-                    # Fallback to mock user if not found
-                    current_user = AuthUser(id=user_id, username=f"user_{user_id}")
+                    # Raise error if user not found
+                    raise ValueError(f"User with id {user_id} not found in database")
         except Exception as e:
-            logger.warning(f"Could not get user from database: {e}, using mock user")
-            current_user = AuthUser(id=user_id, username=f"user_{user_id}")
+            logger.error(f"Could not get user from database: {e}")
+            raise HTTPException(status_code=404, detail=f"User with id {user_id} not found")
         
-        # Use user-specific filter chain with proper user context and difficulty filtering
-        filter_chain = get_user_filter_chain(current_user, f"session_{user_id}")
+        # Use subtitle processor for vocabulary extraction
+        subtitle_processor = get_subtitle_processor()
         
-        # Process segments through filter chain to get blocking words
-        result = await filter_chain.process_file(srt_path, user_id)
+        # Process segments through subtitle processor to get blocking words
+        result = await subtitle_processor.process_file(srt_path, user_id)
         
-        # Check for filter chain errors first
+        # Check for processing errors first
         if "error" in result.get("statistics", {}):
             error_msg = result["statistics"]["error"]
-            logger.error(f"[VOCABULARY ERROR] Filter chain failed: {error_msg}")
+            logger.error(f"[VOCABULARY ERROR] Subtitle processing failed: {error_msg}")
             raise HTTPException(status_code=500, detail=f"Vocabulary extraction failed: {error_msg}")
         
         # Extract blocking words from the result
@@ -179,14 +179,10 @@ async def get_blocking_words(
         
         srt_file = video_file.with_suffix(".srt")
         
-        # If subtitle file doesn't exist, return mock data for now
+        # If subtitle file doesn't exist, raise error
         if not srt_file.exists():
-            logger.warning(f"Subtitle file not found: {srt_file}, returning mock data")
-            # Return mock blocking words when subtitles aren't ready
-            blocking_words = await extract_blocking_words_for_segment(
-                "", segment_start, segment_duration, current_user.id
-            )
-            return {"blocking_words": blocking_words[:10]}
+            logger.error(f"Subtitle file not found: {srt_file}")
+            raise HTTPException(status_code=404, detail="Subtitle file not found")
         
         # Extract blocking words for the specific segment
         blocking_words = await extract_blocking_words_for_segment(

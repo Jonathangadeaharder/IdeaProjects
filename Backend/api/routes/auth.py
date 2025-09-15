@@ -4,6 +4,7 @@ Authentication API routes
 import logging
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials
+from typing import Annotated
 
 from ..models.auth import RegisterRequest, LoginRequest, AuthResponse, UserResponse
 from core.dependencies import get_auth_service, get_current_user, security
@@ -20,7 +21,7 @@ async def test_prefix_endpoint():
 @router.post("/register", response_model=UserResponse)
 async def register(
     request: RegisterRequest,
-    auth_service = Depends(get_auth_service)
+    auth_service: Annotated[object, Depends(get_auth_service)]
 ):
     """Register a new user"""
     try:
@@ -52,7 +53,7 @@ async def register(
 @router.post("/login", response_model=AuthResponse)
 async def login(
     request: LoginRequest,
-    auth_service = Depends(get_auth_service)
+    auth_service: Annotated[object, Depends(get_auth_service)]
 ):
     """Login user and create session"""
     try:
@@ -83,8 +84,8 @@ async def login(
 
 @router.post("/logout")
 async def logout(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
-    auth_service = Depends(get_auth_service)
+    credentials: Annotated[HTTPAuthorizationCredentials, Depends(security)],
+    auth_service: Annotated[object, Depends(get_auth_service)]
 ):
     """Logout current user"""
     token = credentials.credentials
@@ -94,7 +95,9 @@ async def logout(
 
 
 @router.get("/me", response_model=UserResponse)
-async def get_current_user_info(current_user = Depends(get_current_user)):
+async def get_current_user_info(
+    current_user: Annotated[object, Depends(get_current_user)]
+):
     """Get current user information"""
     return UserResponse(
         id=current_user.id,
