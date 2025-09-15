@@ -13,7 +13,7 @@ import sys
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-from database.database_manager import DatabaseManager
+from database.unified_database_manager import UnifiedDatabaseManager as DatabaseManager
 
 # Ensure project venv site-packages are on sys.path before importing FastAPI
 import venv_activator  # noqa: F401
@@ -34,7 +34,9 @@ def temp_db():
         db_path = f.name
     
     try:
-        db_manager = DatabaseManager(db_path)
+        # Create proper SQLite URL for DatabaseManager
+        db_url = f"sqlite:///{db_path}"
+        db_manager = DatabaseManager(db_url)
         # DatabaseManager creates schema on first use; no explicit init needed
         yield db_manager
     finally:

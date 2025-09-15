@@ -8,7 +8,7 @@ import pytest
 import sys
 sys.path.append('Backend')
 
-from database.database_manager import DatabaseManager
+from database.unified_database_manager import UnifiedDatabaseManager as DatabaseManager
 import time
 
 pytestmark = pytest.mark.integration

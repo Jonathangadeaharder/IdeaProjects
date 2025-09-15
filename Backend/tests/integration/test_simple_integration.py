@@ -38,7 +38,7 @@ def test_database():
     print("\n2. Testing database connectivity...")
     
     try:
-        from database.database_manager import DatabaseManager
+        from database.unified_database_manager import UnifiedDatabaseManager as DatabaseManager
         
         db = DatabaseManager()
         
@@ -60,7 +60,7 @@ def test_auth_service():
     
     try:
         from services.authservice.auth_service import AuthService
-        from database.database_manager import DatabaseManager
+        from database.unified_database_manager import UnifiedDatabaseManager as DatabaseManager
         
         # Create database manager for auth service
         db_manager = DatabaseManager("vocabulary.db")
@@ -97,7 +97,7 @@ def test_vocabulary_service():
     
     try:
         from services.dataservice.user_vocabulary_service import SQLiteUserVocabularyService
-        from database.database_manager import DatabaseManager
+        from database.unified_database_manager import UnifiedDatabaseManager as DatabaseManager
         
         # Initialize with database manager
         db_manager = DatabaseManager()
@@ -211,26 +211,27 @@ def test_srt_generation():
         print(f"  [ERROR] SRT generation test failed: {e}")
         return False
 
-def test_filter_chain():
-    """Test filter chain initialization"""
-    print("\n7. Testing filter chain...")
+def test_subtitle_processor():
+    """Test subtitle processor initialization"""
+    print("\n7. Testing subtitle processor...")
     
     try:
-        from services.filterservice.filter_chain import SubtitleFilterChain
+        from services.filterservice.direct_subtitle_processor import DirectSubtitleProcessor
+        from database.unified_database_manager import UnifiedDatabaseManager
         
-        # Note: Filter chain might be disabled in current config
-        print("  [INFO] Filter chain module can be imported")
+        print("  [INFO] DirectSubtitleProcessor module can be imported")
         
         # Try to create instance (may fail if dependencies not initialized)
         try:
-            chain = SubtitleFilterChain()
-            print("  [OK] Filter chain instance created")
+            db_manager = UnifiedDatabaseManager()
+            processor = DirectSubtitleProcessor(db_manager)
+            print("  [OK] DirectSubtitleProcessor instance created")
         except Exception as e:
-            print(f"  [INFO] Filter chain initialization skipped: {e}")
+            print(f"  [INFO] Subtitle processor initialization skipped: {e}")
         
         return True
     except Exception as e:
-        print(f"  [ERROR] Filter chain test failed: {e}")
+        print(f"  [ERROR] Subtitle processor test failed: {e}")
         return False
 
 def test_config():
@@ -271,7 +272,7 @@ def main():
         ("Vocabulary Service", test_vocabulary_service),
         ("Video Directory Access", test_video_directory),
         ("SRT Generation", test_srt_generation),
-        ("Filter Chain", test_filter_chain),
+        ("Subtitle Processor", test_subtitle_processor),
         ("Configuration", test_config),
     ]
     
