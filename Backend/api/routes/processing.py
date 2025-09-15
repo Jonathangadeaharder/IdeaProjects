@@ -18,16 +18,18 @@ from ..models.processing import (
     ChunkProcessingRequest,
     FilterRequest,
     TranslateRequest,
+    FullPipelineRequest,
     VocabularyWord,
 )
 from core.dependencies import (
     get_current_user,
     get_transcription_service,
-    get_filter_chain,
-    get_user_filter_chain,
+    get_subtitle_processor,
+    get_user_subtitle_processor,
     get_task_progress_registry,
     security,
 )
+from services.filterservice.direct_subtitle_processor import DirectSubtitleProcessor
 from core.config import settings
 from services.authservice.models import AuthUser
 from services.translationservice.factory import get_translation_service
@@ -143,11 +145,11 @@ async def run_transcription(
         )
 
 
-async def run_filtering(
+async def run_subtitle_filtering(
     video_path: str,
     task_id: str,
     task_progress: Dict[str, Any],
-    filter_chain,
+    subtitle_processor,
     current_user: AuthUser,
 ) -> None:
     """Run subtitle filtering in background"""
@@ -183,8 +185,10 @@ async def run_filtering(
         task_progress[task_id].progress = 70.0
         task_progress[task_id].current_step = "Filtering subtitles..."
         task_progress[task_id].message = "Applying vocabulary filters"
-        filtered_subtitles = await filter_chain.process_file(
-            str(srt_file), current_user.id
+        # Process with simplified subtitle processor
+        user_level = getattr(current_user, 'language_level', 'A1')  # Default to A1
+        filtered_subtitles = subtitle_processor.process_srt_file(
+            str(srt_file), current_user.id, user_level, "de"
         )
         await asyncio.sleep(2)  # Simulate filtering process
 
@@ -364,9 +368,10 @@ async def run_processing_pipeline(
         task_progress[task_id].current_step = "Step 2: Filtering Subtitles"
         task_progress[task_id].message = "Analyzing vocabulary..."
 
-        filter_chain = get_filter_chain()
-        # Note: The filter chain in your code is synchronous, but we call it from an async function
-        filtered_subtitles = await filter_chain.process_file(str(srt_path), user_id)
+        subtitle_processor = get_subtitle_processor()
+        # Process subtitles with simplified processor
+        user_level = "A1"  # Default level - should be configurable per user
+        filtered_subtitles = subtitle_processor.process_srt_file(str(srt_path), user_id, user_level, "de")
 
         task_progress[task_id].progress = 80.0
         task_progress[task_id].message = (
@@ -573,21 +578,20 @@ async def filter_subtitles(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     current_user: AuthUser = Depends(get_current_user),
     task_progress: Dict[str, Any] = Depends(get_task_progress_registry),
+    subtitle_processor: DirectSubtitleProcessor = Depends(get_subtitle_processor),
 ):
     """Filter subtitles based on user's vocabulary knowledge"""
     try:
-        # Create user-specific filter chain with authentication
-        session_token = credentials.credentials
-        user_filter_chain = get_user_filter_chain(current_user, session_token)
+        # Subtitle processor is now injected via dependency injection
         
         # Start filtering in background
         task_id = f"filter_{current_user.id}_{datetime.now().timestamp()}"
         background_tasks.add_task(
-            run_filtering,
+            run_subtitle_filtering,
             request.video_path,
             task_id,
             task_progress,
-            user_filter_chain,
+            subtitle_processor,
             current_user,
         )
 
@@ -672,10 +676,8 @@ async def prepare_episode_for_learning(
 
 @router.post("/full-pipeline")
 async def full_pipeline(
-    video_path: str,
+    request: FullPipelineRequest,
     background_tasks: BackgroundTasks,
-    source_lang: str = "de",
-    target_lang: str = "en",
     current_user: AuthUser = Depends(get_current_user),
     task_progress: Dict[str, Any] = Depends(get_task_progress_registry),
 ):
@@ -684,7 +686,7 @@ async def full_pipeline(
         # Start full pipeline in background
         task_id = f"pipeline_{current_user.id}_{datetime.now().timestamp()}"
         background_tasks.add_task(
-            run_processing_pipeline, video_path, task_id, task_progress, current_user.id
+            run_processing_pipeline, request.video_path, task_id, task_progress, current_user.id
         )
 
         logger.info(f"Started full processing pipeline task: {task_id}")
