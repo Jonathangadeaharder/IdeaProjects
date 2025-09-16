@@ -11,7 +11,8 @@ import type {
 } from '@/types'
 
 // Import the generated client and SDK
-import { client, createConfig } from '@/client/client.gen'
+import { client } from '@/client/client.gen'
+import { createConfig } from '@/client/client'
 import * as sdk from '@/client/sdk.gen'
 
 // Get API base URL from environment variables
@@ -320,6 +321,19 @@ export const bulkMarkLevelKnown = async (level: string): Promise<void> => {
     })
   } catch (error) {
     return handleApiError(error, 'bulkMarkLevelKnown')
+  }
+}
+
+// Video service object for organized access
+export const videoService = {
+  getVideos,
+  getVideoDetails,
+  uploadVideo,
+  processVideo,
+  getProcessingStatus,
+  getVideoStreamUrl: (series: string, episode: string) => {
+    const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+    return `${baseUrl}/videos/stream/${encodeURIComponent(series)}/${encodeURIComponent(episode)}`
   }
 }
 
