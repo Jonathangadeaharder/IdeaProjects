@@ -54,7 +54,7 @@ def test_real_srt_generation():
     print("=" * 60)
     
     # Use a real Superstore video
-    test_video = Path("C:/Users/Jonandrop/IdeaProjects/LangPlug/videos/Superstore/Episode 1 Staffel 1 von Superstore S to - Serien Online gratis a.mp4")
+    test_video = Path("E:/Users/Jonandrop/IdeaProjects/LangPlug/videos/Superstore/Episode 1 Staffel 1 von Superstore S to - Serien Online gratis a.mp4")
     
     if not test_video.exists():
         print(f"[ERROR] Video not found: {test_video}")

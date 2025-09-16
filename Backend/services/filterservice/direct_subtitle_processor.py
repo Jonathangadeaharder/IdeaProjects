@@ -25,7 +25,7 @@ class DirectSubtitleProcessor:
     
     def __init__(self):
         pass
-        
+
         # Pre-compiled patterns for efficiency
         self._proper_name_pattern = re.compile(r"^[A-Z][a-z]+$")
         self._non_alphabetic_pattern = re.compile(r"^[^a-zA-Z]*$")
