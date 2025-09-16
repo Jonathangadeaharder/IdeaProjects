@@ -19,10 +19,11 @@ export const useTaskProgress = () => {
     }
   }, [])
 
-  const poll = useCallback(async () => {
-    if (!taskId) return
+  const poll = useCallback(async (currentTaskId?: string) => {
+    const idToUse = currentTaskId || taskId
+    if (!idToUse) return
     try {
-      const res: any = await getProcessingStatus(taskId)
+      const res: any = await getProcessingStatus(idToUse)
       setProgress(res?.progress ?? 0)
 
       if (res?.status === 'processing') {
@@ -33,7 +34,7 @@ export const useTaskProgress = () => {
         setResult(res?.result ?? null)
         clearTimer()
       } else if (res?.status === 'failed' || res?.status === 'error') {
-        setStatus(res.status === 'failed' ? 'failed' : 'error')
+        setStatus('failed') // Always set to 'failed' for both 'failed' and 'error' statuses
         setError(res?.error || res?.message || 'Processing failed')
         clearTimer()
       } else {
@@ -56,7 +57,7 @@ export const useTaskProgress = () => {
     setResult(null)
     clearTimer()
     // Start polling every 2 seconds; first poll after 2s to match tests
-    intervalRef.current = setInterval(poll, 2000) as any
+    intervalRef.current = setInterval(() => poll(id), 2000) as any
   }, [poll, clearTimer])
 
   const stopMonitoring = useCallback(() => {
