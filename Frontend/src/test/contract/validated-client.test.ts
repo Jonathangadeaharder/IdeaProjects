@@ -5,8 +5,8 @@ import { SchemaValidationError } from '../../utils/schema-validation';
 
 // Mock the SDK functions
 vi.mock('../../client/sdk.gen', () => ({
-  registerAuthRegisterPost: vi.fn(),
-  loginAuthLoginPost: vi.fn(),
+  registerApiAuthRegisterPost: vi.fn(),
+  loginApiAuthLoginPost: vi.fn(),
   healthCheckHealthGet: vi.fn(),
 }));
 
@@ -26,17 +26,18 @@ describe('ValidatedApiClient Tests', () => {
           created_at: '2024-01-01T00:00:00Z',
           last_login: null,
         },
-        response: { status: 200 },
+        request: new Request('http://test.com'),
+        response: new Response('', { status: 200 }),
       };
 
-      vi.mocked(sdkGen.registerAuthRegisterPost).mockResolvedValue(mockResponse);
+      vi.mocked(sdkGen.registerApiAuthRegisterPost).mockResolvedValue(mockResponse);
 
       const result = await ValidatedApiClient.register({
         username: 'testuser',
         password: 'password123',
       });
 
-      expect(sdkGen.registerAuthRegisterPost).toHaveBeenCalledWith({
+      expect(sdkGen.registerApiAuthRegisterPost).toHaveBeenCalledWith({
         body: {
           username: 'testuser',
           password: 'password123',
@@ -55,7 +56,7 @@ describe('ValidatedApiClient Tests', () => {
         })
       ).rejects.toThrow();
 
-      expect(sdkGen.registerAuthRegisterPost).not.toHaveBeenCalled();
+      expect(sdkGen.registerApiAuthRegisterPost).not.toHaveBeenCalled();
     });
 
     it('should handle invalid response data', async () => {
@@ -63,19 +64,23 @@ describe('ValidatedApiClient Tests', () => {
         data: {
           id: 'not-a-number', // invalid type
           username: 'testuser',
+          is_admin: false,
+          is_active: true,
+          created_at: '2024-01-01T00:00:00Z',
           // missing required fields
-        },
-        response: { status: 200 },
+        } as any,
+        request: new Request('http://test.com'),
+        response: new Response('', { status: 200 }),
       };
 
-      vi.mocked(sdkGen.registerAuthRegisterPost).mockResolvedValue(mockInvalidResponse);
+      vi.mocked(sdkGen.registerApiAuthRegisterPost).mockResolvedValue(mockInvalidResponse);
 
       await expect(
         ValidatedApiClient.register({
           username: 'testuser',
           password: 'password123',
         })
-      ).rejects.toThrow('Registration response validation failed');
+      ).rejects.toThrow('Registration validation failed');
     });
   });
 
@@ -94,17 +99,18 @@ describe('ValidatedApiClient Tests', () => {
           },
           expires_at: '2024-01-02T00:00:00Z',
         },
-        response: { status: 200 },
+        request: new Request('http://test.com'),
+        response: new Response('', { status: 200 }),
       };
 
-      vi.mocked(sdkGen.loginAuthLoginPost).mockResolvedValue(mockResponse);
+      vi.mocked(sdkGen.loginApiAuthLoginPost).mockResolvedValue(mockResponse);
 
       const result = await ValidatedApiClient.login({
         username: 'testuser',
         password: 'password123',
       });
 
-      expect(sdkGen.loginAuthLoginPost).toHaveBeenCalledWith({
+      expect(sdkGen.loginApiAuthLoginPost).toHaveBeenCalledWith({
         body: {
           username: 'testuser',
           password: 'password123',
@@ -123,7 +129,7 @@ describe('ValidatedApiClient Tests', () => {
         })
       ).rejects.toThrow();
 
-      expect(sdkGen.loginAuthLoginPost).not.toHaveBeenCalled();
+      expect(sdkGen.loginApiAuthLoginPost).not.toHaveBeenCalled();
     });
 
     it('should handle invalid login response', async () => {
@@ -133,21 +139,25 @@ describe('ValidatedApiClient Tests', () => {
           user: {
             id: 1,
             username: 'testuser',
+            is_admin: false,
+            is_active: true,
+            created_at: '2024-01-01T00:00:00Z',
             // missing required user fields
           },
           // missing expires_at
-        },
-        response: { status: 200 },
+        } as any,
+        request: new Request('http://test.com'),
+        response: new Response('', { status: 200 }),
       };
 
-      vi.mocked(sdkGen.loginAuthLoginPost).mockResolvedValue(mockInvalidResponse);
+      vi.mocked(sdkGen.loginApiAuthLoginPost).mockResolvedValue(mockInvalidResponse);
 
       await expect(
         ValidatedApiClient.login({
           username: 'testuser',
           password: 'password123',
         })
-      ).rejects.toThrow('Login response validation failed');
+      ).rejects.toThrow('Login validation failed');
     });
   });
 
@@ -158,7 +168,8 @@ describe('ValidatedApiClient Tests', () => {
           status: 'healthy',
           timestamp: '2024-01-01T00:00:00Z',
         },
-        response: { status: 200 },
+        request: new Request('http://test.com'),
+        response: new Response('', { status: 200 }),
       };
 
       vi.mocked(sdkGen.healthCheckHealthGet).mockResolvedValue(mockResponse);
@@ -174,8 +185,9 @@ describe('ValidatedApiClient Tests', () => {
         data: {
           // missing status field
           timestamp: '2024-01-01T00:00:00Z',
-        },
-        response: { status: 200 },
+        } as any,
+        request: new Request('http://test.com'),
+        response: new Response('', { status: 200 }),
       };
 
       vi.mocked(sdkGen.healthCheckHealthGet).mockResolvedValue(mockInvalidResponse);
@@ -189,7 +201,7 @@ describe('ValidatedApiClient Tests', () => {
   describe('Error Handling', () => {
     it('should handle network errors', async () => {
       const networkError = new Error('Network error');
-      vi.mocked(sdkGen.registerAuthRegisterPost).mockRejectedValue(networkError);
+      vi.mocked(sdkGen.registerApiAuthRegisterPost).mockRejectedValue(networkError);
 
       await expect(
         ValidatedApiClient.register({
@@ -206,7 +218,7 @@ describe('ValidatedApiClient Tests', () => {
           data: { detail: 'Bad request' },
         },
       };
-      vi.mocked(sdkGen.loginAuthLoginPost).mockRejectedValue(httpError);
+      vi.mocked(sdkGen.loginApiAuthLoginPost).mockRejectedValue(httpError);
 
       await expect(
         ValidatedApiClient.login({
