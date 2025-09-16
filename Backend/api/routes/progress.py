@@ -7,8 +7,8 @@ from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
-from core.dependencies import get_current_user
-from services.authservice.models import AuthUser
+from core.dependencies import current_active_user
+from database.models import User
 from core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -45,7 +45,7 @@ class DailyProgress(BaseModel):
 
 @router.get("/user", response_model=UserProgress)
 async def get_user_progress(
-    current_user: AuthUser = Depends(get_current_user)
+    current_user: User = Depends(current_active_user)
 ):
     """Get progress data for the current user"""
     try:
@@ -92,7 +92,7 @@ async def get_user_progress(
 @router.post("/update")
 async def update_user_progress(
     progress_update: Dict[str, Any],
-    current_user: AuthUser = Depends(get_current_user)
+    current_user: User = Depends(current_active_user)
 ):
     """Update user progress data"""
     try:
@@ -133,7 +133,7 @@ async def update_user_progress(
 @router.get("/daily", response_model=List[DailyProgress])
 async def get_daily_progress(
     days: int = 7,
-    current_user: AuthUser = Depends(get_current_user)
+    current_user: User = Depends(current_active_user)
 ):
     """Get daily progress for the last N days"""
     try:

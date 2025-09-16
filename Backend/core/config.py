@@ -63,7 +63,20 @@ class Settings(BaseSettings):
     spacy_model_en: str = Field(default="en_core_web_sm", env="LANGPLUG_SPACY_MODEL_EN")
     
     # Security settings
+    secret_key: str = Field(default="your-secret-key-change-in-production", env="LANGPLUG_SECRET_KEY")
     session_timeout_hours: int = Field(default=24, env="LANGPLUG_SESSION_TIMEOUT_HOURS")
+    
+    # Sentry settings
+    sentry_dsn: str = Field(
+        default="",
+        env="SENTRY_DSN",
+        description="Sentry DSN for error tracking"
+    )
+    environment: str = Field(
+        default="development",
+        env="ENVIRONMENT",
+        description="Environment name (development, staging, production)"
+    )
     
     # Performance settings
     max_upload_size: int = Field(default=100 * 1024 * 1024, env="LANGPLUG_MAX_UPLOAD_SIZE")  # 100MB

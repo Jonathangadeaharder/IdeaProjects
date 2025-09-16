@@ -1,9 +1,10 @@
 """
 Processing API models
 """
-from typing import Optional, List, Literal
+from typing import Optional, Dict, Any, List, Literal
 from pydantic import BaseModel, Field, validator
-import os
+from datetime import datetime
+from .vocabulary import VocabularyWord
 
 
 class TranscribeRequest(BaseModel):
@@ -24,27 +25,7 @@ class TranscribeRequest(BaseModel):
         return v
 
 
-class VocabularyWord(BaseModel):
-    word: str = Field(
-        ...,
-        min_length=1,
-        max_length=100,
-        description="The vocabulary word"
-    )
-    definition: Optional[str] = Field(
-        None,
-        max_length=500,
-        description="Definition of the word"
-    )
-    difficulty_level: str = Field(
-        ...,
-        pattern=r"^(A1|A2|B1|B2|C1|C2)$",
-        description="CEFR difficulty level (A1, A2, B1, B2, C1, C2)"
-    )
-    known: bool = Field(
-        ...,
-        description="Whether the user knows this word"
-    )
+# VocabularyWord is imported from vocabulary.py to avoid duplication
 
 
 class ProcessingStatus(BaseModel):

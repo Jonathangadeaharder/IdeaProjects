@@ -6,37 +6,41 @@ from pathlib import Path
 from typing import List, Dict, Any
 from fastapi import APIRouter, HTTPException, Depends, Query, UploadFile, File
 from fastapi.responses import FileResponse
+from pydantic import BaseModel
 
-from core.dependencies import get_database_manager, get_auth_service, get_current_user
+from core.dependencies import current_active_user, get_task_progress_registry
+from core.database import get_async_session
+from sqlalchemy.ext.asyncio import AsyncSession
 from core.config import settings
-from services.authservice.models import AuthUser
+from database.models import User
 from services.videoservice.video_service import VideoService
 from api.models.video import VideoInfo
+from api.models.vocabulary import VocabularyWord
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["videos"])
 
 
 def get_video_service(
-    db_manager=Depends(get_database_manager)
+    db_session: AsyncSession = Depends(get_async_session)
 ) -> VideoService:
     """Get video service instance"""
-    return VideoService(db_manager, None)
+    return VideoService(db_session, None)
 
 
-@router.get("", response_model=List[Dict[str, Any]])
+@router.get("", response_model=List[Dict[str, Any]], name="get_videos")
 async def get_available_videos(
-    current_user: AuthUser = Depends(get_current_user),
+    current_user: User = Depends(current_active_user),
     video_service: VideoService = Depends(get_video_service)
 ):
     """Get list of available videos/series"""
     return video_service.get_videos_list()
 
 
-@router.get("/subtitles/{subtitle_path:path}")
+@router.get("/subtitles/{subtitle_path:path}", name="get_subtitles")
 async def get_subtitles(
     subtitle_path: str,
-    current_user: AuthUser = Depends(get_current_user),
+    current_user: User = Depends(current_active_user),
     video_service: VideoService = Depends(get_video_service)
 ):
     """Serve subtitle files - Requires authentication"""
@@ -68,11 +72,11 @@ async def get_subtitles(
         raise HTTPException(status_code=500, detail=f"Error serving subtitles: {str(e)}")
 
 
-@router.get("/{series}/{episode}")
+@router.get("/{series}/{episode}", name="stream_video")
 async def stream_video(
     series: str, 
     episode: str,
-    current_user: AuthUser = Depends(get_current_user),
+    current_user: User = Depends(current_active_user),
     video_service: VideoService = Depends(get_video_service)
 ):
     """Stream video file - Requires authentication"""
@@ -103,11 +107,11 @@ async def stream_video(
         raise HTTPException(status_code=500, detail=f"Error streaming video: {str(e)}")
 
 
-@router.post("/subtitle/upload")
+@router.post("/subtitle/upload", name="upload_subtitle")
 async def upload_subtitle(
     video_path: str,
     subtitle_file: UploadFile = File(...),
-    current_user: AuthUser = Depends(get_current_user)
+    current_user: User = Depends(current_active_user)
 ):
     """Upload subtitle file for a video - Requires authentication"""
     try:
@@ -155,31 +159,28 @@ async def upload_subtitle(
         raise HTTPException(status_code=500, detail=f"Error uploading subtitle: {str(e)}")
 
 
-@router.post("/scan")
+@router.post("/scan", name="scan_videos")
 async def scan_videos(
-    current_user: AuthUser = Depends(get_current_user),
+    current_user: User = Depends(current_active_user),
     video_service: VideoService = Depends(get_video_service)
 ):
     """Scan videos directory for new videos - Requires authentication"""
     return video_service.scan_videos_directory()
 
 
-@router.get("/user", response_model=List[Dict[str, Any]])
+@router.get("/user", response_model=List[Dict[str, Any]], name="get_user_videos")
 async def get_user_videos(
-    current_user: AuthUser = Depends(get_current_user),
+    current_user: User = Depends(current_active_user),
     video_service: VideoService = Depends(get_video_service)
 ):
     """Get videos for the current user (alias for get_available_videos)"""
     return video_service.get_videos_list()
 
 
-from api.models.vocabulary import VocabularyWord
-from typing import List
-
-@router.get("/{video_id}/vocabulary", response_model=List[VocabularyWord])
+@router.get("/{video_id}/vocabulary", response_model=List[VocabularyWord], name="get_video_vocabulary")
 async def get_video_vocabulary(
     video_id: str,
-    current_user: AuthUser = Depends(get_current_user)
+    current_user: User = Depends(current_active_user)
 ):
     """Get vocabulary words extracted from a video"""
     try:
@@ -213,10 +214,6 @@ async def get_video_vocabulary(
         raise HTTPException(status_code=500, detail=f"Error extracting vocabulary: {str(e)}")
 
 
-from core.dependencies import get_task_progress_registry
-from typing import Dict, Any
-from pydantic import BaseModel
-
 class ProcessingStatus(BaseModel):
     status: str
     progress: float
@@ -224,10 +221,10 @@ class ProcessingStatus(BaseModel):
     message: str = ""
     subtitle_path: str = ""
 
-@router.get("/{video_id}/status", response_model=ProcessingStatus)
+@router.get("/{video_id}/status", response_model=ProcessingStatus, name="get_video_status")
 async def get_video_status(
     video_id: str,
-    current_user: AuthUser = Depends(get_current_user),
+    current_user: User = Depends(current_active_user),
     task_progress: Dict[str, Any] = Depends(get_task_progress_registry)
 ):
     """Get processing status for a video"""
@@ -275,21 +272,21 @@ async def get_video_status(
         raise HTTPException(status_code=500, detail=f"Error getting video status: {str(e)}")
 
 
-@router.post("/upload")
+@router.post("/upload", name="upload_video_generic")
 async def upload_video_generic(
     video_file: UploadFile = File(...),
     series: str = "Default",
-    current_user: AuthUser = Depends(get_current_user)
+    current_user: User = Depends(current_active_user)
 ):
     """Upload a new video file (generic endpoint) - Requires authentication"""
     return await upload_video(series, video_file, current_user)
 
 
-@router.post("/upload/{series}")
+@router.post("/upload/{series}", name="upload_video_to_series")
 async def upload_video(
     series: str,
     video_file: UploadFile = File(...),
-    current_user: AuthUser = Depends(get_current_user)
+    current_user: User = Depends(current_active_user)
 ):
     """Upload a new video file to a series - Requires authentication"""
     try:
@@ -340,7 +337,6 @@ async def upload_video(
         logger.info(f"Uploaded video: {file_path}")
         
         # Return video info
-        from services.videoservice.video_service import VideoService
         video_service = VideoService(None, None)  # We only need the parsing method
         episode_info = video_service._parse_episode_filename(file_path.stem)
 

@@ -29,15 +29,18 @@ async def websocket_endpoint(
     
     try:
         # Validate token and get user info
-        from core.dependencies import get_auth_service
-        auth_service = get_auth_service()
+        from core.auth import jwt_authentication
+        from core.dependencies import get_db_session
+        from database.models import User
         
-        user_data = auth_service.verify_token(token)
-        if not user_data:
-            await websocket.close(code=1008, reason="Invalid authentication token")
-            return
+        # Get database session
+        async with get_db_session() as db:
+            user = await jwt_authentication.authenticate(token, db)
+            if not user:
+                await websocket.close(code=1008, reason="Invalid authentication token")
+                return
         
-        user_id = str(user_data.get("user_id"))
+        user_id = str(user.id)
         
         # Connect the WebSocket
         await manager.connect(websocket, user_id)

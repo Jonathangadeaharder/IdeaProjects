@@ -10,9 +10,12 @@ from ..models.vocabulary import (
     VocabularyWord, MarkKnownRequest, VocabularyLibraryWord, 
     VocabularyLevel, BulkMarkRequest, VocabularyStats
 )
-from core.dependencies import get_current_user, get_database_manager, get_subtitle_processor
+from core.dependencies import get_subtitle_processor, current_active_user
+from core.database import get_async_session
 from core.config import settings
-from services.authservice.models import AuthUser
+from database.models import User
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 from services.vocabulary_preload_service import VocabularyPreloadService
 from services.utils.srt_parser import SRTParser
 
@@ -41,23 +44,20 @@ async def extract_blocking_words_for_segment(
             return []
         
         # Get subtitle processor for processing
-        from core.dependencies import get_subtitle_processor, get_auth_service
-        from services.authservice.models import AuthUser
+        from core.dependencies import get_subtitle_processor
+        from database.models import User
         
         # Get the actual user from database using user_id
-        auth_service = get_auth_service()
         try:
-            # Get user by ID from database
-            with auth_service.db_manager.get_connection() as conn:
-                cursor = conn.cursor()
-                cursor.execute("SELECT id, username, email FROM users WHERE id = ?", (user_id,))
-                user_row = cursor.fetchone()
+            async with get_async_session() as db:
+                # Get user by ID from database
+                stmt = select(User).where(User.id == user_id)
+                result = await db.execute(stmt)
+                current_user = result.scalar_one_or_none()
                 
-                if user_row:
-                    current_user = AuthUser(
-                        id=user_row[0],
-                        username=user_row[1]
-                    )
+                if current_user:
+                    # User found, continue processing
+                    pass
                 else:
                     # Raise error if user not found
                     raise ValueError(f"User with id {user_id} not found in database")
@@ -98,10 +98,10 @@ async def extract_blocking_words_for_segment(
         raise HTTPException(status_code=500, detail=f"Vocabulary extraction failed: {str(e)}")
 
 
-@router.get("/stats", response_model=VocabularyStats)
+@router.get("/stats", response_model=VocabularyStats, name="get_vocabulary_stats")
 async def get_vocabulary_stats_endpoint(
-    current_user: AuthUser = Depends(get_current_user),
-    db_manager = Depends(get_database_manager)
+    current_user: User = Depends(current_active_user),
+    db: AsyncSession = Depends(get_async_session)
 ):
     """Get vocabulary statistics for the current user"""
     try:
@@ -160,12 +160,12 @@ async def get_vocabulary_stats_endpoint(
         raise HTTPException(status_code=500, detail=f"Error retrieving vocabulary stats: {str(e)}")
 
 
-@router.get("/blocking-words")
+@router.get("/blocking-words", name="get_blocking_words")
 async def get_blocking_words(
     video_path: str,
     segment_start: int = 0,
     segment_duration: int = 300,  # 5 minutes default
-    current_user: AuthUser = Depends(get_current_user)
+    current_user: User = Depends(current_active_user)
 ):
     """Get top blocking words for a video segment"""
     try:
@@ -197,11 +197,11 @@ async def get_blocking_words(
         raise HTTPException(status_code=500, detail=f"Failed to get blocking words: {str(e)}")
 
 
-@router.post("/mark-known")
+@router.post("/mark-known", name="mark_word_known")
 async def mark_word_as_known(
     request: MarkKnownRequest,
-    current_user: AuthUser = Depends(get_current_user),
-    db_manager = Depends(get_database_manager)
+    current_user: User = Depends(current_active_user),
+    db: AsyncSession = Depends(get_async_session)
 ):
     """Mark a word as known or unknown"""
     try:
@@ -224,10 +224,10 @@ async def mark_word_as_known(
         raise HTTPException(status_code=500, detail=f"Failed to update word: {str(e)}")
 
 
-@router.post("/preload")
+@router.post("/preload", name="preload_vocabulary")
 async def preload_vocabulary(
-    current_user: AuthUser = Depends(get_current_user),
-    db_manager = Depends(get_database_manager)
+    current_user: User = Depends(current_active_user),
+    db: AsyncSession = Depends(get_async_session)
 ):
     """Preload vocabulary data from text files into database (Admin only)"""
     if not current_user.is_admin:
@@ -251,10 +251,10 @@ async def preload_vocabulary(
         raise HTTPException(status_code=500, detail=f"Failed to preload vocabulary: {str(e)}")
 
 
-@router.get("/library/stats")
+@router.get("/library/stats", name="get_library_stats")
 async def get_vocabulary_stats(
-    current_user: AuthUser = Depends(get_current_user),
-    db_manager = Depends(get_database_manager)
+    current_user: User = Depends(current_active_user),
+    db: AsyncSession = Depends(get_async_session)
 ):
     """Get vocabulary statistics for all levels"""
     try:
@@ -287,11 +287,11 @@ async def get_vocabulary_stats(
         raise HTTPException(status_code=500, detail=f"Failed to get vocabulary stats: {str(e)}")
 
 
-@router.get("/library/{level}")
+@router.get("/library/{level}", name="get_vocabulary_level")
 async def get_vocabulary_level(
     level: str,
-    current_user: AuthUser = Depends(get_current_user),
-    db_manager = Depends(get_database_manager)
+    current_user: User = Depends(current_active_user),
+    db: AsyncSession = Depends(get_async_session)
 ):
     """Get all vocabulary words for a specific level with user's known status"""
     try:
@@ -338,11 +338,11 @@ async def get_vocabulary_level(
         raise HTTPException(status_code=500, detail=f"Failed to get vocabulary level: {str(e)}")
 
 
-@router.post("/library/bulk-mark")
+@router.post("/library/bulk-mark", name="bulk_mark_level")
 async def bulk_mark_level_known(
     request: BulkMarkRequest,
-    current_user: AuthUser = Depends(get_current_user),
-    db_manager = Depends(get_database_manager)
+    current_user: User = Depends(current_active_user),
+    db: AsyncSession = Depends(get_async_session)
 ):
     """Mark all words in a level as known or unknown"""
     try:

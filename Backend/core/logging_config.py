@@ -1,38 +1,66 @@
-"""Logging configuration for LangPlug Backend"""
+"""Structured logging configuration using structlog"""
 import logging
-import logging.handlers
-import json
 import sys
 from pathlib import Path
-from datetime import datetime
-from .config import settings
+from typing import Any, Dict
+
+import structlog
+from structlog.stdlib import LoggerFactory
+from structlog.processors import JSONRenderer, TimeStamper, add_log_level, StackInfoRenderer
+
+from core.config import settings
 
 
-class SafeConsoleHandler(logging.StreamHandler):
-    """A console handler that safely writes messages even if the console encoding
-    can't represent certain characters (e.g., emojis on Windows cp1252).
-    """
-    def emit(self, record: logging.LogRecord) -> None:
-        try:
-            msg = self.format(record)
-            stream = self.stream
-            enc = getattr(stream, "encoding", None) or sys.getdefaultencoding() or "utf-8"
-            try:
-                stream.write(msg + self.terminator)
-            except UnicodeEncodeError:
-                safe_msg = msg.encode(enc, errors="replace").decode(enc, errors="replace")
-                stream.write(safe_msg + self.terminator)
-            self.flush()
-        except Exception:
-            self.handleError(record)
+def configure_logging():
+    """Configure structlog for the application"""
+    
+    # Configure standard library logging
+    logging.basicConfig(
+        format="%(message)s",
+        stream=sys.stdout,
+        level=getattr(logging, settings.log_level.upper()),
+    )
+    
+    # Configure structlog
+    processors = [
+        structlog.stdlib.filter_by_level,
+        structlog.stdlib.add_logger_name,
+        add_log_level,
+        structlog.stdlib.add_log_level,
+        TimeStamper(fmt="iso"),
+        StackInfoRenderer(),
+        structlog.processors.format_exc_info,
+    ]
+    
+    if settings.log_format == "json":
+        processors.append(JSONRenderer())
+    else:
+        processors.append(structlog.dev.ConsoleRenderer())
+    
+    structlog.configure(
+        processors=processors,
+        wrapper_class=structlog.stdlib.BoundLogger,
+        logger_factory=LoggerFactory(),
+        cache_logger_on_first_use=True,
+    )
+
+
+def get_logger(name: str) -> structlog.stdlib.BoundLogger:
+    """Get a structured logger instance"""
+    return structlog.get_logger(name)
+
+
+# Backward compatibility aliases
+setup_logging = configure_logging
 
 
 class JSONFormatter(logging.Formatter):
-    """Custom JSON formatter for structured logging"""
+    """JSON formatter for backward compatibility with tests"""
     
     def format(self, record: logging.LogRecord) -> str:
+        """Format log record as JSON"""
         log_data = {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": self.formatTime(record),
             "level": record.levelname,
             "logger": record.name,
             "message": record.getMessage(),
@@ -41,97 +69,109 @@ class JSONFormatter(logging.Formatter):
             "line": record.lineno,
         }
         
-        # Add exception info if present
-        if record.exc_info:
-            log_data["exception"] = self.formatException(record.exc_info)
+        # Add any extra attributes
+        for key, value in record.__dict__.items():
+            if key not in {
+                'name', 'msg', 'args', 'levelname', 'levelno', 'pathname',
+                'filename', 'module', 'lineno', 'funcName', 'created',
+                'msecs', 'relativeCreated', 'thread', 'threadName',
+                'processName', 'process', 'getMessage', 'exc_info',
+                'exc_text', 'stack_info'
+            }:
+                log_data[key] = value
         
-        # Add extra fields from the record
-        if hasattr(record, '__dict__'):
-            for key, value in record.__dict__.items():
-                if key not in ['name', 'msg', 'args', 'levelname', 'levelno', 'pathname', 
-                              'filename', 'module', 'lineno', 'funcName', 'created', 'msecs', 
-                              'relativeCreated', 'thread', 'threadName', 'processName', 'process',
-                              'getMessage', 'exc_info', 'exc_text', 'stack_info']:
-                    log_data[key] = value
-        
-        return json.dumps(log_data, default=str)
+        import json
+        return json.dumps(log_data)
 
 
-def setup_logging():
-    """Setup file logging configuration"""
-    
-    # Create logs directory
-    logs_path = settings.get_logs_path()
-    logs_path.mkdir(exist_ok=True)
-    
-    # Create log filename with date
-    today = datetime.now().strftime("%Y-%m-%d")
-    log_file = logs_path / f"langplug-backend-{today}.log"
-    
-    # Ensure log file is writable
-    try:
-        log_file.touch(exist_ok=True)
-        with open(log_file, 'a', encoding='utf-8') as f:
-            f.write(f"\n=== Backend logging started at {datetime.now().isoformat()} ===\n")
-    except Exception as e:
-        print(f"WARNING: Cannot write to log file {log_file}: {e}")
-        # Fall back to logs in current directory
-        log_file = Path(f"langplug-backend-{today}.log")
-        print(f"Using fallback log file: {log_file.absolute()}")
-    
-    # Configure root logger
-    root_logger = logging.getLogger()
-    root_logger.setLevel(getattr(logging, settings.log_level.upper()))
-    
-    # Remove any existing handlers
-    for handler in root_logger.handlers[:]:
-        root_logger.removeHandler(handler)
-    
-    # Create formatter
-    if settings.log_format == "json":
-        formatter = JSONFormatter()
-    else:
-        formatter = logging.Formatter(
-            '%(asctime)s [%(levelname)s] %(name)s:%(funcName)s:%(lineno)d - %(message)s',
-            datefmt='%Y-%m-%d %H:%M:%S'
-        )
-    
-    # File handler with rotation
-    file_handler = logging.handlers.RotatingFileHandler(
-        log_file, 
-        maxBytes=10*1024*1024,  # 10MB
-        backupCount=5,
-        encoding="utf-8",
+def log_auth_event(
+    logger: structlog.stdlib.BoundLogger,
+    event_type: str,
+    user_id: str,
+    success: bool,
+    **kwargs
+):
+    """Log authentication events with structured data"""
+    logger.info(
+        "Authentication event",
+        event_type=event_type,
+        user_id=user_id,
+        success=success,
+        **kwargs
     )
-    file_handler.setFormatter(formatter)
-    file_handler.setLevel(getattr(logging, settings.log_level.upper()))
-    
-    # Console handler (still useful for development), safe for non-ASCII
-    console_handler = SafeConsoleHandler()
-    console_handler.setFormatter(formatter)
-    console_handler.setLevel(logging.INFO)
-    
-    # Add handlers to root logger
-    root_logger.addHandler(file_handler)
-    root_logger.addHandler(console_handler)
-    
-    # Log startup message
-    logger = logging.getLogger(__name__)
-    logger.info("🚀 BACKEND STARTUP - Logging initialized")
-    logger.info(f"📁 Log file: {log_file.absolute()}")
-    logger.info(f"📊 Log level: {settings.log_level}")
-    logger.info(f"📄 Log format: {settings.log_format}")
-    logger.info(f"🔧 Videos path: {settings.get_videos_path()}")
-    logger.info(f"💾 Data path: {settings.get_data_path()}")
-    
-    # Test log write
-    logger.debug("Debug logging test")
-    logger.info("Info logging test")
-    logger.warning("Warning logging test")
-    
-    return log_file
 
 
-def get_logger(name: str) -> logging.Logger:
-    """Get a logger instance"""
-    return logging.getLogger(name)
+def log_user_action(
+    logger: structlog.stdlib.BoundLogger,
+    user_id: str,
+    action: str,
+    resource: str,
+    success: bool,
+    **kwargs
+):
+    """Log user actions with structured data"""
+    logger.info(
+        "User action",
+        user_id=user_id,
+        action=action,
+        resource=resource,
+        success=success,
+        **kwargs
+    )
+
+
+def log_database_operation(
+    logger: structlog.stdlib.BoundLogger,
+    operation: str,
+    table: str,
+    duration_ms: float,
+    success: bool,
+    **kwargs
+):
+    """Log database operations with structured data"""
+    logger.info(
+        "Database operation",
+        operation=operation,
+        table=table,
+        duration_ms=duration_ms,
+        success=success,
+        **kwargs
+    )
+
+
+def log_filter_operation(
+    logger: structlog.stdlib.BoundLogger,
+    filter_name: str,
+    words_processed: int,
+    words_filtered: int,
+    duration_ms: float,
+    user_id: str = None,
+    **kwargs
+):
+    """Log filter operations with structured data"""
+    logger.info(
+        "Filter operation",
+        filter_name=filter_name,
+        words_processed=words_processed,
+        words_filtered=words_filtered,
+        duration_ms=duration_ms,
+        user_id=user_id,
+        **kwargs
+    )
+
+
+def log_error(
+    logger: structlog.stdlib.BoundLogger,
+    error: Exception,
+    context: Dict[str, Any] = None,
+    **kwargs
+):
+    """Log errors with structured data and context"""
+    logger.error(
+        "Error occurred",
+        error_type=type(error).__name__,
+        error_message=str(error),
+        context=context or {},
+        **kwargs,
+        exc_info=True
+    )

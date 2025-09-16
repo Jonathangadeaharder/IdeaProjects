@@ -8,8 +8,8 @@ from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
-from core.dependencies import get_current_user
-from services.authservice.models import AuthUser
+from core.dependencies import current_active_user
+from database.models import User
 from core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -67,7 +67,7 @@ class AnswerRequest(BaseModel):
 @router.post("/start", response_model=GameSession)
 async def start_game_session(
     game_request: StartGameRequest,
-    current_user: AuthUser = Depends(get_current_user)
+    current_user: User = Depends(current_active_user)
 ):
     """Start a new game session"""
     try:
@@ -123,7 +123,7 @@ async def start_game_session(
 @router.get("/session/{session_id}", response_model=GameSession)
 async def get_game_session(
     session_id: str,
-    current_user: AuthUser = Depends(get_current_user)
+    current_user: User = Depends(current_active_user)
 ):
     """Get a specific game session"""
     try:
@@ -155,7 +155,7 @@ async def get_game_session(
 @router.post("/answer")
 async def submit_answer(
     answer_request: AnswerRequest,
-    current_user: AuthUser = Depends(get_current_user)
+    current_user: User = Depends(current_active_user)
 ):
     """Submit an answer for a game question"""
     try:
@@ -233,7 +233,7 @@ async def submit_answer(
 @router.get("/sessions", response_model=List[GameSession])
 async def get_user_game_sessions(
     limit: int = 10,
-    current_user: AuthUser = Depends(get_current_user)
+    current_user: User = Depends(current_active_user)
 ):
     """Get user's game sessions"""
     try:

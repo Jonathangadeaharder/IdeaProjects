@@ -22,7 +22,7 @@ from ..models.processing import (
     VocabularyWord,
 )
 from core.dependencies import (
-    get_current_user,
+    current_active_user,
     get_transcription_service,
     get_subtitle_processor,
     get_user_subtitle_processor,
@@ -31,7 +31,7 @@ from core.dependencies import (
 )
 from services.filterservice.direct_subtitle_processor import DirectSubtitleProcessor
 from core.config import settings
-from services.authservice.models import AuthUser
+from database.models import User
 from services.translationservice.factory import get_translation_service
 
 logger = logging.getLogger(__name__)
@@ -150,7 +150,7 @@ async def run_subtitle_filtering(
     task_id: str,
     task_progress: Dict[str, Any],
     subtitle_processor,
-    current_user: AuthUser,
+    current_user: User,
 ) -> None:
     """Run subtitle filtering in background"""
     try:
@@ -421,19 +421,22 @@ async def run_chunk_processing(
 ) -> None:
     """Process a specific chunk of video for vocabulary learning - REFACTORED"""
     from services.processing.chunk_processor import ChunkProcessingService
+    from core.database import get_async_session
     
     try:
-        # All business logic is now handled by the dedicated service
-        chunk_processor = ChunkProcessingService()
-        await chunk_processor.process_chunk(
-            video_path=video_path,
-            start_time=start_time,
-            end_time=end_time,
-            user_id=user_id,
-            task_id=task_id,
-            task_progress=task_progress,
-            session_token=session_token
-        )
+        # Get database session and create service instance
+        async for db_session in get_async_session():
+            chunk_processor = ChunkProcessingService(db_session)
+            await chunk_processor.process_chunk(
+                video_path=video_path,
+                start_time=start_time,
+                end_time=end_time,
+                user_id=user_id,
+                task_id=task_id,
+                task_progress=task_progress,
+                session_token=session_token
+            )
+            break  # Only use the first (and only) session
 
     except Exception as e:
         logger.error(f"Chunk processing failed for task {task_id}: {e}", exc_info=True)
@@ -445,11 +448,11 @@ async def run_chunk_processing(
         )
 
 
-@router.post("/chunk")
+@router.post("/chunk", name="process_chunk")
 async def process_chunk(
     request: ChunkProcessingRequest,
     background_tasks: BackgroundTasks,
-    current_user: AuthUser = Depends(get_current_user),
+    current_user: User = Depends(current_active_user),
     task_progress: Dict[str, Any] = Depends(get_task_progress_registry),
 ):
     """Process a specific chunk of video for vocabulary learning"""
@@ -492,11 +495,11 @@ async def process_chunk(
         )
 
 
-@router.post("/transcribe")
+@router.post("/transcribe", name="transcribe_video")
 async def transcribe_video(
     request: TranscribeRequest,
     background_tasks: BackgroundTasks,
-    current_user: AuthUser = Depends(get_current_user),
+    current_user: User = Depends(current_active_user),
     task_progress: Dict[str, Any] = Depends(get_task_progress_registry),
 ):
     """Transcribe video to generate subtitles"""
@@ -571,12 +574,12 @@ async def transcribe_video(
         raise HTTPException(status_code=500, detail=f"Transcription failed: {error_msg}")
 
 
-@router.post("/filter-subtitles")
+@router.post("/filter-subtitles", name="filter_subtitles")
 async def filter_subtitles(
     request: FilterRequest,
     background_tasks: BackgroundTasks,
     credentials: HTTPAuthorizationCredentials = Depends(security),
-    current_user: AuthUser = Depends(get_current_user),
+    current_user: User = Depends(current_active_user),
     task_progress: Dict[str, Any] = Depends(get_task_progress_registry),
     subtitle_processor: DirectSubtitleProcessor = Depends(get_subtitle_processor),
 ):
@@ -603,11 +606,11 @@ async def filter_subtitles(
         raise HTTPException(status_code=500, detail=f"Filtering failed: {str(e)}")
 
 
-@router.post("/translate-subtitles")
+@router.post("/translate-subtitles", name="translate_subtitles")
 async def translate_subtitles(
     request: TranslateRequest,
     background_tasks: BackgroundTasks,
-    current_user: AuthUser = Depends(get_current_user),
+    current_user: User = Depends(current_active_user),
     task_progress: Dict[str, Any] = Depends(get_task_progress_registry),
 ):
     """Translate subtitles from one language to another"""
@@ -631,11 +634,11 @@ async def translate_subtitles(
         raise HTTPException(status_code=500, detail=f"Translation failed: {str(e)}")
 
 
-@router.post("/prepare-episode")
+@router.post("/prepare-episode", name="prepare_episode")
 async def prepare_episode_for_learning(
     request: TranscribeRequest,  # We can reuse the same request model
     background_tasks: BackgroundTasks,
-    current_user: AuthUser = Depends(get_current_user),
+    current_user: User = Depends(current_active_user),
     task_progress: Dict[str, Any] = Depends(get_task_progress_registry),
 ):
     """Starts the full pipeline to prepare an episode for learning."""
@@ -674,11 +677,11 @@ async def prepare_episode_for_learning(
         )
 
 
-@router.post("/full-pipeline")
+@router.post("/full-pipeline", name="full_pipeline")
 async def full_pipeline(
     request: FullPipelineRequest,
     background_tasks: BackgroundTasks,
-    current_user: AuthUser = Depends(get_current_user),
+    current_user: User = Depends(current_active_user),
     task_progress: Dict[str, Any] = Depends(get_task_progress_registry),
 ):
     """Run a full processing pipeline: Transcribe -> Filter -> Translate"""
@@ -699,10 +702,10 @@ async def full_pipeline(
         )
 
 
-@router.get("/progress/{task_id}")
+@router.get("/progress/{task_id}", name="get_task_progress")
 async def get_task_progress(
     task_id: str,
-    current_user: AuthUser = Depends(get_current_user),
+    current_user: User = Depends(current_active_user),
     task_progress: Dict[str, Any] = Depends(get_task_progress_registry),
 ):
     """Get progress of a background task"""

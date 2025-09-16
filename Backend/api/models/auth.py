@@ -52,7 +52,7 @@ class LoginRequest(BaseModel):
 class UserResponse(BaseModel):
     id: int = Field(..., gt=0, description="Unique user identifier")
     username: str = Field(..., min_length=3, max_length=50, description="Username")
-    is_admin: bool = Field(..., description="Whether user has admin privileges")
+    is_superuser: bool = Field(..., description="Whether user has superuser privileges")
     is_active: bool = Field(..., description="Whether user account is active")
     created_at: str = Field(..., description="Account creation timestamp (ISO format)")
     last_login: Optional[str] = Field(None, description="Last login timestamp (ISO format)")
@@ -62,7 +62,7 @@ class UserResponse(BaseModel):
             "example": {
                 "id": 1,
                 "username": "john_doe",
-                "is_admin": False,
+                "is_superuser": False,
                 "is_active": True,
                 "created_at": "2024-01-15T10:30:00Z",
                 "last_login": "2024-01-20T14:45:00Z"

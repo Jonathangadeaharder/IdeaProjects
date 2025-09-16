@@ -7,15 +7,17 @@ from datetime import datetime
 from fastapi import FastAPI
 
 from .config import settings
-from .logging_config import setup_logging
+from .logging_config import configure_logging, get_logger
+from .sentry_config import configure_sentry
+from .exception_handlers import setup_exception_handlers
 from .middleware import setup_middleware
 from .dependencies import init_services, cleanup_services
 from api.routes import auth, videos, processing, vocabulary, debug, user_profile, websocket, logs, progress, game
 
-# Initialize logging first
-log_file = setup_logging()
-import logging
-logger = logging.getLogger(__name__)
+# Initialize logging and Sentry
+configure_logging()
+configure_sentry()
+logger = get_logger(__name__)
 
 
 @asynccontextmanager
@@ -54,6 +56,9 @@ def create_app() -> FastAPI:
     # Set up middleware (CORS, logging, error handling)
     setup_middleware(app)
     
+    # Set up exception handlers
+    setup_exception_handlers(app)
+    
     # Health check endpoint
     @app.get("/health")
     async def health_check():
@@ -70,6 +75,17 @@ def create_app() -> FastAPI:
     async def test_endpoint():
         """Simple test endpoint"""
         return {"message": "Test endpoint is working!", "timestamp": datetime.now().isoformat()}
+    
+    # Include FastAPI-Users authentication routes
+    from .auth import fastapi_users, auth_backend, UserRead, UserCreate
+    app.include_router(
+        fastapi_users.get_auth_router(auth_backend), prefix="/api/auth", tags=["auth"]
+    )
+    app.include_router(
+        fastapi_users.get_register_router(UserRead, UserCreate),
+        prefix="/api/auth",
+        tags=["auth"],
+    )
     
     # Include API routers with /api prefix
     app.include_router(auth.router, prefix="/api/auth")
