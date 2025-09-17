@@ -7,11 +7,14 @@
 # Install dependencies
 pip install -r requirements.txt
 
-# Run development server
-uvicorn main:app --reload
+# Run development server (Linux/WSL)
+cd Backend && python run_backend.py
 
-# Build distribution (if applicable)
-# python setup.py sdist bdist_wheel
+# Run development server (Windows/PowerShell from WSL)
+powershell.exe -Command "python E:\Users\Jonandrop\IdeaProjects\LangPlug\Backend\run_backend.py"
+
+# Always use this for proper initialization:
+cmd.exe /c start.bat
 ```
 
 ### Frontend (TypeScript/React)
@@ -20,13 +23,10 @@ uvicorn main:app --reload
 npm install
 
 # Run development server
-npm run dev
+cd Frontend && npm run dev
 
-# Build for production
-npm run build
-
-# Preview production build
-npm run preview
+# On Windows, use cmd.exe prefix:
+cmd.exe /c "npm run dev"
 ```
 
 ## Linting Commands
@@ -34,22 +34,22 @@ npm run preview
 ### Backend
 ```bash
 # Run linter (Ruff)
-ruff check .
+cd Backend && ruff check .
 
 # Auto-fix linting issues
-ruff check . --fix
+cd Backend && ruff check . --fix
 
 # Format code
-ruff format .
+cd Backend && ruff format .
 ```
 
 ### Frontend
 ```bash
 # Run ESLint
-npm run lint
+cd Frontend && npm run lint
 
-# Fix linting issues automatically (if supported)
-npm run lint -- --fix
+# Fix linting issues automatically
+cd Frontend && npm run lint -- --fix
 ```
 
 ## Test Commands
@@ -57,41 +57,34 @@ npm run lint -- --fix
 ### Backend (Python/Pytest)
 ```bash
 # Run all tests
-pytest
+cd Backend && pytest
 
 # Run a single test file
-pytest tests/test_file.py
+cd Backend && pytest tests/api/test_auth_endpoints.py
 
 # Run a specific test function
-pytest tests/test_file.py::test_function_name
-
-# Run tests with specific markers
-pytest -m "unit"
-pytest -m "integration"
+cd Backend && pytest tests/api/test_auth_endpoints.py::test_user_registration
 
 # Run tests with coverage
-pytest --cov=.
+cd Backend && pytest --cov=core --cov=api --cov=services
 
 # Run tests in verbose mode
-pytest -v
+cd Backend && pytest -v
+
+# Run tests in collect-only mode to see what will be executed
+cd Backend && pytest tests/api/test_processing_contract_improved.py --collect-only -q
 ```
 
 ### Frontend (TypeScript/Vitest)
 ```bash
 # Run all tests
-npm run test
-
-# Run tests in watch mode
-npm run test -- --watch
+cd Frontend && npm run test
 
 # Run a single test file
-npm run test -- src/components/ComponentName.test.tsx
+cd Frontend && npm run test -- src/components/auth/LoginForm.test.tsx
 
-# Run tests with coverage
-npm run test:coverage
-
-# Run tests in UI mode
-npm run test:ui
+# Run tests in watch mode
+cd Frontend && npm run test -- --watch
 ```
 
 ## Code Style Guidelines
@@ -99,51 +92,72 @@ npm run test:ui
 ### Backend (Python)
 
 1. **Imports**:
-   - Standard library imports first, then third-party, then local imports
-   - Use specific imports rather than wildcard imports
-   - Group imports logically
+   - Standard library, third-party, then local imports
+   - Import sorting with isort (first-party: api, core, database, services, tests)
+   - Specific imports over wildcard imports
 
 2. **Formatting**:
-   - Follow PEP 8 with 4-space indentation
-   - Line length: 88 characters (Ruff default)
-   - Use Ruff for automatic formatting
+   - PEP 8 with 4-space indentation
+   - Line length: 88 characters
+   - Double quotes for strings
+   - Google-style docstrings
+   - Use Ruff for formatting
 
 3. **Types**:
-   - Use type hints for all function parameters and return values
-   - Import types from typing module as needed
+   - Explicit type hints for all functions
+   - Pydantic models for data structures
+   - UUID for user IDs (not integers)
 
 4. **Naming Conventions**:
-   - snake_case for variables and functions
+   - snake_case for variables/functions
    - PascalCase for classes
    - UPPER_CASE for constants
 
 5. **Error Handling**:
-   - Use specific exception types when possible
-   - Log errors with appropriate context
-   - Raise HTTPException for API errors with proper status codes
+   - Specific exception types
+   - Log errors with context
+   - Structured exception handling
+   - Consistent error response formats
+
+6. **Database**:
+   - SQLAlchemy async sessions
+   - UserManager.parse_id() for UUID handling
+   - Alembic for migrations
+
+7. **Testing**:
+   - Use `@pytest.mark.asyncio` for async tests (not `@pytest.mark.anyio`)
+   - Only asyncio backend is used (no trio)
+   - Transaction rollback for test isolation
 
 ### Frontend (TypeScript/React)
 
 1. **Imports**:
-   - Use path aliases (@/*) for internal modules
-   - Type-only imports use `import type {}`
+   - Path aliases (@/*) for internal modules
+   - Type-only imports with `import type {}`
    - Default imports for libraries
 
 2. **Formatting**:
-   - Use Prettier/ESLint for consistent formatting
-   - TypeScript strict mode enabled
+   - Prettier/ESLint for consistent formatting
+   - TypeScript strict mode
 
 3. **Types**:
-   - Define interfaces for component props
-   - Use TypeScript for all components and functions
-   - Union types for variant enums
+   - Interfaces for component props
+   - TypeScript for all components/functions
 
 4. **Naming Conventions**:
-   - PascalCase for components and files
-   - camelCase for variables and functions
+   - PascalCase for components/files
+   - camelCase for variables/functions
    - UPPER_CASE for constants
 
-5. **Component Structure**:
-   - Functional components with TypeScript interfaces
-   - Styled Components for CSS-in-JS
-   - Default exports for components
+### Testing Best Practices
+- Use transaction rollback for test isolation
+- Follow FastAPI-Users API behavior (form data for login)
+- Auth responses: {"access_token": "...", "token_type": "bearer"}
+- Use auth helpers from tests/auth_helpers.py
+- Generate unique test data with AuthTestHelper.generate_unique_user_data()
+
+### WSL/Windows Interoperability
+- Execute Python with api_venv
+- Windows Python: /mnt/e/path/to/python.exe
+- Run .bat files: cmd.exe /c filename.bat
+- Clean up processes: cmd.exe /c "taskkill /F /IM cmd.exe && taskkill /F /IM python.exe && taskkill /F /IM node.exe"

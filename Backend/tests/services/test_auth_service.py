@@ -29,6 +29,7 @@ def auth_service(mock_db_session):
     return AuthService(mock_db_session)
 
 
+@pytest.mark.asyncio
 class TestAuthService:
     """Test suite for AuthService"""
     
@@ -46,7 +47,7 @@ class TestAuthService:
         assert auth_service._verify_password(password, hashed)
         assert not auth_service._verify_password("wrong_password", hashed)
     
-    @pytest.mark.asyncio
+    
     async def test_register_user_success(self, auth_service, mock_db_session):
         """Test successful user registration"""
         # Mock database response - no existing user found
@@ -69,19 +70,19 @@ class TestAuthService:
         mock_db_session.add.assert_called_once()
         mock_db_session.commit.assert_called_once()
     
-    @pytest.mark.asyncio
+    
     async def test_register_user_invalid_username(self, auth_service):
         """Test registration with invalid username"""
         with pytest.raises(ValueError, match="Username must be at least 3 characters long"):
             await auth_service.register_user("ab", "password123")
     
-    @pytest.mark.asyncio
+    
     async def test_register_user_invalid_password(self, auth_service):
         """Test registration with invalid password"""
         with pytest.raises(ValueError, match="Password must be at least 6 characters long"):
             await auth_service.register_user("testuser", "12345")
     
-    @pytest.mark.asyncio
+    
     async def test_register_user_already_exists(self, auth_service, mock_db_session):
         """Test registration when user already exists"""
         # Mock that user already exists
@@ -94,7 +95,7 @@ class TestAuthService:
         with pytest.raises(UserAlreadyExistsError):
             await auth_service.register_user("testuser", "password123")
     
-    @pytest.mark.asyncio
+    
     async def test_login_success(self, auth_service, mock_db_session):
         """Test successful login"""
         # Mock user data
@@ -121,7 +122,7 @@ class TestAuthService:
         mock_db_session.add.assert_called()
         mock_db_session.commit.assert_called()
     
-    @pytest.mark.asyncio
+    
     async def test_login_invalid_credentials(self, auth_service, mock_db_session):
         """Test login with invalid credentials"""
         # Mock database response - no user found
@@ -132,7 +133,7 @@ class TestAuthService:
         with pytest.raises(InvalidCredentialsError):
             await auth_service.login("nonexistent", "password123")
     
-    @pytest.mark.asyncio
+    
     async def test_validate_session_success(self, auth_service, mock_db_session):
         """Test successful session validation"""
         session_token = "test_token"
@@ -167,7 +168,7 @@ class TestAuthService:
         assert user.id == 1
         assert mock_db_session.execute.call_count >= 2  # Initial query + update
     
-    @pytest.mark.asyncio
+    
     async def test_validate_session_expired(self, auth_service, mock_db_session):
         """Test validation of expired session"""
         # Mock expired session data
@@ -191,7 +192,7 @@ class TestAuthService:
         # Verify session was deactivated in database
         mock_db_session.execute.assert_called()
     
-    @pytest.mark.asyncio
+    
     async def test_logout(self, auth_service, mock_db_session):
         """Test user logout"""
         session_token = "test_token"
@@ -209,7 +210,7 @@ class TestAuthService:
         result = await auth_service.logout("nonexistent_token")
         assert result is False
     
-    @pytest.mark.asyncio
+    
     async def test_update_language_preferences(self, auth_service, mock_db_session):
         """Test updating user language preferences"""
         # Language preferences are not yet implemented in the FastAPI-Users model

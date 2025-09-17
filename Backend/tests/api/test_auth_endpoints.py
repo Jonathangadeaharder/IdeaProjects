@@ -70,7 +70,7 @@ class FakeAuthService:
 import pytest
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio
 async def test_register_endpoint(async_client):
     payload = {"username": "testuser_api", "password": "TestPass123", "email": "testuser_api@example.com"}
     resp = await async_client.post("/api/auth/register", json=payload)
@@ -81,13 +81,13 @@ async def test_register_endpoint(async_client):
     assert data["is_active"] is True
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio
 async def test_login_endpoint(async_client):
     # Skip this test for now as it requires complex auth mocking
     pytest.skip("Skipping login test due to complex auth requirements")
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio
 async def test_register_duplicate_username(async_client):
     payload = {"username": "dupuser", "password": "TestPass123", "email": "dupuser@example.com"}
     r1 = await async_client.post("/api/auth/register", json=payload)

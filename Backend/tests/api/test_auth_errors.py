@@ -16,7 +16,7 @@ class FailAuth:
         raise Exception("Invalid username or password")
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio
 async def test_login_invalid_credentials_returns_401(async_client):
     app = create_app()
 

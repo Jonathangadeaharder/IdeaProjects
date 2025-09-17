@@ -4,7 +4,7 @@ from datetime import datetime
 import pytest
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio
 async def test_debug_frontend_logs(async_client):
     log_entry = {
         "timestamp": datetime.now().isoformat(),
@@ -20,7 +20,7 @@ async def test_debug_frontend_logs(async_client):
     assert r.json().get("success") is True
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio
 async def test_debug_health(async_client):
     r = await async_client.get("/api/debug/health")
     assert r.status_code == 200

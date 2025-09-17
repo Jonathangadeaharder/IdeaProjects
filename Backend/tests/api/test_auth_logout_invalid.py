@@ -6,7 +6,7 @@ from __future__ import annotations
 import pytest
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio
 async def test_logout_invalid_token(async_client):
     r = await async_client.post("/api/auth/logout", headers={"Authorization": "Bearer BAD"})
     # FastAPI-Users returns 401 for invalid tokens

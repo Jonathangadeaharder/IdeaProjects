@@ -19,7 +19,7 @@ class BoomAuth:
         raise Exception("boom")
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio
 async def test_register_generic_error_returns_500(async_client):
     app = create_app()
 
@@ -53,7 +53,7 @@ async def test_register_generic_error_returns_500(async_client):
         await client2.aclose()
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio
 async def test_login_generic_error_returns_500(async_client):
     app = create_app()
 
@@ -81,7 +81,7 @@ async def test_login_generic_error_returns_500(async_client):
         await client2.aclose()
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio
 async def test_register_validation_error_returns_400(async_client):
     app = create_app()
 
