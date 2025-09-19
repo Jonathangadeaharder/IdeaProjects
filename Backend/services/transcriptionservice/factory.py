@@ -4,8 +4,8 @@ Creates and manages transcription service instances.
 Uses lazy imports to avoid importing heavy ML dependencies at module import time.
 """
 
-from typing import Dict, Type, Optional, Union
 from importlib import import_module
+
 from .interface import ITranscriptionService
 
 
@@ -14,9 +14,9 @@ class TranscriptionServiceFactory:
     Factory for creating transcription service instances
     Manages service registration and instantiation
     """
-    
+
     # Registry of available transcription services
-    _services: Dict[str, Union[str, Type[ITranscriptionService]]] = {
+    _services: dict[str, str | type[ITranscriptionService]] = {
         # Lazy string paths for heavy services
         "whisper": "services.transcriptionservice.whisper_implementation.WhisperTranscriptionService",
         "whisper-tiny": "services.transcriptionservice.whisper_implementation.WhisperTranscriptionService",
@@ -30,7 +30,7 @@ class TranscriptionServiceFactory:
         "parakeet-ctc-0.6b": "services.transcriptionservice.parakeet_implementation.ParakeetTranscriptionService",
         "parakeet-tdt-0.6b": "services.transcriptionservice.parakeet_implementation.ParakeetTranscriptionService",
     }
-    
+
     # Default configurations for each service
     _default_configs = {
         "whisper": {"model_size": "large-v3-turbo"},
@@ -46,16 +46,16 @@ class TranscriptionServiceFactory:
         "parakeet-ctc-0.6b": {"model_name": "parakeet-ctc-0.6b"},
         "parakeet-tdt-0.6b": {"model_name": "parakeet-tdt-0.6b"},
     }
-    
+
     # Cache of instantiated services
-    _instances: Dict[str, ITranscriptionService] = {}
-    
+    _instances: dict[str, ITranscriptionService] = {}
+
     @classmethod
     def register_service(
         cls,
         name: str,
-        service_class: Type[ITranscriptionService],
-        default_config: Optional[Dict] = None
+        service_class: type[ITranscriptionService],
+        default_config: dict | None = None
     ) -> None:
         """
         Register a new transcription service
@@ -67,11 +67,11 @@ class TranscriptionServiceFactory:
         """
         if not issubclass(service_class, ITranscriptionService):
             raise ValueError(f"{service_class} must implement ITranscriptionService")
-        
+
         cls._services[name.lower()] = service_class
         if default_config:
             cls._default_configs[name.lower()] = default_config
-    
+
     @classmethod
     def create_service(
         cls,
@@ -92,7 +92,7 @@ class TranscriptionServiceFactory:
             ValueError: If service_name is not registered
         """
         service_name = service_name.lower()
-        
+
         # Determine the service class (resolve lazily)
         if service_name in cls._services:
             cls_or_path = cls._services[service_name]
@@ -109,29 +109,29 @@ class TranscriptionServiceFactory:
                 f"Unknown transcription service: {service_name}. "
                 f"Available services: {available}"
             )
-        
+
         # Merge default config with provided kwargs
         if service_name in cls._default_configs:
             config = cls._default_configs[service_name].copy()
             config.update(kwargs)
         else:
             config = kwargs
-        
+
         # Check if we already have an instance
-        cache_key = f"{service_name}_{str(config)}"
+        cache_key = f"{service_name}_{config!s}"
         if cache_key in cls._instances:
             return cls._instances[cache_key]
-        
+
         # Create new instance
         instance = service_class(**config)
-        
+
         # Cache the instance
         cls._instances[cache_key] = instance
-        
+
         return instance
-    
+
     @classmethod
-    def get_available_services(cls) -> Dict[str, str]:
+    def get_available_services(cls) -> dict[str, str]:
         """
         Get dictionary of available services
         
@@ -151,13 +151,13 @@ class TranscriptionServiceFactory:
             "parakeet-ctc-0.6b": "Parakeet CTC 0.6B - Smaller CTC",
             "parakeet-tdt-0.6b": "Parakeet TDT 0.6B - Smaller transducer",
         }
-    
+
     @classmethod
     def cleanup_all(cls) -> None:
         """Clean up all cached service instances"""
         for instance in cls._instances.values():
             instance.cleanup()
-        
+
         cls._instances.clear()
 
 

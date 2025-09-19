@@ -7,9 +7,9 @@ NLLB-200 Translation Service Implementation
 Facebook/Meta's No Language Left Behind model
 """
 
-from typing import List, Dict, Optional
+
 import torch
-from transformers import pipeline, AutoTokenizer, AutoModelForSeq2SeqLM
+from transformers import AutoModelForSeq2SeqLM, AutoTokenizer, pipeline
 
 from .interface import ITranslationService, TranslationResult
 
@@ -19,7 +19,7 @@ class NLLBTranslationService(ITranslationService):
     NLLB-200 implementation of translation service
     Supports 200+ languages with high quality translation
     """
-    
+
     # Language code mappings for NLLB
     LANGUAGE_CODES = {
         "en": "eng_Latn",  # English
@@ -50,11 +50,11 @@ class NLLBTranslationService(ITranslationService):
         "id": "ind_Latn",  # Indonesian
         "ms": "zsm_Latn",  # Malay
     }
-    
+
     def __init__(
         self,
         model_name: str = "facebook/nllb-200-distilled-600M",
-        device: Optional[str] = None,
+        device: str | None = None,
         max_length: int = 512
     ):
         """
@@ -70,7 +70,7 @@ class NLLBTranslationService(ITranslationService):
         self._translator = None
         self._model = None
         self._tokenizer = None
-        
+
         # Auto-detect device if not specified
         if device is None:
             self.device = 0 if torch.cuda.is_available() else -1
@@ -78,12 +78,12 @@ class NLLBTranslationService(ITranslationService):
         else:
             self.device = 0 if device == "cuda" else -1
             self.device_str = device
-    
+
     def initialize(self) -> None:
         """Initialize the NLLB model and tokenizer"""
         if self._translator is None:
             logger.info(f"Loading NLLB model: {self.model_name}")
-            
+
             # Load tokenizer and model
             self._tokenizer = AutoTokenizer.from_pretrained(self.model_name)
             self._model = AutoModelForSeq2SeqLM.from_pretrained(
@@ -91,7 +91,7 @@ class NLLBTranslationService(ITranslationService):
                 torch_dtype=torch.float16 if self.device_str == "cuda" else torch.float32,
                 low_cpu_mem_usage=True
             )
-            
+
             # Create pipeline
             self._translator = pipeline(
                 "translation",
@@ -100,9 +100,9 @@ class NLLBTranslationService(ITranslationService):
                 device=self.device,
                 max_length=self.max_length
             )
-            
+
             logger.info(f"NLLB model loaded on {self.device_str}")
-    
+
     def translate(
         self,
         text: str,
@@ -112,18 +112,18 @@ class NLLBTranslationService(ITranslationService):
         """Translate a single text"""
         if not self.is_initialized:
             self.initialize()
-        
+
         # Convert language codes to NLLB format
         src_lang = self.LANGUAGE_CODES.get(source_lang, source_lang)
         tgt_lang = self.LANGUAGE_CODES.get(target_lang, target_lang)
-        
+
         # Perform translation
         result = self._translator(
             text,
             src_lang=src_lang,
             tgt_lang=tgt_lang
         )
-        
+
         return TranslationResult(
             original_text=text,
             translated_text=result[0]["translation_text"],
@@ -134,31 +134,31 @@ class NLLBTranslationService(ITranslationService):
                 "device": self.device_str
             }
         )
-    
+
     def translate_batch(
         self,
-        texts: List[str],
+        texts: list[str],
         source_lang: str,
         target_lang: str
-    ) -> List[TranslationResult]:
+    ) -> list[TranslationResult]:
         """Translate multiple texts in batch"""
         if not self.is_initialized:
             self.initialize()
-        
+
         # Convert language codes to NLLB format
         src_lang = self.LANGUAGE_CODES.get(source_lang, source_lang)
         tgt_lang = self.LANGUAGE_CODES.get(target_lang, target_lang)
-        
+
         # Perform batch translation
         results = self._translator(
             texts,
             src_lang=src_lang,
             tgt_lang=tgt_lang
         )
-        
+
         # Create TranslationResult objects
         translation_results = []
-        for text, result in zip(texts, results):
+        for text, result in zip(texts, results, strict=False):
             translation_results.append(
                 TranslationResult(
                     original_text=text,
@@ -171,10 +171,10 @@ class NLLBTranslationService(ITranslationService):
                     }
                 )
             )
-        
+
         return translation_results
-    
-    def get_supported_languages(self) -> Dict[str, str]:
+
+    def get_supported_languages(self) -> dict[str, str]:
         """Get dictionary of supported languages"""
         return {
             "en": "English",
@@ -205,34 +205,34 @@ class NLLBTranslationService(ITranslationService):
             "id": "Indonesian",
             "ms": "Malay"
         }
-    
+
     def is_language_supported(self, lang_code: str) -> bool:
         """Check if a language is supported"""
         return lang_code in self.LANGUAGE_CODES or lang_code in self.LANGUAGE_CODES.values()
-    
+
     def cleanup(self) -> None:
         """Clean up resources and unload models"""
         if self._translator is not None:
             del self._translator
             self._translator = None
-        
+
         if self._model is not None:
             del self._model
             self._model = None
-        
+
         if self._tokenizer is not None:
             del self._tokenizer
             self._tokenizer = None
-        
+
         # Clear GPU cache if using CUDA
         if self.device_str == "cuda":
             torch.cuda.empty_cache()
-    
+
     @property
     def service_name(self) -> str:
         """Get the name of this translation service"""
         return "NLLB-200"
-    
+
     @property
     def is_initialized(self) -> bool:
         """Check if the service is initialized and ready"""

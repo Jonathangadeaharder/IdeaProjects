@@ -3,30 +3,32 @@ Authenticated User Vocabulary Data Service
 Wraps the SQLite vocabulary service with authentication requirements
 """
 
-from typing import Set, Dict, Any, List
 import logging
+from typing import Any
 
 try:
-    from .user_vocabulary_service import SQLiteUserVocabularyService
-    from ..filterservice.interface import IUserVocabularyService
-    from ...database.models import User
+    from sqlalchemy import select
+    from sqlalchemy.ext.asyncio import AsyncSession
+
     from ...core.auth import jwt_authentication
     from ...core.database import get_async_session
-    from sqlalchemy.ext.asyncio import AsyncSession
-    from sqlalchemy import select
+    from ...database.models import User
+    from ..filterservice.interface import IUserVocabularyService
+    from .user_vocabulary_service import SQLiteUserVocabularyService
 except ImportError:
     # Fallback for when running as script
     import sys
     from pathlib import Path
     project_root = Path(__file__).parent.parent.parent
     sys.path.insert(0, str(project_root))
-    from services.dataservice.user_vocabulary_service import SQLiteUserVocabularyService
-    from services.filterservice.interface import IUserVocabularyService
-    from database.models import User
-    from core.database import get_async_session
+    from sqlalchemy import select
+
     # JWT authentication is now handled through fastapi-users dependency injection
     from sqlalchemy.ext.asyncio import AsyncSession
-    from sqlalchemy import select
+
+    from database.models import User
+    from services.dataservice.user_vocabulary_service import SQLiteUserVocabularyService
+    from services.filterservice.interface import IUserVocabularyService
 
 class InsufficientPermissionsError(Exception):
     """Raised when user lacks required permissions"""
@@ -43,12 +45,12 @@ class AuthenticatedUserVocabularyService(IUserVocabularyService):
     Authentication-wrapped vocabulary service
     Ensures all operations are performed by authenticated users
     """
-    
+
     def __init__(self, db_session: AsyncSession):
         self.vocab_service = SQLiteUserVocabularyService()
         self.db_session = db_session
         self.logger = logging.getLogger(__name__)
-    
+
     def _validate_user_access(self, requesting_user: User, target_user_id: str) -> None:
         """
         Validate that the requesting user can access data for target_user_id
@@ -63,16 +65,16 @@ class AuthenticatedUserVocabularyService(IUserVocabularyService):
         # Users can always access their own data
         if str(requesting_user.id) == target_user_id or requesting_user.username == target_user_id:
             return
-        
+
         # Admins can access any user's data
         if requesting_user.is_admin:
             return
-        
+
         # Otherwise, access is denied
         raise InsufficientPermissionsError(
             f"User '{requesting_user.username}' cannot access data for user '{target_user_id}'"
         )
-    
+
     async def _authenticate_user(self, session_token: str) -> User:
         """
         Authenticate user using JWT token
@@ -92,9 +94,9 @@ class AuthenticatedUserVocabularyService(IUserVocabularyService):
                 raise AuthenticationRequiredError("Invalid or expired session token")
             return user
         except Exception as e:
-            self.logger.error(f"Authentication failed: {str(e)}")
+            self.logger.error(f"Authentication failed: {e!s}")
             raise AuthenticationRequiredError("Authentication failed")
-    
+
     async def is_word_known(self, requesting_user: User, user_id: str, word: str, language: str = "en") -> bool:
         """
         Check if user knows a specific word (requires authentication)
@@ -112,10 +114,10 @@ class AuthenticatedUserVocabularyService(IUserVocabularyService):
             InsufficientPermissionsError: If user cannot access this data
         """
         self._validate_user_access(requesting_user, user_id)
-        
+
         return await self.vocab_service.is_word_known(user_id, word, language)
-    
-    async def get_known_words(self, requesting_user: User, user_id: str, language: str = "en") -> Set[str]:
+
+    async def get_known_words(self, requesting_user: User, user_id: str, language: str = "en") -> set[str]:
         """
         Get all words known by user (requires authentication)
         
@@ -131,9 +133,9 @@ class AuthenticatedUserVocabularyService(IUserVocabularyService):
             InsufficientPermissionsError: If user cannot access this data
         """
         self._validate_user_access(requesting_user, user_id)
-        
+
         return await self.vocab_service.get_known_words(user_id, language)
-    
+
     async def mark_word_learned(self, requesting_user: User, user_id: str, word: str, language: str = "en") -> bool:
         """
         Mark word as learned by user (requires authentication)
@@ -151,13 +153,13 @@ class AuthenticatedUserVocabularyService(IUserVocabularyService):
             InsufficientPermissionsError: If user cannot modify this data
         """
         self._validate_user_access(requesting_user, user_id)
-        
+
         result = await self.vocab_service.mark_word_learned(user_id, word, language)
         if result:
             self.logger.info(f"User '{requesting_user.username}' marked word '{word}' as learned for user '{user_id}'")
-        
+
         return result
-    
+
     async def get_learning_level(self, requesting_user: User, user_id: str) -> str:
         """
         Get user's current learning level (requires authentication)
@@ -173,9 +175,9 @@ class AuthenticatedUserVocabularyService(IUserVocabularyService):
             InsufficientPermissionsError: If user cannot access this data
         """
         self._validate_user_access(requesting_user, user_id)
-        
+
         return await self.vocab_service.get_learning_level(user_id)
-    
+
     async def set_learning_level(self, requesting_user: User, user_id: str, level: str) -> bool:
         """
         Set user's learning level (requires authentication)
@@ -192,14 +194,14 @@ class AuthenticatedUserVocabularyService(IUserVocabularyService):
             InsufficientPermissionsError: If user cannot modify this data
         """
         self._validate_user_access(requesting_user, user_id)
-        
+
         result = await self.vocab_service.set_learning_level(user_id, level)
         if result:
             self.logger.info(f"User '{requesting_user.username}' set learning level to '{level}' for user '{user_id}'")
-        
+
         return result
-    
-    async def add_known_words(self, requesting_user: User, user_id: str, words: List[str], language: str = "en") -> bool:
+
+    async def add_known_words(self, requesting_user: User, user_id: str, words: list[str], language: str = "en") -> bool:
         """
         Add multiple words to user's known vocabulary (requires authentication)
         
@@ -216,14 +218,14 @@ class AuthenticatedUserVocabularyService(IUserVocabularyService):
             InsufficientPermissionsError: If user cannot modify this data
         """
         self._validate_user_access(requesting_user, user_id)
-        
+
         result = await self.vocab_service.add_known_words(user_id, words, language)
         if result:
             self.logger.info(f"User '{requesting_user.username}' added {len(words)} words for user '{user_id}'")
-        
+
         return result
-    
-    async def get_learning_statistics(self, requesting_user: User, user_id: str, language: str = "en") -> Dict[str, Any]:
+
+    async def get_learning_statistics(self, requesting_user: User, user_id: str, language: str = "en") -> dict[str, Any]:
         """
         Get learning statistics for user (requires authentication)
         
@@ -239,10 +241,10 @@ class AuthenticatedUserVocabularyService(IUserVocabularyService):
             InsufficientPermissionsError: If user cannot access this data
         """
         self._validate_user_access(requesting_user, user_id)
-        
+
         return await self.vocab_service.get_learning_statistics(user_id, language)
-    
-    async def get_word_learning_history(self, requesting_user: User, user_id: str, word: str, language: str = "en") -> List[Dict[str, Any]]:
+
+    async def get_word_learning_history(self, requesting_user: User, user_id: str, word: str, language: str = "en") -> list[dict[str, Any]]:
         """
         Get learning history for a specific word (requires authentication)
         
@@ -259,10 +261,10 @@ class AuthenticatedUserVocabularyService(IUserVocabularyService):
             InsufficientPermissionsError: If user cannot access this data
         """
         self._validate_user_access(requesting_user, user_id)
-        
+
         return await self.vocab_service.get_word_learning_history(user_id, word, language)
-    
-    async def get_words_by_confidence(self, requesting_user: User, user_id: str, confidence_level: int, language: str = "en") -> List[Dict[str, Any]]:
+
+    async def get_words_by_confidence(self, requesting_user: User, user_id: str, confidence_level: int, language: str = "en") -> list[dict[str, Any]]:
         """
         Get words at a specific confidence level (requires authentication)
         
@@ -279,9 +281,9 @@ class AuthenticatedUserVocabularyService(IUserVocabularyService):
             InsufficientPermissionsError: If user cannot access this data
         """
         self._validate_user_access(requesting_user, user_id)
-        
+
         return await self.vocab_service.get_words_by_confidence(user_id, confidence_level, language)
-    
+
     async def remove_word(self, requesting_user: User, user_id: str, word: str, language: str = "en") -> bool:
         """
         Remove a word from user's learning progress (requires authentication)
@@ -299,15 +301,15 @@ class AuthenticatedUserVocabularyService(IUserVocabularyService):
             InsufficientPermissionsError: If user cannot modify this data
         """
         self._validate_user_access(requesting_user, user_id)
-        
+
         result = await self.vocab_service.remove_word(user_id, word, language)
         if result:
             self.logger.info(f"User '{requesting_user.username}' removed word '{word}' for user '{user_id}'")
-        
+
         return result
-    
+
     # Admin-only methods
-    async def admin_get_all_user_stats(self, requesting_user: User, language: str = "en") -> Dict[str, Dict[str, Any]]:
+    async def admin_get_all_user_stats(self, requesting_user: User, language: str = "en") -> dict[str, dict[str, Any]]:
         """
         Admin method to get statistics for all users
         
@@ -323,12 +325,12 @@ class AuthenticatedUserVocabularyService(IUserVocabularyService):
         """
         if not requesting_user.is_admin:
             raise InsufficientPermissionsError("Admin privileges required")
-        
+
         # Get all users from database
         stmt = select(User)
         result = await self.db_session.execute(stmt)
         all_users = result.scalars().all()
-        
+
         # Collect statistics for each user
         all_stats = {}
         for user in all_users:
@@ -347,9 +349,9 @@ class AuthenticatedUserVocabularyService(IUserVocabularyService):
                     'total_known': 0,
                     'total_learned': 0
                 }
-        
+
         return all_stats
-    
+
     async def admin_reset_user_progress(self, requesting_user: User, target_user_id: str) -> bool:
         """
         Admin method to reset a user's learning progress
@@ -366,7 +368,7 @@ class AuthenticatedUserVocabularyService(IUserVocabularyService):
         """
         if not requesting_user.is_admin:
             raise InsufficientPermissionsError("Admin privileges required")
-        
+
         try:
             # Remove all learning progress for the user using async session
             async with self.vocab_service.get_session() as session:
@@ -377,10 +379,10 @@ class AuthenticatedUserVocabularyService(IUserVocabularyService):
                 )
                 await session.commit()
                 rows_affected = result.rowcount
-            
+
             self.logger.info(f"Admin '{requesting_user.username}' reset progress for user '{target_user_id}' ({rows_affected} records removed)")
             return True
-            
+
         except Exception as e:
             self.logger.error(f"Failed to reset progress for user '{target_user_id}': {e}")
             return False

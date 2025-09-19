@@ -4,8 +4,8 @@ Defines the contract that all transcription services must implement
 """
 
 from abc import ABC, abstractmethod
-from typing import List, Dict, Any, Optional
 from dataclasses import dataclass, field
+from typing import Any
 
 
 @dataclass
@@ -14,19 +14,19 @@ class TranscriptionSegment:
     start_time: float
     end_time: float
     text: str
-    confidence: Optional[float] = None
-    speaker: Optional[str] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    confidence: float | None = None
+    speaker: str | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
 class TranscriptionResult:
     """Result of a transcription operation"""
     full_text: str
-    segments: List[TranscriptionSegment]
-    language: Optional[str] = None
-    duration: Optional[float] = None
-    metadata: Optional[Dict[str, Any]] = None
+    segments: list[TranscriptionSegment]
+    language: str | None = None
+    duration: float | None = None
+    metadata: dict[str, Any] | None = None
 
 
 class ITranscriptionService(ABC):
@@ -34,17 +34,17 @@ class ITranscriptionService(ABC):
     Interface for transcription services
     All transcription implementations must implement these methods
     """
-    
+
     @abstractmethod
     def initialize(self) -> None:
         """Initialize the transcription service and load models"""
         pass
-    
+
     @abstractmethod
     def transcribe(
         self,
         audio_path: str,
-        language: Optional[str] = None
+        language: str | None = None
     ) -> TranscriptionResult:
         """
         Transcribe an audio file
@@ -57,12 +57,12 @@ class ITranscriptionService(ABC):
             TranscriptionResult with transcription details
         """
         pass
-    
+
     @abstractmethod
     def transcribe_with_timestamps(
         self,
         audio_path: str,
-        language: Optional[str] = None
+        language: str | None = None
     ) -> TranscriptionResult:
         """
         Transcribe with detailed timestamps for each segment
@@ -75,13 +75,13 @@ class ITranscriptionService(ABC):
             TranscriptionResult with timed segments
         """
         pass
-    
+
     @abstractmethod
     def transcribe_batch(
         self,
-        audio_paths: List[str],
-        language: Optional[str] = None
-    ) -> List[TranscriptionResult]:
+        audio_paths: list[str],
+        language: str | None = None
+    ) -> list[TranscriptionResult]:
         """
         Transcribe multiple audio files in batch
         
@@ -93,7 +93,7 @@ class ITranscriptionService(ABC):
             List of TranscriptionResult objects
         """
         pass
-    
+
     @abstractmethod
     def supports_video(self) -> bool:
         """
@@ -103,12 +103,12 @@ class ITranscriptionService(ABC):
             True if video files are supported, False otherwise
         """
         pass
-    
+
     @abstractmethod
     def extract_audio_from_video(
         self,
         video_path: str,
-        output_path: Optional[str] = None
+        output_path: str | None = None
     ) -> str:
         """
         Extract audio from video file
@@ -121,9 +121,9 @@ class ITranscriptionService(ABC):
             Path to extracted audio file
         """
         pass
-    
+
     @abstractmethod
-    def get_supported_languages(self) -> List[str]:
+    def get_supported_languages(self) -> list[str]:
         """
         Get list of supported language codes
         
@@ -131,26 +131,26 @@ class ITranscriptionService(ABC):
             List of language codes (e.g., ['en', 'de', 'es'])
         """
         pass
-    
+
     @abstractmethod
     def cleanup(self) -> None:
         """Clean up resources and unload models"""
         pass
-    
+
     @property
     @abstractmethod
     def service_name(self) -> str:
         """Get the name of this transcription service"""
         pass
-    
+
     @property
     @abstractmethod
     def is_initialized(self) -> bool:
         """Check if the service is initialized and ready"""
         pass
-    
+
     @property
     @abstractmethod
-    def model_info(self) -> Dict[str, Any]:
+    def model_info(self) -> dict[str, Any]:
         """Get information about the loaded model"""
         pass

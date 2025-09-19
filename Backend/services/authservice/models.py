@@ -2,17 +2,30 @@
 
 from dataclasses import dataclass
 from datetime import datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     from database.models import User
 
 
 @dataclass
+class AuthUser:
+    """Represents an authenticated user"""
+    id: str
+    username: str
+    is_admin: bool = False
+    is_active: bool = True
+    created_at: str = ""
+    native_language: str = "en"
+    target_language: str = "de"
+    last_login: Optional[datetime] = None
+
+
+@dataclass
 class AuthSession:
     """Represents a user session"""
     session_token: str
-    user: "User"
+    user: AuthUser
     expires_at: datetime
     created_at: datetime
 

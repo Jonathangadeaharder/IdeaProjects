@@ -7,7 +7,7 @@ import logging
 import os
 import tempfile
 from pathlib import Path
-from typing import List, Dict, Any, Optional
+from typing import Any
 
 from .interface import ITranscriptionService, TranscriptionResult, TranscriptionSegment
 
@@ -19,19 +19,19 @@ class ParakeetTranscriptionService(ITranscriptionService):
     NVIDIA Parakeet implementation of transcription service
     Fast and accurate transcription using NeMo models
     """
-    
+
     # Available Parakeet models
     AVAILABLE_MODELS = {
         "parakeet-tdt-1.1b": "nvidia/parakeet-tdt-1.1b",
         "parakeet-ctc-1.1b": "nvidia/parakeet-ctc-1.1b",
         "parakeet-ctc-0.6b": "nvidia/parakeet-ctc-0.6b",
-        "parakeet-tdt-0.6b": "nvidia/stt_en_fastconformer_hybrid_large_pc"
+        "parakeet-tdt-0.6b": "nvidia/parakeet-tdt-0.6b-v3"  # Updated to v3 model
     }
-    
+
     def __init__(
         self,
         model_name: str = "parakeet-tdt-1.1b",
-        device: Optional[str] = None
+        device: str | None = None
     ):
         """
         Initialize Parakeet transcription service
@@ -45,56 +45,56 @@ class ParakeetTranscriptionService(ITranscriptionService):
                 f"Invalid model: {model_name}. "
                 f"Choose from: {', '.join(self.AVAILABLE_MODELS.keys())}"
             )
-        
+
         self.model_name = model_name
         self.model_path = self.AVAILABLE_MODELS[model_name]
         self.device = device or "cuda" if self._cuda_available() else "cpu"
         self._model = None
-    
+
     def initialize(self) -> None:
         """Initialize the Parakeet model"""
         if self._model is None:
             try:
                 import nemo.collections.asr as nemo_asr
-                
+
                 logger.info(f"Loading Parakeet model: {self.model_name}")
                 self._model = nemo_asr.models.ASRModel.from_pretrained(
                     model_name=self.model_path
                 )
-                
+
                 # Move model to device
                 if self.device == "cuda" and self._cuda_available():
                     self._model = self._model.cuda()
-                
+
                 self._model.eval()
                 logger.info(f"Parakeet model loaded: {self.model_name}")
-                
+
             except ImportError:
                 raise ImportError(
                     "NeMo toolkit not installed. "
                     "Install with: pip install nemo_toolkit[asr]"
                 )
-    
+
     def transcribe(
         self,
         audio_path: str,
-        language: Optional[str] = None
+        language: str | None = None
     ) -> TranscriptionResult:
         """Transcribe an audio file"""
         if not self.is_initialized:
             self.initialize()
-        
+
         # Handle video files
         if self._is_video_file(audio_path):
             audio_path = self.extract_audio_from_video(audio_path)
             cleanup = True
         else:
             cleanup = False
-        
+
         try:
             # Perform transcription
             transcriptions = self._model.transcribe([audio_path])
-            
+
             # Handle different return formats
             if isinstance(transcriptions, list) and len(transcriptions) > 0:
                 if isinstance(transcriptions[0], str):
@@ -110,12 +110,12 @@ class ParakeetTranscriptionService(ITranscriptionService):
                 else:
                     # Output with timestamps
                     full_text = transcriptions[0].text if hasattr(transcriptions[0], 'text') else str(transcriptions[0])
-                    
+
                     # Try to extract segments with timestamps
                     segments = self._extract_segments(transcriptions[0])
             else:
                 raise ValueError("Unexpected transcription format")
-            
+
             return TranscriptionResult(
                 full_text=full_text,
                 segments=segments,
@@ -129,30 +129,30 @@ class ParakeetTranscriptionService(ITranscriptionService):
         finally:
             if cleanup and os.path.exists(audio_path):
                 os.unlink(audio_path)
-    
+
     def transcribe_with_timestamps(
         self,
         audio_path: str,
-        language: Optional[str] = None
+        language: str | None = None
     ) -> TranscriptionResult:
         """Transcribe with detailed timestamps"""
         # Parakeet provides timestamps when available
         return self.transcribe(audio_path, language)
-    
+
     def transcribe_batch(
         self,
-        audio_paths: List[str],
-        language: Optional[str] = None
-    ) -> List[TranscriptionResult]:
+        audio_paths: list[str],
+        language: str | None = None
+    ) -> list[TranscriptionResult]:
         """Transcribe multiple audio files in batch"""
         if not self.is_initialized:
             self.initialize()
-        
+
         # Parakeet supports batch processing
         transcriptions = self._model.transcribe(audio_paths)
-        
+
         results = []
-        for audio_path, transcription in zip(audio_paths, transcriptions):
+        for audio_path, transcription in zip(audio_paths, transcriptions, strict=False):
             if isinstance(transcription, str):
                 full_text = transcription
                 segments = [
@@ -165,7 +165,7 @@ class ParakeetTranscriptionService(ITranscriptionService):
             else:
                 full_text = transcription.text if hasattr(transcription, 'text') else str(transcription)
                 segments = self._extract_segments(transcription)
-            
+
             results.append(
                 TranscriptionResult(
                     full_text=full_text,
@@ -178,36 +178,36 @@ class ParakeetTranscriptionService(ITranscriptionService):
                     }
                 )
             )
-        
+
         return results
-    
+
     def supports_video(self) -> bool:
         """Parakeet supports video through audio extraction"""
         return True
-    
+
     def extract_audio_from_video(
         self,
         video_path: str,
-        output_path: Optional[str] = None
+        output_path: str | None = None
     ) -> str:
         """Extract audio from video file"""
         try:
             from moviepy import VideoFileClip
         except ImportError:
             from moviepy import VideoFileClip
-        
+
         if output_path is None:
             output_path = tempfile.NamedTemporaryFile(
                 suffix=".wav",
                 delete=False
             ).name
-        
+
         video = VideoFileClip(video_path)
         audio = video.audio
-        
+
         if audio is None:
             raise ValueError(f"No audio track found in {video_path}")
-        
+
         # Parakeet prefers 16kHz audio
         audio.write_audiofile(
             output_path,
@@ -215,41 +215,41 @@ class ParakeetTranscriptionService(ITranscriptionService):
             logger=None
         )
         video.close()
-        
+
         return output_path
-    
-    def get_supported_languages(self) -> List[str]:
+
+    def get_supported_languages(self) -> list[str]:
         """Get list of supported language codes"""
         # Parakeet is primarily English
         return ["en"]
-    
+
     def cleanup(self) -> None:
         """Clean up resources and unload model"""
         if self._model is not None:
             del self._model
             self._model = None
-            
+
             # Clear GPU cache if using CUDA
             if self.device == "cuda" and self._cuda_available():
                 import torch
                 torch.cuda.empty_cache()
-    
+
     @property
     def service_name(self) -> str:
         """Get the name of this transcription service"""
         return f"Parakeet-{self.model_name}"
-    
+
     @property
     def is_initialized(self) -> bool:
         """Check if the service is initialized"""
         return self._model is not None
-    
+
     @property
-    def model_info(self) -> Dict[str, Any]:
+    def model_info(self) -> dict[str, Any]:
         """Get information about the loaded model"""
         if not self.is_initialized:
             return {"status": "not_initialized"}
-        
+
         return {
             "name": "NVIDIA Parakeet",
             "model": self.model_name,
@@ -257,12 +257,12 @@ class ParakeetTranscriptionService(ITranscriptionService):
             "framework": "NeMo",
             "languages": ["English"]
         }
-    
+
     def _is_video_file(self, file_path: str) -> bool:
         """Check if file is a video"""
         video_extensions = {".mp4", ".avi", ".mov", ".mkv", ".webm", ".flv"}
         return Path(file_path).suffix.lower() in video_extensions
-    
+
     def _cuda_available(self) -> bool:
         """Check if CUDA is available"""
         try:
@@ -270,7 +270,7 @@ class ParakeetTranscriptionService(ITranscriptionService):
             return torch.cuda.is_available()
         except ImportError:
             return False
-    
+
     def _get_audio_duration(self, audio_path: str) -> float:
         """Get duration of audio file"""
         try:
@@ -280,17 +280,17 @@ class ParakeetTranscriptionService(ITranscriptionService):
         except (ImportError, OSError, Exception) as e:
             logger.warning(f"Could not get audio duration from {audio_path}: {e}")
             return 0.0
-    
-    def _extract_segments(self, transcription) -> List[TranscriptionSegment]:
+
+    def _extract_segments(self, transcription) -> list[TranscriptionSegment]:
         """Extract segments from Parakeet transcription output"""
         segments = []
-        
+
         # Try to extract word-level timestamps if available
         if hasattr(transcription, 'timestamps') and hasattr(transcription, 'words'):
             words = transcription.words if hasattr(transcription, 'words') else transcription.text.split()
             timestamps = transcription.timestamps
-            
-            for word, (start, end) in zip(words, timestamps):
+
+            for word, (start, end) in zip(words, timestamps, strict=False):
                 segments.append(
                     TranscriptionSegment(
                         start_time=start,
@@ -318,5 +318,5 @@ class ParakeetTranscriptionService(ITranscriptionService):
                     text=text
                 )
             )
-        
+
         return segments
