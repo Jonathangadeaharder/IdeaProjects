@@ -10,3 +10,4 @@ def test_WhenminimalCalled_ThenSucceeds():
 @pytest.mark.timeout(30)
 def test_WhenadditionCalled_ThenSucceeds():
     assert 1 + 1 == 2
+

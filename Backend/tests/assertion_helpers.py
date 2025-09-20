@@ -55,3 +55,4 @@ def assert_dict_response(response, expected_codes: set[int] = {200}) -> None:
     """Assert response has expected status and returns dict."""
     assert response.status_code in expected_codes
     assert isinstance(response.json(), dict)
+

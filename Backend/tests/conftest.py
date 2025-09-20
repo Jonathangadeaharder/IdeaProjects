@@ -173,3 +173,4 @@ def unique_user_data() -> dict:
 def base_url() -> str:
     """Base URL used by in-memory httpx clients."""
     return "http://test"
+

@@ -20,3 +20,4 @@ def test_Whenhealth_endpointCalled_ThenSucceeds():
         assert response.status_code == 200
         data = response.json()
         assert data["status"] == "healthy"
+

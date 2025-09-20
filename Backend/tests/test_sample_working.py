@@ -22,3 +22,4 @@ def test_Whenlist_operationsCalled_ThenSucceeds():
     test_list.append(4)
     assert len(test_list) == 4
     assert test_list[-1] == 4
+

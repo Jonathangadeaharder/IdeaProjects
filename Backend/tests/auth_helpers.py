@@ -437,3 +437,4 @@ class AuthResponseStructures:
     UNAUTHORIZED = {
         "status_code": 401
     }
+
