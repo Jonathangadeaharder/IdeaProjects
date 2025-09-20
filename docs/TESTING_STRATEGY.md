@@ -11,52 +11,53 @@ LangPlug uses a multi-layered testing approach to ensure reliability, maintainab
 3. **Comprehensive Coverage** - All code paths including services and database layers
 4. **Cross-Platform Tooling** - Unified scripts that work everywhere
 
-## Contract-Driven Development (CDD)
+## In-Memory Testing with Dependency Overrides
 
 ### Philosophy
 
-Instead of testing framework internals, we test the actual HTTP API as external clients would use it. This approach:
+Instead of using live servers, we use FastAPI's TestClient and httpx with ASGI transport for fast, reliable in-process testing. This approach:
 
-- ✅ Tests actual HTTP layer (routing, middleware, CORS, serialization)
-- ✅ Implementation-agnostic (works with any backend framework)
-- ✅ True black-box testing
-- ✅ Catches HTTP-layer bugs that TestClient misses
-- ✅ Uses real HTTP requests with proper timeouts and headers
+- ✅ Tests complete FastAPI application stack (routing, middleware, dependencies)
+- ✅ Fast execution (~milliseconds vs seconds for live servers)
+- ✅ Isolated per-test databases via dependency overrides
+- ✅ Reliable without network dependencies or port conflicts
+- ✅ Easy to mock external services and background tasks
 
 ### Implementation
 
-**Location**: `Backend/tests/` with Contract-Driven Development components
+**Location**: `Backend/tests/conftest.py` provides all necessary fixtures
 
 **Key Components**:
-- `tests/utils/server_manager.py` - Manages real backend server processes
-- `tests/utils/url_builder.py` - Discovers API routes via OpenAPI spec
-- `tests/conftest.py` - HTTP-based fixtures and authentication helpers
-- `tests/auth_helpers.py` - Authentication testing using real HTTP requests
+- `app` fixture - FastAPI app with per-test SQLite DB override
+- `client`/`http_client` fixtures - Synchronous TestClient for in-process requests
+- `async_client`/`async_http_client` fixtures - Async httpx.AsyncClient with ASGI transport
+- `url_builder` fixture - Static route mapping (no network discovery needed)
+- Database dependency override for `core.database.get_async_session`
 
 **Usage**:
 ```bash
-# Run contract-driven tests
+# Run all backend tests (in-process)
 cd Backend
-python -m pytest -m contract
+python -m pytest
 
 # Run with professional test management
-python scripts/test_management.py --category contract
+python scripts/test_management.py --category api
 ```
 
-### Example: Traditional vs Contract-Driven
+### Example: In-Process Testing with Dependency Overrides
 
-**❌ Traditional Approach (bypasses HTTP layer)**:
+**✅ In-Process Testing (TestClient with dependency overrides)**:
 ```python
-def test_login_traditional(client: TestClient):
-    response = client.post("/api/auth/login", json=data)  # Direct function call
+def test_login_with_db_override(client: TestClient):
+    response = client.post("/api/auth/login", data=data)  # In-process via ASGI
     assert response.status_code == 200
 ```
 
-**✅ Contract-Driven Approach (real HTTP)**:
+**✅ Async In-Process Testing (httpx.AsyncClient with ASGI)**:
 ```python
-async def test_login_contract(async_http_client, http_url_builder):
-    url = http_url_builder.url_for("auth_login")
-    response = await async_http_client.post(url, json=data)  # Real HTTP request
+async def test_login_async(async_client: httpx.AsyncClient, url_builder):
+    url = url_builder.url_for("auth_login")
+    response = await async_client.post(url, data=data)  # In-process via ASGI
     assert response.status_code == 200
 ```
 

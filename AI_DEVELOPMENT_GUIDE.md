@@ -78,16 +78,23 @@ cd Frontend && npm run dev                         # Development server
 
 ## Testing Best Practices
 
+### In-Memory Testing Strategy
+- **✅ Use**: FastAPI TestClient and httpx.AsyncClient with ASGI transport for fast, reliable in-process tests
+- **✅ Use**: Dependency overrides (e.g., `get_async_session`) with per-test SQLite databases
+- **✅ Use**: Mock external services and long-running processes in tests
+- **❌ Avoid**: Live HTTP servers or network calls in unit/integration tests
+
 ### Professional Test Management
 - **✅ Use**: `python scripts/test_management.py` for comprehensive test runs
 - **❌ Avoid**: Hardcoded lists of "passing tests" 
 - **Expected Failures**: Mark with `@pytest.mark.xfail(reason="Clear explanation")`
 - **Test Categories**: Use markers (`@pytest.mark.unit`, `@pytest.mark.contract`, etc.)
 
-### Contract-Driven Development
-- Use real HTTP requests instead of TestClient for API tests
-- Test actual HTTP layer (routing, middleware, CORS, serialization)
-- Use fixtures from `tests/conftest.py` and `tests/auth_helpers.py`
+### In-Process Testing with Dependency Overrides
+- Use TestClient/httpx.AsyncClient with ASGI transport for fast in-process testing
+- Override dependencies like `get_async_session` for isolated test databases
+- Use fixtures from `tests/conftest.py` (app, client, async_client, url_builder)
+- Mock external services and background tasks to eliminate network dependencies
 
 ### Coverage Requirements
 - **Minimum**: 80% coverage
