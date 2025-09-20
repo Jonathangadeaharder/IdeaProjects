@@ -4,12 +4,12 @@ This document outlines the comprehensive testing strategy for LangPlug, covering
 
 ## Overview
 
-LangPlug uses a multi-layered testing approach to ensure reliability, maintainability, and professional development practices:
+LangPlug uses a comprehensive three-tier testing approach to ensure reliability, maintainability, and professional development practices:
 
-1. **Contract-Driven Development (CDD)** - HTTP-based API testing
-2. **Professional Test Management** - Proper handling of failing tests
-3. **Comprehensive Coverage** - All code paths including services and database layers
-4. **Cross-Platform Tooling** - Unified scripts that work everywhere
+1. **Unit/Integration Tests** - Fast in-memory tests with dependency overrides
+2. **Frontend Contract Tests** - Mocked API tests for components and services
+3. **End-to-End Tests** - Full user workflow testing with Cypress
+4. **Professional Test Management** - Proper handling of failing tests and comprehensive coverage
 
 ## In-Memory Testing with Dependency Overrides
 
@@ -59,6 +59,61 @@ async def test_login_async(async_client: httpx.AsyncClient, url_builder):
     url = url_builder.url_for("auth_login")
     response = await async_client.post(url, data=data)  # In-process via ASGI
     assert response.status_code == 200
+```
+
+## End-to-End Testing with Cypress
+
+### Philosophy
+
+Cypress provides the third tier of our testing strategy - true end-to-end testing that validates complete user workflows from frontend to backend. This approach:
+
+- ✅ Tests complete user journeys and business flows
+- ✅ Validates frontend-backend integration in real browser environments
+- ✅ Catches UI/UX issues and cross-browser compatibility problems
+- ✅ Tests actual user interactions (clicks, typing, navigation)
+- ✅ Validates data persistence and state management across page loads
+
+### Implementation
+
+**Location**: `/cypress/` directory with E2E test suites
+
+**Key Components**:
+- `cypress.config.ts` - Cypress configuration with environment variables
+- `cypress/e2e/` - End-to-end test scenarios
+- `cypress/support/` - Custom commands and global configuration
+- `cypress/fixtures/` - Test data and sample files
+
+**Test Scenarios**:
+- Authentication flows (register, login, logout)
+- Video learning workflows (upload, play, vocabulary interaction)
+- User progress tracking and vocabulary games
+- Subtitle processing and filtering features
+
+**Usage**:
+```bash
+# Run E2E tests in headless mode
+npm run e2e
+
+# Open Cypress Test Runner for interactive debugging
+npm run e2e:open
+
+# Run specific test file
+npx cypress run --spec "cypress/e2e/auth-flow.cy.ts"
+```
+
+### Environment Setup for E2E Tests
+
+E2E tests require both frontend and backend to be running:
+
+```bash
+# Terminal 1: Start backend
+cd Backend && python run_backend.py
+
+# Terminal 2: Start frontend  
+cd Frontend && npm run dev
+
+# Terminal 3: Run E2E tests
+npm run e2e
 ```
 
 ## Professional Test Management

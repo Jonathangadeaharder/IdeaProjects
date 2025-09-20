@@ -29,6 +29,11 @@ python scripts/generate_typescript_client.py       # OpenAPI client generation
 # Standard development
 cd Backend && python run_backend.py                # Start backend server
 cd Frontend && npm run dev                          # Start frontend dev server
+
+# Three-tier testing approach
+cd Backend && pytest                               # Unit/integration tests (in-memory)
+cd Frontend && npm test                             # Frontend contract tests (mocked)
+npm run e2e                                         # End-to-end tests (Cypress)
 ```
 
 ### Build/Test Commands (from AGENTS.md)
@@ -95,6 +100,12 @@ cd Frontend && npm run dev                         # Development server
 - Override dependencies like `get_async_session` for isolated test databases
 - Use fixtures from `tests/conftest.py` (app, client, async_client, url_builder)
 - Mock external services and background tasks to eliminate network dependencies
+
+### End-to-End Testing with Cypress
+- **✅ Use**: Cypress for complete user workflow validation
+- **✅ Use**: Real browser testing for UI/UX validation and cross-browser compatibility
+- **✅ Use**: Custom commands for authentication and common workflows
+- **❌ Avoid**: E2E tests for unit-level logic (use fast in-memory tests instead)
 
 ### Coverage Requirements
 - **Minimum**: 80% coverage
