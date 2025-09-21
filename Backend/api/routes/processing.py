@@ -362,7 +362,8 @@ async def run_processing_pipeline(
         task_progress[task_id].message = "Analyzing vocabulary..."
 
         # Get user's current level from database - fallback to A1
-        user_level = "A1"  # TODO: Get from user profile when available
+        # TODO: Implement user language level lookup from database using user_id
+        user_level = "A1"  # Default to A1 until user language level is implemented
         
         # Use dependency injection to get the subtitle processor
         from core.database import get_async_session
@@ -546,7 +547,6 @@ async def transcribe_video(
 ):
     """Transcribe video to generate subtitles"""
     try:
-        print(f"DEBUG: Transcribe request received: {request.video_path}")
         logger.info(f"Transcribe request received: {request.video_path}")
 
         # Check if transcription service is available

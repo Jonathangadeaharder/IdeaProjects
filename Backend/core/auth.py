@@ -94,7 +94,7 @@ class UserManager(BaseUserManager[User, uuid.UUID]):
             raise ValueError(f"Invalid UUID format: {value}")
 
     async def on_after_register(self, user: User, request: Request | None = None):
-        print(f"User {user.id} has registered.")
+        pass  # User registration handled by application logic
 
     async def on_after_login(
         self,
@@ -105,7 +105,6 @@ class UserManager(BaseUserManager[User, uuid.UUID]):
     ):
         # Update last login timestamp
         user.last_login = datetime.utcnow()
-        print(f"User {user.id} logged in.")
 
 
 async def get_user_db(session: AsyncSession = Depends(get_async_session)):

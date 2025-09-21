@@ -31,7 +31,7 @@ class Settings(BaseSettings):
     postgres_port: int = Field(default=5432, alias="LANGPLUG_POSTGRES_PORT")
     postgres_db: str = Field(default="langplug", alias="LANGPLUG_POSTGRES_DB")
     postgres_user: str = Field(default="langplug_user", alias="LANGPLUG_POSTGRES_USER")
-    postgres_password: str = Field(default="langplug_password", alias="LANGPLUG_POSTGRES_PASSWORD")
+    postgres_password: str = Field(default="", alias="LANGPLUG_POSTGRES_PASSWORD")
     postgres_pool_size: int = Field(default=10, alias="LANGPLUG_POSTGRES_POOL_SIZE")
     postgres_max_overflow: int = Field(default=20, alias="LANGPLUG_POSTGRES_MAX_OVERFLOW")
 
@@ -64,7 +64,7 @@ class Settings(BaseSettings):
     spacy_model_en: str = Field(default="en_core_web_sm", alias="LANGPLUG_SPACY_MODEL_EN")
 
     # Security settings
-    secret_key: str = Field(default="your-secret-key-change-in-production", alias="LANGPLUG_SECRET_KEY")
+    secret_key: str = Field(default="", alias="LANGPLUG_SECRET_KEY")
     session_timeout_hours: int = Field(default=24, alias="LANGPLUG_SESSION_TIMEOUT_HOURS")
 
     # Sentry settings
