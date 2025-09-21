@@ -11,6 +11,7 @@
     "test:e2e": "cd e2e && npm run test:e2e"
   },
   "dependencies": {
+    "axios": "^1.12.2",
     "puppeteer": "^24.22.0",
     "ts-node": "^10.9.1",
     "typescript": "^5.0.2"

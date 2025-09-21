@@ -4,12 +4,13 @@
 
 import puppeteer, { Browser, Page } from 'puppeteer';
 import { PuppeteerHelpers } from './utils/puppeteer-helpers';
+import { getFrontendUrl } from './config/test-config';
 
 describe('Authentication Flow', () => {
   let browser: Browser | undefined;
   let page: Page;
 
-  const BASE_URL = 'http://localhost:3001';
+  let BASE_URL = '';
   const TEST_USER_EMAIL = 'test@example.com';
   const TEST_USER_PASSWORD = 'TestPassword123!';
 
@@ -20,6 +21,13 @@ describe('Authentication Flow', () => {
       slowMo: 50, // Slow down for better test visibility/debugging
       args: ['--no-sandbox', '--disable-setuid-sandbox'], // For CI/headless
     });
+    // Detect actual frontend URL (dynamic port) to avoid hardcoded port issues
+    try {
+      BASE_URL = await getFrontendUrl();
+    } catch (e) {
+      // Fallback stays at default if detection fails
+      BASE_URL = 'http://localhost:3001';
+    }
   }, 60000);
 
   beforeEach(async () => {

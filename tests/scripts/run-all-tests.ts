@@ -19,8 +19,12 @@ async function runAllTests() {
     
     // Wait for servers to be responsive
     console.log('\n2. Waiting for servers to be responsive...');
-    await serverManager.waitForBackend();
-    await serverManager.waitForFrontend();
+    if (!serverManager.isBackendReady()) {
+      await serverManager.waitForBackend();
+    } else {
+      console.log('Backend already responsive');
+    }
+    console.log('Skipping explicit frontend wait; E2E tests will auto-detect the running port.');
     
     // Run backend tests
     console.log('\n3. Running backend tests...');

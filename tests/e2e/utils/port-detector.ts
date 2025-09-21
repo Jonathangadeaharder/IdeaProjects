@@ -43,28 +43,31 @@ export class PortDetector {
    */
   private static async detectFrontendPort(timeout: number) {
     // Try known working ports for the frontend
-    const testPorts = [3000, 3001, 5173];
+    const testPorts = [3000, 3001, 3002, 3003, 3004, 5173];
+    const hosts = ['localhost', '127.0.0.1'];
     
     for (const port of testPorts) {
-      const url = `http://localhost:${port}`;
-      
-      try {
-        const response = await axios.get(url, { 
-          timeout: Math.min(timeout, 3000), // Shorter timeout to avoid hanging
-          validateStatus: () => true
-        });
-        
-        // Simplified detection - just check for HTML response
-        if (response.status === 200 && 
-            typeof response.data === 'string' &&
-            response.data.toLowerCase().includes('html')) {
+      for (const host of hosts) {
+        const url = `http://${host}:${port}`;
+        try {
+          const response = await axios.get(url, { 
+            timeout: Math.min(timeout, 3000), // Shorter timeout to avoid hanging
+            validateStatus: () => true,
+            proxy: false
+          });
           
-          console.log(`✅ Frontend detected at ${url}`);
-          return { url, port };
+          // Simplified detection - just check for HTML response
+          if (response.status === 200 && 
+              typeof response.data === 'string' &&
+              response.data.toLowerCase().includes('html')) {
+            
+            console.log(`✅ Frontend detected at ${url}`);
+            return { url, port };
+          }
+        } catch (error) {
+          // Continue to next
+          continue;
         }
-      } catch (error) {
-        // Continue to next port
-        continue;
       }
     }
     
@@ -84,9 +87,11 @@ export class PortDetector {
       const url = `http://127.0.0.1:${port}`;
       
       try {
-        // Try the health endpoint first
-        const response = await axios.get(`${url}/docs`, { 
-          timeout: Math.min(timeout, 3000)
+        // Try the health endpoint first (more reliable than docs)
+        const response = await axios.get(`${url}/health`, { 
+          timeout: Math.min(timeout, 3000),
+          validateStatus: () => true,
+          proxy: false
         });
         
         if (response.status === 200) {
@@ -109,26 +114,23 @@ export class PortDetector {
    */
   static async waitForServers(maxWaitTime = 60000, checkInterval = 2000): Promise<ServerPorts> {
     const startTime = Date.now();
-    
-    console.log(`⏳ Waiting for servers to be available (max ${maxWaitTime / 1000}s)...`);
-    
+    console.log(`⏳ Waiting for servers to be available (max ${Math.round(maxWaitTime / 1000)}s)...`);
+
     while (Date.now() - startTime < maxWaitTime) {
       const ports = await this.detectRunningPorts(3000); // Shorter timeout for frequent checks
-      
+
       if (ports.frontend && ports.backend) {
         console.log('🎉 Both servers are now available!');
         return ports;
       }
-      
-      const missing = [];
+
+      const missing: string[] = [];
       if (!ports.frontend) missing.push('frontend');
       if (!ports.backend) missing.push('backend');
-      
       console.log(`⏳ Still waiting for: ${missing.join(', ')}... (${Math.round((Date.now() - startTime) / 1000)}s elapsed)`);
-      
       await new Promise(resolve => setTimeout(resolve, checkInterval));
     }
-    
+
     console.log('⌛ Timeout waiting for servers');
     return await this.detectRunningPorts(3000); // Final attempt
   }

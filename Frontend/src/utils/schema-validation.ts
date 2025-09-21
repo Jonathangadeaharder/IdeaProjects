@@ -8,13 +8,13 @@ export const UserResponseSchema = z.object({
   is_active: z.boolean(),
   created_at: z.string(),
   last_login: z.string().nullable().optional(),
-});
+}).passthrough();
 
 export const AuthResponseSchema = z.object({
   token: z.string(),
   user: UserResponseSchema,
   expires_at: z.string(),
-});
+}).passthrough();
 
 export const RegisterRequestSchema = z.object({
   username: z.string().min(1, 'Username is required'),
@@ -42,7 +42,7 @@ export const ErrorResponseSchema = z.object({
       type: z.string(),
     })),
   ]),
-});
+}).passthrough();
 
 // Generic API response wrapper
 export const ApiResponseSchema = <T extends z.ZodTypeAny>(dataSchema: T) =>

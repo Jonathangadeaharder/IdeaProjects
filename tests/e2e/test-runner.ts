@@ -5,6 +5,8 @@ import { spawn } from 'child_process';
 import { promisify } from 'util';
 import { setTimeout } from 'timers';
 import path from 'path';
+import { getFrontendUrl } from './config/test-config';
+import { PuppeteerHelpers } from './utils/puppeteer-helpers';
 
 const wait = promisify(setTimeout);
 
@@ -12,6 +14,7 @@ async function runE2ETests() {
   let browser: Browser | undefined;
   let page: Page | undefined;
   let allTestsPassed = true;
+  let BASE_URL = process.env.E2E_FRONTEND_URL || '';
 
   try {
     console.log('Starting E2E tests...');
@@ -23,31 +26,47 @@ async function runE2ETests() {
       args: ['--no-sandbox', '--disable-setuid-sandbox']
     });
     
+    // Detect actual frontend URL if not provided via env
+    try {
+      if (!BASE_URL) {
+        BASE_URL = await getFrontendUrl();
+      }
+      console.log(`Using frontend URL: ${BASE_URL}`);
+    } catch (e) {
+      // fallback
+      BASE_URL = 'http://localhost:3000';
+      console.log(`Falling back to frontend URL: ${BASE_URL}`);
+    }
+
     // Run authentication tests
     console.log('\n1. Running authentication tests...');
     page = await browser.newPage();
-    const authTestPassed = await runAuthTests(page);
+    await PuppeteerHelpers.clearAllStorage(page);
+    const authTestPassed = await runAuthTests(page, BASE_URL);
     await page.close();
     if (!authTestPassed) allTestsPassed = false;
     
     // Run video learning tests
     console.log('\n2. Running video learning tests...');
     page = await browser.newPage();
-    const videoTestPassed = await runVideoLearningTests(page);
+    await PuppeteerHelpers.clearAllStorage(page);
+    const videoTestPassed = await runVideoLearningTests(page, BASE_URL);
     await page.close();
     if (!videoTestPassed) allTestsPassed = false;
     
     // Run vocabulary game tests
     console.log('\n3. Running vocabulary game tests...');
     page = await browser.newPage();
-    const vocabTestPassed = await runVocabularyGameTests(page);
+    await PuppeteerHelpers.clearAllStorage(page);
+    const vocabTestPassed = await runVocabularyGameTests(page, BASE_URL);
     await page.close();
     if (!vocabTestPassed) allTestsPassed = false;
     
     // Run subtitle filtering tests
     console.log('\n4. Running subtitle filtering tests...');
     page = await browser.newPage();
-    const subtitleTestPassed = await runSubtitleFilteringTests(page);
+    await PuppeteerHelpers.clearAllStorage(page);
+    const subtitleTestPassed = await runSubtitleFilteringTests(page, BASE_URL);
     await page.close();
     if (!subtitleTestPassed) allTestsPassed = false;
     
@@ -70,29 +89,30 @@ async function runE2ETests() {
   }
 }
 
-async function runAuthTests(page: Page): Promise<boolean> {
+async function runAuthTests(page: Page, baseUrl: string): Promise<boolean> {
   try {
     // Navigate to login page
-    await page.goto('http://localhost:3001/login');
+    await page.goto(`${baseUrl}/login`);
     
     // Check if login form is visible
-    await page.waitForSelector('[data-testid="login-email-input"]', { visible: true });
-    await page.waitForSelector('[data-testid="login-password-input"]', { visible: true });
+    // Prefer placeholder selectors for robustness across UI changes
+    await page.waitForSelector('input[placeholder="Username"]', { visible: true });
+    await page.waitForSelector('input[placeholder="Password"]', { visible: true });
     
     console.log(' ✓ Login form is visible');
     
     // Test navigation to register page
-    await page.click('text=Sign up now');
+    await PuppeteerHelpers.clickByText(page, 'Sign up now');
     await page.waitForFunction(() => window.location.href.includes('/register'));
     console.log('  ✓ Navigation to register page works');
     
     // Go back to login
-    await page.goto('http://localhost:3001/login');
+    await page.goto(`${baseUrl}/login`);
     
     // Test invalid login
-    await page.type('[data-testid="login-email-input"]', 'invaliduser');
-    await page.type('[data-testid="login-password-input"]', 'wrongpassword');
-    await page.click('[data-testid="login-submit-button"]');
+    await page.type('input[placeholder="Username"]', 'invaliduser');
+    await page.type('input[placeholder="Password"]', 'wrongpassword');
+    await PuppeteerHelpers.clickByText(page, 'Sign In');
     
     // Wait a bit to see if error handling works
     await wait(2000);
@@ -113,13 +133,13 @@ async function runAuthTests(page: Page): Promise<boolean> {
   }
 }
 
-async function runVideoLearningTests(page: Page): Promise<boolean> {
+async function runVideoLearningTests(page: Page, baseUrl: string): Promise<boolean> {
   console.log(' Testing video learning flow...');
 
   try {
     // This would require authentication first
     // For now, we'll just test that the page loads
-    await page.goto('http://localhost:3001/videos');
+    await page.goto(`${baseUrl}/videos`);
 
     // Wait for page to load
     await wait(2000);
@@ -132,11 +152,11 @@ async function runVideoLearningTests(page: Page): Promise<boolean> {
   }
 }
 
-async function runVocabularyGameTests(page: Page): Promise<boolean> {
+async function runVocabularyGameTests(page: Page, baseUrl: string): Promise<boolean> {
   console.log('  Testing vocabulary game flow...');
   try {
     // Navigate to vocabulary game
-    await page.goto('http://localhost:3001/vocabulary/game');
+    await page.goto(`${baseUrl}/vocabulary/game`);
 
     // Wait for page to load
     await wait(2000);
@@ -149,11 +169,11 @@ async function runVocabularyGameTests(page: Page): Promise<boolean> {
   }
 }
 
-async function runSubtitleFilteringTests(page: Page): Promise<boolean> {
+async function runSubtitleFilteringTests(page: Page, baseUrl: string): Promise<boolean> {
   console.log('  Testing subtitle filtering flow...');
   try {
     // Navigate to videos page
-    await page.goto('http://localhost:3001/videos');
+    await page.goto(`${baseUrl}/videos`);
 
     // Wait for page to load
     await wait(2000);

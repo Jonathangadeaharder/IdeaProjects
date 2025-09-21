@@ -4,6 +4,7 @@ This configuration uses FastAPI's TestClient/httpx with dependency overrides
 to run tests entirely in process (no external server).
 """
 import os
+import sys
 import uuid
 from collections.abc import AsyncGenerator, Generator
 from pathlib import Path
@@ -16,6 +17,11 @@ from httpx import ASGITransport
 from sqlalchemy import create_engine as create_sync_engine
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import StaticPool
+
+# Ensure the Backend project root is on sys.path for imports like `core.app`
+BACKEND_ROOT = Path(__file__).resolve().parent.parent
+if str(BACKEND_ROOT) not in sys.path:
+    sys.path.insert(0, str(BACKEND_ROOT))
 
 from core.app import create_app
 

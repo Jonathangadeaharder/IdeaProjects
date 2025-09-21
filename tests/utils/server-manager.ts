@@ -11,33 +11,55 @@ export class ServerManager {
   private frontendProcess: ChildProcess | null = null;
   private backendReady = false;
   private frontendReady = false;
+  private detectedFrontendUrl: string | null = null;
 
   /**
    * Start the backend server
    */
   async startBackend(): Promise<void> {
     console.log('Starting backend server...');
+
+    // Quick check: if backend is already running, skip spawning
+    const backendHosts = ['127.0.0.1', 'localhost'];
+    const backendPorts = [8000, 8001];
+    for (const host of backendHosts) {
+      for (const port of backendPorts) {
+        try {
+          const resp = await axios.get(`http://${host}:${port}/health`, { timeout: 1500, validateStatus: () => true, proxy: false });
+          if (resp.status === 200) {
+            this.backendReady = true;
+            console.log(`Backend already running at http://${host}:${port}`);
+            return;
+          }
+        } catch (e) {
+          // try next
+        }
+      }
+    }
     
     return new Promise((resolve, reject) => {
       // Start backend server using the Windows command from AGENTS.md
-      this.backendProcess = spawn('powershell.exe', [
-        '-Command',
+      // Ensure reload is disabled and TESTING mode is enabled to avoid heavy init and watchfiles issues
+      const psCommand = [
+        "$env:TESTING='1';",
+        "$env:LANGPLUG_RELOAD='false';",
         'python E:\\Users\\Jonandrop\\IdeaProjects\\LangPlug\\Backend\\run_backend.py'
-      ], {
+      ].join(' ');
+
+      this.backendProcess = spawn('powershell.exe', ['-Command', psCommand], {
         cwd: path.resolve(__dirname, '../../Backend'),
         stdio: ['pipe', 'pipe', 'pipe'],
-        shell: true
+        shell: true,
+        env: { ...process.env }
       });
 
       this.backendProcess.stdout?.on('data', (data) => {
         const output = data.toString();
         console.log(`[Backend] ${output}`);
-        
-        // Check for server ready signal
-        if (output.includes('Uvicorn running on') || output.includes('Application startup complete')) {
+        // Consider backend "started" (spawned). Readiness will be verified by waitForBackend()
+        if (!this.backendReady && (output.includes('Backend will be available at') || output.includes('Server starting') || output.includes('App created'))) {
           this.backendReady = true;
-          console.log('Backend server is ready');
-          resolve();
+          console.log('Backend process spawned - proceeding to health checks');
         }
       });
 
@@ -51,12 +73,8 @@ export class ServerManager {
         reject(error);
       });
 
-      // Timeout after 60 seconds
-      setTimeout(() => {
-        if (!this.backendReady) {
-          reject(new Error('Backend server startup timeout'));
-        }
-      }, 60000);
+      // Resolve immediately after spawn; readiness is handled by waitForBackend()
+      resolve();
     });
   }
 
@@ -65,7 +83,24 @@ export class ServerManager {
    */
   async startFrontend(): Promise<void> {
     console.log('Starting frontend server...');
-    
+    // Quick check: if frontend is already running, skip spawning
+    const hosts = ['127.0.0.1', 'localhost'];
+    const ports = [3000, 3001, 3002, 3003, 3004, 5173];
+    for (const host of hosts) {
+      for (const port of ports) {
+        try {
+          await axios.get(`http://${host}:${port}`, { timeout: 1500, proxy: false });
+          this.frontendReady = true;
+          this.detectedFrontendUrl = `http://${host}:${port}`;
+          process.env.E2E_FRONTEND_URL = this.detectedFrontendUrl ?? undefined;
+          console.log(`Frontend already running at ${this.detectedFrontendUrl}`);
+          return;
+        } catch (e) {
+          // try next
+        }
+      }
+    }
+
     return new Promise((resolve, reject) => {
       // Start frontend server
       this.frontendProcess = spawn('npm', ['run', 'dev'], {
@@ -77,13 +112,19 @@ export class ServerManager {
       this.frontendProcess.stdout?.on('data', (data) => {
         const output = data.toString();
         console.log(`[Frontend] ${output}`);
-        
-        // Check for server ready signal
-        if (output.includes('Local:') || output.includes('http://localhost:3000')) {
+        // Try to detect the Local URL from Vite logs
+        const match = output.match(/Local:\s*(http:\/\/\S+)/i) || output.match(/(http:\/\/localhost:\d+\/?)/i) || output.match(/(http:\/\/127\.0\.0\.1:\d+\/?)/i);
+        if (match && match[1]) {
+          this.detectedFrontendUrl = match[1].trim();
+          // Normalize trailing slash removed
+          if (this.detectedFrontendUrl && this.detectedFrontendUrl.endsWith('/')) {
+            this.detectedFrontendUrl = this.detectedFrontendUrl.slice(0, -1);
+          }
           this.frontendReady = true;
-          console.log('Frontend server is ready');
-          resolve();
+          process.env.E2E_FRONTEND_URL = this.detectedFrontendUrl ?? undefined;
+          console.log(`Detected frontend URL: ${this.detectedFrontendUrl}`);
         }
+        // Do not resolve here; readiness is checked by waitForFrontend()
       });
 
       this.frontendProcess.stderr?.on('data', (data) => {
@@ -96,12 +137,8 @@ export class ServerManager {
         reject(error);
       });
 
-      // Timeout after 60 seconds
-      setTimeout(() => {
-        if (!this.frontendReady) {
-          reject(new Error('Frontend server startup timeout'));
-        }
-      }, 60000);
+      // Resolve immediately after spawn; readiness is handled by waitForFrontend()
+      resolve();
     });
   }
 
@@ -111,18 +148,27 @@ export class ServerManager {
   async waitForBackend(): Promise<void> {
     const maxRetries = 30;
     const retryDelay = 2000;
-    
+    const ports = [8000, 8001];
+    const hosts = ['127.0.0.1', 'localhost'];
+
     for (let i = 0; i < maxRetries; i++) {
-      try {
-        await axios.get('http://localhost:8000/docs'); // Use the docs endpoint as health check
-        console.log('Backend is responsive');
-        return;
-      } catch (error) {
-        console.log(`Backend not ready, retrying... (${i + 1}/${maxRetries})`);
-        await wait(retryDelay);
+      for (const host of hosts) {
+        for (const port of ports) {
+          try {
+            const resp = await axios.get(`http://${host}:${port}/health`, { timeout: 1500, validateStatus: () => true, proxy: false });
+            if (resp.status === 200) {
+              console.log(`Backend is responsive at http://${host}:${port}`);
+              return;
+            }
+          } catch {
+            // try next
+          }
+        }
       }
+      console.log(`Backend not ready, retrying... (${i + 1}/${maxRetries})`);
+      await wait(retryDelay);
     }
-    
+
     throw new Error('Backend did not become responsive in time');
   }
 
@@ -132,18 +178,36 @@ export class ServerManager {
   async waitForFrontend(): Promise<void> {
     const maxRetries = 30;
     const retryDelay = 2000;
-    
-    for (let i = 0; i < maxRetries; i++) {
-      try {
-        await axios.get('http://localhost:3000');
-        console.log('Frontend is responsive');
-        return;
-      } catch (error) {
-        console.log(`Frontend not ready, retrying... (${i + 1}/${maxRetries})`);
-        await wait(retryDelay);
-      }
+    const ports = [3000, 3001, 3002, 3003, 3004, 5173];
+    const hosts = ['127.0.0.1', 'localhost'];
+
+    // If we've already detected the URL via logs, consider it ready and skip probing
+    if (this.frontendReady && this.detectedFrontendUrl) {
+      console.log(`Frontend presumed ready at ${this.detectedFrontendUrl} (from Vite logs)`);
+      return;
     }
-    
+
+    for (let i = 0; i < maxRetries; i++) {
+      // If Vite has logged the Local URL, try it first
+      if (this.detectedFrontendUrl) {
+        console.log(`Frontend presumed ready at ${this.detectedFrontendUrl} (detected)`);
+        return;
+      }
+      for (const host of hosts) {
+        for (const port of ports) {
+          try {
+            await axios.get(`http://${host}:${port}`, { proxy: false });
+            console.log(`Frontend is responsive at http://${host}:${port}`);
+            return;
+          } catch {
+            // try next
+          }
+        }
+      }
+      console.log(`Frontend not ready, retrying... (${i + 1}/${maxRetries})`);
+      await wait(retryDelay);
+    }
+
     throw new Error('Frontend did not become responsive in time');
   }
 

@@ -4,12 +4,13 @@
 
 import puppeteer, { Browser, Page } from 'puppeteer';
 import { PuppeteerHelpers } from './utils/puppeteer-helpers';
+import { getFrontendUrl } from './config/test-config';
 
 describe('Video Learning Flow', () => {
   let browser: Browser | undefined;
   let page: Page;
 
-  const BASE_URL = 'http://localhost:3001';
+  let BASE_URL = '';
 
   beforeAll(async () => {
     // Launch Puppeteer browser
@@ -18,6 +19,12 @@ describe('Video Learning Flow', () => {
       slowMo: 50,
       args: ['--no-sandbox', '--disable-setuid-sandbox'],
     });
+    // Detect actual frontend URL (dynamic port)
+    try {
+      BASE_URL = await getFrontendUrl();
+    } catch (e) {
+      BASE_URL = 'http://localhost:3000';
+    }
   }, 60000);
 
   beforeEach(async () => {
