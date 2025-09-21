@@ -12,7 +12,7 @@ from core.database import get_async_session
 from core.dependencies import current_active_user
 from database.models import User
 from utils.srt_parser import SRTParser
-from services.vocabulary_preload_service import VocabularyPreloadService
+from services.vocabulary_preload_service import VocabularyPreloadService, get_vocabulary_preload_service
 
 from ..models.vocabulary import (
     BulkMarkRequest,
@@ -255,14 +255,13 @@ async def preload_vocabulary(
 @router.get("/library/stats", name="get_library_stats")
 async def get_vocabulary_stats(
     current_user: User = Depends(current_active_user),
-    db: AsyncSession = Depends(get_async_session)
+    db: AsyncSession = Depends(get_async_session),
+    service: VocabularyPreloadService = Depends(get_vocabulary_preload_service)
 ):
     """Get vocabulary statistics for all levels"""
     try:
-        service = VocabularyPreloadService()
-
-        # Get basic stats
-        stats = await service.get_vocabulary_stats()
+        # Get basic stats using the injected database session
+        stats = await service.get_vocabulary_stats(db)
 
         # Add user-specific known word counts
         total_words = 0
@@ -343,14 +342,14 @@ async def get_vocabulary_level(
 async def bulk_mark_level_known(
     request: BulkMarkRequest,
     current_user: User = Depends(current_active_user),
-    db: AsyncSession = Depends(get_async_session)
+    db: AsyncSession = Depends(get_async_session),
+    service: VocabularyPreloadService = Depends(get_vocabulary_preload_service)
 ):
     """Mark all words in a level as known or unknown"""
     try:
         if request.level.upper() not in ["A1", "A2", "B1", "B2"]:
             raise HTTPException(status_code=400, detail="Invalid level. Must be A1, A2, B1, or B2")
 
-        service = VocabularyPreloadService()
         success_count = await service.bulk_mark_level_known(current_user.id, request.level.upper(), request.known, db)
 
         action = "marked as known" if request.known else "unmarked"

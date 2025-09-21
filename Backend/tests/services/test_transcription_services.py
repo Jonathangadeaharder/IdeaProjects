@@ -56,36 +56,32 @@ class TestTranscriptionServices:
         # that might relate to "Hallo Welt" or at least contain German-like words
         assert len(text.split()) >= 1, "Transcription too short"
 
-    @pytest.mark.timeout(120)  # 2 minute timeout for model loading
-    @pytest.mark.skipif(True, reason="Parakeet requires NeMo which may not be installed")
+    @pytest.mark.timeout(120)  # 2 minute timeout for model loading  
     def test_Whenparakeet_transcriptionCalled_ThenSucceeds(self):
         """Test Parakeet transcription (English-focused, may not work well with German)"""
         if not TEST_AUDIO_FILE.exists():
             pytest.skip("Test audio file not found")
 
-        try:
-            # Get Parakeet service
-            service = get_transcription_service("parakeet-tdt-0.6b")
-            assert service is not None, "Failed to create parakeet service"
+        # NeMo dependencies are now installed - no skip needed
+        # Get Parakeet service
+        service = get_transcription_service("parakeet-tdt-0.6b")
+        assert service is not None, "Failed to create parakeet service"
 
-            # Test transcription (Note: Parakeet is English-focused)
-            result = service.transcribe(str(TEST_AUDIO_FILE), language="en")
+        # Test transcription (Note: Parakeet is English-focused)
+        result = service.transcribe(str(TEST_AUDIO_FILE), language="en")
 
-            # Basic interface validation
-            assert result is not None, "Transcription result is None"
-            assert hasattr(result, 'full_text'), "Result missing full_text"
-            assert hasattr(result, 'segments'), "Result missing segments"
+        # Basic interface validation
+        assert result is not None, "Transcription result is None"
+        assert hasattr(result, 'full_text'), "Result missing full_text"
+        assert hasattr(result, 'segments'), "Result missing segments"
 
-            # Log result
-            logger.info(f"Parakeet transcription: '{result.full_text}'")
-            logger.info(f"Metadata: {result.metadata}")
+        # Log result
+        logger.info(f"Parakeet transcription: '{result.full_text}'")
+        logger.info(f"Metadata: {result.metadata}")
 
-            # Basic check
-            text = result.full_text.strip()
-            assert len(text) > 0, "Transcribed text is empty"
-
-        except ImportError as e:
-            pytest.skip(f"NeMo not available: {e}")
+        # Basic check
+        text = result.full_text.strip()
+        assert len(text) > 0, "Transcribed text is empty"
 
     @pytest.mark.timeout(30)
     def test_Whentranscription_service_interfaceCalled_ThenSucceeds(self):

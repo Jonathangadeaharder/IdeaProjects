@@ -120,7 +120,7 @@ class BaseRepository(ABC, Generic[T]):
                 # Check if entity has an ID (update vs insert)
                 if hasattr(entity, 'id') and entity.id is not None:
                     # Update existing entity
-                    await session.merge(entity)
+                    session.merge(entity)
                 else:
                     # Insert new entity
                     session.add(entity)

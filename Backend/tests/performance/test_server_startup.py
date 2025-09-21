@@ -31,9 +31,21 @@ async def test_Whenlifespan_schedules_cleanupCalled_ThenSucceeds(monkeypatch) ->
     async def fake_cleanup() -> None:
         created_tasks.append("cleanup")
 
+    # Track coroutines that get created
+    original_create_task = __import__('asyncio').create_task
+    def mock_create_task(coro):
+        if hasattr(coro, '__await__'):  # It's a coroutine
+            # Close the coroutine to prevent warning
+            try:
+                coro.close()
+            except:
+                pass
+        created_tasks.append(coro)
+        return None
+
     monkeypatch.setattr("core.app.cleanup_services", fake_cleanup)
-    # Patch the global asyncio.create_task since core.app imports asyncio locally
-    monkeypatch.setattr("asyncio.create_task", lambda coro: created_tasks.append(coro), raising=False)
+    # Patch the global asyncio.create_task since core.app imports asyncio locally  
+    monkeypatch.setattr("asyncio.create_task", mock_create_task, raising=False)
 
     app = create_app()
     async with app.router.lifespan_context(app):

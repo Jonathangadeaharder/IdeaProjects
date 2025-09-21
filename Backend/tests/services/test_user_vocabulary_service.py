@@ -2,13 +2,29 @@
 from __future__ import annotations
 
 import pytest
+from contextlib import asynccontextmanager
+from sqlalchemy import text
 
 from services.dataservice.user_vocabulary_service import SQLiteUserVocabularyService
 
 
 @pytest.fixture
-def service() -> SQLiteUserVocabularyService:
-    return SQLiteUserVocabularyService()
+def service(app):
+    """User vocabulary service with test database session"""
+    svc = SQLiteUserVocabularyService()
+    
+    # Get the database session override from the app
+    from core.database import get_async_session
+    override_session = app.dependency_overrides[get_async_session]
+    
+    # Replace the service's get_session method
+    @asynccontextmanager
+    async def mock_get_session():
+        async for session in override_session():
+            yield session
+    
+    svc.get_session = mock_get_session
+    return svc
 
 
 @pytest.mark.timeout(30)

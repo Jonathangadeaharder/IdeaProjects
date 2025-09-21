@@ -40,16 +40,29 @@ async def test_Whenstream_videoCalled_ThenReturnscontent_when_exists(async_clien
     """Happy path: streaming an existing video returns binary content."""
     headers = await _auth(async_client)
     
-    # Mock the entire video streaming endpoint to return success
-    with patch("api.routes.videos.stream_video") as mock_stream:
-        from starlette.responses import Response
-        mock_stream.return_value = Response(content=b"fake video content", media_type="video/mp4", status_code=200)
-        
-        response = await async_client.get(
-            "/api/videos/series/S01E01", headers=headers
-        )
+    # Create a temporary file for testing
+    import tempfile
+    import os
+    
+    with tempfile.NamedTemporaryFile(suffix=".mp4", delete=False) as temp_file:
+        temp_file.write(b"fake video content")
+        temp_file.flush()
+        temp_path = Path(temp_file.name)
+    
+    try:
+        # Mock the video service to return our temporary file
+        with patch("services.videoservice.video_service.VideoService.get_video_file_path") as mock_path:
+            mock_path.return_value = temp_path
+            
+            response = await async_client.get(
+                "/api/videos/series/S01E01", headers=headers
+            )
 
-    assert response.status_code in {200, 206}
+        assert response.status_code in {200, 206}
+    finally:
+        # Clean up the temporary file
+        if temp_path.exists():
+            os.unlink(temp_path)
 
 
 @pytest.mark.anyio

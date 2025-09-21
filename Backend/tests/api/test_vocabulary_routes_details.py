@@ -30,15 +30,18 @@ async def test_Whenmark_known_can_unmarkCalled_ThenSucceeds(async_client):
 
 @pytest.mark.anyio
 @pytest.mark.timeout(30)
-async def test_Whenbulk_markCalled_ThenReturnscounts(async_client, monkeypatch):
+async def test_Whenbulk_markCalled_ThenReturnscounts(async_client):
     """Happy path: bulk mark returns the number of affected words."""
-    from api.routes import vocabulary as vocab
+    from services.vocabulary_preload_service import get_vocabulary_preload_service
 
     class FakeService:
         async def bulk_mark_level_known(self, user_id: int, level: str, known: bool, db=None):
             return 7
 
-    monkeypatch.setattr(vocab, "VocabularyPreloadService", FakeService)
+    # Override the dependency instead of monkeypatching
+    fake_service = FakeService()
+    async_client._transport.app.dependency_overrides[get_vocabulary_preload_service] = lambda: fake_service
+    
     flow = await _auth(async_client)
 
     response = await async_client.post(
@@ -51,13 +54,16 @@ async def test_Whenbulk_markCalled_ThenReturnscounts(async_client, monkeypatch):
     body = response.json()
     assert body["word_count"] == 7
     assert body["level"] == "A1"
+    
+    # Clean up dependency override
+    del async_client._transport.app.dependency_overrides[get_vocabulary_preload_service]
 
 
 @pytest.mark.anyio
 @pytest.mark.timeout(30)
-async def test_Whenstats_total_counts_include_levelsCalled_ThenSucceeds(async_client, monkeypatch):
+async def test_Whenstats_total_counts_include_levelsCalled_ThenSucceeds(async_client):
     """Boundary: stats aggregates totals from service-provided levels."""
-    from api.routes import vocabulary as vocab
+    from services.vocabulary_preload_service import get_vocabulary_preload_service
 
     class FakeService:
         async def get_vocabulary_stats(self, db=None):
@@ -66,7 +72,10 @@ async def test_Whenstats_total_counts_include_levelsCalled_ThenSucceeds(async_cl
         async def get_user_known_words(self, user_id: int, level: str, db=None):
             return {"word1"}
 
-    monkeypatch.setattr(vocab, "VocabularyPreloadService", FakeService)
+    # Override the dependency instead of monkeypatching
+    fake_service = FakeService()
+    async_client._transport.app.dependency_overrides[get_vocabulary_preload_service] = lambda: fake_service
+    
     flow = await _auth(async_client)
 
     response = await async_client.get(
@@ -77,3 +86,6 @@ async def test_Whenstats_total_counts_include_levelsCalled_ThenSucceeds(async_cl
     payload = response.json()
     assert payload["total_words"] == 7
     assert payload["total_known"] == 2
+    
+    # Clean up dependency override
+    del async_client._transport.app.dependency_overrides[get_vocabulary_preload_service]

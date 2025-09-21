@@ -39,11 +39,12 @@ class DummyRepository(BaseRepository[DummyModel]):
 @pytest.fixture
 def session_double():
     session = AsyncMock()
-    session.flush = AsyncMock()
-    session.commit = AsyncMock()
-    session.rollback = AsyncMock()
-    session.add = AsyncMock()
-    session.merge = AsyncMock()
+    # Make sure the session methods return actual async mock objects that are properly awaitable
+    session.flush = AsyncMock(return_value=None)
+    session.commit = AsyncMock(return_value=None)
+    session.rollback = AsyncMock(return_value=None)
+    session.add = MagicMock(return_value=None)  # add is not async
+    session.merge = MagicMock(return_value=None)  # merge is not async
     return session
 
 

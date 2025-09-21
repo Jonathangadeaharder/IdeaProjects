@@ -262,19 +262,20 @@ class VocabularyPreloadService:
             logger.error(f"Error bulk marking {level} words: {e}")
             raise Exception(f"Failed to bulk mark {level} words: {e}") from e
 
-    async def get_vocabulary_stats(self) -> dict[str, dict[str, int]]:
+    async def get_vocabulary_stats(self, session: AsyncSession = None) -> dict[str, dict[str, int]]:
         """Get vocabulary statistics by level"""
         try:
-            async for session in get_async_session():
-                # Get comprehensive statistics with definitions and user knowledge counts
+            # Use provided session or create a new one
+            if session:
+                # Use provided session directly
                 query = text("""
                     SELECT 
                         v.difficulty_level,
                         COUNT(*) as total_words,
-                        COUNT(CASE WHEN v.definition IS NOT NULL AND v.definition != '' THEN 1 END) as has_definition,
-                        COUNT(CASE WHEN ukw.word IS NOT NULL THEN 1 END) as user_known
+                        0 as has_definition,
+                        COUNT(CASE WHEN ulp.word_id IS NOT NULL THEN 1 END) as user_known
                     FROM vocabulary v
-                    LEFT JOIN user_known_words ukw ON v.word = ukw.word
+                    LEFT JOIN user_learning_progress ulp ON v.id = ulp.word_id
                     WHERE v.language = 'de'
                     GROUP BY v.difficulty_level
                     ORDER BY v.difficulty_level
@@ -291,9 +292,36 @@ class VocabularyPreloadService:
                         "has_definition": row.has_definition,
                         "user_known": row.user_known,
                     }
-                break  # Only use the first (and only) session
+                return stats
+            else:
+                # Fallback to original behavior for backward compatibility
+                async for session in get_async_session():
+                    query = text("""
+                        SELECT 
+                            v.difficulty_level,
+                            COUNT(*) as total_words,
+                            0 as has_definition,
+                            COUNT(CASE WHEN ulp.word_id IS NOT NULL THEN 1 END) as user_known
+                        FROM vocabulary v
+                        LEFT JOIN user_learning_progress ulp ON v.id = ulp.word_id
+                        WHERE v.language = 'de'
+                        GROUP BY v.difficulty_level
+                        ORDER BY v.difficulty_level
+                    """)
 
-            return stats
+                    result = await session.execute(query)
+                    rows = result.fetchall()
+
+                    stats = {}
+                    for row in rows:
+                        level = row.difficulty_level
+                        stats[level] = {
+                            "total_words": row.total_words,
+                            "has_definition": row.has_definition,
+                            "user_known": row.user_known,
+                        }
+                    break  # Only use the first (and only) session
+                return stats
         except Exception as e:
             logger.error(f"Error getting vocabulary stats: {e}")
             raise Exception(f"Failed to get vocabulary stats: {e}") from e

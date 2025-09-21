@@ -21,6 +21,8 @@ from core.app import create_app
 
 # Ensure testing mode
 os.environ["TESTING"] = "1"
+# Force debug mode for tests to enable debug endpoints
+os.environ["LANGPLUG_DEBUG"] = "true"
 
 
 # --- Lightweight URL builder (no network) ---------------------------------
@@ -80,46 +82,54 @@ def url_builder(http_url_builder: SimpleURLBuilder) -> SimpleURLBuilder:
 @pytest.fixture(scope="function")
 def app(tmp_path: Path) -> Generator[FastAPI, None, None]:
     """Create FastAPI app with per-test SQLite DB and dependency overrides."""
-    # Build app
-    application = create_app()
-
-    # Prepare per-test SQLite database file
-    db_file = tmp_path / "test.db"
-    sync_url = f"sqlite:///{db_file}"
-    async_url = f"sqlite+aiosqlite:///{db_file}"
-
-    # Ensure all models are registered on the shared Base
-    import database.models  # noqa: F401
-    from core.auth import Base as AuthBase
-    # Create tables synchronously to avoid event loop complications
-    sync_engine = create_sync_engine(sync_url)
+    # Override settings before creating app to enable debug mode for tests
+    from core.config import settings
+    original_debug = settings.debug
+    settings.debug = True
+    
     try:
-        AuthBase.metadata.create_all(bind=sync_engine)
-    finally:
-        sync_engine.dispose()
+        # Build app
+        application = create_app()
 
-    # Async engine + sessionmaker for app dependency override
-    async_engine = create_async_engine(
-        async_url,
-        poolclass=StaticPool,
-        connect_args={"check_same_thread": False},
-    )
-    SessionLocal = async_sessionmaker(async_engine, class_=AsyncSession, expire_on_commit=False)
+        # Prepare per-test SQLite database file
+        db_file = tmp_path / "test.db"
+        sync_url = f"sqlite:///{db_file}"
+        async_url = f"sqlite+aiosqlite:///{db_file}"
 
-    async def override_get_async_session() -> AsyncGenerator[AsyncSession, None]:
-        async with SessionLocal() as session:
-            yield session
+        # Ensure all models are registered on the shared Base
+        import database.models  # noqa: F401
+        from core.auth import Base as AuthBase
+        # Create tables synchronously to avoid event loop complications
+        sync_engine = create_sync_engine(sync_url)
+        try:
+            AuthBase.metadata.create_all(bind=sync_engine)
+        finally:
+            sync_engine.dispose()
 
-    # Apply dependency override
-    import core.database as core_db
-    application.dependency_overrides[core_db.get_async_session] = override_get_async_session
+        # Async engine + sessionmaker for app dependency override
+        async_engine = create_async_engine(
+            async_url,
+            poolclass=StaticPool,
+            connect_args={"check_same_thread": False},
+        )
+        SessionLocal = async_sessionmaker(async_engine, class_=AsyncSession, expire_on_commit=False)
 
-    # Expose engine for cleanup
-    application.state._test_async_engine = async_engine
+        async def override_get_async_session() -> AsyncGenerator[AsyncSession, None]:
+            async with SessionLocal() as session:
+                yield session
 
-    try:
+        # Apply dependency override
+        import core.database as core_db
+        application.dependency_overrides[core_db.get_async_session] = override_get_async_session
+
+        # Expose engine for cleanup
+        application.state._test_async_engine = async_engine
+
         yield application
     finally:
+        # Restore original debug setting
+        settings.debug = original_debug
+        
         # Dispose async engine
         import asyncio
         try:
