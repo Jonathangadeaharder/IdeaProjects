@@ -14,9 +14,84 @@ import { VocabularyLibrary } from '@/components/VocabularyLibrary'
 import { useAuthStore } from '@/store/useAuthStore'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 
-const App: React.FC = () => {
+// Exported for testing - this is the routing logic without the Router wrapper
+export const AppRoutes: React.FC = () => {
   const { isAuthenticated } = useAuthStore()
 
+  return (
+    <Routes>
+      {/* Public routes */}
+      <Route
+        path="/login"
+        element={
+          isAuthenticated ? <Navigate to="/" replace /> : <LoginForm />
+        }
+      />
+      <Route
+        path="/register"
+        element={
+          isAuthenticated ? <Navigate to="/" replace /> : <RegisterForm />
+        }
+      />
+
+      {/* Protected routes */}
+      <Route
+        path="/"
+        element={
+          <ProtectedRoute>
+            <VideoSelection />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/episodes/:series"
+        element={
+          <ProtectedRoute>
+            <EpisodeSelection />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/learn/:series/:episode"
+        element={
+          <ProtectedRoute>
+            <ChunkedLearningPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/pipeline/:series/:episode"
+        element={
+          <ProtectedRoute>
+            <PipelineProgress />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/vocabulary"
+        element={
+          <ProtectedRoute>
+            <VocabularyLibrary />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Fallback route */}
+      <Route
+        path="*"
+        element={
+          <Navigate to={isAuthenticated ? "/" : "/login"} replace />
+        }
+      />
+    </Routes>
+  )
+}
+
+const App: React.FC = () => {
   return (
     <ErrorBoundary>
       <GlobalStyle />
@@ -26,77 +101,9 @@ const App: React.FC = () => {
           v7_relativeSplatPath: true
         }}
       >
-        <Routes>
-          {/* Public routes */}
-          <Route 
-            path="/login" 
-            element={
-              isAuthenticated ? <Navigate to="/" replace /> : <LoginForm />
-            } 
-          />
-          <Route 
-            path="/register" 
-            element={
-              isAuthenticated ? <Navigate to="/" replace /> : <RegisterForm />
-            } 
-          />
-          
-          {/* Protected routes */}
-          <Route 
-            path="/" 
-            element={
-              <ProtectedRoute>
-                <VideoSelection />
-              </ProtectedRoute>
-            } 
-          />
-          
-          <Route 
-            path="/episodes/:series" 
-            element={
-              <ProtectedRoute>
-                <EpisodeSelection />
-              </ProtectedRoute>
-            } 
-          />
-          
-          <Route 
-            path="/learn/:series/:episode" 
-            element={
-              <ProtectedRoute>
-                <ChunkedLearningPage />
-              </ProtectedRoute>
-            } 
-          />
-          
-          <Route 
-            path="/pipeline/:series/:episode" 
-            element={
-              <ProtectedRoute>
-                <PipelineProgress />
-              </ProtectedRoute>
-            } 
-          />
-          
-          <Route 
-            path="/vocabulary" 
-            element={
-              <ProtectedRoute>
-                <VocabularyLibrary />
-              </ProtectedRoute>
-            } 
-          />
-          
-          {/* Fallback route */}
-          <Route 
-            path="*" 
-            element={
-              <Navigate to={isAuthenticated ? "/" : "/login"} replace />
-            } 
-          />
-        </Routes>
+        <AppRoutes />
       </Router>
-      
+
       <Toaster
         position="top-right"
         toastOptions={{

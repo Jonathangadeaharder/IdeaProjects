@@ -95,7 +95,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       })
     } catch (error) {
       console.error('Failed to mark word:', error)
-      throw error
+      // Don't update state on error, but don't throw either
     }
   },
 

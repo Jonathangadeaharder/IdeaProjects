@@ -2,7 +2,7 @@ import React from 'react';
 import styled, { css } from 'styled-components';
 import { motion } from 'framer-motion';
 
-interface CardProps {
+interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
   variant?: 'default' | 'elevated' | 'outlined' | 'glass';
   padding?: 'none' | 'small' | 'medium' | 'large';
@@ -51,26 +51,28 @@ const variantStyles = {
   `,
 };
 
-const StyledCard = styled(motion.div)<CardProps>`
+const StyledCard = styled(motion.div).withConfig({
+  shouldForwardProp: (prop) => !['variant', 'padding', 'hoverable', 'clickable'].includes(prop)
+})<CardProps>`
   border-radius: ${({ theme }) => theme.radius.lg};
   overflow: hidden;
   position: relative;
   transition: all ${({ theme }) => theme.transitions.normal};
-  
+
   ${({ variant = 'default' }) => variantStyles[variant]}
   ${({ padding = 'medium' }) => paddingStyles[padding]}
-  
+
   ${({ hoverable }) => hoverable && css`
     &:hover {
       transform: translateY(-4px);
       box-shadow: ${({ theme }) => theme.shadows.xl};
     }
   `}
-  
+
   ${({ clickable }) => clickable && css`
     cursor: pointer;
     user-select: none;
-    
+
     &:active {
       transform: scale(0.98);
     }
@@ -139,7 +141,7 @@ const CardBadge = styled.span<{ color?: string }>`
   z-index: 1;
 `;
 
-interface CardComponent extends React.FC<CardProps> {
+interface CardComponent extends React.ForwardRefExoticComponent<CardProps & React.RefAttributes<HTMLDivElement>> {
   Header: React.FC<{ children: React.ReactNode }>;
   Content: React.FC<{ children: React.ReactNode }>;
   Footer: React.FC<{ children: React.ReactNode }>;
@@ -147,31 +149,50 @@ interface CardComponent extends React.FC<CardProps> {
   Badge: React.FC<{ color?: string; children: React.ReactNode }>;
 }
 
-export const Card: CardComponent = ({
+const CardComponent = React.forwardRef<HTMLDivElement, CardProps>(({
   children,
   onClick,
+  clickable,
+  hoverable,
+  variant = 'default',
+  padding = 'medium',
+  role,
+  tabIndex,
   ...props
-}) => {
+}, ref) => {
   const cardVariants = {
     initial: { opacity: 0, y: 20 },
     animate: { opacity: 1, y: 0 },
     exit: { opacity: 0, y: -20 }
   };
 
+  const isClickable = Boolean(onClick || clickable);
+  const shouldHover = hoverable || isClickable;
+
   return (
     <StyledCard
+      ref={ref}
       onClick={onClick}
       variants={cardVariants}
       initial="initial"
       animate="animate"
       exit="exit"
       transition={{ duration: 0.3 }}
+      variant={variant}
+      padding={padding}
+      hoverable={shouldHover}
+      clickable={isClickable}
+      role={isClickable ? (role || 'button') : role}
+      tabIndex={isClickable ? (tabIndex ?? 0) : tabIndex}
       {...props}
     >
       {children}
     </StyledCard>
   );
-};
+}) as CardComponent;
+
+// Export the main component
+export const Card = CardComponent;
 
 // Export sub-components with proper typing
 Card.Header = CardHeader;
@@ -179,5 +200,8 @@ Card.Content = CardContent;
 Card.Footer = CardFooter;
 Card.Image = CardImage;
 Card.Badge = CardBadge;
+
+// Export sub-components as named exports for testing
+export { CardHeader, CardContent, CardFooter, CardImage, CardBadge };
 
 export default Card;

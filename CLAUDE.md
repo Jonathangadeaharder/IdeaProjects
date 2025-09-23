@@ -35,6 +35,17 @@
 - Whisper model configuration: Use "tiny" for testing/debugging, "large-v3-turbo" for production (configured in Backend/core/constants.py)
 - Tiny model loads much faster than base/small models, ideal for development workflow
 
+# lessons-learned-2025-09-23
+- In WSL, run npm tests with PowerShell to avoid bus errors and match Windows behavior
+- Use: `/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe -Command "cd 'C:\path'; npm test"`
+- This ensures consistent behavior between WSL and native Windows environments
+- Tests may crash with "Bus error (core dumped)" when run directly in WSL bash
+- Testing philosophy: Test interfaces, not implementations - focus on public APIs and behavior
+- Coverage thresholds: 60% minimum acceptable, 80% commendable, exclude auto-generated code (*.gen.ts)
+- Coverage improvement: Successfully excluded auto-generated files, coverage increased from 27% to 36%
+- Current status: 174 tests passing, need additional tests for untested components to reach 60% threshold
+- **Terminal windows and logging**: User wants terminal windows visible for monitoring, but Claude should monitor progress via log files (backend.log, frontend.log) for orientation and debugging
+
 # lessons-learned-2025-09-06
 - API endpoint paths must match exactly - use /process/* not /processing/*
 - Authentication response field names vary - check actual response (token vs access_token)

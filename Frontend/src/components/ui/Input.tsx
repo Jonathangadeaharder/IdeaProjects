@@ -13,7 +13,9 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   fullWidth?: boolean;
 }
 
-const InputWrapper = styled.div<{ fullWidth?: boolean }>`
+const InputWrapper = styled.div.withConfig({
+  shouldForwardProp: (prop) => !['fullWidth'].includes(prop),
+})<{ fullWidth?: boolean }>`
   position: relative;
   display: inline-flex;
   flex-direction: column;
@@ -148,18 +150,22 @@ const StyledInput = styled.input<{
   }
 `;
 
-const HelperText = styled(motion.span)<{ error?: boolean; success?: boolean }>`
+const HelperText = styled(motion.span).withConfig({
+  shouldForwardProp: (prop) => !['error', 'success'].includes(prop),
+})<{ error?: boolean; success?: boolean }>`
   font-size: ${({ theme }) => theme.typography.fontSize.xs};
-  color: ${({ theme, error, success }) => 
-    error ? theme.colors.error : 
-    success ? theme.colors.success : 
+  color: ${({ theme, error, success }) =>
+    error ? theme.colors.error :
+    success ? theme.colors.success :
     theme.colors.textSecondary
   };
   margin-top: ${({ theme }) => theme.spacing.xs};
   display: block;
 `;
 
-const FloatingLabel = styled(motion.label)<{ isFocused: boolean; hasValue: boolean }>`
+const FloatingLabel = styled(motion.label).withConfig({
+  shouldForwardProp: (prop) => !['isFocused', 'hasValue'].includes(prop),
+})<{ isFocused: boolean; hasValue: boolean }>`
   position: absolute;
   left: ${({ theme }) => theme.spacing.md};
   background: ${({ theme }) => theme.colors.background};
@@ -167,7 +173,7 @@ const FloatingLabel = styled(motion.label)<{ isFocused: boolean; hasValue: boole
   color: ${({ theme }) => theme.colors.textSecondary};
   pointer-events: none;
   transition: all ${({ theme }) => theme.transitions.fast};
-  
+
   ${({ isFocused, hasValue }) => (isFocused || hasValue) ? css`
     top: -8px;
     font-size: ${({ theme }) => theme.typography.fontSize.xs};
@@ -191,6 +197,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(({
   className,
   onFocus,
   onBlur,
+  'data-testid': testId,
   ...props
 }, ref) => {
   const [isFocused, setIsFocused] = React.useState(false);
@@ -212,20 +219,20 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(({
       {label && !props.placeholder && (
         <Label>{label}</Label>
       )}
-      
+
       <InputContainer>
         {icon && (
           <IconWrapper position={iconPosition}>
             {icon}
           </IconWrapper>
         )}
-        
+
         {label && props.placeholder && (
           <FloatingLabel isFocused={isFocused} hasValue={hasValue}>
             {label}
           </FloatingLabel>
         )}
-        
+
         <StyledInput
           ref={ref}
           hasIcon={!!icon}
@@ -235,6 +242,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(({
           variant={variant}
           onFocus={handleFocus}
           onBlur={handleBlur}
+          data-testid={testId}
           {...props}
         />
       </InputContainer>

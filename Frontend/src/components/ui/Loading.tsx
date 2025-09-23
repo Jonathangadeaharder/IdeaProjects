@@ -2,7 +2,7 @@ import React from 'react';
 import styled, { keyframes, css } from 'styled-components';
 import { motion } from 'framer-motion';
 
-interface LoadingProps {
+interface LoadingProps extends React.HTMLAttributes<HTMLDivElement> {
   size?: 'small' | 'medium' | 'large';
   variant?: 'spinner' | 'dots' | 'bars' | 'pulse' | 'netflix';
   color?: string;
@@ -67,13 +67,15 @@ const sizes = {
 };
 
 // Container styles
-const LoadingContainer = styled.div<{ fullScreen?: boolean; overlay?: boolean }>`
+const LoadingContainer = styled.div.withConfig({
+  shouldForwardProp: (prop) => !['fullScreen', 'overlay'].includes(prop),
+})<{ fullScreen?: boolean; overlay?: boolean }>`
   display: inline-flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: ${({ theme }) => theme.spacing.md};
-  
+
   ${({ fullScreen }) => fullScreen && css`
     position: fixed;
     top: 0;
@@ -218,8 +220,9 @@ export const Loading: React.FC<LoadingProps> = ({
   fullScreen = false,
   overlay = false,
   text,
+  ...props
 }) => {
-  const sizeValue = sizes[size];
+  const sizeValue = sizes[size] || sizes.medium;
 
   const renderLoader = () => {
     switch (variant) {
@@ -273,7 +276,7 @@ export const Loading: React.FC<LoadingProps> = ({
   };
 
   return (
-    <LoadingContainer fullScreen={fullScreen} overlay={overlay}>
+    <LoadingContainer fullScreen={fullScreen} overlay={overlay} {...props}>
       {renderLoader()}
       {text && (
         <LoadingText

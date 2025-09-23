@@ -7,14 +7,7 @@ import { useGameStore } from '../../store/useGameStore';
 vi.mock('../../store/useGameStore');
 const mockUseGameStore = vi.mocked(useGameStore);
 
-// Mock framer-motion to avoid animation issues in tests
-vi.mock('framer-motion', () => ({
-  motion: {
-    div: ({ children, ...props }: any) => <div {...props}>{children}</div>,
-    button: ({ children, ...props }: any) => <button {...props}>{children}</button>,
-  },
-  AnimatePresence: ({ children }: any) => children,
-}));
+// Framer-motion is mocked globally via vitest.config.ts
 
 const mockWords = [
   { id: '1', word: 'Hallo', translation: 'Hello', difficulty_level: 'beginner', known: false },
