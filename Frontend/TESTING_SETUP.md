@@ -221,7 +221,7 @@ npx vitest run src/test/basic.test.ts src/test/SimpleComponent.test.tsx src/comp
 # ✓ src/test/basic.test.ts (4 tests) - Basic JavaScript/TypeScript functionality
 # ✓ src/test/SimpleComponent.test.tsx (6 tests) - React component testing
 # ✓ src/components/ui/__tests__/Button.test.tsx (5 tests) - Styled-components testing
-# 
+#
 # Test Files: 3 passed (3)
 # Tests: 15 passed (15)
 ```

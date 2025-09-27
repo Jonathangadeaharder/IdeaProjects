@@ -1,7 +1,7 @@
 """Token blacklist service for JWT token revocation"""
 import asyncio
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 from typing import Dict, Set
 
 try:
@@ -46,17 +46,22 @@ class TokenBlacklist:
     
     async def add_token(self, token: str, expires_at: datetime = None) -> bool:
         """Add a token to the blacklist"""
+        # Validate token
+        if not token or token is None:
+            logger.warning("Attempted to add empty or None token to blacklist")
+            return False
+
         logger.info(f"Adding token to blacklist: {token[:20]}...")
-        
+
         if expires_at is None:
-            expires_at = datetime.utcnow() + timedelta(hours=24)
+            expires_at = datetime.now(UTC) + timedelta(hours=24)
         
         if self._use_redis:
             redis_client = await self._get_redis_client()
             if redis_client:
                 try:
                     # Set token with expiration
-                    ttl = int((expires_at - datetime.utcnow()).total_seconds())
+                    ttl = int((expires_at - datetime.now(UTC)).total_seconds())
                     if ttl > 0:
                         await redis_client.setex(f"blacklist:{token}", ttl, "1")
                         logger.info(f"Token added to Redis blacklist with TTL: {ttl}")
@@ -73,8 +78,13 @@ class TokenBlacklist:
     
     async def is_blacklisted(self, token: str) -> bool:
         """Check if a token is blacklisted"""
+        # Validate token
+        if not token or token is None:
+            logger.debug("Checking blacklist for empty/None token - returning False")
+            return False
+
         logger.debug(f"Checking if token is blacklisted: {token[:20]}...")
-        
+
         if self._use_redis:
             redis_client = await self._get_redis_client()
             if redis_client:
@@ -91,7 +101,7 @@ class TokenBlacklist:
         if token in self._memory_blacklist:
             # Check if token has expired
             if token in self._memory_expiry:
-                if datetime.utcnow() > self._memory_expiry[token]:
+                if datetime.now(UTC) > self._memory_expiry[token]:
                     # Token expired, remove it
                     self._memory_blacklist.discard(token)
                     del self._memory_expiry[token]
@@ -128,7 +138,7 @@ class TokenBlacklist:
     async def cleanup_expired(self):
         """Clean up expired tokens from memory storage"""
         if not self._use_redis:
-            now = datetime.utcnow()
+            now = datetime.now(UTC)
             expired_tokens = [
                 token for token, expiry in self._memory_expiry.items()
                 if now > expiry

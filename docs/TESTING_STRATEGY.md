@@ -109,7 +109,7 @@ E2E tests require both frontend and backend to be running:
 # Terminal 1: Start backend
 cd Backend && python run_backend.py
 
-# Terminal 2: Start frontend  
+# Terminal 2: Start frontend
 cd Frontend && npm run dev
 
 # Terminal 3: Run E2E tests
@@ -193,7 +193,7 @@ Instead of maintaining duplicate `.sh` and `.ps1` scripts, we use Python for cro
 
 **✅ New Unified Scripts**:
 - `scripts/test_management.py` - Professional test runner
-- `scripts/run_postgres_tests.py` - PostgreSQL integration tests  
+- `scripts/run_postgres_tests.py` - PostgreSQL integration tests
 - `scripts/generate_typescript_client.py` - TypeScript client generation
 
 **Usage**:
@@ -283,12 +283,14 @@ For CI/CD systems, use the unified scripts:
 - name: Run comprehensive tests
   run: python scripts/test_management.py --timeout 600
 
-- name: Run PostgreSQL integration tests  
+- name: Run PostgreSQL integration tests
   run: python scripts/run_postgres_tests.py
 
 - name: Check test coverage
   run: python -m pytest --cov=core --cov=api --cov=services --cov=database --cov-fail-under=80
 ```
+
+> ⚠️ **Security note**: Keep bearer tokens, API keys, and other real credentials out of fixtures, docs, and CI logs. Use generated test secrets or environment variables, and quarantine any smoke tests that spin up real infrastructure behind explicit opt-in flags.
 
 ## Historical Context
 

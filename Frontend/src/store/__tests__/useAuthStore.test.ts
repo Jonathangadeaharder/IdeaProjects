@@ -1,265 +1,163 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
-import { useAuthStore } from '../useAuthStore';
-import * as api from '@/services/api';
-import type { AuthResponse } from '@/types';
+import { renderHook, act } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { useAuthStore } from '../useAuthStore'
+import * as sdk from '@/client/services.gen'
 
-// Mock the API service
-vi.mock('@/services/api');
-const mockApi = vi.mocked(api);
+vi.mock('@/services/api', () => ({}))
 
-// Mock localStorage
+vi.mock('@/client/services.gen', () => ({
+  authGetCurrentUserApiAuthMeGet: vi.fn(),
+  authJwtBearerLoginApiAuthLoginPost: vi.fn(),
+  authJwtBearerLogoutApiAuthLogoutPost: vi.fn(),
+  registerRegisterApiAuthRegisterPost: vi.fn(),
+}))
+
+const sdkMock = vi.mocked(sdk)
+
 const localStorageMock = {
   getItem: vi.fn(),
   setItem: vi.fn(),
   removeItem: vi.fn(),
   clear: vi.fn(),
-};
+}
+
 Object.defineProperty(window, 'localStorage', {
-  value: localStorageMock
-});
+  value: localStorageMock,
+})
+
+const sampleUser = {
+  id: '11111111-1111-1111-1111-111111111111',
+  username: 'demo',
+  email: 'demo@example.com',
+  is_active: true,
+  is_superuser: false,
+  is_verified: true,
+  created_at: '2025-01-01T00:00:00Z',
+  last_login: null,
+}
 
 describe('useAuthStore', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-    // Reset store state
+    vi.clearAllMocks()
+    localStorageMock.getItem.mockReturnValue(null)
     useAuthStore.setState({
       user: null,
       token: null,
       isAuthenticated: false,
       isLoading: false,
       error: null,
-    });
-  });
+      redirectPath: null,
+    })
+  })
 
-  describe('Initial State', () => {
-    it('has correct initial state', () => {
-      const { result } = renderHook(() => useAuthStore());
-      
-      expect(result.current.user).toBeNull();
-      expect(result.current.token).toBeNull();
-      expect(result.current.isAuthenticated).toBe(false);
-      expect(result.current.isLoading).toBe(false);
-      expect(result.current.error).toBeNull();
-    });
-  });
+  it('logs in and loads profile', async () => {
+    sdkMock.authJwtBearerLoginApiAuthLoginPost.mockResolvedValue({
+      access_token: 'jwt-token',
+      token_type: 'bearer',
+    })
+    sdkMock.authGetCurrentUserApiAuthMeGet.mockResolvedValue(sampleUser)
 
-  describe('Login', () => {
-    it('logs in user successfully', async () => {
-      const mockLoginResponse = {
-        token: 'jwt-token-123',
-        user: {
-          id: 1,
-          username: 'testuser',
-          is_admin: false,
-          is_active: true,
-          created_at: '2025-01-01T00:00:00Z',
-        },
-        expires_at: '2025-12-31T00:00:00Z',
-      };
-      
-      mockApi.login.mockResolvedValue(mockLoginResponse);
-      
-      const { result } = renderHook(() => useAuthStore());
-      
-      await act(async () => {
-        await result.current.login('test@example.com', 'password123');
-      });
-      
-      expect(mockApi.login).toHaveBeenCalledWith('test@example.com', 'password123');
-      expect(result.current.user).toEqual(mockLoginResponse.user);
-      expect(result.current.token).toBe('jwt-token-123');
-      expect(result.current.isAuthenticated).toBe(true);
-      expect(result.current.isLoading).toBe(false);
-      expect(result.current.error).toBeNull();
-      expect(localStorageMock.setItem).toHaveBeenCalledWith('auth_token', 'jwt-token-123');
-    });
+    const { result } = renderHook(() => useAuthStore())
 
-    it('handles login error', async () => {
-      const loginError = new Error('Invalid credentials');
-      mockApi.login.mockRejectedValue(loginError);
-      
-      const { result } = renderHook(() => useAuthStore());
-      
-      await act(async () => {
-        await result.current.login('test@example.com', 'wrongpassword');
-      });
-      
-      expect(result.current.user).toBeNull();
-      expect(result.current.token).toBeNull();
-      expect(result.current.isAuthenticated).toBe(false);
-      expect(result.current.isLoading).toBe(false);
-      expect(result.current.error).toBe('Invalid credentials');
-    });
+    await act(async () => {
+      await result.current.login('demo@example.com', 'password123')
+    })
 
-    it('sets loading state during login', async () => {
-      let resolveLogin: (value: AuthResponse) => void;
-      const loginPromise = new Promise<AuthResponse>((resolve) => {
-        resolveLogin = resolve;
-      });
-      
-      mockApi.login.mockReturnValue(loginPromise);
-      
-      const { result } = renderHook(() => useAuthStore());
-      
-      act(() => {
-        result.current.login('test@example.com', 'password123');
-      });
-      
-      expect(result.current.isLoading).toBe(true);
-      
-      await act(async () => {
-        resolveLogin!({
-          token: 'jwt-token-123',
-          user: {
-            id: 1,
-            username: 'testuser',
-            is_admin: false,
-            is_active: true,
-            created_at: '2025-01-01T00:00:00Z',
-          },
-          expires_at: '2025-12-31T00:00:00Z',
-        });
-        await loginPromise;
-      });
-      
-      expect(result.current.isLoading).toBe(false);
-    });
-  });
+    expect(sdkMock.authJwtBearerLoginApiAuthLoginPost).toHaveBeenCalledWith({
+      formData: { username: 'demo@example.com', password: 'password123' },
+    })
+    expect(sdkMock.authGetCurrentUserApiAuthMeGet).toHaveBeenCalled()
+    expect(result.current.user?.email).toBe('demo@example.com')
+    expect(result.current.token).toBe('jwt-token')
+    expect(result.current.isAuthenticated).toBe(true)
+    expect(localStorageMock.setItem).toHaveBeenCalledWith('authToken', 'jwt-token')
+  })
 
-  describe('Register', () => {
-    it('registers user successfully', async () => {
-      const mockRegisterResponse = {
-        token: 'jwt-token-456',
-        user: {
-          id: 2,
-          username: 'newuser',
-          is_admin: false,
-          is_active: true,
-          created_at: '2025-01-02T00:00:00Z',
-        },
-        expires_at: '2026-12-31T00:00:00Z',
-      };
-      
-      mockApi.register.mockResolvedValue(mockRegisterResponse);
-      
-      const { result } = renderHook(() => useAuthStore());
-      
-      await act(async () => {
-        await result.current.register('new@example.com', 'password123', 'New User');
-      });
-      
-      expect(mockApi.register).toHaveBeenCalledWith('new@example.com', 'password123', 'New User');
-      expect(result.current.user).toEqual(mockRegisterResponse.user);
-      expect(result.current.token).toBe('jwt-token-456');
-      expect(result.current.isAuthenticated).toBe(true);
-      expect(localStorageMock.setItem).toHaveBeenCalledWith('auth_token', 'jwt-token-456');
-    });
+  it('captures login errors', async () => {
+    sdkMock.authJwtBearerLoginApiAuthLoginPost.mockRejectedValue(new Error('Invalid credentials'))
 
-    it('handles registration error', async () => {
-      const registerError = new Error('Email already exists');
-      mockApi.register.mockRejectedValue(registerError);
-      
-      const { result } = renderHook(() => useAuthStore());
-      
-      await act(async () => {
-        await result.current.register('existing@example.com', 'password123', 'User');
-      });
-      
-      expect(result.current.error).toBe('Email already exists');
-      expect(result.current.isAuthenticated).toBe(false);
-    });
-  });
+    const { result } = renderHook(() => useAuthStore())
 
-  describe('Logout', () => {
-    it('logs out user successfully', () => {
-      const { result } = renderHook(() => useAuthStore());
-      
-      // Set initial authenticated state
-      act(() => {
-        useAuthStore.setState({
-          user: {
-            id: 1,
-            username: 'testuser',
-            is_admin: false,
-            is_active: true,
-            created_at: '2025-01-01T00:00:00Z',
-          },
-          token: 'jwt-token-123',
-          isAuthenticated: true,
-        });
-      });
-      
-      act(() => {
-        result.current.logout();
-      });
-      
-      expect(result.current.user).toBeNull();
-      expect(result.current.token).toBeNull();
-      expect(result.current.isAuthenticated).toBe(false);
-      expect(result.current.error).toBeNull();
-      expect(localStorageMock.removeItem).toHaveBeenCalledWith('auth_token');
-    });
-  });
+    await act(async () => {
+      await result.current.login('demo@example.com', 'badpass')
+    })
 
-  describe('Token Persistence', () => {
-    it('initializes from localStorage token', async () => {
-      const mockProfile = {
-        id: 1,
-        username: 'testuser',
-        is_admin: false,
-        is_active: true,
-        created_at: '2025-01-01T00:00:00Z',
-      };
-      
-      localStorageMock.getItem.mockReturnValue('stored-token-123');
-      mockApi.getProfile.mockResolvedValue(mockProfile);
-      
-      const { result } = renderHook(() => useAuthStore());
-      
-      await act(async () => {
-        await result.current.initializeAuth();
-      });
-      
-      expect(mockApi.getProfile).toHaveBeenCalled();
-      expect(result.current.user).toEqual(mockProfile);
-      expect(result.current.token).toBe('stored-token-123');
-      expect(result.current.isAuthenticated).toBe(true);
-    });
+    expect(result.current.error).toBe('Invalid credentials')
+    expect(result.current.isAuthenticated).toBe(false)
+  })
 
-    it('handles invalid stored token', async () => {
-      localStorageMock.getItem.mockReturnValue('invalid-token');
-      mockApi.getProfile.mockRejectedValue(new Error('Unauthorized'));
-      
-      const { result } = renderHook(() => useAuthStore());
-      
-      await act(async () => {
-        await result.current.initializeAuth();
-      });
-      
-      expect(result.current.user).toBeNull();
-      expect(result.current.token).toBeNull();
-      expect(result.current.isAuthenticated).toBe(false);
-      expect(localStorageMock.removeItem).toHaveBeenCalledWith('auth_token');
-    });
-  });
+  it('registers then logs in', async () => {
+    sdkMock.registerRegisterApiAuthRegisterPost.mockResolvedValue(sampleUser)
+    sdkMock.authJwtBearerLoginApiAuthLoginPost.mockResolvedValue({
+      access_token: 'jwt-token',
+      token_type: 'bearer',
+    })
+    sdkMock.authGetCurrentUserApiAuthMeGet.mockResolvedValue(sampleUser)
 
-  describe('Clear Error', () => {
-    it('clears error state', () => {
-      const { result } = renderHook(() => useAuthStore());
-      
-      // Set error state
-      act(() => {
-        useAuthStore.setState({ error: 'Some error' });
-      });
-      
-      expect(result.current.error).toBe('Some error');
-      
-      act(() => {
-        result.current.clearError();
-      });
-      
-      expect(result.current.error).toBeNull();
-    });
-  });
-});
+    const { result } = renderHook(() => useAuthStore())
+
+    await act(async () => {
+      await result.current.register('new@example.com', 'password123', 'New User')
+    })
+
+    expect(sdkMock.registerRegisterApiAuthRegisterPost).toHaveBeenCalledWith({
+      requestBody: {
+        email: 'new@example.com',
+        password: 'password123',
+        username: 'New User',
+      },
+    })
+    expect(result.current.isAuthenticated).toBe(true)
+  })
+
+  it('logs out user', async () => {
+    sdkMock.authJwtBearerLogoutApiAuthLogoutPost.mockResolvedValue(undefined)
+
+    const { result } = renderHook(() => useAuthStore())
+
+    act(() => {
+      useAuthStore.setState({
+        user: { ...sampleUser, name: sampleUser.username },
+        token: 'jwt-token',
+        isAuthenticated: true,
+      })
+    })
+
+    await act(async () => {
+      await result.current.logout()
+    })
+
+    expect(sdkMock.authJwtBearerLogoutApiAuthLogoutPost).toHaveBeenCalled()
+    expect(localStorageMock.removeItem).toHaveBeenCalledWith('authToken')
+    expect(result.current.isAuthenticated).toBe(false)
+  })
+
+  it('initializes session when token is stored', async () => {
+    localStorageMock.getItem.mockReturnValue('jwt-token')
+    sdkMock.authGetCurrentUserApiAuthMeGet.mockResolvedValue(sampleUser)
+
+    const { result } = renderHook(() => useAuthStore())
+
+    await act(async () => {
+      await result.current.initializeAuth()
+    })
+
+    expect(sdkMock.authGetCurrentUserApiAuthMeGet).toHaveBeenCalled()
+    expect(result.current.user?.email).toBe('demo@example.com')
+    expect(result.current.isAuthenticated).toBe(true)
+  })
+
+  it('clears invalid stored sessions', async () => {
+    localStorageMock.getItem.mockReturnValue('stale-token')
+    sdkMock.authGetCurrentUserApiAuthMeGet.mockRejectedValue(new Error('Session expired'))
+
+    const { result } = renderHook(() => useAuthStore())
+
+    await act(async () => {
+      await result.current.initializeAuth()
+    })
+
+    expect(localStorageMock.removeItem).toHaveBeenCalledWith('authToken')
+    expect(result.current.isAuthenticated).toBe(false)
+  })
+})

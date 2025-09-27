@@ -23,11 +23,13 @@ export default defineConfig(({ mode }) => {
         '@/services': path.resolve(__dirname, './src/services'),
         '@/store': path.resolve(__dirname, './src/store'),
         '@/types': path.resolve(__dirname, './src/types'),
-        '@/styles': path.resolve(__dirname, './src/styles')
+        '@/styles': path.resolve(__dirname, './src/styles'),
+        '@/client': path.resolve(__dirname, './src/client')
       }
     },
     server: {
       port: 3000,
+      host: true, // Allow access from external connections (WSL, localhost, network)
       proxy: {
         '/api': {
           target: env.VITE_BACKEND_URL || 'http://localhost:8000',

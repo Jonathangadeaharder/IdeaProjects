@@ -1,17 +1,14 @@
-export interface User {
-  id: string  // UUID format from FastAPI-Users
-  email: string
-  name: string  // Maps to username in FastAPI-Users
-}
+import type {
+  ProcessingStatus as ApiProcessingStatus,
+  UserRead,
+  VideoInfo as ApiVideoInfo,
+  VocabularyStats as ApiVocabularyStats,
+  VocabularyWord as ApiVocabularyWord,
+} from '@/client/types.gen'
 
-export interface LoginRequest {
-  username: string
-  password: string
-}
-
-export interface RegisterRequest {
-  username: string
-  password: string
+export type User = UserRead & {
+  name?: string
+  is_admin?: boolean
 }
 
 export interface AuthResponse {
@@ -20,30 +17,15 @@ export interface AuthResponse {
   expires_at: string
 }
 
-export interface VideoInfo {
-  series: string
-  season: string
-  episode: string
-  title: string
-  path: string
-  has_subtitles: boolean
-  duration?: number
-}
+export type VideoInfo = ApiVideoInfo
 
-export interface VocabularyWord {
-  word: string
-  definition?: string
-  difficulty_level: string
+export type VocabularyWord = ApiVocabularyWord & {
+  definition?: string | null
   known: boolean
 }
 
-export interface VocabularyLibraryWord {
-  id: number
-  word: string
-  difficulty_level: string
-  part_of_speech: string
-  definition?: string
-  known: boolean
+export interface VocabularyLibraryWord extends VocabularyWord {
+  id: string
 }
 
 export interface VocabularyLevel {
@@ -51,26 +33,19 @@ export interface VocabularyLevel {
   words: VocabularyLibraryWord[]
   total_count: number
   known_count: number
+  target_language?: string
+  translation_language?: string | null
 }
 
-export interface VocabularyStats {
-  levels: Record<string, {
-    total_words: number
-    user_known: number
-  }>
-  total_words: number
-  total_known: number
-}
+export type VocabularyStats = ApiVocabularyStats
 
-export interface ProcessingStatus {
-  status: 'processing' | 'completed' | 'error'
-  progress: number
-  current_step: string
+export type ProcessingStatus = ApiProcessingStatus & {
+  status: ApiProcessingStatus['status'] | 'monitoring' | 'failed' | 'idle' | 'error'
+  current_step?: string | null
   message?: string
-  started_at?: number
   vocabulary?: VocabularyWord[]
-  subtitle_path?: string
-  translation_path?: string
+  started_at?: number
+  translation_path?: string | null
 }
 
 export interface VideoSegment {

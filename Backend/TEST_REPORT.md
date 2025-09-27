@@ -40,7 +40,7 @@ Resolved critical database connection issues:
 
 All newly implemented async tests are passing with the asyncio backend:
 - User Profile Tests: 7/7 passing
-- Processing Contract Test: 1/1 passing  
+- Processing Contract Test: 1/1 passing
 - Video Contract Test: 1/1 passing
 - Authentication Contract Tests: 4/4 passing
 
@@ -66,13 +66,13 @@ The trio backend tests have been deprioritized due to fundamental incompatibilit
 async def test_example(async_client, url_builder):
     # Use URL builder for robust URL generation
     url = url_builder.url_for("route_name")
-    
+
     # Perform real authentication
     auth_headers = await AuthTestHelperAsync.get_auth_headers(async_client, url_builder)
-    
+
     # Make authenticated requests
     response = await async_client.get(url, headers=auth_headers)
-    
+
     # Validate responses
     assert response.status_code == 200
 ```

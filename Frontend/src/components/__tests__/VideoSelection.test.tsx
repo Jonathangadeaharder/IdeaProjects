@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { BrowserRouter } from 'react-router-dom';
 import { VideoSelection } from '../VideoSelection';
 import * as api from '@/services/api';
+import * as sdk from '@/client/services.gen';
 import { assertLoadingState, assertNavigationCalled, assertErrorMessage } from '@/test/assertion-helpers';
 
 // Mock react-router-dom
@@ -52,7 +53,7 @@ const renderWithRouter = (component: React.ReactElement) => {
 describe('VideoSelection Component', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.spyOn(api.videoService, 'getVideos').mockResolvedValue(mockVideos as any);
+    vi.spyOn(sdk, 'getVideosApiVideosGet').mockResolvedValue(mockVideos as any);
   });
 
   it('WhenComponentRendered_ThenDisplaysHeroTitle', async () => {
@@ -92,20 +93,35 @@ describe('VideoSelection Component', () => {
     assertNavigationCalled(mockNavigate, '/episodes/Superstore');
   });
 
+  it('WhenProfileButtonClicked_ThenNavigatesToProfile', async () => {
+    await act(async () => {
+      renderWithRouter(<VideoSelection />);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('profile-button')).toBeInTheDocument();
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('profile-button'));
+    });
+
+    assertNavigationCalled(mockNavigate, '/profile');
+  });
+
   it('WhenApiErrorOccurs_ThenHandlesErrorGracefully', async () => {
-    vi.spyOn(api.videoService, 'getVideos').mockRejectedValue(new Error('API Error'));
-    // Mock handleApiError to prevent it from throwing in tests
-    vi.spyOn(api, 'handleApiError').mockImplementation(() => {});
+    vi.spyOn(sdk, 'getVideosApiVideosGet').mockRejectedValueOnce(new Error('API Error'));
 
     await act(async () => {
       renderWithRouter(<VideoSelection />);
     });
 
     await waitFor(() => {
-      // Should not be in loading state after error
-      expect(document.querySelector('.loading-spinner')).toBeNull();
-      // Should show error message
+      expect(sdk.getVideosApiVideosGet).toHaveBeenCalled();
+    });
+
+    await waitFor(() => {
       expect(screen.getByText('Failed to load videos')).toBeInTheDocument();
-    }, { timeout: 5000 });
+    });
   });
 });

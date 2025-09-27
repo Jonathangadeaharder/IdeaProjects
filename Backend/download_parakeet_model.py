@@ -43,8 +43,8 @@ def download_parakeet_model():
 if __name__ == "__main__":
     success = download_parakeet_model()
     if success:
-        print("✅ Parakeet model downloaded successfully!")
+        print("[GOOD] Parakeet model downloaded successfully!")
         sys.exit(0)
     else:
-        print("❌ Failed to download Parakeet model")
+        print("[ERROR] Failed to download Parakeet model")
         sys.exit(1)

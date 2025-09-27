@@ -1,87 +1,143 @@
 """
-Vocabulary API models
+Vocabulary API models for multilingual support
 """
 
+from uuid import UUID
 from pydantic import BaseModel, Field, field_validator, ConfigDict
 
 
 class VocabularyWord(BaseModel):
+    """Single vocabulary word with translations"""
+    concept_id: UUID = Field(
+        ...,
+        description="Unique concept identifier"
+    )
     word: str = Field(
         ...,
         min_length=1,
         max_length=100,
-        description="The vocabulary word"
+        description="The vocabulary word in target language"
     )
-    definition: str | None = Field(
+    translation: str | None = Field(
         None,
-        max_length=500,
-        description="Definition of the word"
+        max_length=100,
+        description="Translation in user's preferred language"
+    )
+    lemma: str | None = Field(
+        None,
+        max_length=100,
+        description="Base form of the word"
     )
     difficulty_level: str = Field(
         ...,
         pattern=r"^(A1|A2|B1|B2|C1|C2)$",
-        description="CEFR difficulty level (A1, A2, B1, B2, C1, C2)"
+        description="CEFR difficulty level"
+    )
+    semantic_category: str | None = Field(
+        None,
+        max_length=50,
+        description="Part of speech (noun, verb, adjective, etc.)"
+    )
+    domain: str | None = Field(
+        None,
+        max_length=50,
+        description="Domain category (education, technology, etc.)"
+    )
+    gender: str | None = Field(
+        None,
+        max_length=10,
+        description="Gender (der/die/das for German, el/la for Spanish)"
+    )
+    plural_form: str | None = Field(
+        None,
+        max_length=100,
+        description="Plural form if applicable"
+    )
+    pronunciation: str | None = Field(
+        None,
+        max_length=200,
+        description="IPA or phonetic representation"
+    )
+    notes: str | None = Field(
+        None,
+        max_length=500,
+        description="Grammar notes, usage notes, etc."
     )
     known: bool = Field(
         False,
         description="Whether the user knows this word"
     )
 
-    @field_validator('word')
-    @classmethod
-    def validate_word(cls, v):
-        if not v.strip():
-            raise ValueError('Word cannot be empty or whitespace')
-        return v.strip().lower()
 
 
 class MarkKnownRequest(BaseModel):
-    word: str = Field(
+    """Request to mark a word as known/unknown"""
+    concept_id: UUID = Field(
         ...,
-        min_length=1,
-        max_length=100,
-        description="The word to mark as known/unknown"
+        description="Unique concept identifier"
     )
     known: bool = Field(
         ...,
         description="Whether to mark the word as known (true) or unknown (false)"
     )
 
-    @field_validator('word')
-    @classmethod
-    def validate_word(cls, v):
-        if not v.strip():
-            raise ValueError('Word cannot be empty or whitespace')
-        return v.strip().lower()
-
 
 class VocabularyLibraryWord(BaseModel):
-    id: int = Field(
+    """Vocabulary word for library display with full details"""
+    concept_id: UUID = Field(
         ...,
-        gt=0,
-        description="Unique identifier for the vocabulary word"
+        description="Unique concept identifier"
     )
     word: str = Field(
         ...,
         min_length=1,
         max_length=100,
-        description="The vocabulary word"
+        description="The vocabulary word in target language"
+    )
+    translation: str | None = Field(
+        None,
+        max_length=100,
+        description="Translation in user's preferred language"
+    )
+    lemma: str | None = Field(
+        None,
+        max_length=100,
+        description="Base form of the word"
     )
     difficulty_level: str = Field(
         ...,
         pattern=r"^(A1|A2|B1|B2|C1|C2)$",
-        description="CEFR difficulty level (A1, A2, B1, B2, C1, C2)"
+        description="CEFR difficulty level"
     )
-    part_of_speech: str = Field(
-        ...,
-        min_length=1,
+    semantic_category: str | None = Field(
+        None,
         max_length=50,
         description="Part of speech (noun, verb, adjective, etc.)"
     )
-    definition: str | None = Field(
+    domain: str | None = Field(
+        None,
+        max_length=50,
+        description="Domain category"
+    )
+    gender: str | None = Field(
+        None,
+        max_length=10,
+        description="Gender for gendered languages"
+    )
+    plural_form: str | None = Field(
+        None,
+        max_length=100,
+        description="Plural form if applicable"
+    )
+    pronunciation: str | None = Field(
+        None,
+        max_length=200,
+        description="Pronunciation guide"
+    )
+    notes: str | None = Field(
         None,
         max_length=500,
-        description="Definition of the word"
+        description="Additional notes"
     )
     known: bool = Field(
         False,
@@ -90,10 +146,23 @@ class VocabularyLibraryWord(BaseModel):
 
 
 class VocabularyLevel(BaseModel):
+    """Vocabulary words grouped by CEFR level"""
     level: str = Field(
         ...,
         pattern=r"^(A1|A2|B1|B2|C1|C2)$",
-        description="CEFR difficulty level (A1, A2, B1, B2, C1, C2)"
+        description="CEFR difficulty level"
+    )
+    target_language: str = Field(
+        ...,
+        min_length=2,
+        max_length=5,
+        description="Target language code (de, es, en, etc.)"
+    )
+    translation_language: str | None = Field(
+        None,
+        min_length=2,
+        max_length=5,
+        description="Translation language code"
     )
     words: list[VocabularyLibraryWord] = Field(
         ...,
@@ -110,30 +179,44 @@ class VocabularyLevel(BaseModel):
         description="Number of known words at this level"
     )
 
-    @field_validator('known_count')
-    @classmethod
-    def validate_known_count(cls, v, info):
-        if 'total_count' in info.data and v > info.data['total_count']:
-            raise ValueError('Known count cannot exceed total count')
-        return v
 
 
 class BulkMarkRequest(BaseModel):
+    """Request to bulk mark words as known/unknown"""
     level: str = Field(
         ...,
         pattern=r"^(A1|A2|B1|B2|C1|C2)$",
-        description="CEFR difficulty level to mark (A1, A2, B1, B2, C1, C2)"
+        description="CEFR difficulty level to mark"
+    )
+    target_language: str = Field(
+        ...,
+        min_length=2,
+        max_length=5,
+        description="Target language code (de, es, en, etc.)"
     )
     known: bool = Field(
         ...,
-        description="Whether to mark all words in the level as known (true) or unknown (false)"
+        description="Whether to mark all words as known (true) or unknown (false)"
     )
 
 
 class VocabularyStats(BaseModel):
+    """Vocabulary statistics across all levels"""
     levels: dict[str, dict[str, int]] = Field(
         ...,
         description="Statistics by CEFR level with total and known counts"
+    )
+    target_language: str = Field(
+        ...,
+        min_length=2,
+        max_length=5,
+        description="Target language code"
+    )
+    translation_language: str | None = Field(
+        None,
+        min_length=2,
+        max_length=5,
+        description="Translation language code"
     )
     total_words: int = Field(
         ...,
@@ -146,23 +229,102 @@ class VocabularyStats(BaseModel):
         description="Total number of known words across all levels"
     )
 
-    @field_validator('total_known')
-    @classmethod
-    def validate_total_known(cls, v, info):
-        if 'total_words' in info.data and v > info.data['total_words']:
-            raise ValueError('Total known cannot exceed total words')
-        return v
 
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
                 "levels": {
-                    "A1": {"total": 100, "known": 80},
-                    "A2": {"total": 150, "known": 60},
-                    "B1": {"total": 200, "known": 40}
+                    "A1": {"total_words": 100, "user_known": 80},
+                    "A2": {"total_words": 150, "user_known": 60},
+                    "B1": {"total_words": 200, "user_known": 40}
                 },
+                "target_language": "de",
+                "translation_language": "es",
                 "total_words": 450,
                 "total_known": 180
             }
         }
+    )
+
+
+class LanguageRequest(BaseModel):
+    """Request for language-specific operations"""
+    target_language: str = Field(
+        ...,
+        min_length=2,
+        max_length=5,
+        description="Target language code (de, es, en, etc.)"
+    )
+    translation_language: str | None = Field(
+        None,
+        min_length=2,
+        max_length=5,
+        description="Translation language code"
+    )
+
+
+class SupportedLanguage(BaseModel):
+    """Supported language information"""
+    code: str = Field(
+        ...,
+        min_length=2,
+        max_length=5,
+        description="Language code (de, es, en, etc.)"
+    )
+    name: str = Field(
+        ...,
+        min_length=1,
+        max_length=50,
+        description="Language name in English"
+    )
+    native_name: str | None = Field(
+        None,
+        max_length=50,
+        description="Language name in native script"
+    )
+    is_active: bool = Field(
+        True,
+        description="Whether the language is currently supported"
+    )
+
+
+class LanguagesResponse(BaseModel):
+    """Response containing supported languages"""
+    languages: list[SupportedLanguage] = Field(
+        ...,
+        description="List of supported languages"
+    )
+
+
+class TranslationPair(BaseModel):
+    """Translation pair for vocabulary import"""
+    german: str = Field(
+        ...,
+        min_length=1,
+        max_length=100,
+        description="German word"
+    )
+    spanish: str = Field(
+        ...,
+        min_length=1,
+        max_length=100,
+        description="Spanish translation"
+    )
+    difficulty_level: str = Field(
+        ...,
+        pattern=r"^(A1|A2|B1|B2|C1|C2)$",
+        description="CEFR difficulty level"
+    )
+
+
+class ImportRequest(BaseModel):
+    """Request to import vocabulary data"""
+    translation_pairs: list[TranslationPair] = Field(
+        ...,
+        min_length=1,
+        description="List of translation pairs to import"
+    )
+    overwrite_existing: bool = Field(
+        False,
+        description="Whether to overwrite existing concepts"
     )

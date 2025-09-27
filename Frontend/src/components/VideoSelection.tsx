@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import styled from 'styled-components'
-import { ChevronRightIcon, PlayIcon } from '@heroicons/react/24/solid'
+import { ChevronRightIcon, PlayIcon, UserCircleIcon } from '@heroicons/react/24/solid'
 import { toast } from 'react-hot-toast'
 import { Container, Grid, NetflixButton, ErrorMessage } from '@/styles/GlobalStyles'
-import { videoService, handleApiError } from '@/services/api'
+import { handleApiError } from '@/services/api'
+import { getVideosApiVideosGet } from '@/client/services.gen'
 import { useAuthStore } from '@/store/useAuthStore'
 import type { VideoInfo } from '@/types'
 
@@ -62,6 +63,21 @@ const UserName = styled.span`
 const LogoutButton = styled(NetflixButton)`
   padding: 8px 16px;
   font-size: 14px;
+`
+
+const ProfileButton = styled(NetflixButton)`
+  padding: 8px 16px;
+  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+
+  svg {
+    width: 18px;
+    height: 18px;
+  }
 `
 
 const Hero = styled.section`
@@ -240,10 +256,14 @@ export const VideoSelection: React.FC = () => {
   const loadVideos = async () => {
     try {
       setLoading(true)
-      const videoList = await videoService.getVideos()
+      const videoList = await getVideosApiVideosGet()
       setVideos(videoList)
     } catch (error) {
-      handleApiError(error)
+      try {
+        handleApiError(error, 'VideoSelection.loadVideos')
+      } catch {
+        // error already surfaced via toast/logger
+      }
       setError('Failed to load videos')
     } finally {
       setLoading(false)
@@ -260,7 +280,11 @@ export const VideoSelection: React.FC = () => {
       navigate('/login')
       toast.success('Logged out successfully')
     } catch (error) {
-      handleApiError(error)
+      try {
+        handleApiError(error, 'VideoSelection.logout')
+      } catch {
+        // handled by toast
+      }
     }
   }
 
@@ -298,6 +322,10 @@ export const VideoSelection: React.FC = () => {
             </NavLinks>
             <UserSection>
               <UserName>Welcome, {user?.username}</UserName>
+              <ProfileButton onClick={() => navigate('/profile')} data-testid="profile-button">
+                <UserCircleIcon />
+                Profile
+              </ProfileButton>
               <LogoutButton variant="secondary" onClick={handleLogout} data-testid="logout-button">
                 Logout
               </LogoutButton>

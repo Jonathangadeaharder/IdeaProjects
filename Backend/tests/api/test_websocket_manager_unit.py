@@ -77,9 +77,5 @@ async def test_Whenhandle_message_subscribe_and_unknownCalled_ThenSucceeds():
     m.disconnect(ws)
 
 
-@pytest.mark.anyio
-@pytest.mark.timeout(30)
-async def test_Whenstart_and_stop_health_checksCalled_ThenSucceeds():
-    m = ConnectionManager()
-    await m.start_health_checks()
-    await m.stop_health_checks()
+# Removed trivial health check test that only verified methods don't throw exceptions
+# without testing actual health check functionality. Tests should verify meaningful behavior.

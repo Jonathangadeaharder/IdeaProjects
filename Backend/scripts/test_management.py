@@ -57,20 +57,36 @@ class ProfessionalTestManager:
     def run_all_tests(self, timeout: int = 300) -> bool:
         """
         Run all tests with comprehensive reporting.
-        
+
         Args:
             timeout: Maximum time in seconds for the entire test run
-            
+
         Returns:
             True if all non-expected failures pass, False otherwise
         """
-        print("🧪 Running comprehensive test suite...")
+        self._setup_test_environment()
+        cmd = self._build_pytest_command(timeout)
+
+        try:
+            result, duration = self._execute_tests(cmd, timeout)
+            self._parse_test_results()
+            self._print_comprehensive_report(result, duration)
+            return self._evaluate_test_success(result.returncode)
+        except subprocess.TimeoutExpired:
+            print(f"[WARN] Test suite timed out after {timeout + 60} seconds")
+            return False
+        except Exception as e:
+            print(f"[ERROR] Error running tests: {e}")
+            return False
+
+    def _setup_test_environment(self) -> None:
+        """Setup the test environment."""
+        print("[INFO] Running comprehensive test suite...")
         print("=" * 60)
-        
-        # Change to backend directory
         os.chdir(self.backend_dir)
-        
-        # Run pytest with JSON output for detailed analysis
+
+    def _build_pytest_command(self, timeout: int) -> list[str]:
+        """Build the pytest command with required options."""
         cmd = [
             sys.executable, "-m", "pytest",
             "--json-report", "--json-report-file=test_results.json",
@@ -78,37 +94,21 @@ class ProfessionalTestManager:
             f"--timeout={timeout}",
             "--timeout-method=thread"
         ]
-        
         print(f"Command: {' '.join(cmd)}")
         print("-" * 60)
-        
+        return cmd
+
+    def _execute_tests(self, cmd: list[str], timeout: int) -> tuple:
+        """Execute the test command and return result and duration."""
         start_time = time.time()
-        
-        try:
-            result = subprocess.run(
-                cmd, 
-                capture_output=True, 
-                text=True, 
-                timeout=timeout + 60  # Extra buffer for cleanup
-            )
-            
-            duration = time.time() - start_time
-            
-            # Parse JSON results if available
-            self._parse_test_results()
-            
-            # Print comprehensive report
-            self._print_comprehensive_report(result, duration)
-            
-            # Determine overall success based on professional criteria
-            return self._evaluate_test_success(result.returncode)
-            
-        except subprocess.TimeoutExpired:
-            print(f"⏰ Test suite timed out after {timeout + 60} seconds")
-            return False
-        except Exception as e:
-            print(f"❌ Error running tests: {e}")
-            return False
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=timeout + 60  # Extra buffer for cleanup
+        )
+        duration = time.time() - start_time
+        return result, duration
     
     def _parse_test_results(self) -> None:
         """Parse JSON test results if available."""
@@ -132,7 +132,7 @@ class ProfessionalTestManager:
                 self.results.append(outcome)
                 
         except Exception as e:
-            print(f"⚠️  Could not parse test results JSON: {e}")
+            print(f"[WARN] Could not parse test results JSON: {e}")
     
     def _extract_error_message(self, test_data: dict) -> Optional[str]:
         """Extract meaningful error message from test data."""
@@ -143,7 +143,7 @@ class ProfessionalTestManager:
     
     def _print_comprehensive_report(self, result: subprocess.CompletedProcess, duration: float) -> None:
         """Print a comprehensive test report."""
-        print(f"\n📊 Test Suite Summary (completed in {duration:.2f}s)")
+        print(f"\n[INFO] Test Suite Summary (completed in {duration:.2f}s)")
         print("=" * 60)
         
         # Print stdout (pytest output)
@@ -171,7 +171,7 @@ class ProfessionalTestManager:
                 by_result[outcome.result] = []
             by_result[outcome.result].append(outcome)
         
-        print("\n📋 Test Results by Category:")
+        print("\n[INFO] Test Results by Category:")
         print("-" * 40)
         
         for result_type in TestResult:
@@ -190,13 +190,13 @@ class ProfessionalTestManager:
     def _get_result_icon(self, result: TestResult) -> str:
         """Get appropriate icon for test result."""
         icons = {
-            TestResult.PASSED: "✅",
-            TestResult.FAILED: "❌", 
-            TestResult.SKIPPED: "⏭️",
-            TestResult.XFAIL: "⚠️",
-            TestResult.XPASS: "🎉"
+            TestResult.PASSED: "[GOOD]",
+            TestResult.FAILED: "[ERROR]", 
+            TestResult.SKIPPED: "[SKIP]",
+            TestResult.XFAIL: "[WARN]",
+            TestResult.XPASS: "[GOOD]"
         }
-        return icons.get(result, "❓")
+        return icons.get(result, "[UNKNOWN]")
     
     def _evaluate_test_success(self, return_code: int) -> bool:
         """
@@ -223,12 +223,12 @@ class ProfessionalTestManager:
     
     def _print_guidance(self, return_code: int) -> None:
         """Print actionable guidance based on test results."""
-        print("\n🎯 Next Steps:")
+        print("\n[INFO] Next Steps:")
         print("-" * 40)
         
         if return_code == 0:
-            print("✅ All tests passed! The codebase is in good shape.")
-            print("💡 Consider adding more tests for edge cases.")
+            print("[GOOD] All tests passed! The codebase is in good shape.")
+            print("[INFO] Consider adding more tests for edge cases.")
         else:
             print("❌ Some tests are failing. Here's what you should do:")
             print("1. 🔍 Review the test failures above")

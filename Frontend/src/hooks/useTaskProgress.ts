@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { getProcessingStatus } from '@/services/api'
+import { getTaskProgressApiProcessProgressTaskIdGet } from '@/client/services.gen'
+import type { ProcessingStatus } from '@/types'
 
 type TaskState = 'idle' | 'monitoring' | 'processing' | 'completed' | 'failed' | 'error'
 
@@ -23,7 +24,9 @@ export const useTaskProgress = () => {
     const idToUse = currentTaskId || taskId
     if (!idToUse) return
     try {
-      const res: any = await getProcessingStatus(idToUse)
+      const res = await getTaskProgressApiProcessProgressTaskIdGet({ taskId: idToUse }) as ProcessingStatus & {
+        result?: unknown
+      }
       setProgress(res?.progress ?? 0)
 
       if (res?.status === 'processing') {

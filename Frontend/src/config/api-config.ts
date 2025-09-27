@@ -14,65 +14,71 @@ export interface ApiConfig {
 
 export type Environment = 'development' | 'staging' | 'production' | 'test';
 
-// Environment-specific configurations
-const configs: Record<Environment, ApiConfig> = {
-  development: {
-    baseUrl: 'http://localhost:8000',
-    timeout: 10000,
-    retryAttempts: 3,
-    retryDelay: 1000,
-    enableLogging: true,
-    enableValidation: true,
-  },
-  staging: {
-    baseUrl: process.env.VITE_STAGING_API_URL || 'https://staging-api.langplug.com',
-    timeout: 15000,
-    retryAttempts: 3,
-    retryDelay: 2000,
-    enableLogging: true,
-    enableValidation: true,
-  },
-  production: {
-    baseUrl: process.env.VITE_API_URL || 'https://api.langplug.com',
-    timeout: 20000,
-    retryAttempts: 2,
-    retryDelay: 3000,
-    enableLogging: false,
-    enableValidation: false,
-  },
-  test: {
-    baseUrl: 'http://localhost:8000',
-    timeout: 5000,
-    retryAttempts: 1,
-    retryDelay: 500,
-    enableLogging: false,
-    enableValidation: true,
-  },
-};
+// Environment-specific configurations - evaluated dynamically to support testing
+function getConfigs(): Record<Environment, ApiConfig> {
+  return {
+    development: {
+      baseUrl: import.meta.env.VITE_API_URL || 'http://localhost:8000',
+      timeout: 10000,
+      retryAttempts: 3,
+      retryDelay: 1000,
+      enableLogging: true,
+      enableValidation: true,
+    },
+    staging: {
+      baseUrl: import.meta.env.VITE_STAGING_API_URL || 'https://staging-api.langplug.com',
+      timeout: 15000,
+      retryAttempts: 3,
+      retryDelay: 2000,
+      enableLogging: true,
+      enableValidation: true,
+    },
+    production: {
+      baseUrl: import.meta.env.VITE_API_URL || 'https://api.langplug.com',
+      timeout: 20000,
+      retryAttempts: 2,
+      retryDelay: 3000,
+      enableLogging: false,
+      enableValidation: false,
+    },
+    test: {
+      baseUrl: 'http://localhost:8000',
+      timeout: 5000,
+      retryAttempts: 1,
+      retryDelay: 500,
+      enableLogging: false,
+      enableValidation: true,
+    },
+  };
+}
 
 /**
  * Get the current environment from various sources
  */
 function getCurrentEnvironment(): Environment {
-  // Check Vite environment variable first
+  // Check Vite environment variable first (highest priority)
   if (import.meta.env.VITE_ENVIRONMENT) {
-    return import.meta.env.VITE_ENVIRONMENT as Environment;
+    const env = import.meta.env.VITE_ENVIRONMENT as string;
+    if (['development', 'staging', 'production', 'test'].includes(env)) {
+      return env as Environment;
+    }
   }
-  
-  // Check Node environment
-  if (import.meta.env.NODE_ENV === 'production') {
-    return 'production';
-  }
-  
-  if (import.meta.env.NODE_ENV === 'test') {
-    return 'test';
-  }
-  
-  // Check hostname for staging
+
+  // Check hostname for staging (before NODE_ENV to support staging detection)
   if (typeof window !== 'undefined' && window.location.hostname.includes('staging')) {
     return 'staging';
   }
-  
+
+  // Check Node environment (but skip test in real app usage)
+  if (import.meta.env.NODE_ENV === 'production') {
+    return 'production';
+  }
+
+  // Only use test environment if explicitly set or no other env detected
+  if (import.meta.env.NODE_ENV === 'test' && !import.meta.env.VITE_ENVIRONMENT) {
+    return 'test';
+  }
+
   // Default to development
   return 'development';
 }
@@ -82,14 +88,16 @@ function getCurrentEnvironment(): Environment {
  */
 export function getApiConfig(): ApiConfig {
   const environment = getCurrentEnvironment();
-  return configs[environment];
+  const configs = getConfigs();
+  return { ...configs[environment] };
 }
 
 /**
  * Get API configuration for a specific environment
  */
 export function getApiConfigForEnvironment(env: Environment): ApiConfig {
-  return configs[env];
+  const configs = getConfigs();
+  return { ...configs[env] };
 }
 
 /**

@@ -5,7 +5,7 @@ A Netflix-style language learning platform that combines video streaming with in
 ## 🌟 Features
 
 - **🎬 Netflix-Style Interface**: Beautiful, responsive video streaming platform
-- **🎯 Interactive Vocabulary Games**: Tinder-style word swiping for effective learning  
+- **🎯 Interactive Vocabulary Games**: Tinder-style word swiping for effective learning
 - **📺 Smart Video Player**: Custom player with subtitle controls and 5-minute learning segments
 - **🤖 AI-Powered Transcription**: Automatic subtitle generation using Whisper
 - **📊 Progress Tracking**: Track your vocabulary learning across episodes
@@ -20,7 +20,7 @@ A Netflix-style language learning platform that combines video streaming with in
 - **Database**: SQLite with repository pattern for user progress and vocabulary
 - **Authentication**: Secure session-based authentication with bcrypt hashing
 
-### Frontend (`Frontend/`)  
+### Frontend (`Frontend/`)
 - **React + TypeScript**: Modern frontend with type safety
 - **Netflix-Style UI**: Professional interface with styled-components
 - **State Management**: Zustand for efficient state management
@@ -45,7 +45,7 @@ videos/
 
 ### Prerequisites
 - **Python 3.8+**
-- **Node.js 16+** 
+- **Node.js 16+**
 - **FFmpeg** (for video processing)
 - **CUDA GPU** (optional, for faster transcription)
 
@@ -74,7 +74,7 @@ python server_manager.py start
 ```
 
 **Stop All Servers:**
-```bash  
+```bash
 python server_manager.py stop
 ```
 
@@ -96,14 +96,19 @@ videos/
 ## 📖 How to Use
 
 ### Step 1: Register & Login
+- **Default Admin Credentials:**
+  - **Email:** `admin@langplug.com`
+  - **Password:** `admin`
 - Create an account or login with existing credentials
 - Your learning progress will be saved automatically
+
+> **⚠️ Important:** For login, use the **full email address** `admin@langplug.com`, not just `admin`
 
 ### Step 2: Select a Series
 - Browse available TV series in the Netflix-style interface
 - Click on a series to see available episodes
 
-### Step 3: Choose an Episode  
+### Step 3: Choose an Episode
 - Select an episode to start learning
 - The system will transcribe subtitles if needed (first time only)
 
@@ -126,12 +131,12 @@ videos/
 ### Backend
 - **FastAPI** - High-performance Python web framework
 - **SQLite** - Lightweight database for user data and progress
-- **OpenAI Whisper** - AI-powered speech transcription  
+- **OpenAI Whisper** - AI-powered speech transcription
 - **SpaCy** - Natural language processing for German
 - **Transformers** - Hugging Face models for translation
 - **MoviePy** - Video and audio processing
 
-### Frontend  
+### Frontend
 - **React 18** - Modern UI framework
 - **TypeScript** - Type-safe JavaScript
 - **Vite** - Lightning-fast build tool
@@ -159,13 +164,13 @@ DATABASE_URL=sqlite:///data/langplug.db
 
 ### Video Formats Supported
 - **MP4** (recommended)
-- **AVI** 
+- **AVI**
 - **MKV**
 - **MOV**
 
 ### Subtitle Formats
 - **SRT** - SubRip
-- **VTT** - WebVTT  
+- **VTT** - WebVTT
 
 ## 🐛 Troubleshooting
 
@@ -179,7 +184,7 @@ DATABASE_URL=sqlite:///data/langplug.db
 - Install CUDA-compatible GPU drivers
 - Use smaller Whisper model: set `WHISPER_MODEL_SIZE=tiny`
 
-**Frontend won't start**  
+**Frontend won't start**
 - Make sure Node.js 16+ is installed
 - Delete `Frontend/node_modules` and reinstall
 
@@ -194,7 +199,7 @@ DATABASE_URL=sqlite:///data/langplug.db
 
 ### Performance Tips
 - 🚀 **Use CUDA GPU** for 10x faster transcription
-- 📁 **Organize videos properly** in series folders  
+- 📁 **Organize videos properly** in series folders
 - 💾 **SSD storage** recommended for video files
 - 🔧 **Close unnecessary apps** when processing
 
@@ -240,7 +245,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 🙏 Acknowledgments
 
 - **OpenAI Whisper** for excellent speech recognition
-- **Hugging Face** for transformer models  
+- **Hugging Face** for transformer models
 - **SpaCy** for German language processing
 - **React** and **FastAPI** communities
 - **Netflix** for interface design inspiration

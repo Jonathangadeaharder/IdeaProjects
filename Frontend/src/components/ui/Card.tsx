@@ -177,6 +177,7 @@ const CardComponent = React.forwardRef<HTMLDivElement, CardProps>(({
       initial="initial"
       animate="animate"
       exit="exit"
+      {...(props as any)}
       transition={{ duration: 0.3 }}
       variant={variant}
       padding={padding}

@@ -1,11 +1,11 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import * as clientSdk from '../../client/sdk.gen';
-import type { RegisterRequest, LoginRequest, UserResponse, AuthResponse } from '../../client';
+import * as clientSdk from '../../client/services.gen';
+import type { UserCreate, Body_auth_jwt_bearer_login_api_auth_login_post, UserResponse, UserRead, BearerResponse } from '../../client/types.gen';
 
 // Mock the SDK functions
-vi.mock('../../client/sdk.gen', () => ({
-  registerApiAuthRegisterPost: vi.fn(),
-  loginApiAuthLoginPost: vi.fn(),
+vi.mock('../../client/services.gen', () => ({
+  registerRegisterApiAuthRegisterPost: vi.fn(),
+  authJwtBearerLoginApiAuthLoginPost: vi.fn(),
 }));
 
 describe('Auth API Contract Tests', () => {
@@ -15,51 +15,53 @@ describe('Auth API Contract Tests', () => {
 
   describe('Register Endpoint Contract', () => {
     it('WhenRegisterCalledWithValidData_ThenReturnsCorrectStructure', async () => {
-      const registerRequest: RegisterRequest = {
+      const registerRequest: UserCreate = {
         username: 'testuser',
         password: 'testpass123',
+        email: 'test@example.com',
       };
 
-      // Mock successful response
-      const mockUserResponse: UserResponse = {
-        id: 1,
+      // Mock successful response - SDK returns UserRead directly
+      const mockUserResponse: UserRead = {
+        id: '1',
         username: 'testuser',
-        is_admin: false,
+        email: 'test@example.com',
+        is_superuser: false,
         is_active: true,
+        is_verified: true,
         created_at: '2024-01-01T00:00:00Z',
         last_login: null,
       };
 
-      vi.mocked(clientSdk.registerApiAuthRegisterPost).mockResolvedValueOnce({
-        data: mockUserResponse,
-        request: new Request('http://test.com'),
-        response: new Response('', { status: 200 }),
-      });
+      vi.mocked(clientSdk.registerRegisterApiAuthRegisterPost).mockResolvedValueOnce(mockUserResponse);
 
-      const result = await clientSdk.registerApiAuthRegisterPost({
-        body: registerRequest,
+      const result = await clientSdk.registerRegisterApiAuthRegisterPost({
+        requestBody: registerRequest,
       });
 
       // Verify request structure
-      expect(clientSdk.registerApiAuthRegisterPost).toHaveBeenCalledWith({
-        body: registerRequest,
+      expect(clientSdk.registerRegisterApiAuthRegisterPost).toHaveBeenCalledWith({
+        requestBody: registerRequest,
       });
 
-      // Verify response structure matches UserResponse type
-      expect(result.data).toMatchObject({
-        id: expect.any(Number),
+      // Verify response structure matches UserRead type
+      expect(result).toMatchObject({
+        id: expect.any(String),
         username: expect.any(String),
-        is_admin: expect.any(Boolean),
+        email: expect.any(String),
+        is_superuser: expect.any(Boolean),
         is_active: expect.any(Boolean),
+        is_verified: expect.any(Boolean),
         created_at: expect.any(String),
       });
     });
 
     it('WhenRegisterRequestValidated_ThenRequiredFieldsPresent', () => {
       // Test that TypeScript enforces required fields
-      const validRequest: RegisterRequest = {
+      const validRequest: UserCreate = {
         username: 'test',
         password: 'pass',
+        email: 'test@example.com',
       };
 
       // These should be required fields
@@ -70,56 +72,37 @@ describe('Auth API Contract Tests', () => {
 
   describe('Login Endpoint Contract', () => {
     it('WhenLoginCalledWithValidData_ThenReturnsCorrectStructure', async () => {
-      const loginRequest: LoginRequest = {
+      const loginFormData: Body_auth_jwt_bearer_login_api_auth_login_post = {
         username: 'testuser',
         password: 'testpass123',
       };
 
       // Mock successful login response
-      const mockAuthResponse: AuthResponse = {
-        token: 'mock-jwt-token',
-        user: {
-          id: 1,
-          username: 'testuser',
-          is_admin: false,
-          is_active: true,
-          created_at: '2024-01-01T00:00:00Z',
-          last_login: '2024-01-01T12:00:00Z',
-        },
-        expires_at: '2024-01-02T00:00:00Z',
+      const mockAuthResponse: BearerResponse = {
+        access_token: 'mock-jwt-token',
+        token_type: 'bearer',
       };
 
-      vi.mocked(clientSdk.loginApiAuthLoginPost).mockResolvedValueOnce({
-        data: mockAuthResponse,
-        request: new Request('http://test.com'),
-        response: new Response('', { status: 200 }),
-      });
+      vi.mocked(clientSdk.authJwtBearerLoginApiAuthLoginPost).mockResolvedValueOnce(mockAuthResponse);
 
-      const result = await clientSdk.loginApiAuthLoginPost({
-        body: loginRequest,
+      const result = await clientSdk.authJwtBearerLoginApiAuthLoginPost({
+        formData: loginFormData,
       });
 
       // Verify request structure
-      expect(clientSdk.loginApiAuthLoginPost).toHaveBeenCalledWith({
-        body: loginRequest,
+      expect(clientSdk.authJwtBearerLoginApiAuthLoginPost).toHaveBeenCalledWith({
+        formData: loginFormData,
       });
 
-      // Verify response structure matches AuthResponse type
-      expect(result.data).toMatchObject({
-        token: expect.any(String),
-        user: expect.objectContaining({
-          id: expect.any(Number),
-          username: expect.any(String),
-          is_admin: expect.any(Boolean),
-          is_active: expect.any(Boolean),
-          created_at: expect.any(String),
-        }),
-        expires_at: expect.any(String),
+      // Verify response structure matches BearerResponse type
+      expect(result).toMatchObject({
+        access_token: expect.any(String),
+        token_type: expect.any(String),
       });
     });
 
     it('WhenLoginRequestValidated_ThenRequiredFieldsPresent', () => {
-      const validRequest: LoginRequest = {
+      const validRequest: Body_auth_jwt_bearer_login_api_auth_login_post = {
         username: 'test',
         password: 'pass',
       };
@@ -133,18 +116,19 @@ describe('Auth API Contract Tests', () => {
   describe('Response Type Validation', () => {
     it('WhenUserResponseValidated_ThenStructureCorrect', () => {
       const userResponse: UserResponse = {
-        id: 1,
+        id: '1',
         username: 'testuser',
-        is_admin: false,
+        email: 'test@example.com',
+        is_superuser: false,
         is_active: true,
         created_at: '2024-01-01T00:00:00Z',
         last_login: null,
       };
 
       // Verify all required fields are present
-      expect(userResponse.id).toBeTypeOf('number');
+      expect(userResponse.id).toBeTypeOf('string');
       expect(userResponse.username).toBeTypeOf('string');
-      expect(userResponse.is_admin).toBeTypeOf('boolean');
+      expect(userResponse.is_superuser).toBeTypeOf('boolean');
       expect(userResponse.is_active).toBeTypeOf('boolean');
       expect(userResponse.created_at).toBeTypeOf('string');
       
@@ -152,23 +136,14 @@ describe('Auth API Contract Tests', () => {
       expect(userResponse.last_login === null || typeof userResponse.last_login === 'string').toBe(true);
     });
 
-    it('WhenAuthResponseValidated_ThenStructureCorrect', () => {
-      const authResponse: AuthResponse = {
-        token: 'jwt-token',
-        user: {
-          id: 1,
-          username: 'testuser',
-          is_admin: false,
-          is_active: true,
-          created_at: '2024-01-01T00:00:00Z',
-          last_login: null,
-        },
-        expires_at: '2024-01-02T00:00:00Z',
+    it('WhenBearerResponseValidated_ThenStructureCorrect', () => {
+      const bearerResponse: BearerResponse = {
+        access_token: 'jwt-token',
+        token_type: 'bearer',
       };
 
-      expect(authResponse.token).toBeTypeOf('string');
-      expect(authResponse.user).toBeTypeOf('object');
-      expect(authResponse.expires_at).toBeTypeOf('string');
+      expect(bearerResponse.access_token).toBeTypeOf('string');
+      expect(bearerResponse.token_type).toBeTypeOf('string');
     });
   });
 });

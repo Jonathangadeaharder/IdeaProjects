@@ -6,7 +6,10 @@
 export type AnswerRequest = {
     session_id: string;
     question_id: string;
-    answer: string;
+    question_type?: string;
+    user_answer: string;
+    correct_answer?: string | null;
+    points?: number;
 };
 
 export type BearerResponse = {
@@ -39,13 +42,20 @@ export type Body_upload_video_to_series_api_videos_upload__series__post = {
     video_file: (Blob | File);
 };
 
+/**
+ * Request to bulk mark words as known/unknown
+ */
 export type BulkMarkRequest = {
     /**
-     * CEFR difficulty level to mark (A1, A2, B1, B2, C1, C2)
+     * CEFR difficulty level to mark
      */
     level: string;
     /**
-     * Whether to mark all words in the level as known (true) or unknown (false)
+     * Target language code (de, es, en, etc.)
+     */
+    target_language: string;
+    /**
+     * Whether to mark all words as known (true) or unknown (false)
      */
     known: boolean;
 };
@@ -113,6 +123,11 @@ export type FullPipelineRequest = {
 };
 
 /**
+ * Valid difficulty levels
+ */
+export type GameDifficulty = 'beginner' | 'intermediate' | 'advanced';
+
+/**
  * Game session model
  */
 export type GameSession = {
@@ -135,6 +150,11 @@ export type GameSession = {
     };
 };
 
+/**
+ * Valid game types
+ */
+export type GameType = 'vocabulary' | 'listening' | 'comprehension';
+
 export type HTTPValidationError = {
     detail?: Array<ValidationError>;
 };
@@ -147,24 +167,24 @@ export type LanguagePreferences = {
     target_language: string;
 };
 
-export type LogBatch = {
-    entries: Array<LogEntry>;
-    client_id?: string;
+/**
+ * Response containing supported languages
+ */
+export type LanguagesResponse = {
+    /**
+     * List of supported languages
+     */
+    languages: Array<SupportedLanguage>;
 };
 
-export type LogEntry = {
-    timestamp: string;
-    level: string;
-    component: string;
-    message: string;
-    data?: string;
-};
-
+/**
+ * Request to mark a word as known/unknown
+ */
 export type MarkKnownRequest = {
     /**
-     * The word to mark as known/unknown
+     * Unique concept identifier
      */
-    word: string;
+    concept_id: string;
     /**
      * Whether to mark the word as known (true) or unknown (false)
      */
@@ -211,10 +231,32 @@ export type SRTSegmentResponse = {
  * Request model for starting a game session
  */
 export type StartGameRequest = {
-    game_type: string;
-    difficulty?: string;
+    game_type: GameType;
+    difficulty?: GameDifficulty;
     video_id?: string | null;
     total_questions?: number;
+};
+
+/**
+ * Supported language information
+ */
+export type SupportedLanguage = {
+    /**
+     * Language code (de, es, en, etc.)
+     */
+    code: string;
+    /**
+     * Language name in English
+     */
+    name: string;
+    /**
+     * Language name in native script
+     */
+    native_name?: string | null;
+    /**
+     * Whether the language is currently supported
+     */
+    is_active?: boolean;
 };
 
 export type TranscribeRequest = {
@@ -379,6 +421,9 @@ export type VideoInfo = {
     duration?: number | null;
 };
 
+/**
+ * Vocabulary statistics across all levels
+ */
 export type VocabularyStats = {
     /**
      * Statistics by CEFR level with total and known counts
@@ -389,6 +434,14 @@ export type VocabularyStats = {
         };
     };
     /**
+     * Target language code
+     */
+    target_language: string;
+    /**
+     * Translation language code
+     */
+    translation_language?: string | null;
+    /**
      * Total number of vocabulary words across all levels
      */
     total_words: number;
@@ -398,19 +451,54 @@ export type VocabularyStats = {
     total_known: number;
 };
 
+/**
+ * Single vocabulary word with translations
+ */
 export type VocabularyWord = {
     /**
-     * The vocabulary word
+     * Unique concept identifier
+     */
+    concept_id: string;
+    /**
+     * The vocabulary word in target language
      */
     word: string;
     /**
-     * Definition of the word
+     * Translation in user's preferred language
      */
-    definition?: string | null;
+    translation?: string | null;
     /**
-     * CEFR difficulty level (A1, A2, B1, B2, C1, C2)
+     * Base form of the word
+     */
+    lemma?: string | null;
+    /**
+     * CEFR difficulty level
      */
     difficulty_level: string;
+    /**
+     * Part of speech (noun, verb, adjective, etc.)
+     */
+    semantic_category?: string | null;
+    /**
+     * Domain category (education, technology, etc.)
+     */
+    domain?: string | null;
+    /**
+     * Gender (der/die/das for German, el/la for Spanish)
+     */
+    gender?: string | null;
+    /**
+     * Plural form if applicable
+     */
+    plural_form?: string | null;
+    /**
+     * IPA or phonetic representation
+     */
+    pronunciation?: string | null;
+    /**
+     * Grammar notes, usage notes, etc.
+     */
+    notes?: string | null;
     /**
      * Whether the user knows this word
      */
@@ -421,21 +509,19 @@ export type HealthCheckHealthGetResponse = unknown;
 
 export type TestEndpointTestGetResponse = unknown;
 
-export type AuthJwtBearerLogoutApiAuthLogoutPostResponse = unknown;
-
 export type AuthJwtBearerLoginApiAuthLoginPostData = {
     formData: Body_auth_jwt_bearer_login_api_auth_login_post;
 };
 
 export type AuthJwtBearerLoginApiAuthLoginPostResponse = BearerResponse;
 
+export type AuthJwtBearerLogoutApiAuthLogoutPostResponse = unknown;
+
 export type RegisterRegisterApiAuthRegisterPostData = {
     requestBody: UserCreate;
 };
 
 export type RegisterRegisterApiAuthRegisterPostResponse = UserRead;
-
-export type AuthTestPrefixApiAuthTestPrefixGetResponse = unknown;
 
 export type AuthGetCurrentUserApiAuthMeGetResponse = UserResponse;
 
@@ -535,15 +621,38 @@ export type GetTaskProgressApiProcessProgressTaskIdGetData = {
 
 export type GetTaskProgressApiProcessProgressTaskIdGetResponse = unknown;
 
-export type GetVocabularyStatsApiVocabularyStatsGetResponse = VocabularyStats;
+export type GetSupportedLanguagesApiVocabularyLanguagesGetResponse = LanguagesResponse;
 
-export type GetBlockingWordsApiVocabularyBlockingWordsGetData = {
-    segmentDuration?: number;
-    segmentStart?: number;
-    videoPath: string;
+export type GetVocabularyStatsApiVocabularyStatsGetData = {
+    /**
+     * Target language code
+     */
+    targetLanguage?: string;
+    /**
+     * Translation language code
+     */
+    translationLanguage?: string | null;
 };
 
-export type GetBlockingWordsApiVocabularyBlockingWordsGetResponse = unknown;
+export type GetVocabularyStatsApiVocabularyStatsGetResponse = VocabularyStats;
+
+export type GetVocabularyLevelApiVocabularyLibraryLevelGetData = {
+    level: string;
+    /**
+     * Maximum number of words to return
+     */
+    limit?: number;
+    /**
+     * Target language code
+     */
+    targetLanguage?: string;
+    /**
+     * Translation language code
+     */
+    translationLanguage?: string | null;
+};
+
+export type GetVocabularyLevelApiVocabularyLibraryLevelGetResponse = unknown;
 
 export type MarkWordKnownApiVocabularyMarkKnownPostData = {
     requestBody: MarkKnownRequest;
@@ -551,21 +660,22 @@ export type MarkWordKnownApiVocabularyMarkKnownPostData = {
 
 export type MarkWordKnownApiVocabularyMarkKnownPostResponse = unknown;
 
-export type PreloadVocabularyApiVocabularyPreloadPostResponse = unknown;
-
-export type GetLibraryStatsApiVocabularyLibraryStatsGetResponse = unknown;
-
-export type GetVocabularyLevelApiVocabularyLibraryLevelGetData = {
-    level: string;
-};
-
-export type GetVocabularyLevelApiVocabularyLibraryLevelGetResponse = unknown;
-
 export type BulkMarkLevelApiVocabularyLibraryBulkMarkPostData = {
     requestBody: BulkMarkRequest;
 };
 
 export type BulkMarkLevelApiVocabularyLibraryBulkMarkPostResponse = unknown;
+
+export type GetTestDataApiVocabularyTestDataGetResponse = unknown;
+
+export type GetBlockingWordsApiVocabularyBlockingWordsGetData = {
+    /**
+     * Path to the video file
+     */
+    videoPath: string;
+};
+
+export type GetBlockingWordsApiVocabularyBlockingWordsGetResponse = unknown;
 
 export type ProfileGetApiProfileGetResponse = UserProfile;
 
@@ -590,20 +700,6 @@ export type ProfileUpdateSettingsApiProfileSettingsPutData = {
 };
 
 export type ProfileUpdateSettingsApiProfileSettingsPutResponse = UserSettings;
-
-export type LogsReceiveFrontendApiLogsFrontendPostData = {
-    requestBody: LogBatch;
-};
-
-export type LogsReceiveFrontendApiLogsFrontendPostResponse = unknown;
-
-export type LogsListFilesApiLogsListGetResponse = unknown;
-
-export type LogsDownloadFileApiLogsDownloadFilenameGetData = {
-    filename: string;
-};
-
-export type LogsDownloadFileApiLogsDownloadFilenameGetResponse = unknown;
 
 export type ProgressGetUserApiProgressUserGetResponse = UserProgress;
 
@@ -690,20 +786,6 @@ export type $OpenApiTs = {
             };
         };
     };
-    '/api/auth/logout': {
-        post: {
-            res: {
-                /**
-                 * Successful Response
-                 */
-                200: unknown;
-                /**
-                 * Missing token or inactive user.
-                 */
-                401: unknown;
-            };
-        };
-    };
     '/api/auth/login': {
         post: {
             req: AuthJwtBearerLoginApiAuthLoginPostData;
@@ -723,6 +805,20 @@ export type $OpenApiTs = {
             };
         };
     };
+    '/api/auth/logout': {
+        post: {
+            res: {
+                /**
+                 * Successful Response
+                 */
+                200: unknown;
+                /**
+                 * Missing token or inactive user.
+                 */
+                401: unknown;
+            };
+        };
+    };
     '/api/auth/register': {
         post: {
             req: RegisterRegisterApiAuthRegisterPostData;
@@ -739,16 +835,6 @@ export type $OpenApiTs = {
                  * Validation Error
                  */
                 422: HTTPValidationError;
-            };
-        };
-    };
-    '/api/auth/test-prefix': {
-        get: {
-            res: {
-                /**
-                 * Successful Response
-                 */
-                200: unknown;
             };
         };
     };
@@ -1004,19 +1090,34 @@ export type $OpenApiTs = {
             };
         };
     };
-    '/api/vocabulary/stats': {
+    '/api/vocabulary/languages': {
         get: {
             res: {
                 /**
                  * Successful Response
                  */
-                200: VocabularyStats;
+                200: LanguagesResponse;
             };
         };
     };
-    '/api/vocabulary/blocking-words': {
+    '/api/vocabulary/stats': {
         get: {
-            req: GetBlockingWordsApiVocabularyBlockingWordsGetData;
+            req: GetVocabularyStatsApiVocabularyStatsGetData;
+            res: {
+                /**
+                 * Successful Response
+                 */
+                200: VocabularyStats;
+                /**
+                 * Validation Error
+                 */
+                422: HTTPValidationError;
+            };
+        };
+    };
+    '/api/vocabulary/library/{level}': {
+        get: {
+            req: GetVocabularyLevelApiVocabularyLibraryLevelGetData;
             res: {
                 /**
                  * Successful Response
@@ -1044,29 +1145,9 @@ export type $OpenApiTs = {
             };
         };
     };
-    '/api/vocabulary/preload': {
+    '/api/vocabulary/library/bulk-mark': {
         post: {
-            res: {
-                /**
-                 * Successful Response
-                 */
-                200: unknown;
-            };
-        };
-    };
-    '/api/vocabulary/library/stats': {
-        get: {
-            res: {
-                /**
-                 * Successful Response
-                 */
-                200: unknown;
-            };
-        };
-    };
-    '/api/vocabulary/library/{level}': {
-        get: {
-            req: GetVocabularyLevelApiVocabularyLibraryLevelGetData;
+            req: BulkMarkLevelApiVocabularyLibraryBulkMarkPostData;
             res: {
                 /**
                  * Successful Response
@@ -1079,9 +1160,19 @@ export type $OpenApiTs = {
             };
         };
     };
-    '/api/vocabulary/library/bulk-mark': {
-        post: {
-            req: BulkMarkLevelApiVocabularyLibraryBulkMarkPostData;
+    '/api/vocabulary/test-data': {
+        get: {
+            res: {
+                /**
+                 * Successful Response
+                 */
+                200: unknown;
+            };
+        };
+    };
+    '/api/vocabulary/blocking-words': {
+        get: {
+            req: GetBlockingWordsApiVocabularyBlockingWordsGetData;
             res: {
                 /**
                  * Successful Response
@@ -1149,46 +1240,6 @@ export type $OpenApiTs = {
                  * Successful Response
                  */
                 200: UserSettings;
-                /**
-                 * Validation Error
-                 */
-                422: HTTPValidationError;
-            };
-        };
-    };
-    '/api/logs/frontend': {
-        post: {
-            req: LogsReceiveFrontendApiLogsFrontendPostData;
-            res: {
-                /**
-                 * Successful Response
-                 */
-                200: unknown;
-                /**
-                 * Validation Error
-                 */
-                422: HTTPValidationError;
-            };
-        };
-    };
-    '/api/logs/list': {
-        get: {
-            res: {
-                /**
-                 * Successful Response
-                 */
-                200: unknown;
-            };
-        };
-    };
-    '/api/logs/download/{filename}': {
-        get: {
-            req: LogsDownloadFileApiLogsDownloadFilenameGetData;
-            res: {
-                /**
-                 * Successful Response
-                 */
-                200: unknown;
                 /**
                  * Validation Error
                  */

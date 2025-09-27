@@ -1,0 +1,43 @@
+{
+  "session_id": "85e0cd80-b2d0-4e28-9692-64cf05fec207",
+  "user_id": "466ba1a1-9e4d-4907-98cc-f84019d3b59e",
+  "game_type": "vocabulary",
+  "difficulty": "intermediate",
+  "video_id": null,
+  "start_time": "2025-09-25T10:40:28.979043",
+  "end_time": null,
+  "status": "active",
+  "score": 0,
+  "max_score": 100,
+  "questions_answered": 0,
+  "correct_answers": 0,
+  "current_question": 0,
+  "total_questions": 10,
+  "session_data": {
+    "questions": [
+      {
+        "question_id": "1b61fa28-9e4e-435d-99f5-2e096e76d4c9",
+        "question_type": "translation",
+        "question_text": "What is the translation of 'beautiful'?",
+        "options": null,
+        "correct_answer": "hermoso",
+        "user_answer": null,
+        "is_correct": null,
+        "points": 10,
+        "timestamp": null
+      },
+      {
+        "question_id": "d9d26fa3-98d0-48f4-b5b6-3f999a098de2",
+        "question_type": "translation",
+        "question_text": "What is the translation of 'understand'?",
+        "options": null,
+        "correct_answer": "entender",
+        "user_answer": null,
+        "is_correct": null,
+        "points": 10,
+        "timestamp": null
+      }
+    ],
+    "created_at": "2025-09-25T10:40:28.979503"
+  }
+}

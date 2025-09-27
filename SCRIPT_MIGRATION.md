@@ -84,7 +84,7 @@ Update your build scripts to use the new commands:
 # Old
 - run: Backend/scripts/run_tests_postgres.sh
 
-# New  
+# New
 - run: python scripts/run_postgres_tests.py
 ```
 

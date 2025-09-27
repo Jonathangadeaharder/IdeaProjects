@@ -11,13 +11,13 @@ your workflows.
   # Cross-platform unified script (recommended)
   python scripts/generate_typescript_client.py
   ```
-  
+
   **Legacy alternatives** (deprecated, will be removed):
   ```bash
   # Manual OpenAPI export (if needed)
   cd Backend
   python export_openapi.py --output ../openapi_spec.json
-  
+
   # Manual client generation (if needed)
   cd Frontend
   npm run generate-client
@@ -31,10 +31,10 @@ your workflows.
   ```bash
   # Run all tests with professional reporting
   python scripts/test_management.py
-  
+
   # Run contract tests specifically
   python scripts/test_management.py --category contract
-  
+
   # Run failed tests only
   python scripts/test_management.py --failed-only
   ```
@@ -44,7 +44,7 @@ your workflows.
   cd Backend
   python -m pytest -m contract
   ```
-  
+
 - **Frontend contract suites**: See `Frontend/src/test/contract/`.
   ```bash
   cd Frontend

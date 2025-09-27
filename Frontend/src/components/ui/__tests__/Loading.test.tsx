@@ -6,7 +6,7 @@ import { Loading } from '../Loading'
 // Helper to render with theme
 const renderWithTheme = (component: React.ReactElement) => {
   return render(
-    <ThemeProvider theme={global.mockTheme}>
+    <ThemeProvider theme={(global as any).mockTheme}>
       {component}
     </ThemeProvider>
   )
@@ -178,7 +178,7 @@ describe('Loading Component', () => {
       expect(screen.getByText('Some text')).toBeInTheDocument()
 
       rerender(
-        <ThemeProvider theme={global.mockTheme}>
+        <ThemeProvider theme={(global as any).mockTheme}>
           <Loading text="" />
         </ThemeProvider>
       )
@@ -216,7 +216,7 @@ describe('Loading Component', () => {
       expect(screen.getByText('Loading 25%')).toBeInTheDocument()
 
       rerender(
-        <ThemeProvider theme={global.mockTheme}>
+        <ThemeProvider theme={(global as any).mockTheme}>
           <Loading text="Loading 75%" />
         </ThemeProvider>
       )
@@ -290,7 +290,7 @@ describe('Loading Component', () => {
       expect(screen.getByTestId('loading')).toBeInTheDocument()
 
       rerender(
-        <ThemeProvider theme={global.mockTheme}>
+        <ThemeProvider theme={(global as any).mockTheme}>
           <Loading variant="bars" data-testid="loading" />
         </ThemeProvider>
       )
@@ -342,7 +342,7 @@ describe('Loading Component', () => {
 
       // Re-render with same props should not cause extra renders
       rerender(
-        <ThemeProvider theme={global.mockTheme}>
+        <ThemeProvider theme={(global as any).mockTheme}>
           <TestComponent />
         </ThemeProvider>
       )

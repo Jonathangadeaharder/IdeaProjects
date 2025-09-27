@@ -85,6 +85,12 @@ export class TestOrchestrator extends EventEmitter {
   
   constructor() {
     super();
+    this.contractValidation = {
+      openApiSpec: null,
+      endpoints: new Map(),
+      violations: []
+    };
+    this.axiosInstance = axios.create();
     this.initializePortPool();
     this.setupAxiosInterceptors();
   }
@@ -188,10 +194,10 @@ export class TestOrchestrator extends EventEmitter {
         endpoints.set(key, {
           path,
           method: method.toUpperCase(),
-          requestSchema: definition.requestBody?.content?.['application/json']?.schema,
-          responseSchema: definition.responses?.['200']?.content?.['application/json']?.schema,
-          headers: definition.parameters?.filter((p: any) => p.in === 'header'),
-          queryParams: definition.parameters?.filter((p: any) => p.in === 'query'),
+          requestSchema: (definition as any).requestBody?.content?.['application/json']?.schema,
+          responseSchema: (definition as any).responses?.['200']?.content?.['application/json']?.schema,
+          headers: (definition as any).parameters?.filter((p: any) => p.in === 'header'),
+          queryParams: (definition as any).parameters?.filter((p: any) => p.in === 'query'),
         });
       }
     }
@@ -311,15 +317,18 @@ export class TestOrchestrator extends EventEmitter {
    */
   private async getBackendConfig(): Promise<ServerConfig> {
     const backendPort = await this.getAvailablePort();
-    
+    const projectRoot = path.resolve(__dirname, '..', '..');
+    const backendPath = path.resolve(projectRoot, 'Backend');
+    const runBackendScript = path.resolve(backendPath, 'run_backend.py');
+
     return {
       name: 'backend',
       command: 'powershell.exe',
       args: [
         '-Command',
-        `$env:TESTING='1'; $env:LANGPLUG_RELOAD='false'; $env:PORT='${backendPort}'; python E:\\Users\\Jonandrop\\IdeaProjects\\LangPlug\\Backend\\run_backend.py`
+        `$env:TESTING='1'; $env:LANGPLUG_RELOAD='false'; $env:PORT='${backendPort}'; python "${runBackendScript}"`
       ],
-      cwd: path.resolve('E:\\Users\\Jonandrop\\IdeaProjects\\LangPlug\\Backend'),
+      cwd: backendPath,
       env: {
         TESTING: '1',
         LANGPLUG_RELOAD: 'false',
@@ -343,12 +352,14 @@ export class TestOrchestrator extends EventEmitter {
    */
   private async getFrontendConfig(): Promise<ServerConfig> {
     const frontendPort = await this.getAvailablePort();
-    
+    const projectRoot = path.resolve(__dirname, '..', '..');
+    const frontendPath = path.resolve(projectRoot, 'Frontend');
+
     return {
       name: 'frontend',
       command: 'npm',
       args: ['run', 'dev', '--', '--port', frontendPort.toString(), '--host', '0.0.0.0'],
-      cwd: path.resolve('E:\\Users\\Jonandrop\\IdeaProjects\\LangPlug\\Frontend'),
+      cwd: frontendPath,
       env: {
         PORT: frontendPort.toString(),
         VITE_API_URL: `http://localhost:${this.environments.values().next().value?.backend.config.ports[0] || 8000}`,
@@ -382,6 +393,8 @@ export class TestOrchestrator extends EventEmitter {
         cwd: config.cwd,
         env: { ...process.env, ...config.env },
         shell: true,
+        // Create new process group for better process management
+        detached: process.platform !== 'win32',
       });
       
       instance.pid = instance.process.pid;
@@ -444,27 +457,85 @@ export class TestOrchestrator extends EventEmitter {
   }
 
   /**
-   * Stop a server instance
+   * Stop a server instance with robust cleanup and error handling
    */
   async stopServer(instance: ServerInstance): Promise<void> {
-    if (instance.process) {
-      return new Promise((resolve) => {
-        const timeout = setTimeout(() => {
-          instance.process?.kill('SIGKILL');
-          resolve();
-        }, instance.config.shutdownTimeout || 5000);
-        
-        instance.process.once('exit', () => {
-          clearTimeout(timeout);
-          if (instance.port) {
-            this.releasePort(instance.port);
-          }
-          resolve();
-        });
-        
-        instance.process.kill('SIGTERM');
-      });
+    if (!instance.process) {
+      // Cleanup resources even if process doesn't exist
+      if (instance.port) {
+        this.releasePort(instance.port);
+      }
+      instance.ready = false;
+      return;
     }
+
+    return new Promise((resolve) => {
+      let isResolved = false;
+      const shutdownTimeout = instance.config.shutdownTimeout || 5000;
+
+      const cleanup = () => {
+        if (isResolved) return;
+        isResolved = true;
+
+        // Always cleanup resources
+        if (instance.port) {
+          this.releasePort(instance.port);
+        }
+        instance.ready = false;
+        instance.process = undefined;
+        resolve();
+      };
+
+      // Force kill timeout
+      const forceKillTimeout = setTimeout(() => {
+        console.warn(`Force killing ${instance.config.name} process after ${shutdownTimeout}ms`);
+        try {
+          instance.process?.kill('SIGKILL');
+        } catch (error) {
+          console.error(`Error force killing process: ${error}`);
+        }
+        cleanup();
+      }, shutdownTimeout);
+
+      // Graceful shutdown timeout (earlier than force kill)
+      const gracefulTimeout = setTimeout(() => {
+        try {
+          instance.process?.kill('SIGKILL');
+        } catch (error) {
+          console.error(`Error during graceful kill: ${error}`);
+        }
+      }, Math.max(shutdownTimeout - 1000, 1000));
+
+      // Handle process exit
+      instance.process?.once('exit', (code, signal) => {
+        clearTimeout(forceKillTimeout);
+        clearTimeout(gracefulTimeout);
+        console.log(`${instance.config.name} exited with code ${code}, signal ${signal}`);
+        cleanup();
+      });
+
+      // Handle process error
+      instance.process?.once('error', (error) => {
+        clearTimeout(forceKillTimeout);
+        clearTimeout(gracefulTimeout);
+        console.error(`${instance.config.name} process error: ${error}`);
+        cleanup();
+      });
+
+      // Start graceful shutdown
+      try {
+        instance.process?.kill('SIGTERM');
+      } catch (error) {
+        console.error(`Error sending SIGTERM to ${instance.config.name}: ${error}`);
+        // If we can't send SIGTERM, try SIGKILL immediately
+        try {
+          instance.process?.kill('SIGKILL');
+        } catch (killError) {
+          console.error(`Error sending SIGKILL to ${instance.config.name}: ${killError}`);
+        }
+        cleanup();
+      }
+    });
   }
 
   /**
@@ -505,7 +576,7 @@ export class TestOrchestrator extends EventEmitter {
     // Update frontend config with backend URL
     environment.frontend.config.env = {
       ...environment.frontend.config.env,
-      VITE_API_URL: environment.backend.url,
+      VITE_API_URL: environment.backend.url || `http://localhost:${environment.backend.port}`,
     };
     
     // Start frontend
@@ -558,16 +629,41 @@ export class TestOrchestrator extends EventEmitter {
   }
 
   /**
-   * Cleanup all environments
+   * Cleanup all environments with robust error handling
    */
   async cleanup(): Promise<void> {
-    const promises: Promise<void>[] = [];
-    
-    for (const envId of this.environments.keys()) {
-      promises.push(this.stopEnvironment(envId));
+    const envIds = Array.from(this.environments.keys());
+    console.log(`Starting cleanup of ${envIds.length} environments`);
+
+    // Use allSettled to ensure all cleanup attempts complete even if some fail
+    const results = await Promise.allSettled(
+      envIds.map(async (envId) => {
+        try {
+          console.log(`Cleaning up environment: ${envId}`);
+          await this.stopEnvironment(envId);
+          console.log(`Successfully cleaned up environment: ${envId}`);
+        } catch (error) {
+          console.error(`Failed to cleanup environment ${envId}:`, error);
+          // Force cleanup even on error
+          this.environments.delete(envId);
+          throw error;
+        }
+      })
+    );
+
+    // Log any failures but don't throw
+    const failures = results.filter(result => result.status === 'rejected');
+    if (failures.length > 0) {
+      console.error(`${failures.length} environments failed to cleanup properly`);
+      failures.forEach((failure, index) => {
+        console.error(`Environment ${envIds[index]} cleanup error:`, failure.reason);
+      });
     }
-    
-    await Promise.all(promises);
+
+    // Final safety cleanup - remove any remaining environments
+    this.environments.clear();
+
+    console.log('Cleanup completed');
     this.emit('cleanup:complete');
   }
 }

@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import type { GameSession, VideoSegment, VocabularyWord } from '@/types'
-import { vocabularyService } from '@/services/api'
+import { getBlockingWordsApiVocabularyBlockingWordsGet, markWordKnownApiVocabularyMarkKnownPost } from '@/client/services.gen'
 
 interface GameState {
   gameSession: GameSession | null
@@ -51,12 +51,14 @@ export const useGameStore = create<GameState>((set, get) => ({
     set({ isProcessing: true })
     
     try {
-      const words = await vocabularyService.getBlockingWords(
-        gameSession.video_path,
-        segmentStart,
-        300 // 5 minutes
-      )
-      
+      const blockingWordsResponse = await getBlockingWordsApiVocabularyBlockingWordsGet({
+        videoPath: gameSession.video_path,
+      }) as { blocking_words?: VocabularyWord[] } | VocabularyWord[]
+
+      const words = Array.isArray(blockingWordsResponse)
+        ? blockingWordsResponse
+        : blockingWordsResponse?.blocking_words ?? []
+
       set({
         currentWords: words,
         currentWordIndex: 0,
@@ -73,12 +75,22 @@ export const useGameStore = create<GameState>((set, get) => ({
     if (!gameSession) return
 
     try {
-      await vocabularyService.markWordAsKnown(word, known)
+      const targetWord = currentWords.find(w => w.word === word)
+      if (!targetWord) {
+        throw new Error(`Unknown word: ${word}`)
+      }
+
+      await markWordKnownApiVocabularyMarkKnownPost({
+        requestBody: {
+          concept_id: targetWord.concept_id,
+          known,
+        },
+      })
       
       // Update local progress
       const updatedProgress = {
         ...gameSession.user_progress,
-        [word]: known
+        [targetWord.concept_id]: known
       }
 
       // Update current words

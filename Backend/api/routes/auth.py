@@ -14,11 +14,6 @@ from ..models.auth import UserResponse
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["authentication"])
 
-@router.get("/test-prefix", name="auth_test_prefix")
-async def test_prefix_endpoint():
-    """Test endpoint to verify router prefix configuration"""
-    return {"message": "Auth router is working", "prefix": "should be /auth", "timestamp": "2025-01-14"}
-
 
 # All authentication endpoints are now handled by FastAPI-Users
 # Register: POST /auth/register

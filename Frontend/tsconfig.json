@@ -25,7 +25,11 @@
       "@/services/*": ["./services/*"],
       "@/store/*": ["./store/*"],
       "@/types/*": ["./types/*"],
-      "@/styles/*": ["./styles/*"]
+      "@/styles/*": ["./styles/*"],
+      "@/client/*": ["./client/*"],
+      "@/contexts/*": ["./contexts/*"],
+      "@/utils/*": ["./utils/*"],
+      "@/test/*": ["./test/*"]
     }
   },
   "include": ["src"],

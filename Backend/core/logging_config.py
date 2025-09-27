@@ -25,11 +25,11 @@ def configure_logging():
         logging.FileHandler(log_file, encoding="utf-8")
     ]
 
-    # In debug mode keep warnings/errors on console, otherwise stay silent.
-    if settings.debug:
-        console_handler = logging.StreamHandler(sys.stderr)
-        console_handler.setLevel(logging.WARNING)
-        log_handlers.append(console_handler)
+    # Always show startup progress and errors on console
+    console_handler = logging.StreamHandler(sys.stderr)
+    # Show INFO level for startup progress
+    console_handler.setLevel(logging.INFO)
+    log_handlers.append(console_handler)
 
     logging.basicConfig(
         format="%(message)s",

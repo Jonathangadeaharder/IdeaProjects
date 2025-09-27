@@ -8,6 +8,15 @@ import traceback
 import warnings
 from pathlib import Path
 
+# Configure console encoding for Windows compatibility
+if sys.platform.startswith('win'):
+    import codecs
+    # Set stdout and stderr to use UTF-8 encoding
+    sys.stdout = codecs.getwriter('utf-8')(sys.stdout.detach())
+    sys.stderr = codecs.getwriter('utf-8')(sys.stderr.detach())
+    # Set environment variable for Python to use UTF-8
+    os.environ['PYTHONIOENCODING'] = 'utf-8'
+
 # Add current directory to path
 sys.path.insert(0, str(Path(__file__).parent))
 

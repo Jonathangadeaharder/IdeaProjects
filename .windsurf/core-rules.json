@@ -1,0 +1,30 @@
+{
+  "name": "core-rules",
+  "description": "Core Windsurf development rules",
+  "rules": [
+    "Never mention Claude in commits - Use generic language for AI-generated content markers",
+    "Format: <type>: <description> (imperative, lowercase, ≤50 chars)",
+    "Types: feat, fix, docs, refactor, test, chore",
+    "Focus: One logical change per commit",
+    "Keep functions < 20 lines, do one thing well, < 4 parameters",
+    "Use intention-revealing, pronounceable, searchable names",
+    "Explain 'why' not 'what' in comments, remove dead code",
+    "Use exceptions, handle at appropriate levels",
+    "Classes and functions have one clear purpose",
+    "60% minimum (acceptable), 80% target (commendable) test coverage",
+    "Test interfaces, not implementations",
+    "Tests must be deterministic, isolated, and fast",
+    "Never treat 4xx/5xx/timeout responses as success",
+    "Do not rely on global process state, seeded databases, or external services",
+    "Never introduce skip, xfail, or similar tooling to bypass a failing path",
+    "Verify observable behavior and return values instead of mock call counts",
+    "Assert the exact status code and contractually required payload",
+    "Never embed real credentials, bearer tokens, or host-specific secrets",
+    "Never hard-code OS-specific paths",
+    "Use path.resolve() or path.join() instead of string concatenation",
+    "Separation of Concerns: Distinct features with minimal overlap",
+    "Modularity: Independent development, testing, deployment",
+    "Scalability: Design for horizontal scaling",
+    "Maintainability: Simplicity over cleverness"
+  ]
+}

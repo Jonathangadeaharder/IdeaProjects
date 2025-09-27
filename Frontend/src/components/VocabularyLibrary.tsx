@@ -2,7 +2,12 @@ import React, { useState, useEffect } from 'react'
 import { toast } from 'react-hot-toast'
 import { useNavigate } from 'react-router-dom'
 import styled from 'styled-components'
-import { vocabularyService } from '@/services/api'
+import {
+  bulkMarkLevelApiVocabularyLibraryBulkMarkPost,
+  getVocabularyLevelApiVocabularyLibraryLevelGet,
+  getVocabularyStatsApiVocabularyStatsGet,
+  markWordKnownApiVocabularyMarkKnownPost,
+} from '@/client/services.gen'
 import { logger } from '@/services/logger'
 import type { VocabularyLevel, VocabularyStats, VocabularyLibraryWord } from '@/types'
 
@@ -293,7 +298,7 @@ export const VocabularyLibrary: React.FC = () => {
 
   const loadStats = async () => {
     try {
-      const statsData = await vocabularyService.getVocabularyStats()
+      const statsData = await getVocabularyStatsApiVocabularyStatsGet()
       setStats(statsData)
     } catch (error) {
       toast.error('Failed to load vocabulary statistics')
@@ -303,8 +308,21 @@ export const VocabularyLibrary: React.FC = () => {
   const loadLevelData = async (level: string) => {
     setLoading(true)
     try {
-      const data = await vocabularyService.getVocabularyLevel(level)
-      setLevelData(data)
+      const data = await getVocabularyLevelApiVocabularyLibraryLevelGet({
+        level,
+        targetLanguage: 'de',
+      }) as VocabularyLevel
+
+      const normalizedLevel: VocabularyLevel = {
+        ...data,
+        words: (data.words ?? []).map(word => ({
+          ...word,
+          id: word.concept_id,
+          known: Boolean(word.known),
+        })),
+      }
+
+      setLevelData(normalizedLevel)
     } catch (error) {
       toast.error(`Failed to load ${level} vocabulary`)
     } finally {
@@ -322,7 +340,12 @@ export const VocabularyLibrary: React.FC = () => {
     })
     
     try {
-      await vocabularyService.markWordAsKnown(word.word, newStatus)
+      await markWordKnownApiVocabularyMarkKnownPost({
+        requestBody: {
+          concept_id: word.concept_id,
+          known: newStatus,
+        },
+      })
       
       // Update local state
       if (levelData) {
@@ -367,7 +390,13 @@ export const VocabularyLibrary: React.FC = () => {
     
     setBulkLoading(true)
     try {
-      const result = await vocabularyService.bulkMarkLevel(activeLevel, known)
+      const result = await bulkMarkLevelApiVocabularyLibraryBulkMarkPost({
+        requestBody: {
+          level: activeLevel,
+          known,
+          target_language: 'de',
+        },
+      }) as { success?: boolean }
       logger.info('VocabularyLibrary', 'Bulk mark operation completed', {
         level: activeLevel,
         known,

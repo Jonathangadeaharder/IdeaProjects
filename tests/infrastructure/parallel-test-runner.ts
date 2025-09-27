@@ -84,8 +84,9 @@ export class ParallelTestRunner extends EventEmitter {
     
     // Load OpenAPI spec if contract validation is enabled
     if (options.contractValidation) {
+      const projectRoot = path.resolve(__dirname, '..', '..');
       await this.contractValidator.loadSpec(
-        path.resolve('E:\\Users\\Jonandrop\\IdeaProjects\\LangPlug\\openapi_spec.json')
+        path.resolve(projectRoot, 'openapi_spec.json')
       );
     }
 
@@ -337,8 +338,8 @@ export class ParallelTestRunner extends EventEmitter {
         duration: Date.now() - startTime,
         failures: [{
           test: 'Test execution',
-          error: error.message || 'Unknown error',
-          stack: error.stack,
+          error: (error as Error).message || 'Unknown error',
+          stack: (error as Error).stack,
         }],
       };
     }
@@ -391,30 +392,32 @@ export class ParallelTestRunner extends EventEmitter {
         NODE_ENV: 'test',
       };
       
+      const projectRoot = path.resolve(__dirname, '..', '..');
+
       switch (suite.type) {
         case 'unit':
           if (file.endsWith('.py')) {
             command = 'python';
             args = ['-m', 'pytest', file, '-v', '--tb=short'];
-            cwd = path.resolve('E:\\Users\\Jonandrop\\IdeaProjects\\LangPlug\\Backend');
+            cwd = path.resolve(projectRoot, 'Backend');
           } else {
             command = 'npm';
             args = ['run', 'test', '--', file];
-            cwd = path.resolve('E:\\Users\\Jonandrop\\IdeaProjects\\LangPlug\\Frontend');
+            cwd = path.resolve(projectRoot, 'Frontend');
           }
           break;
-          
+
         case 'integration':
         case 'contract':
           command = 'npm';
           args = ['run', 'test', '--', file];
-          cwd = path.resolve('E:\\Users\\Jonandrop\\IdeaProjects\\LangPlug\\tests');
+          cwd = path.resolve(projectRoot, 'tests');
           break;
-          
+
         case 'e2e':
           command = 'npm';
           args = ['run', 'test:e2e', '--', file];
-          cwd = path.resolve('E:\\Users\\Jonandrop\\IdeaProjects\\LangPlug\\tests\\e2e');
+          cwd = path.resolve(projectRoot, 'tests', 'e2e');
           env.E2E_FRONTEND_URL = environment.frontend.url;
           env.E2E_BACKEND_URL = environment.backend.url;
           break;

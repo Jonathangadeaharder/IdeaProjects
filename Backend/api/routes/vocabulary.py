@@ -1,113 +1,73 @@
-"""Vocabulary management API routes"""
-import json
+"""Multilingual vocabulary management API routes"""
 import logging
 from pathlib import Path
+from typing import Optional
+from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import select, func as sql_func
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from core.config import settings
 from core.database import get_async_session
 from core.dependencies import current_active_user
-from database.models import User
-from utils.srt_parser import SRTParser
-from services.vocabulary_preload_service import VocabularyPreloadService, get_vocabulary_preload_service
+from database.models import (
+    User, VocabularyConcept, VocabularyTranslation,
+    Language, UserLearningProgress
+)
 
 from ..models.vocabulary import (
-    BulkMarkRequest,
-    MarkKnownRequest,
+    VocabularyStats,
     VocabularyLevel,
     VocabularyLibraryWord,
-    VocabularyStats,
-    VocabularyWord,
+    MarkKnownRequest,
+    BulkMarkRequest,
+    LanguagesResponse,
+    SupportedLanguage,
 )
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["vocabulary"])
 
 
-async def extract_blocking_words_for_segment(
-    srt_path: str, start: int, duration: int, user_id: int, db: AsyncSession
-) -> list[VocabularyWord]:
-    """Extract blocking words from a specific time segment"""
+@router.get("/languages", response_model=LanguagesResponse, name="get_supported_languages")
+async def get_supported_languages(
+    db: AsyncSession = Depends(get_async_session)
+):
+    """Get list of supported languages"""
     try:
-        # Parse the SRT file
-        srt_parser = SRTParser()
-        segments = srt_parser.parse_file(srt_path)
+        result = await db.execute(
+            select(Language).where(Language.is_active == True)
+        )
+        languages = result.scalars().all()
 
-        # Filter segments within the time range
-        end_time = start + duration
-        relevant_segments = [
-            seg for seg in segments
-            if seg.start_time <= end_time and seg.end_time >= start
+        supported_languages = [
+            SupportedLanguage(
+                code=lang.code,
+                name=lang.name,
+                native_name=lang.native_name,
+                is_active=lang.is_active
+            )
+            for lang in languages
         ]
 
-        if not relevant_segments:
-            logger.warning(f"No segments found for time range {start}-{end_time}")
-            return []
-
-        # Get subtitle processor for processing
-        from core.dependencies import get_subtitle_processor
-
-        # Get the actual user from database using user_id
-        try:
-            # Get user by ID from database
-            stmt = select(User).where(User.id == user_id)
-            result = await db.execute(stmt)
-            current_user = result.scalar_one_or_none()
-
-            if not current_user:
-                raise ValueError(f"User with id {user_id} not found in database")
-        except Exception as e:
-            logger.error(f"Could not get user from database: {e}")
-            raise HTTPException(status_code=404, detail=f"User with id {user_id} not found")
-
-        # Use subtitle processor for vocabulary extraction
-        subtitle_processor = get_subtitle_processor(db)
-
-        # Process segments through subtitle processor to get blocking words
-        # Use A1 level as default for blocking words detection
-        result = await subtitle_processor.process_srt_file(srt_path, user_id, "A1", "de")
-
-        # Check for processing errors first
-        if "error" in result.get("statistics", {}):
-            error_msg = result["statistics"]["error"]
-            logger.error(f"[VOCABULARY ERROR] Subtitle processing failed: {error_msg}")
-            raise HTTPException(status_code=500, detail=f"Vocabulary extraction failed: {error_msg}")
-
-        # Extract blocking words from the result
-        blocking_words = result.get("blocking_words", [])
-
-        logger.info(f"Found {len(blocking_words)} blocking words for user {user_id} in segment {start}-{end_time}")
-
-        # Filter words that fall within our time segment
-        # Note: This is a simplified approach - in a more sophisticated implementation,
-        # you'd track word timing more precisely
-        segment_words = []
-        for word in blocking_words:
-            # For now, include all blocking words from relevant segments
-            # This could be enhanced to check actual word timing
-            segment_words.append(word)
-
-        return segment_words[:10]  # Limit to 10 words for UI performance
+        return LanguagesResponse(languages=supported_languages)
 
     except Exception as e:
-        logger.error(f"Error in extract_blocking_words_for_segment: {e!s}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Vocabulary extraction failed: {e!s}")
+        logger.error(f"Error getting supported languages: {e}")
+        raise HTTPException(status_code=500, detail=f"Error retrieving languages: {e}")
 
 
 @router.get("/stats", response_model=VocabularyStats, name="get_vocabulary_stats")
 async def get_vocabulary_stats_endpoint(
     current_user: User = Depends(current_active_user),
     db: AsyncSession = Depends(get_async_session),
-    service: VocabularyPreloadService = Depends(get_vocabulary_preload_service)
+    target_language: str = Query("de", description="Target language code"),
+    translation_language: Optional[str] = Query(None, description="Translation language code")
 ):
     """Get vocabulary statistics for the current user"""
     try:
-        # Get basic stats from database
-        db_stats = await service.get_vocabulary_stats(db)
-
         # Initialize default stats with CEFR levels
         stats = VocabularyStats(
             levels={
@@ -118,211 +78,119 @@ async def get_vocabulary_stats_endpoint(
                 "C1": {"total_words": 0, "user_known": 0},
                 "C2": {"total_words": 0, "user_known": 0}
             },
+            target_language=target_language,
+            translation_language=translation_language,
             total_words=0,
             total_known=0
         )
 
-        # Process each level
-        total_words = 0
-        total_known = 0
-
+        # Get total words per level
         for level in ["A1", "A2", "B1", "B2", "C1", "C2"]:
-            # Get known words for this user and level
-            known_words = await service.get_user_known_words(current_user.id, level, db)
+            # Count concepts for this level
+            level_count_result = await db.execute(
+                select(sql_func.count(VocabularyConcept.id)).where(
+                    VocabularyConcept.difficulty_level == level
+                )
+            )
+            level_total = level_count_result.scalar() or 0
 
-            # Get total words for this level from database stats
-            level_total = 0
-            if level in db_stats:
-                level_total = db_stats[level].get("total_words", 0)
+            # Count known words for this user and level
+            known_count_result = await db.execute(
+                select(sql_func.count(UserLearningProgress.id)).where(
+                    UserLearningProgress.user_id == str(current_user.id),
+                    VocabularyConcept.difficulty_level == level
+                ).join(VocabularyConcept, UserLearningProgress.concept_id == VocabularyConcept.id)
+            )
+            known_count = known_count_result.scalar() or 0
 
             # Update level stats
             stats.levels[level] = {
                 "total_words": level_total,
-                "user_known": len(known_words)
+                "user_known": known_count
             }
 
-            total_words += level_total
-            total_known += len(known_words)
-
-        stats.total_words = total_words
-        stats.total_known = total_known
+            stats.total_words += level_total
+            stats.total_known += known_count
 
         logger.info(f"Retrieved vocabulary stats for user {current_user.id}: {stats}")
         return stats
 
     except Exception as e:
-        logger.error(f"Error getting vocabulary stats for user {current_user.id}: {e!s}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Error retrieving vocabulary stats: {e!s}")
-
-
-@router.get("/blocking-words", name="get_blocking_words")
-async def get_blocking_words(
-    video_path: str,
-    segment_start: int = 0,
-    segment_duration: int = 300,  # 5 minutes default
-    current_user: User = Depends(current_active_user),
-    db: AsyncSession = Depends(get_async_session)
-):
-    """Get top blocking words for a video segment"""
-    try:
-        logger.info(f"Getting blocking words for user {current_user.id}, video: {video_path}")
-
-        # Get subtitle file path - handle both relative and full paths
-        if video_path.startswith('/'):
-            video_file = Path(video_path)
-        else:
-            video_file = settings.get_videos_path() / video_path
-
-        srt_file = video_file.with_suffix(".srt")
-
-        # If subtitle file doesn't exist, raise error
-        if not srt_file.exists():
-            logger.error(f"Subtitle file not found: {srt_file}")
-            raise HTTPException(status_code=404, detail="Subtitle file not found")
-
-        # Extract blocking words for the specific segment
-        blocking_words = await extract_blocking_words_for_segment(
-            str(srt_file), segment_start, segment_duration, current_user.id, db
-        )
-
-        logger.info(f"Found {len(blocking_words)} blocking words for segment")
-        return {"blocking_words": blocking_words[:10]}  # Return top 10
-
-    except Exception as e:
-        logger.error(f"Error in get_blocking_words: {e!s}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Failed to get blocking words: {e!s}")
-
-
-@router.post("/mark-known", name="mark_word_known")
-async def mark_word_as_known(
-    request: MarkKnownRequest,
-    current_user: User = Depends(current_active_user),
-    db: AsyncSession = Depends(get_async_session)
-):
-    """Mark a word as known or unknown"""
-    try:
-        logger.info(f"Marking word '{request.word}' as {'known' if request.known else 'unknown'} for user {current_user.id}")
-
-        # Use the underlying SQLiteUserVocabularyService directly for simplicity
-        from services.dataservice.user_vocabulary_service import (
-            SQLiteUserVocabularyService,
-        )
-        vocab_service = SQLiteUserVocabularyService()
-
-        if request.known:
-            success = await vocab_service.mark_word_learned(str(current_user.id), request.word, "de")
-        else:
-            success = await vocab_service.remove_word(str(current_user.id), request.word, "de")
-
-        logger.info(f"Successfully updated word status: {request.word} -> {request.known}")
-        return {"success": success, "word": request.word, "known": request.known}
-
-    except Exception as e:
-        logger.error(f"Failed to update word: {e!s}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Failed to update word: {e!s}")
-
-
-@router.post("/preload", name="preload_vocabulary")
-async def preload_vocabulary(
-    current_user: User = Depends(current_active_user),
-    db: AsyncSession = Depends(get_async_session)
-):
-    """Preload vocabulary data from text files into database (Admin only)"""
-    if not current_user.is_superuser:
-        raise HTTPException(status_code=403, detail="Admin access required")
-
-    try:
-        service = VocabularyPreloadService()
-        results = await service.load_vocabulary_files()
-
-        total_loaded = sum(results.values())
-        logger.info(f"Preloaded vocabulary: {results}")
-
-        return {
-            "success": True,
-            "message": f"Loaded {total_loaded} words across all levels",
-            "levels": results
-        }
-
-    except Exception as e:
-        logger.error(f"Failed to preload vocabulary: {e!s}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Failed to preload vocabulary: {e!s}")
-
-
-@router.get("/library/stats", name="get_library_stats")
-async def get_vocabulary_stats(
-    current_user: User = Depends(current_active_user),
-    db: AsyncSession = Depends(get_async_session),
-    service: VocabularyPreloadService = Depends(get_vocabulary_preload_service)
-):
-    """Get vocabulary statistics for all levels"""
-    try:
-        # Get basic stats using the injected database session
-        stats = await service.get_vocabulary_stats(db)
-
-        # Add user-specific known word counts
-        total_words = 0
-        total_known = 0
-
-        for level in ["A1", "A2", "B1", "B2"]:
-            known_words = await service.get_user_known_words(current_user.id, level, db)
-            if level in stats:
-                stats[level]["user_known"] = len(known_words)
-                total_words += stats[level]["total_words"]
-                total_known += len(known_words)
-            else:
-                stats[level] = {"total_words": 0, "user_known": 0}
-
-        return VocabularyStats(
-            levels=stats,
-            total_words=total_words,
-            total_known=total_known
-        )
-
-    except Exception as e:
-        logger.error(f"Failed to get vocabulary stats: {e!s}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Failed to get vocabulary stats: {e!s}")
+        logger.error(f"Error getting vocabulary stats for user {current_user.id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Error retrieving vocabulary stats: {e}")
 
 
 @router.get("/library/{level}", name="get_vocabulary_level")
 async def get_vocabulary_level(
     level: str,
     current_user: User = Depends(current_active_user),
-    db: AsyncSession = Depends(get_async_session)
+    db: AsyncSession = Depends(get_async_session),
+    target_language: str = Query("de", description="Target language code"),
+    translation_language: Optional[str] = Query("es", description="Translation language code"),
+    limit: int = Query(50, description="Maximum number of words to return")
 ):
-    """Get all vocabulary words for a specific level with user's known status"""
+    """Get vocabulary words for a specific level with user's known status"""
     try:
-        if level.upper() not in ["A1", "A2", "B1", "B2"]:
-            raise HTTPException(status_code=422, detail="Invalid level. Must be A1, A2, B1, or B2")
+        if level.upper() not in ["A1", "A2", "B1", "B2", "C1", "C2"]:
+            raise HTTPException(status_code=422, detail="Invalid level. Must be A1, A2, B1, B2, C1, or C2")
 
-        service = VocabularyPreloadService()
+        # Get concepts for this level with their translations
+        concepts_result = await db.execute(
+            select(VocabularyConcept)
+            .options(selectinload(VocabularyConcept.translations))
+            .where(VocabularyConcept.difficulty_level == level.upper())
+            .limit(limit)
+        )
+        concepts = concepts_result.scalars().all()
 
-        # Get words for level
-        level_words = await service.get_level_words(level.upper(), db)
+        # Get user's known concepts
+        user_known_result = await db.execute(
+            select(UserLearningProgress.concept_id).where(
+                UserLearningProgress.user_id == str(current_user.id)
+            )
+        )
+        known_concept_ids = set(row[0] for row in user_known_result.fetchall())
 
-        # Get user's known words for this level
-        known_words = await service.get_user_known_words(current_user.id, level.upper(), db)
-
-        # Combine data
         vocabulary_words = []
         known_count = 0
 
-        for word_data in level_words:
-            is_known = word_data.get("word", "") in known_words
+        for concept in concepts:
+            # Find target language translation
+            target_translation = None
+            translation_text = None
+
+            for trans in concept.translations:
+                if trans.language_code == target_language:
+                    target_translation = trans
+                elif translation_language and trans.language_code == translation_language:
+                    translation_text = trans.word
+
+            if not target_translation:
+                continue  # Skip if no target language translation
+
+            is_known = concept.id in known_concept_ids
             if is_known:
                 known_count += 1
 
             vocabulary_words.append(VocabularyLibraryWord(
-                id=word_data.get("id"),
-                word=word_data.get("word", ""),
-                difficulty_level=word_data.get("difficulty_level", level.upper()),
-                part_of_speech=word_data.get("part_of_speech") or word_data.get("word_type", "noun"),
-                definition=word_data.get("definition", ""),
+                concept_id=UUID(concept.id),
+                word=target_translation.word,
+                translation=translation_text,
+                lemma=target_translation.lemma,
+                difficulty_level=concept.difficulty_level,
+                semantic_category=concept.semantic_category,
+                domain=concept.domain,
+                gender=target_translation.gender,
+                plural_form=target_translation.plural_form,
+                pronunciation=target_translation.pronunciation,
+                notes=target_translation.notes,
                 known=is_known
             ))
 
         return VocabularyLevel(
             level=level.upper(),
+            target_language=target_language,
+            translation_language=translation_language,
             words=vocabulary_words,
             total_count=len(vocabulary_words),
             known_count=known_count
@@ -331,23 +199,109 @@ async def get_vocabulary_level(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Failed to get vocabulary level {level}: {e!s}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Failed to get vocabulary level: {e!s}")
+        logger.error(f"Failed to get vocabulary level {level}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get vocabulary level: {e}")
+
+
+@router.post("/mark-known", name="mark_word_known")
+async def mark_word_as_known(
+    request: MarkKnownRequest,
+    current_user: User = Depends(current_active_user),
+    db: AsyncSession = Depends(get_async_session)
+):
+    """Mark a word concept as known or unknown"""
+    try:
+        logger.info(f"Marking concept {request.concept_id} as {'known' if request.known else 'unknown'} for user {current_user.id}")
+
+        # Check if learning progress already exists
+        result = await db.execute(
+            select(UserLearningProgress).where(
+                UserLearningProgress.user_id == str(current_user.id),
+                UserLearningProgress.concept_id == str(request.concept_id)
+            )
+        )
+        existing_progress = result.scalar_one_or_none()
+
+        if request.known:
+            if not existing_progress:
+                # Create new learning progress record
+                progress = UserLearningProgress(
+                    user_id=str(current_user.id),
+                    concept_id=str(request.concept_id),
+                    confidence_level=1
+                )
+                db.add(progress)
+            # If already exists, no need to update
+        else:
+            if existing_progress:
+                # Remove learning progress record
+                await db.delete(existing_progress)
+
+        await db.commit()
+
+        logger.info(f"Successfully updated concept status: {request.concept_id} -> {request.known}")
+        return {"success": True, "concept_id": str(request.concept_id), "known": request.known}
+
+    except Exception as e:
+        await db.rollback()
+        logger.error(f"Failed to update word: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to update word: {e}")
 
 
 @router.post("/library/bulk-mark", name="bulk_mark_level")
 async def bulk_mark_level_known(
     request: BulkMarkRequest,
     current_user: User = Depends(current_active_user),
-    db: AsyncSession = Depends(get_async_session),
-    service: VocabularyPreloadService = Depends(get_vocabulary_preload_service)
+    db: AsyncSession = Depends(get_async_session)
 ):
     """Mark all words in a level as known or unknown"""
     try:
-        if request.level.upper() not in ["A1", "A2", "B1", "B2"]:
-            raise HTTPException(status_code=400, detail="Invalid level. Must be A1, A2, B1, or B2")
+        if request.level.upper() not in ["A1", "A2", "B1", "B2", "C1", "C2"]:
+            raise HTTPException(status_code=400, detail="Invalid level. Must be A1, A2, B1, B2, C1, or C2")
 
-        success_count = await service.bulk_mark_level_known(current_user.id, request.level.upper(), request.known, db)
+        # Get all concepts for this level
+        concepts_result = await db.execute(
+            select(VocabularyConcept.id).where(
+                VocabularyConcept.difficulty_level == request.level.upper()
+            )
+        )
+        concept_ids = [row[0] for row in concepts_result.fetchall()]
+
+        success_count = 0
+
+        if request.known:
+            # Mark all as known
+            for concept_id in concept_ids:
+                # Check if already exists
+                existing_result = await db.execute(
+                    select(UserLearningProgress).where(
+                        UserLearningProgress.user_id == str(current_user.id),
+                        UserLearningProgress.concept_id == concept_id
+                    )
+                )
+                if not existing_result.scalar_one_or_none():
+                    progress = UserLearningProgress(
+                        user_id=str(current_user.id),
+                        concept_id=concept_id,
+                        confidence_level=1
+                    )
+                    db.add(progress)
+                    success_count += 1
+        else:
+            # Mark all as unknown (remove learning progress)
+            for concept_id in concept_ids:
+                existing_result = await db.execute(
+                    select(UserLearningProgress).where(
+                        UserLearningProgress.user_id == str(current_user.id),
+                        UserLearningProgress.concept_id == concept_id
+                    )
+                )
+                existing_progress = existing_result.scalar_one_or_none()
+                if existing_progress:
+                    await db.delete(existing_progress)
+                    success_count += 1
+
+        await db.commit()
 
         action = "marked as known" if request.known else "unmarked"
         return {
@@ -361,5 +315,75 @@ async def bulk_mark_level_known(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Failed to bulk mark {request.level}: {e!s}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Failed to bulk mark words: {e!s}")
+        await db.rollback()
+        logger.error(f"Failed to bulk mark {request.level}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to bulk mark words: {e}")
+
+
+@router.get("/test-data", name="get_test_data")
+async def get_test_data(
+    db: AsyncSession = Depends(get_async_session)
+):
+    """Get test data to verify the multilingual setup works"""
+    try:
+        # Get concept count
+        concept_count_result = await db.execute(
+            select(sql_func.count(VocabularyConcept.id))
+        )
+        concept_count = concept_count_result.scalar()
+
+        # Get translation count
+        translation_count_result = await db.execute(
+            select(sql_func.count(VocabularyTranslation.id))
+        )
+        translation_count = translation_count_result.scalar()
+
+        # Get sample translations
+        sample_result = await db.execute(
+            select(VocabularyTranslation.word, VocabularyTranslation.language_code).limit(10)
+        )
+        sample_translations = [{"word": row[0], "language": row[1]} for row in sample_result.fetchall()]
+
+        return {
+            "concept_count": concept_count,
+            "translation_count": translation_count,
+            "sample_translations": sample_translations
+        }
+
+    except Exception as e:
+        logger.error(f"Error getting test data: {e}")
+        raise HTTPException(status_code=500, detail=f"Error retrieving test data: {e}")
+
+
+@router.get("/blocking-words", name="get_blocking_words")
+async def get_blocking_words(
+    video_path: str = Query(..., description="Path to the video file"),
+    current_user: User = Depends(current_active_user),
+    db: AsyncSession = Depends(get_async_session)
+):
+    """Get words that would block comprehension from video subtitles"""
+    try:
+        # Get video file path
+        videos_path = settings.get_videos_path()
+        video_file = videos_path / video_path
+
+        # Look for corresponding SRT file
+        srt_file = video_file.with_suffix('.srt')
+
+        if not srt_file.exists():
+            raise HTTPException(status_code=404, detail="Subtitle file not found")
+
+        # For now, return a simple structure
+        # This could be enhanced to actually parse SRT and find blocking words
+        return {
+            "blocking_words": [],
+            "video_path": str(video_file),
+            "srt_path": str(srt_file),
+            "message": "Blocking words endpoint - basic implementation"
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting blocking words for {video_path}: {e}")
+        raise HTTPException(status_code=500, detail=f"Error processing video: {e}")

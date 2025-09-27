@@ -3,9 +3,13 @@ import { useParams, useNavigate } from 'react-router-dom'
 import styled from 'styled-components'
 import { ArrowLeftIcon } from '@heroicons/react/24/solid'
 import { Container, NetflixButton, ErrorMessage } from '@/styles/GlobalStyles'
-import { videoService, handleApiError } from '@/services/api'
+import { handleApiError } from '@/services/api'
+import {
+  getVideosApiVideosGet,
+  prepareEpisodeApiProcessPrepareEpisodePost,
+} from '@/client/services.gen'
 import { useTaskProgress } from '@/hooks/useTaskProgress'
-import { ProcessingView } from '@/components/ProcessingView'
+import { ProcessingScreen } from '@/components/ProcessingScreen'
 import type { VideoInfo } from '@/types'
 
 const Header = styled.header`
@@ -104,16 +108,15 @@ export const PipelineProgress: React.FC = () => {
   const [episode, setEpisode] = useState<VideoInfo | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [taskId, setTaskId] = useState<string | null>(null)
   const [isRunning, setIsRunning] = useState(false)
-  
-  const { progress, error: progressError } = useTaskProgress(taskId)
+
+  const { progress, status, error: progressError, startMonitoring } = useTaskProgress()
 
   useEffect(() => {
     const loadEpisode = async () => {
       try {
         setLoading(true)
-        const videoList = await videoService.getVideos()
+        const videoList = await getVideosApiVideosGet()
         const seriesEpisodes = videoList.filter(video => video.series === series)
         
         // Find the specific episode
@@ -127,7 +130,7 @@ export const PipelineProgress: React.FC = () => {
           setError('Episode not found')
         }
       } catch (err) {
-        handleApiError(err)
+        handleApiError(err, 'PipelineProgress.loadData')
         setError('Failed to load episode')
       } finally {
         setLoading(false)
@@ -144,10 +147,14 @@ export const PipelineProgress: React.FC = () => {
     
     try {
       setIsRunning(true)
-      const result = await videoService.prepareEpisode(episode.path)
-      setTaskId(result.task_id)
+      const result = await prepareEpisodeApiProcessPrepareEpisodePost({
+        requestBody: {
+          video_path: episode.path,
+        },
+      }) as { task_id: string }
+      startMonitoring(result.task_id)
     } catch (error) {
-      handleApiError(error)
+      handleApiError(error, 'PipelineProgress.unknownError')
       setIsRunning(false)
     }
   }
@@ -223,17 +230,17 @@ export const PipelineProgress: React.FC = () => {
           </ActionButton>
         ) : (
           <>
-            {progress && <ProcessingView status={progress} />}
+            {status !== 'idle' && <ProcessingScreen status={{ status, progress, message: progressError || undefined }} />}
             
-            {progress?.status === 'completed' && (
+            {status === 'completed' && (
               <ActionButton onClick={handleViewEpisode}>
                 Start Learning
               </ActionButton>
             )}
             
-            {(progressError || progress?.status === 'error') && (
+            {(progressError || status === 'failed' || status === 'error') && (
               <ErrorMessage>
-                Failed to process episode: {progressError || progress?.message}
+                Failed to process episode: {progressError}
                 <br />
                 <NetflixButton 
                   variant="secondary" 

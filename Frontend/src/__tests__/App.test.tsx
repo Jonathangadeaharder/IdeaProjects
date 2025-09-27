@@ -419,7 +419,7 @@ describe('App Component', () => {
       authState = {
         ...authState,
         isAuthenticated: true,
-        user: { id: '1', email: 'test@example.com', username: 'testuser' }
+        user: { id: '1', email: 'test@example.com', username: 'testuser' } as any
       }
 
       rerender(

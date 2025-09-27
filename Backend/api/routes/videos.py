@@ -13,7 +13,7 @@ from api.models.video import VideoInfo
 from api.models.vocabulary import VocabularyWord
 from core.config import settings
 from core.database import get_async_session
-from core.dependencies import current_active_user, get_task_progress_registry
+from core.dependencies import current_active_user, get_task_progress_registry, get_user_from_query_token
 from database.models import User
 from services.videoservice.video_service import VideoService
 
@@ -72,11 +72,19 @@ async def get_subtitles(
         raise HTTPException(status_code=500, detail=f"Error serving subtitles: {e!s}")
 
 
-@router.get("/{series}/{episode}", name="stream_video")
+@router.get(
+    "/{series}/{episode}",
+    name="stream_video",
+    responses={
+        401: {"description": "Invalid or missing authentication token"},
+        404: {"description": "Video file not accessible"},
+        500: {"description": "Error streaming video"},
+    },
+)
 async def stream_video(
     series: str,
     episode: str,
-    current_user: User = Depends(current_active_user),
+    current_user: User = Depends(get_user_from_query_token),
     video_service: VideoService = Depends(get_video_service)
 ):
     """Stream video file - Requires authentication"""

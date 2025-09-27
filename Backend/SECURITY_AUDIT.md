@@ -7,7 +7,7 @@ This document outlines security improvements made to the LangPlug backend to rem
 
 ### 1. Authentication Bypasses
 **Issue**: Test files and development code contained authentication bypasses
-**Resolution**: 
+**Resolution**:
 - Removed all `pytest.skip("Authentication failed")` bypasses in test files
 - Implemented proper test authentication using valid tokens
 - Enforced strict authentication for all API endpoints
@@ -63,7 +63,7 @@ async def protected_endpoint(
 ### Password Requirements
 - Minimum 8 characters
 - At least one uppercase letter
-- At least one lowercase letter  
+- At least one lowercase letter
 - At least one digit
 - Bcrypt hashing with salt
 
@@ -126,7 +126,7 @@ async def protected_endpoint(
 - Session management tests
 - Input validation tests
 
-### Integration Tests  
+### Integration Tests
 - End-to-end authentication flows
 - Authorization boundary tests
 - Error handling security tests

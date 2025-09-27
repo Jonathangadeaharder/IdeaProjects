@@ -4,9 +4,15 @@ import styled from 'styled-components'
 import { ArrowLeftIcon, PlayIcon, ClockIcon, CheckCircleIcon } from '@heroicons/react/24/solid'
 import { toast } from 'react-hot-toast'
 import { Container, NetflixButton, ErrorMessage } from '@/styles/GlobalStyles'
-import { videoService, handleApiError } from '@/services/api'
+import { handleApiError } from '@/services/api'
+import {
+  filterSubtitlesApiProcessFilterSubtitlesPost,
+  getTaskProgressApiProcessProgressTaskIdGet,
+  getVideosApiVideosGet,
+  translateSubtitlesApiProcessTranslateSubtitlesPost,
+} from '@/client/services.gen'
 import { useAuthStore } from '@/store/useAuthStore'
-import { ProcessingView } from '@/components/ProcessingView'
+import { ProcessingScreen } from '@/components/ProcessingScreen'
 import type { VideoInfo, ProcessingStatus } from '@/types'
 
 const Header = styled.header`
@@ -261,7 +267,7 @@ export const EpisodeSelection: React.FC = () => {
   const loadEpisodes = async () => {
     try {
       setLoading(true)
-      const videoList = await videoService.getVideos()
+      const videoList = await getVideosApiVideosGet()
       const seriesEpisodes = videoList.filter(video => video.series === series)
       
       // Sort episodes by episode number
@@ -273,7 +279,7 @@ export const EpisodeSelection: React.FC = () => {
       
       setEpisodes(sortedEpisodes)
     } catch (error) {
-      handleApiError(error)
+      handleApiError(error, 'EpisodeSelection.loadEpisodes')
       setError('Failed to load episodes')
     } finally {
       setLoading(false)
@@ -287,7 +293,7 @@ export const EpisodeSelection: React.FC = () => {
 
     const poll = async () => {
       try {
-        const progress = await videoService.getTaskProgress(taskId)
+        const progress = await getTaskProgressApiProcessProgressTaskIdGet({ taskId })
         setProgressData(prev => ({ ...prev, [episodePath]: progress }))
 
         if (progress.status === 'completed') {
@@ -381,7 +387,9 @@ export const EpisodeSelection: React.FC = () => {
       toast.loading('Filtering episode subtitles...', { id: 'filtering' })
       
       // Start filtering
-      const result = await videoService.filterSubtitles(episode.path)
+      const result = await filterSubtitlesApiProcessFilterSubtitlesPost({
+        requestBody: { video_path: episode.path },
+      }) as { task_id: string }
       
       // Start polling progress
       pollProgress(result.task_id, episode.path, 'filtering')
@@ -391,7 +399,7 @@ export const EpisodeSelection: React.FC = () => {
         newSet.delete(episode.path)
         return newSet
       })
-      handleApiError(error)
+      handleApiError(error, 'EpisodeSelection.startFiltering')
       toast.error('Failed to start filtering', { id: 'filtering' })
     }
   }
@@ -403,7 +411,13 @@ export const EpisodeSelection: React.FC = () => {
       
       // Start translation (for now, we'll use German as source and English as target)
       // In a real implementation, these would be configurable
-      const result = await videoService.translateSubtitles(episode.path, 'de', 'en')
+      const result = await translateSubtitlesApiProcessTranslateSubtitlesPost({
+        requestBody: {
+          video_path: episode.path,
+          source_lang: 'de',
+          target_lang: 'en',
+        },
+      }) as { task_id: string }
       
       // Start polling progress
       pollProgress(result.task_id, episode.path, 'translation')
@@ -413,7 +427,7 @@ export const EpisodeSelection: React.FC = () => {
         newSet.delete(episode.path)
         return newSet
       })
-      handleApiError(error)
+      handleApiError(error, 'EpisodeSelection.startTranslation')
       toast.error('Failed to start translation', { id: 'translating' })
     }
   }

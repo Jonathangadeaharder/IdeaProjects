@@ -20,6 +20,7 @@ from api.routes import (
 )
 
 from .config import settings
+from .contract_middleware import setup_contract_validation
 from .dependencies import cleanup_services, init_services
 from .exception_handlers import setup_exception_handlers
 from .logging_config import configure_logging, get_logger
@@ -36,16 +37,22 @@ logger = get_logger(__name__)
 async def lifespan(app: FastAPI):
     """Initialize and cleanup application resources"""
     try:
-        logger.info("Starting LangPlug API server...")
+        # Import os at the beginning
+        import os
+        from .config import settings
+
+        # Log startup information including port
+        port = int(os.environ.get("LANGPLUG_PORT", settings.port))
+        host = settings.host
+        logger.info(f"Starting LangPlug API server on http://{host}:{port}...")
 
         # Initialize all services (skip in test mode)
-        import os
         if os.environ.get("TESTING") != "1":
             await init_services()
         else:
             logger.info("Skipping service initialization in test mode")
 
-        logger.info("LangPlug API server started successfully")
+        logger.info(f"LangPlug API server started successfully on port {port}")
         yield
 
     except Exception as e:
@@ -78,6 +85,15 @@ def create_app() -> FastAPI:
 
     # Set up middleware (CORS, logging, error handling)
     setup_middleware(app)
+
+    # Set up contract validation (only in debug mode for development)
+    if settings.debug:
+        setup_contract_validation(
+            app,
+            validate_requests=True,
+            validate_responses=True,
+            log_violations=True
+        )
 
     # Set up exception handlers
     setup_exception_handlers(app)

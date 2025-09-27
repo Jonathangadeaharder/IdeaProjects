@@ -91,7 +91,7 @@ cd Frontend && npm run dev                         # Development server
 
 ### Professional Test Management
 - **✅ Use**: `python scripts/test_management.py` for comprehensive test runs
-- **❌ Avoid**: Hardcoded lists of "passing tests" 
+- **❌ Avoid**: Hardcoded lists of "passing tests"
 - **Expected Failures**: Mark with `@pytest.mark.xfail(reason="Clear explanation")`
 - **Test Categories**: Use markers (`@pytest.mark.unit`, `@pytest.mark.contract`, etc.)
 

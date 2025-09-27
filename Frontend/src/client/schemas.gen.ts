@@ -10,13 +10,34 @@ export const $AnswerRequest = {
             type: 'string',
             title: 'Question Id'
         },
-        answer: {
+        question_type: {
             type: 'string',
-            title: 'Answer'
+            title: 'Question Type',
+            default: 'multiple_choice'
+        },
+        user_answer: {
+            type: 'string',
+            title: 'User Answer'
+        },
+        correct_answer: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Correct Answer'
+        },
+        points: {
+            type: 'integer',
+            title: 'Points',
+            default: 10
         }
     },
     type: 'object',
-    required: ['session_id', 'question_id', 'answer'],
+    required: ['session_id', 'question_id', 'user_answer'],
     title: 'AnswerRequest',
     description: 'Request model for submitting an answer'
 } as const;
@@ -152,17 +173,25 @@ export const $BulkMarkRequest = {
             type: 'string',
             pattern: '^(A1|A2|B1|B2|C1|C2)$',
             title: 'Level',
-            description: 'CEFR difficulty level to mark (A1, A2, B1, B2, C1, C2)'
+            description: 'CEFR difficulty level to mark'
+        },
+        target_language: {
+            type: 'string',
+            maxLength: 5,
+            minLength: 2,
+            title: 'Target Language',
+            description: 'Target language code (de, es, en, etc.)'
         },
         known: {
             type: 'boolean',
             title: 'Known',
-            description: 'Whether to mark all words in the level as known (true) or unknown (false)'
+            description: 'Whether to mark all words as known (true) or unknown (false)'
         }
     },
     type: 'object',
-    required: ['level', 'known'],
-    title: 'BulkMarkRequest'
+    required: ['level', 'target_language', 'known'],
+    title: 'BulkMarkRequest',
+    description: 'Request to bulk mark words as known/unknown'
 } as const;
 
 export const $ChunkProcessingRequest = {
@@ -318,6 +347,13 @@ export const $FullPipelineRequest = {
     title: 'FullPipelineRequest'
 } as const;
 
+export const $GameDifficulty = {
+    type: 'string',
+    enum: ['beginner', 'intermediate', 'advanced'],
+    title: 'GameDifficulty',
+    description: 'Valid difficulty levels'
+} as const;
+
 export const $GameSession = {
     properties: {
         session_id: {
@@ -403,14 +439,20 @@ export const $GameSession = {
         session_data: {
             additionalProperties: true,
             type: 'object',
-            title: 'Session Data',
-            default: {}
+            title: 'Session Data'
         }
     },
     type: 'object',
     required: ['session_id', 'user_id', 'game_type', 'start_time'],
     title: 'GameSession',
     description: 'Game session model'
+} as const;
+
+export const $GameType = {
+    type: 'string',
+    enum: ['vocabulary', 'listening', 'comprehension'],
+    title: 'GameType',
+    description: 'Valid game types'
 } as const;
 
 export const $HTTPValidationError = {
@@ -444,62 +486,30 @@ export const $LanguagePreferences = {
     description: 'Language preference update model'
 } as const;
 
-export const $LogBatch = {
+export const $LanguagesResponse = {
     properties: {
-        entries: {
+        languages: {
             items: {
-                '$ref': '#/components/schemas/LogEntry'
+                '$ref': '#/components/schemas/SupportedLanguage'
             },
             type: 'array',
-            title: 'Entries'
-        },
-        client_id: {
-            type: 'string',
-            title: 'Client Id',
-            default: 'frontend'
+            title: 'Languages',
+            description: 'List of supported languages'
         }
     },
     type: 'object',
-    required: ['entries'],
-    title: 'LogBatch'
-} as const;
-
-export const $LogEntry = {
-    properties: {
-        timestamp: {
-            type: 'string',
-            title: 'Timestamp'
-        },
-        level: {
-            type: 'string',
-            title: 'Level'
-        },
-        component: {
-            type: 'string',
-            title: 'Component'
-        },
-        message: {
-            type: 'string',
-            title: 'Message'
-        },
-        data: {
-            type: 'string',
-            title: 'Data'
-        }
-    },
-    type: 'object',
-    required: ['timestamp', 'level', 'component', 'message'],
-    title: 'LogEntry'
+    required: ['languages'],
+    title: 'LanguagesResponse',
+    description: 'Response containing supported languages'
 } as const;
 
 export const $MarkKnownRequest = {
     properties: {
-        word: {
+        concept_id: {
             type: 'string',
-            maxLength: 100,
-            minLength: 1,
-            title: 'Word',
-            description: 'The word to mark as known/unknown'
+            format: 'uuid',
+            title: 'Concept Id',
+            description: 'Unique concept identifier'
         },
         known: {
             type: 'boolean',
@@ -508,8 +518,9 @@ export const $MarkKnownRequest = {
         }
     },
     type: 'object',
-    required: ['word', 'known'],
-    title: 'MarkKnownRequest'
+    required: ['concept_id', 'known'],
+    title: 'MarkKnownRequest',
+    description: 'Request to mark a word as known/unknown'
 } as const;
 
 export const $ParseSRTRequest = {
@@ -617,12 +628,10 @@ export const $SRTSegmentResponse = {
 export const $StartGameRequest = {
     properties: {
         game_type: {
-            type: 'string',
-            title: 'Game Type'
+            '$ref': '#/components/schemas/GameType'
         },
         difficulty: {
-            type: 'string',
-            title: 'Difficulty',
+            '$ref': '#/components/schemas/GameDifficulty',
             default: 'intermediate'
         },
         video_id: {
@@ -638,6 +647,8 @@ export const $StartGameRequest = {
         },
         total_questions: {
             type: 'integer',
+            maximum: 50,
+            minimum: 1,
             title: 'Total Questions',
             default: 10
         }
@@ -646,6 +657,48 @@ export const $StartGameRequest = {
     required: ['game_type'],
     title: 'StartGameRequest',
     description: 'Request model for starting a game session'
+} as const;
+
+export const $SupportedLanguage = {
+    properties: {
+        code: {
+            type: 'string',
+            maxLength: 5,
+            minLength: 2,
+            title: 'Code',
+            description: 'Language code (de, es, en, etc.)'
+        },
+        name: {
+            type: 'string',
+            maxLength: 50,
+            minLength: 1,
+            title: 'Name',
+            description: 'Language name in English'
+        },
+        native_name: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 50
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Native Name',
+            description: 'Language name in native script'
+        },
+        is_active: {
+            type: 'boolean',
+            title: 'Is Active',
+            description: 'Whether the language is currently supported',
+            default: true
+        }
+    },
+    type: 'object',
+    required: ['code', 'name'],
+    title: 'SupportedLanguage',
+    description: 'Supported language information'
 } as const;
 
 export const $TranscribeRequest = {
@@ -1209,6 +1262,27 @@ export const $VocabularyStats = {
             title: 'Levels',
             description: 'Statistics by CEFR level with total and known counts'
         },
+        target_language: {
+            type: 'string',
+            maxLength: 5,
+            minLength: 2,
+            title: 'Target Language',
+            description: 'Target language code'
+        },
+        translation_language: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 5,
+                    minLength: 2
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Translation Language',
+            description: 'Translation language code'
+        },
         total_words: {
             type: 'integer',
             minimum: 0,
@@ -1223,38 +1297,144 @@ export const $VocabularyStats = {
         }
     },
     type: 'object',
-    required: ['levels', 'total_words', 'total_known'],
+    required: ['levels', 'target_language', 'total_words', 'total_known'],
     title: 'VocabularyStats',
+    description: 'Vocabulary statistics across all levels',
     example: {
         levels: {
             A1: {
-                known: 80,
-                total: 100
+                total_words: 100,
+                user_known: 80
             },
             A2: {
-                known: 60,
-                total: 150
+                total_words: 150,
+                user_known: 60
             },
             B1: {
-                known: 40,
-                total: 200
+                total_words: 200,
+                user_known: 40
             }
         },
+        target_language: 'de',
         total_known: 180,
-        total_words: 450
+        total_words: 450,
+        translation_language: 'es'
     }
 } as const;
 
 export const $VocabularyWord = {
     properties: {
+        concept_id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Concept Id',
+            description: 'Unique concept identifier'
+        },
         word: {
             type: 'string',
             maxLength: 100,
             minLength: 1,
             title: 'Word',
-            description: 'The vocabulary word'
+            description: 'The vocabulary word in target language'
         },
-        definition: {
+        translation: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 100
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Translation',
+            description: "Translation in user's preferred language"
+        },
+        lemma: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 100
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Lemma',
+            description: 'Base form of the word'
+        },
+        difficulty_level: {
+            type: 'string',
+            pattern: '^(A1|A2|B1|B2|C1|C2)$',
+            title: 'Difficulty Level',
+            description: 'CEFR difficulty level'
+        },
+        semantic_category: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 50
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Semantic Category',
+            description: 'Part of speech (noun, verb, adjective, etc.)'
+        },
+        domain: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 50
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Domain',
+            description: 'Domain category (education, technology, etc.)'
+        },
+        gender: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 10
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Gender',
+            description: 'Gender (der/die/das for German, el/la for Spanish)'
+        },
+        plural_form: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 100
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Plural Form',
+            description: 'Plural form if applicable'
+        },
+        pronunciation: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 200
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Pronunciation',
+            description: 'IPA or phonetic representation'
+        },
+        notes: {
             anyOf: [
                 {
                     type: 'string',
@@ -1264,14 +1444,8 @@ export const $VocabularyWord = {
                     type: 'null'
                 }
             ],
-            title: 'Definition',
-            description: 'Definition of the word'
-        },
-        difficulty_level: {
-            type: 'string',
-            pattern: '^(A1|A2|B1|B2|C1|C2)$',
-            title: 'Difficulty Level',
-            description: 'CEFR difficulty level (A1, A2, B1, B2, C1, C2)'
+            title: 'Notes',
+            description: 'Grammar notes, usage notes, etc.'
         },
         known: {
             type: 'boolean',
@@ -1281,6 +1455,7 @@ export const $VocabularyWord = {
         }
     },
     type: 'object',
-    required: ['word', 'difficulty_level'],
-    title: 'VocabularyWord'
+    required: ['concept_id', 'word', 'difficulty_level'],
+    title: 'VocabularyWord',
+    description: 'Single vocabulary word with translations'
 } as const;

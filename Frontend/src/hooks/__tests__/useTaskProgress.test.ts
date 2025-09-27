@@ -2,13 +2,12 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useTaskProgress } from '../useTaskProgress';
 
-// Mock the API service
-vi.mock('@/services/api', () => ({
-  getProcessingStatus: vi.fn(),
+vi.mock('@/client/services.gen', () => ({
+  getTaskProgressApiProcessProgressTaskIdGet: vi.fn(),
 }));
 
-import { getProcessingStatus } from '@/services/api';
-const mockGetProcessingStatus = vi.mocked(getProcessingStatus);
+import { getTaskProgressApiProcessProgressTaskIdGet } from '@/client/services.gen';
+const mockGetTaskProgress = vi.mocked(getTaskProgressApiProcessProgressTaskIdGet);
 
 describe('useTaskProgress Hook', () => {
   beforeEach(() => {
@@ -43,7 +42,7 @@ describe('useTaskProgress Hook', () => {
         current_step: 'transcribing'
       };
       
-      mockGetProcessingStatus.mockResolvedValue(mockStatus);
+      mockGetTaskProgress.mockResolvedValue(mockStatus);
       
       const { result } = renderHook(() => useTaskProgress());
       
@@ -59,7 +58,7 @@ describe('useTaskProgress Hook', () => {
         vi.advanceTimersByTime(2000);
       });
       
-      expect(mockGetProcessingStatus).toHaveBeenCalledWith('task-123');
+      expect(mockGetTaskProgress).toHaveBeenCalledWith({ taskId: 'task-123' });
       expect(result.current.progress).toBe(25);
       expect(result.current.status).toBe('processing');
     });
@@ -73,7 +72,7 @@ describe('useTaskProgress Hook', () => {
         result: { videoId: 'video-456' }
       };
       
-      mockGetProcessingStatus.mockResolvedValue(mockCompletedStatus);
+      mockGetTaskProgress.mockResolvedValue(mockCompletedStatus);
       
       const { result } = renderHook(() => useTaskProgress());
       
@@ -100,7 +99,7 @@ describe('useTaskProgress Hook', () => {
         error: 'Processing failed: Invalid video format'
       };
       
-      mockGetProcessingStatus.mockResolvedValue(mockFailedStatus);
+      mockGetTaskProgress.mockResolvedValue(mockFailedStatus);
       
       const { result } = renderHook(() => useTaskProgress());
       
@@ -119,7 +118,7 @@ describe('useTaskProgress Hook', () => {
 
     it('handles API errors during monitoring', async () => {
       const apiError = new Error('Network error');
-      mockGetProcessingStatus.mockRejectedValue(apiError);
+      mockGetTaskProgress.mockRejectedValue(apiError);
       
       const { result } = renderHook(() => useTaskProgress());
       
@@ -145,7 +144,7 @@ describe('useTaskProgress Hook', () => {
         current_step: 'transcribing'
       };
       
-      mockGetProcessingStatus.mockResolvedValue(mockStatus);
+      mockGetTaskProgress.mockResolvedValue(mockStatus);
       
       const { result } = renderHook(() => useTaskProgress());
       
@@ -158,26 +157,26 @@ describe('useTaskProgress Hook', () => {
         vi.advanceTimersByTime(2000);
       });
       
-      expect(mockGetProcessingStatus).toHaveBeenCalledTimes(1);
+      expect(mockGetTaskProgress).toHaveBeenCalledTimes(1);
       
       // Second poll
       await act(async () => {
         vi.advanceTimersByTime(2000);
       });
       
-      expect(mockGetProcessingStatus).toHaveBeenCalledTimes(2);
+      expect(mockGetTaskProgress).toHaveBeenCalledTimes(2);
       
       // Third poll
       await act(async () => {
         vi.advanceTimersByTime(2000);
       });
       
-      expect(mockGetProcessingStatus).toHaveBeenCalledTimes(3);
+      expect(mockGetTaskProgress).toHaveBeenCalledTimes(3);
     });
 
     it('stops polling when task completes', async () => {
       let callCount = 0;
-      mockGetProcessingStatus.mockImplementation(() => {
+      mockGetTaskProgress.mockImplementation(() => {
         callCount++;
         if (callCount === 1) {
           return Promise.resolve({
@@ -221,7 +220,7 @@ describe('useTaskProgress Hook', () => {
         vi.advanceTimersByTime(2000);
       });
       
-      expect(mockGetProcessingStatus).toHaveBeenCalledTimes(2);
+      expect(mockGetTaskProgress).toHaveBeenCalledTimes(2);
     });
   });
 
@@ -234,7 +233,7 @@ describe('useTaskProgress Hook', () => {
         current_step: 'transcribing'
       };
       
-      mockGetProcessingStatus.mockResolvedValue(mockStatus);
+      mockGetTaskProgress.mockResolvedValue(mockStatus);
       
       const { result } = renderHook(() => useTaskProgress());
       
@@ -247,7 +246,7 @@ describe('useTaskProgress Hook', () => {
         vi.advanceTimersByTime(2000);
       });
       
-      expect(mockGetProcessingStatus).toHaveBeenCalledTimes(1);
+      expect(mockGetTaskProgress).toHaveBeenCalledTimes(1);
       
       // Stop monitoring
       act(() => {
@@ -259,7 +258,7 @@ describe('useTaskProgress Hook', () => {
         vi.advanceTimersByTime(2000);
       });
       
-      expect(mockGetProcessingStatus).toHaveBeenCalledTimes(1);
+      expect(mockGetTaskProgress).toHaveBeenCalledTimes(1);
       expect(result.current.status).toBe('idle');
     });
   });

@@ -112,22 +112,22 @@ import { TestDataManager } from '../infrastructure/test-data-manager';
 describe('API Contract Tests', () => {
   let validator: ContractValidator;
   let dataManager: TestDataManager;
-  
+
   beforeAll(async () => {
     validator = new ContractValidator();
     await validator.loadSpec('openapi_spec.json');
     dataManager = new TestDataManager();
   });
-  
+
   test('should validate endpoint contract', async () => {
     const testData = dataManager.generateUser();
-    
+
     const validation = validator.validateRequest(
       'POST',
       '/api/auth/register',
       testData
     );
-    
+
     expect(validation.valid).toBe(true);
   });
 });
@@ -140,12 +140,12 @@ import { TestDataManager } from '../infrastructure/test-data-manager';
 
 describe('E2E Authentication Flow', () => {
   let dataManager: TestDataManager;
-  
+
   beforeAll(async () => {
     dataManager = new TestDataManager();
     await waitForServers(); // Helper to ensure servers are ready
   });
-  
+
   test('complete registration flow', async () => {
     const testUser = dataManager.generateUser();
     // Test implementation
@@ -172,6 +172,7 @@ describe('E2E Authentication Flow', () => {
 - **Be Specific**: Make specific assertions, not just truthy/falsy
 - **Test Error Cases**: Always test both success and failure paths
 - **Validate Contracts**: Use contract validation for all API interactions
+- **No Hedging**: Assert the exact status code and payload—avoid `status in {200, 422}` style shortcuts even in boundary tests
 
 ### 4. Performance
 
@@ -294,5 +295,6 @@ This robust testing infrastructure ensures:
 ✅ **Comprehensive test data management**
 ✅ **Detailed reporting and monitoring**
 ✅ **Best practices enforcement**
+✅ **Security hygiene**—no committed secrets and smoke tests kept out of default CI
 
 The infrastructure eliminates all previous issues with test reliability, execution time, and contract enforcement, providing a solid foundation for continuous integration and deployment.

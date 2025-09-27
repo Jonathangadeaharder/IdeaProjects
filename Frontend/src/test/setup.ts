@@ -97,17 +97,26 @@ const mockTheme = {
 };
 
 // Make theme available globally for tests
-global.mockTheme = mockTheme;
+(global as any).mockTheme = mockTheme;
 
 // Helper to wrap components with theme provider
-global.withTheme = (component: React.ReactElement) =>
+(global as any).withTheme = (component: React.ReactElement) =>
   React.createElement(ThemeProvider, { theme: mockTheme }, component);
 
 // Make React.act available globally to replace ReactDOMTestUtils.act
-global.act = act;
+(global as any).act = act;
+
+// Enhanced act wrapper for async operations
+(global as any).actAsync = async (fn: () => Promise<any>) => {
+  await act(async () => {
+    await fn();
+  });
+};
 
 // Suppress specific warnings that come from testing libraries
 const originalConsoleWarn = console.warn;
+const originalConsoleError = console.error;
+
 console.warn = (...args) => {
   const message = args[0];
   if (
@@ -115,12 +124,27 @@ console.warn = (...args) => {
     (
       message.includes('ReactDOMTestUtils.act') ||
       message.includes('React Router Future Flag Warning') ||
-      message.includes('An update to') && message.includes('was not wrapped in act')
+      (message.includes('An update to') && message.includes('was not wrapped in act')) ||
+      message.includes('Warning: `ReactDOMTestUtils.act` is deprecated')
     )
   ) {
     return; // Suppress these warnings
   }
   originalConsoleWarn.apply(console, args);
+};
+
+console.error = (...args) => {
+  const message = args[0];
+  if (
+    typeof message === 'string' &&
+    (
+      message.includes('ReactDOMTestUtils.act') ||
+      (message.includes('An update to') && message.includes('was not wrapped in act'))
+    )
+  ) {
+    return; // Suppress these errors
+  }
+  originalConsoleError.apply(console, args);
 };
 
 // Mock IntersectionObserver
@@ -173,13 +197,41 @@ const localStorageMock = {
   key: vi.fn(),
 };
 Object.defineProperty(window, 'localStorage', {
-  value: localStorageMock
+  value: localStorageMock,
+  writable: true,
+  configurable: true
 });
 
 // Fix URLSearchParams for jsdom
 if (!global.URLSearchParams) {
   global.URLSearchParams = URLSearchParams;
 }
+
+// Ensure DOM is properly set up for testing
+if (typeof global.document === 'undefined' || !global.document.body) {
+  // Create a basic document if it doesn't exist
+  const dom = new (require('jsdom')).JSDOM('<!doctype html><html><body></body></html>');
+  global.document = dom.window.document;
+  global.window = dom.window;
+
+  // Ensure body exists
+  if (!global.document.body) {
+    global.document.documentElement.appendChild(global.document.createElement('body'));
+  }
+}
+
+// Ensure DOM globals are available for tests
+Object.defineProperty(global.window, 'Node', {
+  value: global.window.Node,
+  writable: true,
+  configurable: true
+});
+
+Object.defineProperty(global.window, 'Element', {
+  value: global.window.Element,
+  writable: true,
+  configurable: true
+});
 
 // Framer-motion is mocked via resolve.alias in vitest.config.ts
 
@@ -217,5 +269,7 @@ const sessionStorageMock = {
   key: vi.fn(),
 };
 Object.defineProperty(window, 'sessionStorage', {
-  value: sessionStorageMock
+  value: sessionStorageMock,
+  writable: true,
+  configurable: true
 });

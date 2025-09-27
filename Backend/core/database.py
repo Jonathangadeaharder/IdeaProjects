@@ -1,5 +1,6 @@
 """Database configuration with SQLAlchemy's built-in connection pooling"""
 from collections.abc import AsyncGenerator
+import logging
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
@@ -7,8 +8,11 @@ from sqlalchemy.pool import StaticPool
 
 from core.config import settings
 
+logger = logging.getLogger(__name__)
 
+# Unified database base class for all models
 class Base(DeclarativeBase):
+    """Unified base class for all SQLAlchemy models"""
     pass
 
 
@@ -52,18 +56,56 @@ async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
 
 async def create_db_and_tables():
     """Create database tables"""
-    from core.auth import Base as AuthBase
+    # Import all models to ensure they're registered with Base
+    import database.models  # noqa: F401 - Import all models
+    from core.auth import User  # noqa: F401 - Import User model
+
     async with engine.begin() as conn:
-        await conn.run_sync(AuthBase.metadata.create_all)
+        await conn.run_sync(Base.metadata.create_all)
 
 
 async def init_db():
-    """Initialize database tables"""
-    # Import FastAPI-Users models and other models to ensure they're registered with Base
-    import database.models  # noqa: F401 - Import other models
-    from core.auth import Base as AuthBase
+    """Initialize database tables and create default admin user"""
+    # Import all models to ensure they're registered with Base
+    import database.models  # noqa: F401 - Import all models
+    from core.auth import User  # noqa: F401 - Import User model
+
     async with engine.begin() as conn:
-        await conn.run_sync(AuthBase.metadata.create_all)
+        await conn.run_sync(Base.metadata.create_all)
+
+    # Create default admin user if it doesn't exist
+    await create_default_admin_user()
+
+
+async def create_default_admin_user():
+    """Create default admin user with credentials admin/admin"""
+    from core.auth import User
+    from sqlalchemy import select
+    from passlib.context import CryptContext
+
+    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+    async with AsyncSessionLocal() as session:
+        # Check if admin user already exists
+        result = await session.execute(
+            select(User).where(User.username == "admin")
+        )
+        existing_admin = result.scalar_one_or_none()
+
+        if not existing_admin:
+            # Create admin user
+            hashed_password = pwd_context.hash("admin")
+            admin_user = User(
+                email="admin@langplug.com",
+                username="admin",
+                hashed_password=hashed_password,
+                is_active=True,
+                is_superuser=True,
+                is_verified=True
+            )
+            session.add(admin_user)
+            await session.commit()
+            logger.info("Default admin user created (admin/admin)")
 
 
 async def close_db():

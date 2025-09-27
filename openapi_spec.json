@@ -40,33 +40,6 @@
         }
       }
     },
-    "/api/auth/logout": {
-      "post": {
-        "tags": [
-          "auth"
-        ],
-        "summary": "Auth:Jwt-Bearer.Logout",
-        "operationId": "auth_jwt_bearer_logout_api_auth_logout_post",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "401": {
-            "description": "Missing token or inactive user."
-          }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ]
-      }
-    },
     "/api/auth/login": {
       "post": {
         "tags": [
@@ -136,6 +109,33 @@
         }
       }
     },
+    "/api/auth/logout": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Auth:Jwt-Bearer.Logout",
+        "operationId": "auth_jwt_bearer_logout_api_auth_logout_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "401": {
+            "description": "Missing token or inactive user."
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
     "/api/auth/register": {
       "post": {
         "tags": [
@@ -198,26 +198,6 @@
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
                 }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/auth/test-prefix": {
-      "get": {
-        "tags": [
-          "authentication"
-        ],
-        "summary": "Auth Test Prefix",
-        "description": "Test endpoint to verify router prefix configuration",
-        "operationId": "auth_test_prefix_api_auth_test_prefix_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
               }
             }
           }
@@ -1025,6 +1005,28 @@
         }
       }
     },
+    "/api/vocabulary/languages": {
+      "get": {
+        "tags": [
+          "vocabulary"
+        ],
+        "summary": "Get Supported Languages",
+        "description": "Get list of supported languages",
+        "operationId": "get_supported_languages_api_vocabulary_languages_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LanguagesResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/vocabulary/stats": {
       "get": {
         "tags": [
@@ -1033,6 +1035,43 @@
         "summary": "Get Vocabulary Stats",
         "description": "Get vocabulary statistics for the current user",
         "operationId": "get_vocabulary_stats_api_vocabulary_stats_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "target_language",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Target language code",
+              "default": "de",
+              "title": "Target Language"
+            },
+            "description": "Target language code"
+          },
+          {
+            "name": "translation_language",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Translation language code",
+              "title": "Translation Language"
+            },
+            "description": "Translation language code"
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -1043,23 +1082,28 @@
                 }
               }
             }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
           }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ]
+        }
       }
     },
-    "/api/vocabulary/blocking-words": {
+    "/api/vocabulary/library/{level}": {
       "get": {
         "tags": [
           "vocabulary"
         ],
-        "summary": "Get Blocking Words",
-        "description": "Get top blocking words for a video segment",
-        "operationId": "get_blocking_words_api_vocabulary_blocking_words_get",
+        "summary": "Get Vocabulary Level",
+        "description": "Get vocabulary words for a specific level with user's known status",
+        "operationId": "get_vocabulary_level_api_vocabulary_library__level__get",
         "security": [
           {
             "OAuth2PasswordBearer": []
@@ -1067,33 +1111,56 @@
         ],
         "parameters": [
           {
-            "name": "video_path",
-            "in": "query",
+            "name": "level",
+            "in": "path",
             "required": true,
             "schema": {
               "type": "string",
-              "title": "Video Path"
+              "title": "Level"
             }
           },
           {
-            "name": "segment_start",
+            "name": "target_language",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Target language code",
+              "default": "de",
+              "title": "Target Language"
+            },
+            "description": "Target language code"
+          },
+          {
+            "name": "translation_language",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Translation language code",
+              "default": "es",
+              "title": "Translation Language"
+            },
+            "description": "Translation language code"
+          },
+          {
+            "name": "limit",
             "in": "query",
             "required": false,
             "schema": {
               "type": "integer",
-              "default": 0,
-              "title": "Segment Start"
-            }
-          },
-          {
-            "name": "segment_duration",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "default": 300,
-              "title": "Segment Duration"
-            }
+              "description": "Maximum number of words to return",
+              "default": 50,
+              "title": "Limit"
+            },
+            "description": "Maximum number of words to return"
           }
         ],
         "responses": {
@@ -1124,7 +1191,7 @@
           "vocabulary"
         ],
         "summary": "Mark Word Known",
-        "description": "Mark a word as known or unknown",
+        "description": "Mark a word concept as known or unknown",
         "operationId": "mark_word_known_api_vocabulary_mark_known_post",
         "requestBody": {
           "content": {
@@ -1161,102 +1228,6 @@
             "OAuth2PasswordBearer": []
           }
         ]
-      }
-    },
-    "/api/vocabulary/preload": {
-      "post": {
-        "tags": [
-          "vocabulary"
-        ],
-        "summary": "Preload Vocabulary",
-        "description": "Preload vocabulary data from text files into database (Admin only)",
-        "operationId": "preload_vocabulary_api_vocabulary_preload_post",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ]
-      }
-    },
-    "/api/vocabulary/library/stats": {
-      "get": {
-        "tags": [
-          "vocabulary"
-        ],
-        "summary": "Get Library Stats",
-        "description": "Get vocabulary statistics for all levels",
-        "operationId": "get_library_stats_api_vocabulary_library_stats_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ]
-      }
-    },
-    "/api/vocabulary/library/{level}": {
-      "get": {
-        "tags": [
-          "vocabulary"
-        ],
-        "summary": "Get Vocabulary Level",
-        "description": "Get all vocabulary words for a specific level with user's known status",
-        "operationId": "get_vocabulary_level_api_vocabulary_library__level__get",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "level",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Level"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
       }
     },
     "/api/vocabulary/library/bulk-mark": {
@@ -1302,6 +1273,74 @@
             "OAuth2PasswordBearer": []
           }
         ]
+      }
+    },
+    "/api/vocabulary/test-data": {
+      "get": {
+        "tags": [
+          "vocabulary"
+        ],
+        "summary": "Get Test Data",
+        "description": "Get test data to verify the multilingual setup works",
+        "operationId": "get_test_data_api_vocabulary_test_data_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/vocabulary/blocking-words": {
+      "get": {
+        "tags": [
+          "vocabulary"
+        ],
+        "summary": "Get Blocking Words",
+        "description": "Get words that would block comprehension from video subtitles",
+        "operationId": "get_blocking_words_api_vocabulary_blocking_words_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "video_path",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Path to the video file",
+              "title": "Video Path"
+            },
+            "description": "Path to the video file"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/profile": {
@@ -1477,107 +1516,6 @@
             "OAuth2PasswordBearer": []
           }
         ]
-      }
-    },
-    "/api/logs/frontend": {
-      "post": {
-        "tags": [
-          "logs"
-        ],
-        "summary": "Logs Receive Frontend",
-        "description": "Receive and save frontend logs to file",
-        "operationId": "logs_receive_frontend_api_logs_frontend_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/LogBatch"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/logs/list": {
-      "get": {
-        "tags": [
-          "logs"
-        ],
-        "summary": "Logs List Files",
-        "description": "List available log files",
-        "operationId": "logs_list_files_api_logs_list_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/logs/download/{filename}": {
-      "get": {
-        "tags": [
-          "logs"
-        ],
-        "summary": "Logs Download File",
-        "description": "Download a specific log file",
-        "operationId": "logs_download_file_api_logs_download__filename__get",
-        "parameters": [
-          {
-            "name": "filename",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Filename"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
       }
     },
     "/api/progress/user": {
@@ -2076,16 +2014,37 @@
             "type": "string",
             "title": "Question Id"
           },
-          "answer": {
+          "question_type": {
             "type": "string",
-            "title": "Answer"
+            "title": "Question Type",
+            "default": "multiple_choice"
+          },
+          "user_answer": {
+            "type": "string",
+            "title": "User Answer"
+          },
+          "correct_answer": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Correct Answer"
+          },
+          "points": {
+            "type": "integer",
+            "title": "Points",
+            "default": 10
           }
         },
         "type": "object",
         "required": [
           "session_id",
           "question_id",
-          "answer"
+          "user_answer"
         ],
         "title": "AnswerRequest",
         "description": "Request model for submitting an answer"
@@ -2229,20 +2188,29 @@
             "type": "string",
             "pattern": "^(A1|A2|B1|B2|C1|C2)$",
             "title": "Level",
-            "description": "CEFR difficulty level to mark (A1, A2, B1, B2, C1, C2)"
+            "description": "CEFR difficulty level to mark"
+          },
+          "target_language": {
+            "type": "string",
+            "maxLength": 5,
+            "minLength": 2,
+            "title": "Target Language",
+            "description": "Target language code (de, es, en, etc.)"
           },
           "known": {
             "type": "boolean",
             "title": "Known",
-            "description": "Whether to mark all words in the level as known (true) or unknown (false)"
+            "description": "Whether to mark all words as known (true) or unknown (false)"
           }
         },
         "type": "object",
         "required": [
           "level",
+          "target_language",
           "known"
         ],
-        "title": "BulkMarkRequest"
+        "title": "BulkMarkRequest",
+        "description": "Request to bulk mark words as known/unknown"
       },
       "ChunkProcessingRequest": {
         "properties": {
@@ -2405,6 +2373,16 @@
         ],
         "title": "FullPipelineRequest"
       },
+      "GameDifficulty": {
+        "type": "string",
+        "enum": [
+          "beginner",
+          "intermediate",
+          "advanced"
+        ],
+        "title": "GameDifficulty",
+        "description": "Valid difficulty levels"
+      },
       "GameSession": {
         "properties": {
           "session_id": {
@@ -2490,8 +2468,7 @@
           "session_data": {
             "additionalProperties": true,
             "type": "object",
-            "title": "Session Data",
-            "default": {}
+            "title": "Session Data"
           }
         },
         "type": "object",
@@ -2503,6 +2480,16 @@
         ],
         "title": "GameSession",
         "description": "Game session model"
+      },
+      "GameType": {
+        "type": "string",
+        "enum": [
+          "vocabulary",
+          "listening",
+          "comprehension"
+        ],
+        "title": "GameType",
+        "description": "Valid game types"
       },
       "HTTPValidationError": {
         "properties": {
@@ -2536,67 +2523,31 @@
         "title": "LanguagePreferences",
         "description": "Language preference update model"
       },
-      "LogBatch": {
+      "LanguagesResponse": {
         "properties": {
-          "entries": {
+          "languages": {
             "items": {
-              "$ref": "#/components/schemas/LogEntry"
+              "$ref": "#/components/schemas/SupportedLanguage"
             },
             "type": "array",
-            "title": "Entries"
-          },
-          "client_id": {
-            "type": "string",
-            "title": "Client Id",
-            "default": "frontend"
+            "title": "Languages",
+            "description": "List of supported languages"
           }
         },
         "type": "object",
         "required": [
-          "entries"
+          "languages"
         ],
-        "title": "LogBatch"
-      },
-      "LogEntry": {
-        "properties": {
-          "timestamp": {
-            "type": "string",
-            "title": "Timestamp"
-          },
-          "level": {
-            "type": "string",
-            "title": "Level"
-          },
-          "component": {
-            "type": "string",
-            "title": "Component"
-          },
-          "message": {
-            "type": "string",
-            "title": "Message"
-          },
-          "data": {
-            "type": "string",
-            "title": "Data"
-          }
-        },
-        "type": "object",
-        "required": [
-          "timestamp",
-          "level",
-          "component",
-          "message"
-        ],
-        "title": "LogEntry"
+        "title": "LanguagesResponse",
+        "description": "Response containing supported languages"
       },
       "MarkKnownRequest": {
         "properties": {
-          "word": {
+          "concept_id": {
             "type": "string",
-            "maxLength": 100,
-            "minLength": 1,
-            "title": "Word",
-            "description": "The word to mark as known/unknown"
+            "format": "uuid",
+            "title": "Concept Id",
+            "description": "Unique concept identifier"
           },
           "known": {
             "type": "boolean",
@@ -2606,10 +2557,11 @@
         },
         "type": "object",
         "required": [
-          "word",
+          "concept_id",
           "known"
         ],
-        "title": "MarkKnownRequest"
+        "title": "MarkKnownRequest",
+        "description": "Request to mark a word as known/unknown"
       },
       "ParseSRTRequest": {
         "properties": {
@@ -2727,12 +2679,10 @@
       "StartGameRequest": {
         "properties": {
           "game_type": {
-            "type": "string",
-            "title": "Game Type"
+            "$ref": "#/components/schemas/GameType"
           },
           "difficulty": {
-            "type": "string",
-            "title": "Difficulty",
+            "$ref": "#/components/schemas/GameDifficulty",
             "default": "intermediate"
           },
           "video_id": {
@@ -2748,6 +2698,8 @@
           },
           "total_questions": {
             "type": "integer",
+            "maximum": 50.0,
+            "minimum": 1.0,
             "title": "Total Questions",
             "default": 10
           }
@@ -2758,6 +2710,50 @@
         ],
         "title": "StartGameRequest",
         "description": "Request model for starting a game session"
+      },
+      "SupportedLanguage": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "maxLength": 5,
+            "minLength": 2,
+            "title": "Code",
+            "description": "Language code (de, es, en, etc.)"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 50,
+            "minLength": 1,
+            "title": "Name",
+            "description": "Language name in English"
+          },
+          "native_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 50
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Native Name",
+            "description": "Language name in native script"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active",
+            "description": "Whether the language is currently supported",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "name"
+        ],
+        "title": "SupportedLanguage",
+        "description": "Supported language information"
       },
       "TranscribeRequest": {
         "properties": {
@@ -3356,6 +3352,27 @@
             "title": "Levels",
             "description": "Statistics by CEFR level with total and known counts"
           },
+          "target_language": {
+            "type": "string",
+            "maxLength": 5,
+            "minLength": 2,
+            "title": "Target Language",
+            "description": "Target language code"
+          },
+          "translation_language": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 5,
+                "minLength": 2
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Translation Language",
+            "description": "Translation language code"
+          },
           "total_words": {
             "type": "integer",
             "minimum": 0.0,
@@ -3372,39 +3389,146 @@
         "type": "object",
         "required": [
           "levels",
+          "target_language",
           "total_words",
           "total_known"
         ],
         "title": "VocabularyStats",
+        "description": "Vocabulary statistics across all levels",
         "example": {
           "levels": {
             "A1": {
-              "known": 80,
-              "total": 100
+              "total_words": 100,
+              "user_known": 80
             },
             "A2": {
-              "known": 60,
-              "total": 150
+              "total_words": 150,
+              "user_known": 60
             },
             "B1": {
-              "known": 40,
-              "total": 200
+              "total_words": 200,
+              "user_known": 40
             }
           },
+          "target_language": "de",
           "total_known": 180,
-          "total_words": 450
+          "total_words": 450,
+          "translation_language": "es"
         }
       },
       "VocabularyWord": {
         "properties": {
+          "concept_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Concept Id",
+            "description": "Unique concept identifier"
+          },
           "word": {
             "type": "string",
             "maxLength": 100,
             "minLength": 1,
             "title": "Word",
-            "description": "The vocabulary word"
+            "description": "The vocabulary word in target language"
           },
-          "definition": {
+          "translation": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Translation",
+            "description": "Translation in user's preferred language"
+          },
+          "lemma": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lemma",
+            "description": "Base form of the word"
+          },
+          "difficulty_level": {
+            "type": "string",
+            "pattern": "^(A1|A2|B1|B2|C1|C2)$",
+            "title": "Difficulty Level",
+            "description": "CEFR difficulty level"
+          },
+          "semantic_category": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 50
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Semantic Category",
+            "description": "Part of speech (noun, verb, adjective, etc.)"
+          },
+          "domain": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 50
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Domain",
+            "description": "Domain category (education, technology, etc.)"
+          },
+          "gender": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 10
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gender",
+            "description": "Gender (der/die/das for German, el/la for Spanish)"
+          },
+          "plural_form": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Plural Form",
+            "description": "Plural form if applicable"
+          },
+          "pronunciation": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pronunciation",
+            "description": "IPA or phonetic representation"
+          },
+          "notes": {
             "anyOf": [
               {
                 "type": "string",
@@ -3414,14 +3538,8 @@
                 "type": "null"
               }
             ],
-            "title": "Definition",
-            "description": "Definition of the word"
-          },
-          "difficulty_level": {
-            "type": "string",
-            "pattern": "^(A1|A2|B1|B2|C1|C2)$",
-            "title": "Difficulty Level",
-            "description": "CEFR difficulty level (A1, A2, B1, B2, C1, C2)"
+            "title": "Notes",
+            "description": "Grammar notes, usage notes, etc."
           },
           "known": {
             "type": "boolean",
@@ -3432,10 +3550,12 @@
         },
         "type": "object",
         "required": [
+          "concept_id",
           "word",
           "difficulty_level"
         ],
-        "title": "VocabularyWord"
+        "title": "VocabularyWord",
+        "description": "Single vocabulary word with translations"
       }
     },
     "securitySchemes": {
@@ -3447,10 +3567,6 @@
             "tokenUrl": "auth/login"
           }
         }
-      },
-      "HTTPBearer": {
-        "type": "http",
-        "scheme": "bearer"
       }
     }
   }

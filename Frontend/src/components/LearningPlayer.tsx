@@ -14,7 +14,8 @@ import {
 import { toast } from 'react-hot-toast'
 import { Container, NetflixButton } from '@/styles/GlobalStyles'
 import { VocabularyGame } from './VocabularyGame'
-import { videoService, vocabularyService, handleApiError } from '@/services/api'
+import { buildVideoStreamUrl, handleApiError } from '@/services/api'
+import { getBlockingWordsApiVocabularyBlockingWordsGet } from '@/client/services.gen'
 import { useGameStore } from '@/store/useGameStore'
 import type { VideoInfo, VocabularyWord } from '@/types'
 
@@ -336,16 +337,18 @@ export const LearningPlayer: React.FC = () => {
     
     setLoading(true)
     try {
-      const words = await vocabularyService.getBlockingWords(
-        videoInfo.path,
-        segmentIndex * SEGMENT_DURATION,
-        SEGMENT_DURATION
-      )
-      
+      const blockingWordsResponse = await getBlockingWordsApiVocabularyBlockingWordsGet({
+        videoPath: videoInfo.path,
+      }) as { blocking_words?: VocabularyWord[] } | VocabularyWord[]
+
+      const words = Array.isArray(blockingWordsResponse)
+        ? blockingWordsResponse
+        : blockingWordsResponse?.blocking_words ?? []
+
       setSegmentWords(words)
       setShowVocabularyGame(words.length > 0)
     } catch (error) {
-      handleApiError(error)
+      handleApiError(error, 'LearningPlayer.handleError')
       toast.error('Failed to load vocabulary words')
     } finally {
       setLoading(false)
@@ -516,7 +519,7 @@ export const LearningPlayer: React.FC = () => {
     return null
   }
 
-  const videoUrl = videoService.getVideoStreamUrl(videoInfo.series, videoInfo.episode)
+  const videoUrl = buildVideoStreamUrl(videoInfo.series, videoInfo.episode)
   const segmentProgress = (getCurrentSegmentTime() / SEGMENT_DURATION) * 100
 
   return (

@@ -45,7 +45,7 @@ tests/
 ├── convert_hardcoded_urls.py         # Tool to find hardcoded URLs
 │
 ├── robust_auth_tests.py              # Authentication endpoint tests
-├── robust_video_tests.py             # Video endpoint tests  
+├── robust_video_tests.py             # Video endpoint tests
 ├── robust_vocabulary_tests.py        # Vocabulary endpoint tests
 ├── robust_processing_tests.py        # Processing endpoint tests
 ├── robust_performance_tests.py       # Performance tests
@@ -67,7 +67,7 @@ from main import app
 def client():
     return TestClient(app)
 
-@pytest.fixture 
+@pytest.fixture
 def url_builder(client):
     return get_url_builder(client.app)
 
@@ -94,7 +94,7 @@ def test_video_streaming(client, url_builder):
 - `auth_get_current_user` - GET /api/auth/me
 - `auth_test_prefix` - GET /api/auth/test-prefix
 
-### Video Routes  
+### Video Routes
 - `get_videos` - GET /api/videos
 - `stream_video` - GET /api/videos/{series}/{episode}
 - `upload_video_to_series` - POST /api/videos/upload/{series}
@@ -178,7 +178,7 @@ python -m pytest tests/robust_video_tests.py -v
 - No more broken tests due to URL structure changes
 - Future-proof against API versioning
 
-### Maintainability  
+### Maintainability
 - Single source of truth for route names
 - Type-safe URL generation
 - Clear error messages for missing routes
@@ -194,7 +194,7 @@ python -m pytest tests/robust_video_tests.py -v
 
 1. **Add URL Builder Fixture**:
 ```python
-@pytest.fixture 
+@pytest.fixture
 def url_builder(client):
     from url_builder import get_url_builder
     return get_url_builder(client.app)
@@ -205,7 +205,7 @@ def url_builder(client):
 # Before
 response = client.get("/api/auth/me")
 
-# After  
+# After
 url = url_builder.url_for("auth_get_current_user")
 response = client.get(url)
 ```

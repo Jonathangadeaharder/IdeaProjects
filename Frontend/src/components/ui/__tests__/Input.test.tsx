@@ -7,7 +7,7 @@ import { Input } from '../Input'
 // Helper to render with theme
 const renderWithTheme = (component: React.ReactElement) => {
   return render(
-    <ThemeProvider theme={global.mockTheme}>
+    <ThemeProvider theme={(global as any).mockTheme}>
       {component}
     </ThemeProvider>
   )
@@ -37,7 +37,10 @@ describe('Input Component', () => {
       renderWithTheme(<Input onChange={handleChange} data-testid="input" />)
 
       const input = screen.getByTestId('input')
-      await user.type(input, 'test value')
+
+      await (global as any).actAsync(async () => {
+        await user.type(input, 'test value')
+      })
 
       expect(handleChange).toHaveBeenCalled()
       expect(input).toHaveValue('test value')
@@ -55,14 +58,14 @@ describe('Input Component', () => {
       expect(screen.getByTestId('input')).toHaveAttribute('type', 'email')
 
       rerender(
-        <ThemeProvider theme={global.mockTheme}>
+        <ThemeProvider theme={(global as any).mockTheme}>
           <Input type="password" data-testid="input" />
         </ThemeProvider>
       )
       expect(screen.getByTestId('input')).toHaveAttribute('type', 'password')
 
       rerender(
-        <ThemeProvider theme={global.mockTheme}>
+        <ThemeProvider theme={(global as any).mockTheme}>
           <Input type="number" data-testid="input" />
         </ThemeProvider>
       )
@@ -76,14 +79,14 @@ describe('Input Component', () => {
       expect(screen.getByTestId('input')).toBeInTheDocument()
 
       rerender(
-        <ThemeProvider theme={global.mockTheme}>
+        <ThemeProvider theme={(global as any).mockTheme}>
           <Input variant="filled" data-testid="input" />
         </ThemeProvider>
       )
       expect(screen.getByTestId('input')).toBeInTheDocument()
 
       rerender(
-        <ThemeProvider theme={global.mockTheme}>
+        <ThemeProvider theme={(global as any).mockTheme}>
           <Input variant="outlined" data-testid="input" />
         </ThemeProvider>
       )
@@ -91,18 +94,13 @@ describe('Input Component', () => {
     })
 
     it('handles disabled state', () => {
-      const handleChange = vi.fn()
+      renderWithTheme(<Input disabled data-testid="input" />)
 
-      renderWithTheme(<Input disabled onChange={handleChange} data-testid="input" />)
-
-      const input = screen.getByTestId('input')
-      expect(input).toBeDisabled()
-
-      // In real browsers, disabled inputs don't fire change events
-      // but JSDOM doesn't perfectly replicate this behavior
-      fireEvent.change(input, { target: { value: 'test' } })
-      // Just verify the input is properly disabled
+      const input = screen.getByTestId('input');
       expect(input).toHaveAttribute('disabled')
+
+      // The input should be disabled
+      expect(input).toHaveProperty('disabled', true)
     })
 
     it('handles readonly state', () => {
@@ -384,8 +382,9 @@ describe('Input Component', () => {
 
       expect(inputRef).toBeTruthy()
 
-      if (inputRef) {
-        inputRef.focus()
+      // Type guard to ensure inputRef is not null
+      if (inputRef !== null) {
+        (inputRef as HTMLInputElement).focus()
         expect(inputRef).toHaveFocus()
       }
     })

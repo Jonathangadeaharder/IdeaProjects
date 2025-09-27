@@ -6,8 +6,12 @@ sys.path.insert(0, str(Path(__file__).parent))
 os.environ.setdefault('ENVIRONMENT', 'development')
 
 import asyncio
+import logging
 
 from sqlalchemy import text
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 
 from core.database import get_async_session, init_database
 
@@ -48,7 +52,7 @@ vocab_data = [
 ]
 
 async def quick_load_vocab_async():
-    print("Quick loading German vocabulary...")
+    logger.info("Quick loading German vocabulary...")
 
     # Initialize database
     await init_database()
@@ -75,15 +79,15 @@ async def quick_load_vocab_async():
         # Verify
         result = await session.execute(text("SELECT COUNT(*) FROM vocabulary WHERE language = 'de'"))
         count = result.scalar()
-        print(f"Loaded {count} German words")
+        logger.info(f"Loaded {count} German words")
 
         # Show A2+ words
         result = await session.execute(text("SELECT word, difficulty_level FROM vocabulary WHERE language = 'de' AND difficulty_level != 'A1'"))
-        print("A2+ words in database:")
+        logger.info("A2+ words in database:")
         for row in result.fetchall():
-            print(f"  {row[0]} - {row[1]}")
+            logger.info(f"  {row[0]} - {row[1]}")
 
-    print("✅ German vocabulary loaded successfully!")
+    logger.info("German vocabulary loaded successfully!")
 
 if __name__ == "__main__":
     asyncio.run(quick_load_vocab_async())

@@ -40,14 +40,16 @@ export class ServerManager {
     return new Promise((resolve, reject) => {
       // Start backend server using the Windows command from AGENTS.md
       // Ensure reload is disabled and TESTING mode is enabled to avoid heavy init and watchfiles issues
+      const projectRoot = path.resolve(__dirname, '..', '..');
+      const backendScript = path.resolve(projectRoot, 'Backend', 'run_backend.py');
       const psCommand = [
         "$env:TESTING='1';",
         "$env:LANGPLUG_RELOAD='false';",
-        'python E:\\Users\\Jonandrop\\IdeaProjects\\LangPlug\\Backend\\run_backend.py'
+        `python "${backendScript}"`
       ].join(' ');
 
       this.backendProcess = spawn('powershell.exe', ['-Command', psCommand], {
-        cwd: path.resolve(__dirname, '../../Backend'),
+        cwd: path.resolve(projectRoot, 'Backend'),
         stdio: ['pipe', 'pipe', 'pipe'],
         shell: true,
         env: { ...process.env }
@@ -103,8 +105,9 @@ export class ServerManager {
 
     return new Promise((resolve, reject) => {
       // Start frontend server
+      const projectRoot = path.resolve(__dirname, '..', '..');
       this.frontendProcess = spawn('npm', ['run', 'dev'], {
-        cwd: path.resolve(__dirname, '../../Frontend'),
+        cwd: path.resolve(projectRoot, 'Frontend'),
         stdio: ['pipe', 'pipe'],
         shell: true
       });

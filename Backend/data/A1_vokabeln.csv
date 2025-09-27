@@ -1,6 +1,6 @@
-deutsch_grundform,spanisch_grundform
-ab,desde
-aber,pero
+Deutsch_grundform,spanisch_grundform
+Ab,desde
+Aber,pero
 abfahren,partir
 Abfahrt,salida
 abgeben,entregar
@@ -8,11 +8,11 @@ abholen,recoger
 Absender,remitente
 Achtung,atención
 Adresse,dirección
-allein,solo
-also,entonces
+Allein,solo
+Also,entonces
 alt,viejo
 Alter,edad
-an,en
+An,en
 anbieten,ofrecer
 Angebot,oferta
 ander,otro
@@ -28,10 +28,9 @@ Anmeldung,inscripción
 Anrede,tratamiento
 anrufen,llamar por teléfono
 Anruf,llamada
-Anrufbeantworter,contestador automático
 Ansage,anuncio
 Anschluss,conexión
-ansein,estar encendido
+Ansein,estar encendido
 antworten,responder
 Antwort,respuesta
 Anzeige,anuncio
@@ -41,37 +40,33 @@ Apfel,manzana
 Appetit,apetito
 arbeiten,trabajar
 Arbeit,trabajo
-arbeitslos,desempleado
-Arbeitsplatz,puesto de trabajo
 Arm,brazo
 Arzt,médico
-auch,también
-auf,sobre
+Auch,también
+Auf,sobre
 Aufgabe,tarea
 aufhören,terminar
-aufsein,estar abierto
+Aufsein,estar abierto
 aufstehen,levantarse
 Aufzug,ascensor
 Auge,ojo
-aus,de
+Aus,de
 Ausflug,excursión
 ausfüllen,rellenar
 Ausgang,salida
 Auskunft,información
 Ausland,extranjero
 Ausländer,extranjero
-ausländisch,extranjero
 ausmachen,apagar
 Aussage,declaración
 aussehen,parecer
-aussein,estar apagado
+Aussein,estar apagado
 aussteigen,bajar
 Ausweis,documento de identidad
 ausziehen,quitarse
 Auto,coche
 Autobahn,autopista
 Automat,cajero automático
-automatisch,automático
 Baby,bebé
 Bäckerei,panadería
 Bad,baño
@@ -79,18 +74,17 @@ baden,bañarse
 Bahn,tren
 Bahnhof,estación de tren
 Bahnsteig,andén
-bald,pronto
+Bald,pronto
 Balkon,balcón
 Banane,plátano
 Bank,banco
-bar,en efectivo
+Bar,en efectivo
 Bauch,vientre
 Baum,árbol
-Beamte,funcionario
 bedeuten,significar
 beginnen,empezar
-bei,en
-beide,ambos
+Bei,en
+Beide,ambos
 Bein,pierna
 Beispiel,ejemplo
 bekannt,famoso
@@ -99,9 +93,6 @@ bekommen,recibir
 benutzen,utilizar
 Beruf,profesión
 besetzt,ocupado
-besichtigen,visitar
-besser,mejor
-best,mejor
 bestellen,pedir
 besuchen,visitar
 Bett,cama
@@ -110,17 +101,16 @@ Bier,cerveza
 Bild,imagen
 billig,barato
 Birne,pera
-bis,hasta
+Bis,hasta
 bisschen,un poco
-bitte,por favor
-Bitte,petición
+Bitte,por favor
 bitten,pedir
 bitter,amargo
 bleiben,quedarse
 Bleistift,lápiz
 Blick,vista
 Blume,flor
-Bogen,hoja
+bogen,hoja
 böse,enfadado
 brauchen,necesitar
 breit,ancho
@@ -128,42 +118,39 @@ Brief,carta
 Briefmarke,sello
 bringen,traer
 Brot,pan
-Brötchen,panecillo
+brötchen,panecillo
 Bruder,hermano
 Buch,libro
 Buchstabe,letra
-buchstabieren,deletrear
 Bus,autobús
 Butter,mantequilla
 Café,cafetería
-CD,CD
 Chef,jefe
-circa,aproximadamente
+Circa,aproximadamente
 Computer,ordenador
-da,ahí
+Da,ahí
 Dame,señora
 daneben,al lado
 danken,agradecer
 Dank,agradecimiento
-danke,gracias
-dann,entonces
+Danke,gracias
+Dann,entonces
 Datum,fecha
 dauern,durar
-dein,tu
-denn,porque
-dich,te
-dies,este
-dir,te
-Disco,discoteca
+Dein,tu
+Denn,porque
+Dich,te
+Dies,este
+Dir,te
 Doktor,doctor
 Doppelzimmer,habitación doble
 Dorf,pueblo
-dort,allí
+Dort,allí
 draußen,fuera
 drucken,imprimir
 Drucker,impresora
 drücken,pulsar
-durch,a través de
+Durch,a través de
 Durchsage,anuncio
 dürfen,poder
 Durst,sed
@@ -174,39 +161,36 @@ Ehefrau,esposa
 Ehemann,esposo
 Ei,huevo
 eilig,con prisa
-ein,un
+Ein,un
 einfach,fácil
 Eingang,entrada
 einkaufen,ir de compras
 einladen,invitar
 Einladung,invitación
-einmal,una vez
+Einmal,una vez
 einsteigen,subir
 Eintritt,entrada
 Einzelzimmer,habitación individual
-Eltern,padres
-E-Mail,correo electrónico
+eltern,padres
+E-mail,correo electrónico
 Empfänger,destinatario
 empfehlen,recomendar
 enden,terminar
 Ende,final
 entschuldigen,disculpar
 Entschuldigung,disculpa
-er,él
-Ergebnis,resultado
+Er,él
 erklären,explicar
 erlauben,permitir
 Erwachsene,adulto
 erzählen,contar
-es,ello
-essen,comer
-Essen,comida
-euer,vuestro
+Es,ello
+Euer,vuestro
 fahren,ir
 Fahrer,conductor
 Fahrkarte,billete
 Fahrrad,bicicleta
-falsch,falso
+Falsch,falso
 Familie,familia
 Familienname,apellido
 Familienstand,estado civil
@@ -217,7 +201,7 @@ feiern,celebrar
 fehlen,faltar
 Fehler,error
 fernsehen,ver la tele
-fertig,listo
+Fertig,listo
 Feuer,fuego
 Fieber,fiebre
 Film,película
@@ -229,29 +213,29 @@ Fleisch,carne
 fliegen,volar
 abfliegen,despegar
 Abflug,despegue
-Flughafen,aeropuerto
+flughafen,aeropuerto
 Flugzeug,avión
 Formular,formulario
 Foto,foto
 fragen,preguntar
 Frage,pregunta
 Frau,mujer
-frei,libre
+Frei,libre
 Freizeit,tiempo libre
-fremd,extranjero
+Fremd,extranjero
 freuen,alegrarse
 Freund,amigo
-früher,antes
+Früher,antes
 frühstücken,desayunar
 Frühstück,desayuno
 Führung,visita guiada
-für,para
+Für,para
 Fuß,pie
 Fußball,fútbol
-Garten,jardín
+garten,jardín
 Gast,invitado
 geben,dar
-geboren,nacido
+gebären,dar a luz
 Geburtsjahr,año de nacimiento
 Geburtsort,lugar de nacimiento
 Geburtstag,cumpleaños
@@ -262,21 +246,20 @@ gehören,pertenecer
 Geld,dinero
 Gemüse,verdura
 Gepäck,equipaje
-gerade,recto
-geradeaus,todo recto
+Gerade,recto
+Geradeaus,todo recto
 gern,con gusto
 Geschäft,tienda
 Geschenk,regalo
 Geschwister,hermanos
 Gespräch,conversación
 gestern,ayer
-gestorben,muerto
+sterben,morir
 Getränk,bebida
-Gewicht,peso
 gewinnen,ganar
 Glas,vaso
 glauben,creer
-gleich,igual
+Gleich,igual
 Gleis,vía
 Glück,suerte
 glücklich,feliz
@@ -286,20 +269,19 @@ gratulieren,felicitar
 grillen,hacer una barbacoa
 groß,grande
 Größe,talla
-Großeltern,abuelos
+großeltern,abuelos
 Großmutter,abuela
 Großvater,abuelo
 Gruppe,grupo
 Gruß,saludo
-gültig,válido
+Gültig,válido
 günstig,barato
 gut,bueno
 Haar,pelo
 haben,tener
-Hähnchen,pollo
+hähnchen,pollo
 Halbpension,media pensión
 Halle,vestíbulo
-hallo,hola
 halten,parar
 Haltestelle,parada
 Hand,mano
@@ -315,9 +297,9 @@ helfen,ayudar
 hell,claro
 Herd,cocina
 Herr,señor
-herzlich,cordial
-heute,hoy
-hier,aquí
+Herzlich,cordial
+Heute,hoy
+Hier,aquí
 Hilfe,ayuda
 hinten,detrás
 Hobby,afición
@@ -328,17 +310,17 @@ hören,oír
 Hotel,hotel
 Hund,perro
 Hunger,hambre
-ich,yo
-ihr,vosotros
-immer,siempre
-in,en
+Ich,yo
+Ihr,vosotros
+Immer,siempre
+In,en
 Information,información
-international,internacional
+International,internacional
 Internet,internet
-ja,sí
+Ja,sí
 Jacke,chaqueta
-jeder,cada
-jetzt,ahora
+Jeder,cada
+Jetzt,ahora
 Job,trabajo
 Jugendliche,joven
 jung,joven
@@ -350,15 +332,14 @@ Kreditkarte,tarjeta de crédito
 Kartoffel,patata
 Kasse,caja
 kaufen,comprar
-kein,ningún
+Kein,ningún
 kennen,conocer
 kennenlernen,conocer a alguien
 Kind,niño
-Kindergarten,guardería
+kindergarten,guardería
 Kino,cine
 Kiosk,quiosco
 klar,claro
-Klasse,clase
 Kleidung,ropa
 klein,pequeño
 kochen,cocinar
@@ -369,65 +350,62 @@ können,poder
 Konto,cuenta
 Kopf,cabeza
 kosten,costar
-krank,enfermo
-kriegen,recibir
+Krank,enfermo
 Küche,cocina
-Kuchen,pastel
+kuchen,pastel
 Kugelschreiber,bolígrafo
 Kühlschrank,nevera
-kulturell,cultural
+Kulturell,cultural
 kümmern,cuidar
 Kunde,cliente
 Kurs,curso
 kurz,corto
 lachen,reír
-Laden,tienda
+laden,tienda
 Land,país
 lang,largo
-lange,mucho tiempo
+Lange,mucho tiempo
 langsam,despacio
 laufen,correr
 laut,alto
 leben,vivir
-Leben,vida
 Lebensmittel,alimento
-ledig,soltero
+Ledig,soltero
 legen,poner
 Lehrer,profesor
 leicht,fácil
-leider,lamentablemente
+Leider,lamentablemente
 leise,bajo
 lernen,aprender
 lesen,leer
-letzt,último
-Leute,gente
+Letzt,último
+Person,persona
 Licht,luz
 lieb,querido
 lieben,amar
-lieber,preferiblemente
+Lieber,preferiblemente
 Lieblings-,favorito
 Lied,canción
 liegen,estar tumbado
-links,izquierda
-Lkw,camión
+Links,izquierda
 Lokal,bar
 Lösung,solución
 lustig,divertido
 machen,hacer
-Mädchen,chica
-man,se
+mädchen,chica
+Man,se
 Mann,hombre
-männlich,masculino
+Männlich,masculino
 Maschine,máquina
 Meer,mar
-mehr,más
-mein,mi
+Mehr,más
+Mein,mi
 meist,la mayoría
 Mensch,persona
 mieten,alquilar
 Miete,alquiler
 Milch,leche
-mit,con
+Mit,con
 mitbringen,traer consigo
 mitkommen,acompañar
 mitmachen,participar
@@ -436,33 +414,33 @@ Mitte,centro
 Möbel,muebles
 möchten,querer
 mögen,gustar
-möglich,posible
+Möglich,posible
 Moment,momento
 morgen,mañana
 müde,cansado
 Mund,boca
 müssen,deber
 Mutter,madre
-nach,a
-nächst,próximo
+Nach,a
+Nächst,próximo
 Name,nombre
 nehmen,coger
-nein,no
+Nein,no
 neu,nuevo
-nicht,no
-nichts,nada
-nie,nunca
-noch,todavía
+Nicht,no
+Nichts,nada
+Nie,nunca
+Noch,todavía
 normal,normal
 Nummer,número
-nur,solo
+Nur,solo
 oben,arriba
 Obst,fruta
-oder,o
+Oder,o
 öffnen,abrir
-geöffnet,abierto
-oft,a menudo
-ohne,sin
+Geöffnet,abierto
+Oft,a menudo
+Ohne,sin
 Öl,aceite
 Oma,abuela
 Opa,abuelo
@@ -477,7 +455,8 @@ Pause,pausa
 Plan,plan
 Platz,plaza
 Polizei,policía
-Pommes frites,patatas fritas
+Pommes,patatas fritas
+Frites,patatas fritas
 Post,correos
 Postleitzahl,código postal
 Praktikum,prácticas
@@ -486,14 +465,14 @@ Preis,precio
 Problem,problema
 Prospekt,folleto
 Prüfung,examen
-pünktlich,puntual
-Rad fahren,montar en bicicleta
+Pünktlich,puntual
+Rad,rueda
 rauchen,fumar
 Raum,habitación
 Rechnung,factura
-rechts,derecha
+Rechts,derecha
 regnen,llover
-Regen,lluvia
+regen,lluvia
 Reis,arroz
 reisen,viajar
 Reise,viaje
@@ -511,12 +490,12 @@ sagen,decir
 Salat,ensalada
 Salz,sal
 Satz,frase
-S-Bahn,tren de cercanías
+S-bahn,tren de cercanías
 Schalter,ventanilla
 scheinen,brillar
 schicken,enviar
 Schild,señal
-Schinken,jamón
+schinken,jamón
 schlafen,dormir
 schlecht,malo
 schließen,cerrar
@@ -525,7 +504,7 @@ Schluss,final
 Schlüssel,llave
 schmecken,saber (de sabor)
 schnell,rápido
-schon,ya
+Schon,ya
 schön,bonito
 Schrank,armario
 schreiben,escribir
@@ -539,23 +518,21 @@ Schwimmbad,piscina
 See,lago
 sehen,ver
 Sehenswürdigkeit,monumento
-sehr,muy
+Sehr,muy
 sein,ser
-seit,desde
-selbstständig,autónomo
-sich,se
-sie,ella
-Sie,usted
+Seit,desde
+Selbstständig,autónomo
+Sich,se
+Sie,ella
 sitzen,estar sentado
-so,así
+So,así
 Sofa,sofá
-sofort,inmediatamente
+Sofort,inmediatamente
 Sohn,hijo
 sollen,deber
 Sonne,sol
-spät,tarde
-später,más tarde
-Speisekarte,carta
+Spät,tarde
+Später,más tarde
 spielen,jugar
 Sport,deporte
 Sprache,idioma
@@ -581,7 +558,7 @@ telefonieren,telefonear
 Telefon,teléfono
 Termin,cita
 Test,prueba
-teuer,caro
+Teuer,caro
 Text,texto
 Thema,tema
 Ticket,billete
@@ -589,22 +566,21 @@ Tisch,mesa
 Tochter,hija
 Toilette,baño
 Tomate,tomate
-tot,muerto
+Tot,muerto
 treffen,encontrarse
 Treppe,escalera
 trinken,beber
-tschüss,adiós
 tun,hacer
-über,sobre
+Über,sobre
 übernachten,pernoctar
 überweisen,transferir
 Uhr,reloj
-um,a las
+Um,a las
 umziehen,mudarse
-und,y
-unser,nuestro
+Und,y
+Unser,nuestro
 unten,abajo
-unter,debajo
+Unter,debajo
 Unterricht,clase
 unterschreiben,firmar
 Unterschrift,firma
@@ -613,67 +589,130 @@ Vater,padre
 verboten,prohibido
 verdienen,ganar
 Verein,club
-verheiratet,casado
+Verheiratet,casado
 verkaufen,vender
 Verkäufer,vendedor
 vermieten,alquilar
 Vermieter,arrendador
 verstehen,entender
 Verwandte,pariente
-viel,mucho
-vielleicht,quizás
-von,de
-vor,delante de
+Viel,mucho
+Vielleicht,quizás
+Von,de
+Vor,delante de
 Vorname,nombre
 Vorsicht,cuidado
 vorstellen,presentar
 Vorwahl,prefijo
 wandern,hacer senderismo
-wann,cuándo
+Wann,cuándo
 warten,esperar
-warum,por qué
-was,qué
+Warum,por qué
+Was,qué
 waschen,lavar
 Wasser,agua
-weh tun,doler
-weiblich,femenino
+Weh,doler
+Weiblich,femenino
 Wein,vino
-weit,lejos
-weiter,continuar
-welch,cuál
+Weit,lejos
+Weiter,continuar
+Welch,cuál
 Welt,mundo
-wenig,poco
-wer,quién
+Wenig,poco
+Wer,quién
 werden,llegar a ser
 Wetter,tiempo
 wichtig,importante
-wie,cómo
+Wie,cómo
 wiederholen,repetir
-Wiederhören,hasta luego (por teléfono)
-Wiedersehen,hasta la vista
-wieviel,cuánto
+wiederhören,hasta luego (por teléfono)
+wiedersehen,hasta la vista
+Wieviel,cuánto
 willkommen,bienvenido
 Wind,viento
-wir,nosotros
+Wir,nosotros
 wissen,saber
-wo,dónde
-woher,de dónde
-wohin,a dónde
+Wo,dónde
+Woher,de dónde
+Wohin,a dónde
 wohnen,vivir
 Wohnung,apartamento
 wollen,querer
 Wort,palabra
-wunderbar,maravilloso
+Wunderbar,maravilloso
 zahlen,pagar
 Zeit,tiempo
-zurzeit,actualmente
+Zurzeit,actualmente
 Zeitung,periódico
 Zigarette,cigarrillo
 Zimmer,habitación
 Zoll,aduana
-zu,a
+Zu,a
 zufrieden,satisfecho
 Zug,tren
-zurück,de vuelta
+Zurück,de vuelta
 zusammen,juntos
 zwischen,entre
+Bereit,listo
+eben,justo
+Fast,casi
+Gar,nada
+Genauso,igual
+Gott,Dios
+Hin,hacia
+Kaum,apenas
+Mama,mamá
+Papa,papá
+Plötzlich,de repente
+stimmen,estar bien
+Toll,genial
+überraschen,sorprender
+vergessen,olvidar
+verlieren,perder
+wahr,verdadero
+weinen,llorar
+Wohl,probablemente
+Ziemlich,bastante
+Endlich,finalmente
+Längst,hace tiempo
+passieren,ocurrir
+Ball,pelota
+Eis,hielo
+Fenster,ventana
+ferien,vacaciones
+Fest,fiesta
+Gesicht,cara
+Büro,oficina
+Euro,euro
+Hals,cuello
+Hose,pantalones
+Idee,idea
+Jahr,año
+Luft,aire
+Markt,mercado
+Nase,nariz
+Ohr,oreja
+Sache,cosa
+Tür,puerta
+Zahl,número
+Zucker,azúcar
+Abend,tarde
+abendessen,cena
+Alles,todo
+Art,tipo
+blumen,flores
+Ding,cosa
+Herz,corazón
+Katze,gato
+Musik,música
+Onkel,tío
+Paar,par
+Park,parque
+Schlaf,sueño
+Seite,lado
+Spiel,juego
+Strasse,calle
+Tag,día
+Tante,tía
+Lehrerin,profesora
+Studentin,estudiante

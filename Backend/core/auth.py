@@ -209,9 +209,19 @@ class JWTAuthentication:
                 return None
 
             # Decode the JWT token
-            payload = jwt.decode(token, settings.secret_key, algorithms=["HS256"])
-            user_id: str = payload.get("sub")
+            payload = jwt.decode(
+                token,
+                settings.secret_key,
+                algorithms=["HS256"],
+                options={"verify_aud": False},
+            )
+            user_id: str | None = payload.get("sub")
             if user_id is None:
+                return None
+
+            try:
+                user_uuid = uuid.UUID(user_id)
+            except (ValueError, TypeError):
                 return None
 
             # Get user from database
@@ -221,7 +231,7 @@ class JWTAuthentication:
                     break
 
             from sqlalchemy import select
-            result = await db_session.execute(select(User).where(User.id == user_id))
+            result = await db_session.execute(select(User).where(User.id == user_uuid))
             user = result.scalar_one_or_none()
             return user
 

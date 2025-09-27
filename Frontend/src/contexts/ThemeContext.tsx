@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { ThemeProvider as StyledThemeProvider } from 'styled-components';
 import { lightTheme, darkTheme, Theme } from '@/styles/theme';
 
@@ -10,6 +10,35 @@ interface ThemeContextType {
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
+
+const isBrowser = typeof window !== 'undefined' && typeof document !== 'undefined';
+
+const getStoredPreference = (): boolean | null => {
+  if (!isBrowser || typeof window.localStorage === 'undefined') {
+    return null;
+  }
+
+  try {
+    const stored = window.localStorage.getItem('theme');
+    if (stored === 'dark') return true;
+    if (stored === 'light') return false;
+    return null;
+  } catch {
+    return null;
+  }
+};
+
+const getSystemPreference = (): boolean => {
+  if (!isBrowser || typeof window.matchMedia !== 'function') {
+    return false;
+  }
+
+  try {
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  } catch {
+    return false;
+  }
+};
 
 export const useTheme = () => {
   const context = useContext(ThemeContext);
@@ -25,44 +54,72 @@ interface ThemeProviderProps {
 
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
-    // Check localStorage for saved preference
-    const saved = localStorage.getItem('theme');
-    if (saved) {
-      return saved === 'dark';
+    const stored = getStoredPreference();
+    if (stored !== null) {
+      return stored;
     }
-    // Check system preference
-    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    return getSystemPreference();
   });
 
   const theme = isDarkMode ? darkTheme : lightTheme;
+  const hasHydrated = useRef(false);
 
   useEffect(() => {
-    // Save preference to localStorage
-    localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
-    
-    // Update document class for CSS-based theming
-    document.documentElement.classList.toggle('dark', isDarkMode);
-    
-    // Update meta theme-color
-    const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+    const stored = getStoredPreference();
+    if (stored !== null && stored !== isDarkMode) {
+      setIsDarkMode(stored);
+    }
+    hasHydrated.current = true;
+  }, []);
+
+  useEffect(() => {
+    if (!hasHydrated.current) {
+      return;
+    }
+
+    if (!isBrowser) {
+      return;
+    }
+
+    try {
+      window.localStorage?.setItem('theme', isDarkMode ? 'dark' : 'light');
+    } catch {
+      // Ignore storage write failures (private browsing, disabled storage, etc.)
+    }
+
+    if (document?.documentElement?.classList) {
+      document.documentElement.classList.toggle('dark', isDarkMode);
+    }
+
+    const metaThemeColor = document?.querySelector?.('meta[name="theme-color"]');
     if (metaThemeColor) {
       metaThemeColor.setAttribute('content', theme.colors.background);
     }
   }, [isDarkMode, theme]);
 
-  // Listen for system theme changes
   useEffect(() => {
+    if (!isBrowser || typeof window.matchMedia !== 'function') {
+      return;
+    }
+
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    const handleChange = (e: MediaQueryListEvent) => {
-      const saved = localStorage.getItem('theme');
-      // Only auto-switch if user hasn't set a preference
-      if (!saved) {
-        setIsDarkMode(e.matches);
+    const handleChange = (event: MediaQueryListEvent) => {
+      const stored = getStoredPreference();
+      if (stored === null) {
+        setIsDarkMode(event.matches);
       }
     };
 
-    mediaQuery.addEventListener('change', handleChange);
-    return () => mediaQuery.removeEventListener('change', handleChange);
+    if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', handleChange);
+      return () => mediaQuery.removeEventListener('change', handleChange);
+    }
+
+    // Safari < 14 uses addListener/removeListener
+    if (typeof mediaQuery.addListener === 'function') {
+      mediaQuery.addListener(handleChange);
+      return () => mediaQuery.removeListener(handleChange);
+    }
   }, []);
 
   const toggleTheme = () => {

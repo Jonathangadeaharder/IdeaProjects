@@ -21,15 +21,21 @@ def task_progress() -> dict[str, ProcessingStatus]:
     return {}
 
 
-def _mock_video_path(patcher, exists: bool = True, srt_files: list[str] | None = None):
+def _setup_mock_video_path(exists: bool = True, srt_files: list[str] | None = None):
+    """Set up mock video path without starting patches - caller manages context."""
     srt_files = srt_files or []
-    path_mock = patcher.start()
     video_file = Mock()
-    video_file.is_absolute.return_value = False
+    video_file.is_absolute.return_value = True  # Make it absolute to avoid Path operations
     video_file.exists.return_value = exists
-    
+
+    # Ensure __truediv__ is properly mocked for path operations
+    video_file.__truediv__ = Mock(return_value=video_file)
+
     # Create a proper mock for parent directory
     parent_mock = Mock()
+    # Enable path operations on parent directory
+    parent_mock.__truediv__ = Mock(return_value=Mock())
+
     # Create mock SRT files with proper attributes
     mock_srt_files = []
     for stem in srt_files:
@@ -40,18 +46,17 @@ def _mock_video_path(patcher, exists: bool = True, srt_files: list[str] | None =
         # Ensure the file doesn't contain "_chunk_" to pass the filter
         assert "_chunk_" not in mock_file.name
         mock_srt_files.append(mock_file)
-    
+
     # Mock the glob method to return our mock files when called with "*.srt"
     def mock_glob(pattern):
         if pattern == "*.srt":
             return mock_srt_files
         return []
-    
+
     parent_mock.glob = mock_glob
     video_file.parent = parent_mock
     video_file.stem = "episode"
-    
-    path_mock.return_value = video_file
+
     return video_file
 
 
@@ -88,11 +93,17 @@ async def test_Whenprocess_chunk_happy_pathCalled_ThenSucceeds(service, task_pro
     mock_parser = Mock(parse_file=Mock(return_value=[]), save_segments=Mock())
     monkeypatch.setattr("services.processing.chunk_processor.SRTParser", lambda *args, **kwargs: mock_parser)
 
-    path_patch = patch("services.processing.chunk_processor.Path")
-    # Also patch the _find_matching_srt_file method directly to return a valid path
-    srt_patch = patch.object(service, '_find_matching_srt_file', return_value="episode.srt")
-    video_file = _mock_video_path(path_patch, srt_files=["episode"])
-    with path_patch, srt_patch:
+    # Set up mock video file structure
+    video_file = _setup_mock_video_path(srt_files=["episode"])
+
+    # Mock Path to return our mock video file and handle pathlib operations
+    def mock_path_constructor(path_str):
+        if path_str == "episode.mp4":
+            return video_file
+        return Mock()
+
+    with patch("services.processing.chunk_processor.Path", side_effect=mock_path_constructor) as path_patch, \
+         patch.object(service, '_find_matching_srt_file', return_value="episode.srt") as srt_patch:
         await service.process_chunk(
             task_id="task",
             task_progress=task_progress,
@@ -130,9 +141,10 @@ async def test_Whenprocess_chunk_missing_srt_sets_errorCalled_ThenSucceeds(servi
     subtitle_processor.process_file = AsyncMock(return_value={})
     monkeypatch.setattr("services.processing.chunk_processor.get_subtitle_processor", lambda db_session: subtitle_processor)
 
-    path_patch = patch("services.processing.chunk_processor.Path")
-    _mock_video_path(path_patch, srt_files=[])
-    with path_patch:
+    # Set up mock video file structure with no SRT files
+    video_file = _setup_mock_video_path(srt_files=[])
+
+    with patch("services.processing.chunk_processor.Path", return_value=video_file):
         # Test that missing SRT file raises ChunkProcessingError
         with pytest.raises(ChunkProcessingError, match="No SRT file found"):
             await service.process_chunk(
@@ -161,9 +173,10 @@ async def test_Whenprocess_chunk_transcription_unavailable_records_errorCalled_T
     mock_result.scalar_one_or_none = Mock(return_value=mock_user)
     service.db_session.execute = AsyncMock(return_value=mock_result)
     
-    path_patch = patch("services.processing.chunk_processor.Path")
-    _mock_video_path(path_patch, srt_files=["episode"])
-    with path_patch:
+    # Set up mock video file structure
+    video_file = _setup_mock_video_path(srt_files=["episode"])
+
+    with patch("services.processing.chunk_processor.Path", return_value=video_file):
         # Test that transcription service unavailable raises ChunkProcessingError
         with pytest.raises(ChunkProcessingError, match="Transcription service"):
             await service.process_chunk(

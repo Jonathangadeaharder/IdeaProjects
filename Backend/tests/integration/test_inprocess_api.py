@@ -24,4 +24,4 @@ async def test_Whenvocabulary_statsWithoutauth_ThenReturnsError(async_http_clien
     authed = await async_http_client.get(
         "/api/vocabulary/library/stats", headers=flow["headers"]
     )
-    assert authed.status_code in {200, 500}
+    assert authed.status_code == 200, f"Expected 200, got {authed.status_code}: {authed.text}"

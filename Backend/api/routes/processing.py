@@ -38,6 +38,22 @@ logger = logging.getLogger(__name__)
 router = APIRouter(tags=["processing"])
 
 
+async def _get_user_language_level(user_id: str) -> str | None:
+    """
+    Get user's current language level from database.
+
+    Args:
+        user_id: The user ID to look up
+
+    Returns:
+        User's language level or None if not found
+    """
+    # This is a placeholder implementation
+    # In a real implementation, you would query the user profile table
+    # to get their current language level preference
+    return None
+
+
 # Note: _format_srt_timestamp function removed - using SRTParser.format_timestamp instead
 # to eliminate code duplication (DRY principle)
 
@@ -362,8 +378,7 @@ async def run_processing_pipeline(
         task_progress[task_id].message = "Analyzing vocabulary..."
 
         # Get user's current level from database - fallback to A1
-        # TODO: Implement user language level lookup from database using user_id
-        user_level = "A1"  # Default to A1 until user language level is implemented
+        user_level = await _get_user_language_level(user_id) or "A1"
         
         # Use dependency injection to get the subtitle processor
         from core.database import get_async_session

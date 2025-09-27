@@ -2,7 +2,7 @@
 from functools import lru_cache
 from typing import Annotated
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, Header, HTTPException, Query, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -168,6 +168,46 @@ async def get_optional_user(
         return None
 
 
+# Query parameter authentication for video streaming (ReactPlayer can't send headers)
+async def get_user_from_query_token(
+    token: str | None = Query(None, description="Authentication token"),
+    authorization: str | None = Header(None, description="Bearer access token"),
+    db: Annotated[AsyncSession, Depends(get_db_session)] = None
+) -> User:
+    """Authenticate user via query parameter token (for video streaming)"""
+    from fastapi import HTTPException, status
+
+    if not token and authorization:
+        auth_value = authorization.strip()
+        if auth_value.lower().startswith("bearer "):
+            token = auth_value[7:].strip()
+        elif auth_value:
+            token = auth_value
+
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication token required"
+        )
+
+    try:
+        from .auth import jwt_authentication
+        user = await jwt_authentication.authenticate(token, db)
+        if user is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid authentication token"
+            )
+        return user
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication failed"
+        )
+
+
 def get_user_subtitle_processor(
     current_user: Annotated[User, Depends(current_active_user)],
     db: Annotated[AsyncSession, Depends(get_db_session)]
@@ -200,22 +240,33 @@ def get_task_progress_registry() -> dict:
 
 async def init_services():
     """Initialize all services on startup"""
-    logger.info("Initializing services...")
+    logger.info("[STARTUP] Initializing services...")
+    logger.info("[STARTUP] This may take 5-10 minutes on first run to download AI models")
 
     # Initialize database tables
+    logger.info("[STARTUP] Step 1/4: Initializing database...")
     from .database import init_db
     await init_db()
+    logger.info("[STARTUP] Database initialized successfully")
 
     # Initialize transcription service
+    logger.info("[STARTUP] Step 2/4: Initializing transcription service...")
+    logger.info("[STARTUP] Using model: whisper-tiny (smallest, fastest model)")
     get_transcription_service()
+    logger.info("[STARTUP] Transcription service ready")
 
     # Initialize translation service
+    logger.info("[STARTUP] Step 3/4: Initializing translation service...")
+    logger.info("[STARTUP] Using model: opus-de-es (fast model)")
     get_translation_service()
+    logger.info("[STARTUP] Translation service ready")
 
     # Initialize task progress registry
+    logger.info("[STARTUP] Step 4/4: Initializing task registry...")
     get_task_progress_registry()
 
-    logger.info("All services initialized successfully")
+    logger.info("[STARTUP] All services initialized successfully!")
+    logger.info("[STARTUP] Server is ready to handle requests")
 
 
 async def cleanup_services():
@@ -246,6 +297,7 @@ __all__ = [
     'get_task_progress_registry',
     'get_transcription_service',
     'get_user_filter_chain',
+    'get_user_from_query_token',
     'get_user_subtitle_processor',
     'get_vocabulary_service',
     'init_services',

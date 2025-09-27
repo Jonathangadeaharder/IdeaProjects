@@ -15,17 +15,6 @@ class TranscribeRequest(BaseModel):
         description="Path to the video file to transcribe"
     )
 
-    @field_validator('video_path')
-    @classmethod
-    def validate_video_path(cls, v):
-        if not v.strip():
-            raise ValueError('Video path cannot be empty or whitespace')
-        # Check for common video file extensions
-        valid_extensions = {'.mp4', '.avi', '.mkv', '.mov', '.wmv', '.flv', '.webm'}
-        if not any(v.lower().endswith(ext) for ext in valid_extensions):
-            raise ValueError(f'Path must end with a valid video extension: {", ".join(valid_extensions)}')
-        return v
-
 
 # VocabularyWord is imported from vocabulary.py to avoid duplication
 
@@ -93,13 +82,6 @@ class FilterRequest(BaseModel):
         description="Path to the video file to filter subtitles for"
     )
 
-    @field_validator('video_path')
-    @classmethod
-    def validate_video_path(cls, v):
-        if not v.strip():
-            raise ValueError('Video path cannot be empty or whitespace')
-        return v
-
 
 class TranslateRequest(BaseModel):
     video_path: str = Field(
@@ -121,20 +103,6 @@ class TranslateRequest(BaseModel):
         pattern=r"^[a-z]{2}(-[A-Z]{2})?$",
         description="Target language code (e.g., 'en', 'de-DE')"
     )
-
-    @field_validator('video_path')
-    @classmethod
-    def validate_video_path(cls, v):
-        if not v.strip():
-            raise ValueError('Video path cannot be empty or whitespace')
-        return v
-
-    @field_validator('target_lang')
-    @classmethod
-    def validate_different_languages(cls, v, info):
-        if 'source_lang' in info.data and v == info.data['source_lang']:
-            raise ValueError("Target language must be different from source language")
-        return v
 
 
 class FullPipelineRequest(BaseModel):
@@ -158,29 +126,6 @@ class FullPipelineRequest(BaseModel):
         description="Target language code (e.g., 'en', 'de-DE')"
     )
 
-    @field_validator('video_path')
-    @classmethod
-    def validate_video_path(cls, v):
-        if not v.strip():
-            raise ValueError('Video path cannot be empty or whitespace')
-        return v
-
-    @field_validator('source_lang', 'target_lang')
-    @classmethod
-    def validate_language_codes(cls, v):
-        # List of valid ISO 639-1 language codes
-        valid_codes = {'en', 'de', 'es', 'fr', 'it', 'pt', 'ru', 'ja', 'ko', 'zh', 'ar', 'hi', 'nl', 'sv', 'no', 'da', 'fi', 'pl', 'cs', 'hu', 'ro', 'bg', 'hr', 'sk', 'sl', 'et', 'lv', 'lt', 'mt', 'ga', 'cy', 'eu', 'ca', 'gl', 'tr', 'el', 'he', 'fa', 'ur', 'th', 'vi', 'id', 'ms', 'tl', 'sw', 'am', 'zu', 'xh', 'af', 'is', 'fo', 'kl'}
-        base_code = v.split('-')[0].lower()
-        if base_code not in valid_codes:
-            raise ValueError(f'Invalid language code: {v}')
-        return v
-
-    @field_validator('target_lang')
-    @classmethod
-    def validate_different_languages(cls, v, info):
-        if 'source_lang' in info.data and v == info.data['source_lang']:
-            raise ValueError('Source and target languages must be different')
-        return v
 
 
 class ChunkProcessingRequest(BaseModel):
@@ -200,19 +145,6 @@ class ChunkProcessingRequest(BaseModel):
         description="End time of the chunk in seconds"
     )
 
-    @field_validator('video_path')
-    @classmethod
-    def validate_video_path(cls, v):
-        if not v.strip():
-            raise ValueError('Video path cannot be empty or whitespace')
-        return v
-
-    @field_validator('end_time')
-    @classmethod
-    def validate_time_range(cls, v, info):
-        if 'start_time' in info.data and v <= info.data['start_time']:
-            raise ValueError('End time must be greater than start time')
-        return v
 
     model_config = ConfigDict(
         json_schema_extra={

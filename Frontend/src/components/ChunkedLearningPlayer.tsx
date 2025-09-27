@@ -1,21 +1,30 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import styled from 'styled-components'
 import ReactPlayer from 'react-player'
-import { 
-  PlayIcon, 
-  PauseIcon, 
+import {
+  PlayIcon,
+  PauseIcon,
   SpeakerWaveIcon,
   SpeakerXMarkIcon,
-  CheckCircleIcon
+  CheckCircleIcon,
+  ArrowsPointingOutIcon,
+  ArrowsPointingInIcon,
+  ArrowLeftIcon,
+  ForwardIcon,
+  LanguageIcon,
+  EyeSlashIcon,
+  EyeIcon
 } from '@heroicons/react/24/solid'
 import axios from 'axios'
-import { videoService } from '@/services/api'
+import { buildVideoStreamUrl } from '@/services/api'
 import { logger } from '@/services/logger'
 
+// Styled Components
 const PlayerContainer = styled.div`
   background: #000;
   min-height: 100vh;
   position: relative;
+  overflow: hidden;
 `
 
 const VideoWrapper = styled.div`
@@ -23,19 +32,40 @@ const VideoWrapper = styled.div`
   width: 100%;
   height: 100vh;
   background: #000;
+  cursor: none;
+
+  &.show-cursor {
+    cursor: default;
+  }
+
+  &.fullscreen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 9999;
+  }
 `
 
-const ControlsOverlay = styled.div<{ $visible: boolean }>`
+const ControlsOverlay = styled.div<{ $visible: boolean; $mobile?: boolean }>`
   position: absolute;
   inset: 0;
   background: linear-gradient(
     transparent 0%,
-    rgba(0, 0, 0, 0.3) 70%,
-    rgba(0, 0, 0, 0.8) 100%
+    transparent 60%,
+    rgba(0, 0, 0, 0.3) 85%,
+    rgba(0, 0, 0, 0.9) 100%
   );
   opacity: ${props => props.$visible ? 1 : 0};
   transition: opacity 0.3s ease;
   pointer-events: ${props => props.$visible ? 'auto' : 'none'};
+  z-index: 10;
+
+  ${props => props.$mobile && `
+    padding: 12px;
+    background: rgba(0, 0, 0, 0.7);
+  `}
 `
 
 const TopControls = styled.div`
@@ -43,39 +73,114 @@ const TopControls = styled.div`
   top: 0;
   left: 0;
   right: 0;
-  padding: 24px;
+  padding: 20px 24px;
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
+  pointer-events: auto;
+
+  @media (max-width: 768px) {
+    padding: 16px;
+  }
+`
+
+const TopLeftControls = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 16px;
+
+  @media (max-width: 768px) {
+    gap: 12px;
+  }
 `
 
 const ChunkInfo = styled.div`
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.8);
   border-radius: 8px;
   padding: 12px 20px;
   color: white;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+
+  @media (max-width: 768px) {
+    padding: 8px 16px;
+    font-size: 14px;
+  }
 `
 
 const ChunkLabel = styled.div`
-  font-size: 14px;
+  font-size: 12px;
   color: #b3b3b3;
   margin-bottom: 4px;
+
+  @media (max-width: 768px) {
+    font-size: 11px;
+  }
 `
 
 const ChunkDetails = styled.div`
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 500;
+
+  @media (max-width: 768px) {
+    font-size: 14px;
+  }
+`
+
+const PlayerControls = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 16px;
+
+  @media (max-width: 768px) {
+    gap: 12px;
+  }
+`
+
+const BackButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.65);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.12);
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+
+  @media (max-width: 768px) {
+    padding: 8px 12px;
+    font-size: 14px;
+  }
 `
 
 const LearnedWordsBadge = styled.div`
-  background: rgba(70, 211, 105, 0.2);
-  border: 1px solid #46d369;
-  color: #46d369;
+  background: rgba(34, 197, 94, 0.2);
+  border: 1px solid #22c55e;
+  color: #22c55e;
   border-radius: 8px;
-  padding: 12px 20px;
+  padding: 8px 16px;
   display: flex;
   align-items: center;
   gap: 8px;
+  backdrop-filter: blur(10px);
+
+  @media (max-width: 768px) {
+    padding: 6px 12px;
+    font-size: 14px;
+  }
 `
 
 const BottomControls = styled.div`
@@ -83,60 +188,129 @@ const BottomControls = styled.div`
   bottom: 0;
   left: 0;
   right: 0;
-  padding: 24px;
+  padding: 16px 24px 24px;
+  pointer-events: auto;
+
+  @media (max-width: 768px) {
+    padding: 12px 16px 16px;
+  }
+`
+
+const ProgressContainer = styled.div`
+  margin-bottom: 16px;
 `
 
 const ProgressBar = styled.div`
   width: 100%;
-  height: 4px;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 2px;
-  margin-bottom: 16px;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 3px;
   cursor: pointer;
+  position: relative;
+  transition: height 0.2s;
+
+  &:hover {
+    height: 8px;
+  }
+
+  @media (max-width: 768px) {
+    height: 8px;
+  }
 `
 
 const ProgressFill = styled.div<{ $progress: number }>`
   width: ${props => props.$progress}%;
   height: 100%;
   background: #e50914;
-  border-radius: 2px;
+  border-radius: 3px;
   position: relative;
-  
+  transition: width 0.1s ease;
+
   &::after {
     content: '';
     position: absolute;
     right: 0;
-    top: -4px;
+    top: 50%;
     width: 12px;
     height: 12px;
-    background: white;
+    background: #e50914;
+    border: 2px solid white;
     border-radius: 50%;
-    transform: translateX(50%);
+    transform: translate(50%, -50%);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  ${ProgressBar}:hover &::after {
+    opacity: 1;
   }
 `
 
-const ControlButtons = styled.div`
+const ControlsRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+
+  @media (max-width: 768px) {
+    gap: 8px;
+  }
+`
+
+const LeftControls = styled.div`
   display: flex;
   align-items: center;
   gap: 16px;
+
+  @media (max-width: 768px) {
+    gap: 12px;
+  }
 `
 
-const ControlButton = styled.button`
+const RightControls = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 16px;
+
+  @media (max-width: 768px) {
+    gap: 12px;
+  }
+`
+
+const ControlButton = styled.button<{ $large?: boolean }>`
   background: transparent;
   border: none;
   color: white;
   cursor: pointer;
-  padding: 8px;
-  border-radius: 4px;
-  transition: background 0.2s;
-  
+  padding: ${props => props.$large ? '12px' : '8px'};
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: ${props => props.$large ? '48px' : '40px'};
+  min-height: ${props => props.$large ? '48px' : '40px'};
+
   &:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(1.05);
   }
-  
+
+  &:active {
+    transform: scale(0.95);
+  }
+
   &:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+    transform: none;
+  }
+
+  @media (max-width: 768px) {
+    min-width: ${props => props.$large ? '44px' : '36px'};
+    min-height: ${props => props.$large ? '44px' : '36px'};
+    padding: ${props => props.$large ? '10px' : '6px'};
   }
 `
 
@@ -144,30 +318,55 @@ const VolumeControl = styled.div`
   display: flex;
   align-items: center;
   gap: 8px;
+
+  @media (max-width: 768px) {
+    gap: 6px;
+  }
 `
 
 const VolumeSlider = styled.input`
-  width: 100px;
+  width: 80px;
   height: 4px;
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.3);
   outline: none;
   border-radius: 2px;
   cursor: pointer;
-  
+
   &::-webkit-slider-thumb {
     appearance: none;
-    width: 12px;
-    height: 12px;
+    width: 16px;
+    height: 16px;
     background: white;
     border-radius: 50%;
     cursor: pointer;
+    border: 2px solid #e50914;
+  }
+
+  &::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    background: white;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid #e50914;
+  }
+
+  @media (max-width: 768px) {
+    width: 60px;
   }
 `
 
 const TimeDisplay = styled.div`
   color: white;
   font-size: 14px;
-  margin-left: auto;
+  font-weight: 500;
+  min-width: 100px;
+  text-align: right;
+
+  @media (max-width: 768px) {
+    font-size: 12px;
+    min-width: 80px;
+  }
 `
 
 const SubtitleDisplay = styled.div`
@@ -176,78 +375,187 @@ const SubtitleDisplay = styled.div`
   left: 50%;
   transform: translateX(-50%);
   text-align: center;
-  max-width: 80%;
+  max-width: 90%;
   pointer-events: none;
+  z-index: 5;
+
+  @media (max-width: 768px) {
+    bottom: 100px;
+    max-width: 95%;
+  }
 `
 
 const SubtitleText = styled.div`
-  background: rgba(0, 0, 0, 0.85);
+  background: rgba(0, 0, 0, 0.9);
   padding: 12px 24px;
   border-radius: 8px;
   backdrop-filter: blur(10px);
   display: inline-block;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+
+  @media (max-width: 768px) {
+    padding: 8px 16px;
+  }
 `
 
 const OriginalSubtitle = styled.div`
   color: #ffd700;
-  font-size: 22px;
+  font-size: 20px;
   line-height: 1.4;
-  font-weight: 500;
+  font-weight: 600;
   margin-bottom: 8px;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+
+  @media (max-width: 768px) {
+    font-size: 16px;
+    margin-bottom: 6px;
+  }
 `
 
 const TranslatedSubtitle = styled.div`
   color: #ffffff;
-  font-size: 18px;
+  font-size: 16px;
   line-height: 1.3;
   opacity: 0.9;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+
+  @media (max-width: 768px) {
+    font-size: 14px;
+  }
+`
+
+const SettingsMenu = styled.div<{ $visible: boolean }>`
+  position: absolute;
+  bottom: 60px;
+  right: 24px;
+  background: rgba(0, 0, 0, 0.95);
+  border-radius: 8px;
+  padding: 16px;
+  min-width: 200px;
+  opacity: ${props => props.$visible ? 1 : 0};
+  transform: ${props => props.$visible ? 'translateY(0)' : 'translateY(10px)'};
+  transition: all 0.2s ease;
+  pointer-events: ${props => props.$visible ? 'auto' : 'none'};
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  z-index: 20;
+
+  @media (max-width: 768px) {
+    right: 16px;
+    min-width: 180px;
+  }
+`
+
+const MenuSection = styled.div`
+  margin-bottom: 16px;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+`
+
+const MenuLabel = styled.div`
+  color: #b3b3b3;
+  font-size: 12px;
+  font-weight: 500;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+`
+
+const MenuButton = styled.button<{ $active?: boolean }>`
+  width: 100%;
+  background: ${props => props.$active ? 'rgba(229, 9, 20, 0.2)' : 'transparent'};
+  border: none;
+  color: ${props => props.$active ? '#e50914' : 'white'};
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
 `
 
 const CompletionOverlay = styled.div`
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.9);
+  background: rgba(0, 0, 0, 0.95);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-direction: column;
   color: white;
   z-index: 100;
+  backdrop-filter: blur(10px);
 `
 
 const CompletionContent = styled.div`
   text-align: center;
   max-width: 500px;
+  padding: 20px;
+
+  @media (max-width: 768px) {
+    padding: 16px;
+    max-width: 90%;
+  }
 `
 
 const CompletionTitle = styled.h2`
   font-size: 32px;
   font-weight: bold;
   margin-bottom: 16px;
+
+  @media (max-width: 768px) {
+    font-size: 24px;
+  }
 `
 
 const CompletionMessage = styled.p`
   font-size: 18px;
   color: #b3b3b3;
   margin-bottom: 32px;
+  line-height: 1.5;
+
+  @media (max-width: 768px) {
+    font-size: 16px;
+    margin-bottom: 24px;
+  }
 `
 
 const ContinueButton = styled.button`
   background: #e50914;
   color: white;
   border: none;
-  padding: 12px 32px;
-  border-radius: 4px;
+  padding: 16px 32px;
+  border-radius: 8px;
   font-size: 16px;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s;
-  
+  transition: all 0.2s ease;
+
   &:hover {
     background: #f40612;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(229, 9, 20, 0.3);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+
+  @media (max-width: 768px) {
+    padding: 12px 24px;
+    font-size: 15px;
   }
 `
 
+// Types
 interface SubtitleEntry {
   start: number
   end: number
@@ -264,6 +572,8 @@ interface ChunkedLearningPlayerProps {
   startTime: number
   endTime: number
   onComplete: () => void
+  onSkipChunk?: () => void
+  onBack?: () => void
   learnedWords?: string[]
   chunkInfo?: {
     current: number
@@ -271,6 +581,9 @@ interface ChunkedLearningPlayerProps {
     duration: string
   }
 }
+
+type PlaybackSpeed = 0.5 | 0.75 | 1 | 1.25 | 1.5 | 2
+type SubtitleMode = 'off' | 'german' | 'english' | 'both'
 
 export const ChunkedLearningPlayer: React.FC<ChunkedLearningPlayerProps> = ({
   videoPath,
@@ -281,37 +594,55 @@ export const ChunkedLearningPlayer: React.FC<ChunkedLearningPlayerProps> = ({
   startTime,
   endTime,
   onComplete,
+  onSkipChunk,
+  onBack,
   learnedWords = [],
   chunkInfo
 }) => {
+  // Refs
   const playerRef = useRef<ReactPlayer>(null)
+  const controlsTimeoutRef = useRef<NodeJS.Timeout>()
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  // Core player state
   const [playing, setPlaying] = useState(false)
   const [volume, setVolume] = useState(1)
   const [muted, setMuted] = useState(false)
   const [currentTime, setCurrentTime] = useState(startTime)
+  const [playbackRate, setPlaybackRate] = useState<PlaybackSpeed>(1)
+  const [isFullscreen, setIsFullscreen] = useState(false)
+
+  // UI state
   const [showControls, setShowControls] = useState(true)
+  const [showSettings, setShowSettings] = useState(false)
   const [showCompletion, setShowCompletion] = useState(false)
-  const [currentSubtitle, setCurrentSubtitle] = useState<{ original: string; translation: string }>({ original: '', translation: '' })
+  const [isMobile, setIsMobile] = useState(false)
+
+  // Subtitle state
+  const [subtitleMode, setSubtitleMode] = useState<SubtitleMode>('german')
+  const [currentSubtitle, setCurrentSubtitle] = useState<{ original: string; translation: string }>({
+    original: '',
+    translation: ''
+  })
   const [subtitles, setSubtitles] = useState<SubtitleEntry[]>([])
   const [translations, setTranslations] = useState<SubtitleEntry[]>([])
-  const controlsTimeoutRef = useRef<NodeJS.Timeout>()
 
-  // Calculate duration of this chunk
+  // Calculate progress and duration
   const chunkDuration = endTime - startTime
-  const progress = ((currentTime - startTime) / chunkDuration) * 100
+  const progress = Math.max(0, Math.min(100, ((currentTime - startTime) / chunkDuration) * 100))
 
   // Format time display
-  const formatTime = (seconds: number): string => {
+  const formatTime = useCallback((seconds: number): string => {
     const mins = Math.floor(seconds / 60)
     const secs = Math.floor(seconds % 60)
     return `${mins}:${secs.toString().padStart(2, '0')}`
-  }
+  }, [])
 
   // Parse SRT format subtitles
-  const parseSRT = (srtContent: string): SubtitleEntry[] => {
+  const parseSRT = useCallback((srtContent: string): SubtitleEntry[] => {
     const entries: SubtitleEntry[] = []
     const blocks = srtContent.trim().split(/\n\s*\n/)
-    
+
     for (const block of blocks) {
       const lines = block.split('\n')
       if (lines.length >= 3) {
@@ -319,13 +650,11 @@ export const ChunkedLearningPlayer: React.FC<ChunkedLearningPlayerProps> = ({
         if (timeMatch) {
           const start = parseInt(timeMatch[1]) * 3600 + parseInt(timeMatch[2]) * 60 + parseInt(timeMatch[3]) + parseInt(timeMatch[4]) / 1000
           const end = parseInt(timeMatch[5]) * 3600 + parseInt(timeMatch[6]) * 60 + parseInt(timeMatch[7]) + parseInt(timeMatch[8]) / 1000
-          
-          // Join remaining lines as subtitle text
+
           const textLines = lines.slice(2)
           let originalText = ''
           let translation = ''
-          
-          // Check if this is a dual-language subtitle (original | translation)
+
           if (textLines.length > 0 && textLines[0].includes('|')) {
             const parts = textLines[0].split('|')
             originalText = parts[0].trim()
@@ -333,44 +662,157 @@ export const ChunkedLearningPlayer: React.FC<ChunkedLearningPlayerProps> = ({
           } else {
             originalText = textLines.join(' ')
           }
-          
+
           entries.push({ start, end, text: originalText, translation })
         }
       }
     }
-    
-    return entries
-  }
 
-  // Helper function to build subtitle URL
-  const buildSubtitleUrl = (path: string): string => {
+    return entries
+  }, [])
+
+  // Build subtitle URL
+  const buildSubtitleUrl = useCallback((path: string): string => {
     let subtitleUrl = ''
     if (path.includes('\\') || path.includes(':')) {
-      // This is a Windows absolute path - extract series and filename
       const pathParts = path.replace(/\\/g, '/').split('/')
       const videosIndex = pathParts.findIndex(p => p.toLowerCase() === 'videos')
       if (videosIndex !== -1 && videosIndex < pathParts.length - 1) {
         const relativePath = pathParts.slice(videosIndex + 1).join('/')
         subtitleUrl = `/api/videos/subtitles/${encodeURIComponent(relativePath)}`
       } else {
-        // Fallback: try to construct from series
         const filename = pathParts[pathParts.length - 1]
         subtitleUrl = `/api/videos/subtitles/${encodeURIComponent(`${series}/${filename}`)}`
       }
     } else {
-      // Already a relative path
       subtitleUrl = `/api/videos/subtitles/${encodeURIComponent(path)}`
     }
-    
-    // Use backend URL with token
-    const fullSubtitleUrl = subtitleUrl.startsWith('http') 
-      ? subtitleUrl 
-      : `${import.meta.env.VITE_API_BASE_URL || 'http://172.30.96.1:8000'}${subtitleUrl.replace('/api', '')}`
-    
-    return fullSubtitleUrl
-  }
 
-  // Load subtitles and translations
+    const fullSubtitleUrl = subtitleUrl.startsWith('http')
+      ? subtitleUrl
+      : `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}${subtitleUrl}`
+
+    return fullSubtitleUrl
+  }, [series])
+
+  // Auto-hide controls
+  const resetControlsTimeout = useCallback(() => {
+    if (controlsTimeoutRef.current) {
+      clearTimeout(controlsTimeoutRef.current)
+    }
+
+    setShowControls(true)
+
+    if (playing && !showSettings) {
+      controlsTimeoutRef.current = setTimeout(() => {
+        setShowControls(false)
+      }, 3000)
+    }
+  }, [playing, showSettings])
+
+  // Keyboard shortcuts
+  const handleKeyPress = useCallback((e: KeyboardEvent) => {
+    if (e.target instanceof HTMLInputElement) return
+
+    switch (e.code) {
+      case 'Space':
+        e.preventDefault()
+        setPlaying(prev => !prev)
+        break
+      case 'ArrowLeft':
+        e.preventDefault()
+        if (playerRef.current) {
+          const newTime = Math.max(startTime, currentTime - 10)
+          playerRef.current.seekTo(newTime)
+          setCurrentTime(newTime)
+        }
+        break
+      case 'ArrowRight':
+        e.preventDefault()
+        if (playerRef.current) {
+          const newTime = Math.min(endTime, currentTime + 10)
+          playerRef.current.seekTo(newTime)
+          setCurrentTime(newTime)
+        }
+        break
+      case 'KeyF':
+        e.preventDefault()
+        toggleFullscreen()
+        break
+      case 'KeyM':
+        e.preventDefault()
+        setMuted(prev => !prev)
+        break
+      case 'KeyS':
+        e.preventDefault()
+        setSubtitleMode(prev => {
+          const modes: SubtitleMode[] = ['off', 'german', 'english', 'both']
+          const currentIndex = modes.indexOf(prev)
+          return modes[(currentIndex + 1) % modes.length]
+        })
+        break
+    }
+
+    resetControlsTimeout()
+  }, [currentTime, startTime, endTime, resetControlsTimeout])
+
+  // Fullscreen handling
+  const toggleFullscreen = useCallback(() => {
+    if (!containerRef.current) return
+
+    if (!isFullscreen) {
+      if (containerRef.current.requestFullscreen) {
+        containerRef.current.requestFullscreen()
+      }
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen()
+      }
+    }
+  }, [isFullscreen])
+
+  // Handle fullscreen changes
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement)
+    }
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange)
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange)
+  }, [])
+
+  // Mobile detection
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768)
+    }
+
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
+
+  // Keyboard event listeners
+  useEffect(() => {
+    document.addEventListener('keydown', handleKeyPress)
+    return () => document.removeEventListener('keydown', handleKeyPress)
+  }, [handleKeyPress])
+
+  // Mouse move handler
+  useEffect(() => {
+    const handleMouseMove = () => resetControlsTimeout()
+
+    if (containerRef.current) {
+      containerRef.current.addEventListener('mousemove', handleMouseMove)
+      return () => {
+        if (containerRef.current) {
+          containerRef.current.removeEventListener('mousemove', handleMouseMove)
+        }
+      }
+    }
+  }, [resetControlsTimeout])
+
+  // Load subtitles
   useEffect(() => {
     logger.info('ChunkedLearningPlayer', 'Loading subtitles...', {
       subtitlePath,
@@ -378,24 +820,28 @@ export const ChunkedLearningPlayer: React.FC<ChunkedLearningPlayerProps> = ({
       startTime,
       endTime
     })
-    
+
     const token = localStorage.getItem('authToken')
-    
-    // Load main subtitles (German transcription)
+
+    // Load German subtitles
     if (subtitlePath) {
-      logger.info('ChunkedLearningPlayer', 'Building subtitle URL for:', subtitlePath)
       const fullSubtitleUrl = buildSubtitleUrl(subtitlePath)
-      logger.info('ChunkedLearningPlayer', 'Full subtitle URL:', fullSubtitleUrl)
+
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json'
+      }
       
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`
+      }
+
       axios.get(fullSubtitleUrl, {
-        params: token ? { token, _ts: Date.now() } : { _ts: Date.now() }
+        headers,
+        params: { _ts: Date.now() }
       })
         .then(response => {
-          logger.info('ChunkedLearningPlayer', `Subtitle response received, length: ${response.data.length}`)
           const parsedSubs = parseSRT(response.data)
-          logger.info('ChunkedLearningPlayer', `Parsed subtitles before filtering: ${parsedSubs.length}`)
-          // Filter subtitles for this chunk
-          const chunkSubs = parsedSubs.filter(sub => 
+          const chunkSubs = parsedSubs.filter(sub =>
             sub.start >= startTime && sub.end <= endTime
           )
           setSubtitles(chunkSubs)
@@ -407,113 +853,129 @@ export const ChunkedLearningPlayer: React.FC<ChunkedLearningPlayerProps> = ({
     } else {
       logger.warn('ChunkedLearningPlayer', 'No subtitle path provided')
     }
-    
-    // Load translations (English translation for difficult segments)
+
+    // Load English translations
     if (translationPath) {
       const fullTranslationUrl = buildSubtitleUrl(translationPath)
+
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json'
+      }
       
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`
+      }
+
       axios.get(fullTranslationUrl, {
-        params: token ? { token, _ts: Date.now() } : { _ts: Date.now() }
+        headers,
+        params: { _ts: Date.now() }
       })
         .then(response => {
           const parsedTranslations = parseSRT(response.data)
-          // Filter translations for this chunk
-          const chunkTranslations = parsedTranslations.filter(trans => 
+          const chunkTranslations = parsedTranslations.filter(trans =>
             trans.start >= startTime && trans.end <= endTime
           )
           setTranslations(chunkTranslations)
-          console.log('[ChunkedLearningPlayer] Loaded English translations:', chunkTranslations.length, 'entries')
+          logger.info('ChunkedLearningPlayer', `Loaded English translations: ${chunkTranslations.length} entries`)
         })
         .catch(error => {
-          console.error('Failed to load translations:', error)
-          // Translation file is optional, so don't show error to user
+          logger.warn('ChunkedLearningPlayer', 'Failed to load translations', error)
         })
     }
-  }, [subtitlePath, translationPath, series, startTime, endTime])
+  }, [subtitlePath, translationPath, series, startTime, endTime, buildSubtitleUrl, parseSRT])
 
-  // Auto-hide controls
-  useEffect(() => {
-    const handleMouseMove = () => {
-      setShowControls(true)
-      if (controlsTimeoutRef.current) {
-        clearTimeout(controlsTimeoutRef.current)
-      }
-      controlsTimeoutRef.current = setTimeout(() => {
-        if (playing) {
-          setShowControls(false)
-        }
-      }, 3000)
-    }
-
-    window.addEventListener('mousemove', handleMouseMove)
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove)
-      if (controlsTimeoutRef.current) {
-        clearTimeout(controlsTimeoutRef.current)
-      }
-    }
-  }, [playing])
-
-  // Start playing when component mounts
+  // Auto-play when component mounts
   useEffect(() => {
     if (playerRef.current) {
       playerRef.current.seekTo(startTime)
-      setPlaying(true)
+      setTimeout(() => setPlaying(true), 100)
     }
   }, [startTime])
 
   // Handle video progress
-  const handleProgress = (state: { playedSeconds: number }) => {
+  const handleProgress = useCallback((state: { playedSeconds: number }) => {
     setCurrentTime(state.playedSeconds)
-    
-    // Update current subtitle based on playback time
-    // Find current German subtitle (always shown)
-    const currentSub = subtitles.find(sub => 
+
+    // Update current subtitles
+    const currentSub = subtitles.find(sub =>
       state.playedSeconds >= sub.start && state.playedSeconds <= sub.end
     )
-    
-    // Find current English translation (only shown when available)
-    const currentTranslation = translations.find(trans => 
+
+    const currentTranslation = translations.find(trans =>
       state.playedSeconds >= trans.start && state.playedSeconds <= trans.end
     )
-    
+
     setCurrentSubtitle({
       original: currentSub?.text || '',
       translation: currentTranslation?.text || ''
     })
-    
-    // Check if we've reached the end of the chunk
+
+    // Check if chunk is complete
     if (state.playedSeconds >= endTime && !showCompletion) {
       setPlaying(false)
       setShowCompletion(true)
     }
-  }
+  }, [subtitles, translations, endTime, showCompletion])
 
   // Handle seeking
-  const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
+  const handleSeek = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     const bounds = e.currentTarget.getBoundingClientRect()
     const x = e.clientX - bounds.left
     const percentage = x / bounds.width
     const seekTime = startTime + (chunkDuration * percentage)
-    
+
     if (playerRef.current) {
       playerRef.current.seekTo(seekTime)
       setCurrentTime(seekTime)
     }
+  }, [startTime, chunkDuration])
+
+  // Render subtitles based on mode
+  const renderSubtitles = () => {
+    if (subtitleMode === 'off') return null
+
+    const showOriginal = subtitleMode === 'german' || subtitleMode === 'both'
+    const showTranslation = subtitleMode === 'english' || subtitleMode === 'both'
+
+    if (!showOriginal && !showTranslation) return null
+    if (!currentSubtitle.original && !currentSubtitle.translation) return null
+
+    return (
+      <SubtitleDisplay>
+        <SubtitleText>
+          {showOriginal && currentSubtitle.original && (
+            <OriginalSubtitle>{currentSubtitle.original}</OriginalSubtitle>
+          )}
+          {showTranslation && currentSubtitle.translation && (
+            <TranslatedSubtitle>{currentSubtitle.translation}</TranslatedSubtitle>
+          )}
+        </SubtitleText>
+      </SubtitleDisplay>
+    )
   }
 
-  // Handle continue to next chunk
-  const handleContinue = () => {
-    onComplete()
-  }
+  // Video URL
+  const videoUrl = buildVideoStreamUrl(
+    series,
+    episode
+  )
 
-  // Construct video URL from backend API
-  // Pass the full episode title as the backend matches by checking if it's in the filename
-  const videoUrl = videoService.getVideoStreamUrl(series, episode)
+  const handleSkip = useCallback(() => {
+    setPlaying(false)
+    setShowCompletion(false)
+    if (onSkipChunk) {
+      onSkipChunk()
+    } else {
+      onComplete()
+    }
+  }, [onSkipChunk, onComplete])
 
   return (
-    <PlayerContainer>
-      <VideoWrapper>
+    <PlayerContainer ref={containerRef}>
+      <VideoWrapper
+        className={`${showControls ? 'show-cursor' : ''} ${isFullscreen ? 'fullscreen' : ''}`}
+        onClick={resetControlsTimeout}
+      >
         <ReactPlayer
           ref={playerRef}
           url={videoUrl}
@@ -522,94 +984,171 @@ export const ChunkedLearningPlayer: React.FC<ChunkedLearningPlayerProps> = ({
           playing={playing}
           volume={volume}
           muted={muted}
+          playbackRate={playbackRate}
           controls={false}
           onProgress={handleProgress}
           progressInterval={100}
         />
 
-        <ControlsOverlay $visible={true}>
+        <ControlsOverlay $visible={showControls} $mobile={isMobile}>
           <TopControls>
-            {chunkInfo && (
-              <ChunkInfo>
-                <ChunkLabel>Playing Chunk</ChunkLabel>
-                <ChunkDetails>
-                  {chunkInfo.current} of {chunkInfo.total} • {chunkInfo.duration}
-                </ChunkDetails>
-              </ChunkInfo>
-            )}
-            
-            {learnedWords.length > 0 && (
-              <LearnedWordsBadge>
-                <CheckCircleIcon className="w-5 h-5" />
-                <span>{learnedWords.length} words learned</span>
-              </LearnedWordsBadge>
-            )}
+            <TopLeftControls>
+              {onBack && (
+                <BackButton onClick={onBack}>
+                  <ArrowLeftIcon className="w-5 h-5" />
+                  <span>Back to Episodes</span>
+                </BackButton>
+              )}
+
+              {chunkInfo && (
+                <ChunkInfo>
+                  <ChunkLabel>Playing Chunk</ChunkLabel>
+                  <ChunkDetails>
+                    {chunkInfo.current} of {chunkInfo.total} • {chunkInfo.duration}
+                  </ChunkDetails>
+                </ChunkInfo>
+              )}
+            </TopLeftControls>
+
+            <PlayerControls>
+              {learnedWords.length > 0 && (
+                <LearnedWordsBadge>
+                  <CheckCircleIcon className="w-4 h-4" />
+                  <span>{learnedWords.length} learned</span>
+                </LearnedWordsBadge>
+              )}
+
+              <ControlButton onClick={() => setShowSettings(!showSettings)}>
+                ⚙️
+              </ControlButton>
+            </PlayerControls>
           </TopControls>
 
+          {renderSubtitles()}
+
           <BottomControls>
-            {(currentSubtitle.original || currentSubtitle.translation) && (
-              <SubtitleDisplay>
-                <SubtitleText>
-                  {currentSubtitle.original && (
-                    <OriginalSubtitle>{currentSubtitle.original}</OriginalSubtitle>
-                  )}
-                  {currentSubtitle.translation && (
-                    <TranslatedSubtitle>{currentSubtitle.translation}</TranslatedSubtitle>
-                  )}
-                </SubtitleText>
-              </SubtitleDisplay>
-            )}
+            <ProgressContainer>
+              <ProgressBar onClick={handleSeek}>
+                <ProgressFill $progress={progress} />
+              </ProgressBar>
+            </ProgressContainer>
 
-            <ProgressBar onClick={handleSeek}>
-              <ProgressFill $progress={progress} />
-            </ProgressBar>
-
-            <ControlButtons>
-              <ControlButton onClick={() => setPlaying(!playing)}>
-                {playing ? (
-                  <PauseIcon className="w-6 h-6" />
-                ) : (
-                  <PlayIcon className="w-6 h-6" />
-                )}
-              </ControlButton>
-
-              <VolumeControl>
-                <ControlButton onClick={() => setMuted(!muted)}>
-                  {muted ? (
-                    <SpeakerXMarkIcon className="w-6 h-6" />
+            <ControlsRow>
+              <LeftControls>
+                <ControlButton $large onClick={() => setPlaying(!playing)}>
+                  {playing ? (
+                    <PauseIcon className="w-6 h-6" />
                   ) : (
-                    <SpeakerWaveIcon className="w-6 h-6" />
+                    <PlayIcon className="w-6 h-6" />
                   )}
                 </ControlButton>
-                <VolumeSlider
-                  type="range"
-                  min={0}
-                  max={1}
-                  step={0.1}
-                  value={volume}
-                  onChange={(e) => setVolume(parseFloat(e.target.value))}
-                />
-              </VolumeControl>
 
-              <TimeDisplay>
-                {formatTime(currentTime - startTime)} / {formatTime(chunkDuration)}
-              </TimeDisplay>
-            </ControlButtons>
+                <VolumeControl>
+                  <ControlButton onClick={() => setMuted(!muted)}>
+                    {muted ? (
+                      <SpeakerXMarkIcon className="w-5 h-5" />
+                    ) : (
+                      <SpeakerWaveIcon className="w-5 h-5" />
+                    )}
+                  </ControlButton>
+                  {!isMobile && (
+                    <VolumeSlider
+                      type="range"
+                      min={0}
+                      max={1}
+                      step={0.1}
+                      value={volume}
+                      onChange={(e) => setVolume(parseFloat(e.target.value))}
+                    />
+                  )}
+                </VolumeControl>
+
+                <TimeDisplay>
+                  {formatTime(currentTime - startTime)} / {formatTime(chunkDuration)}
+                </TimeDisplay>
+              </LeftControls>
+
+              <RightControls>
+                <ControlButton
+                  onClick={handleSkip}
+                  title={chunkInfo && chunkInfo.current < chunkInfo.total ? 'Skip to next chunk' : 'Finish episode'}
+                >
+                  <ForwardIcon className="w-5 h-5" />
+                  <span>Next</span>
+                </ControlButton>
+
+                <ControlButton
+                  onClick={() => {
+                    const modes: SubtitleMode[] = ['off', 'german', 'english', 'both']
+                    const currentIndex = modes.indexOf(subtitleMode)
+                    setSubtitleMode(modes[(currentIndex + 1) % modes.length])
+                  }}
+                  title={`Subtitles: ${subtitleMode}`}
+                >
+                  {subtitleMode === 'off' ? (
+                    <EyeSlashIcon className="w-5 h-5" />
+                  ) : (
+                    <LanguageIcon className="w-5 h-5" />
+                  )}
+                </ControlButton>
+
+                <ControlButton onClick={toggleFullscreen}>
+                  {isFullscreen ? (
+                    <ArrowsPointingInIcon className="w-5 h-5" />
+                  ) : (
+                    <ArrowsPointingOutIcon className="w-5 h-5" />
+                  )}
+                </ControlButton>
+              </RightControls>
+            </ControlsRow>
           </BottomControls>
         </ControlsOverlay>
+
+        <SettingsMenu $visible={showSettings}>
+          <MenuSection>
+            <MenuLabel>Playback Speed</MenuLabel>
+            {([0.5, 0.75, 1, 1.25, 1.5, 2] as PlaybackSpeed[]).map(speed => (
+              <MenuButton
+                key={speed}
+                $active={playbackRate === speed}
+                onClick={() => setPlaybackRate(speed)}
+              >
+                {speed}x {speed === 1 && '(Normal)'}
+              </MenuButton>
+            ))}
+          </MenuSection>
+
+          <MenuSection>
+            <MenuLabel>Subtitles</MenuLabel>
+            {([
+              { value: 'off' as SubtitleMode, label: 'Off' },
+              { value: 'german' as SubtitleMode, label: 'German Only' },
+              { value: 'english' as SubtitleMode, label: 'English Only' },
+              { value: 'both' as SubtitleMode, label: 'Both Languages' }
+            ]).map(option => (
+              <MenuButton
+                key={option.value}
+                $active={subtitleMode === option.value}
+                onClick={() => setSubtitleMode(option.value)}
+              >
+                {option.label}
+              </MenuButton>
+            ))}
+          </MenuSection>
+        </SettingsMenu>
 
         {showCompletion && (
           <CompletionOverlay>
             <CompletionContent>
               <CompletionTitle>Chunk Complete! 🎉</CompletionTitle>
               <CompletionMessage>
-                Great job! You've completed this segment and learned {learnedWords.length} new words.
+                Excellent work! You've completed this segment and learned {learnedWords.length} new words.
                 {chunkInfo && chunkInfo.current < chunkInfo.total && (
                   <> Ready for the next chunk?</>
                 )}
               </CompletionMessage>
-              <ContinueButton onClick={handleContinue}>
-                {chunkInfo && chunkInfo.current < chunkInfo.total 
+              <ContinueButton onClick={onComplete}>
+                {chunkInfo && chunkInfo.current < chunkInfo.total
                   ? 'Continue to Next Chunk'
                   : 'Complete Episode'
                 }

@@ -2,9 +2,11 @@
 import { defineConfig, configDefaults } from 'vitest/config'
 import react from '@vitejs/plugin-react-swc'
 import { resolve } from 'path'
+import { fileURLToPath, URL } from 'node:url'
+import tsconfigPaths from 'vite-tsconfig-paths'
 
 export default defineConfig({
-  plugins: [react() as any],
+  plugins: [react() as any, tsconfigPaths()],
   test: {
     // Global test configuration
     globals: true,
@@ -97,19 +99,11 @@ export default defineConfig({
     },
   },
   
-  // Path resolution
+  // Path resolution handled by vite-tsconfig-paths plugin
   resolve: {
     alias: {
-      '@': resolve(__dirname, './src'),
-      '@components': resolve(__dirname, './src/components'),
-      '@services': resolve(__dirname, './src/services'),
-      '@hooks': resolve(__dirname, './src/hooks'),
-      '@utils': resolve(__dirname, './src/utils'),
-      '@store': resolve(__dirname, './src/store'),
-      '@types': resolve(__dirname, './src/types'),
-      '@test': resolve(__dirname, './src/test'),
       // Mock framer-motion in tests
-      'framer-motion': resolve(__dirname, './src/test/mocks/framer-motion.ts'),
+      'framer-motion': fileURLToPath(new URL('./src/test/mocks/framer-motion.ts', import.meta.url)),
     },
   },
   

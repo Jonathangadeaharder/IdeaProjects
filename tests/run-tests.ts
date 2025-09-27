@@ -115,23 +115,24 @@ const testSuites: TestSuite[] = [
  * Discover test files for each suite
  */
 async function discoverTestFiles(): Promise<void> {
+  const projectRoot = path.resolve(__dirname, '..');
+
   // Backend unit tests
-  const backendUnitFiles = await fs.readdir(
-    path.resolve('E:\\Users\\Jonandrop\\IdeaProjects\\LangPlug\\Backend\\tests')
-  );
+  const backendTestsPath = path.resolve(projectRoot, 'Backend', 'tests');
+  const backendUnitFiles = await fs.readdir(backendTestsPath);
   testSuites.find(s => s.name === 'backend-unit')!.files = backendUnitFiles
     .filter(f => f.startsWith('test_') && f.endsWith('.py'))
-    .map(f => path.resolve('E:\\Users\\Jonandrop\\IdeaProjects\\LangPlug\\Backend\\tests', f));
+    .map(f => path.resolve(backendTestsPath, f));
 
   // Frontend unit tests
-  const frontendSrcPath = path.resolve('E:\\Users\\Jonandrop\\IdeaProjects\\LangPlug\\Frontend\\src');
+  const frontendSrcPath = path.resolve(projectRoot, 'Frontend', 'src');
   if (await fs.pathExists(frontendSrcPath)) {
     const frontendUnitFiles = await findTestFiles(frontendSrcPath, '.test.ts', '.test.tsx');
     testSuites.find(s => s.name === 'frontend-unit')!.files = frontendUnitFiles;
   }
 
   // Contract tests
-  const contractTestPath = path.resolve('E:\\Users\\Jonandrop\\IdeaProjects\\LangPlug\\tests\\contract');
+  const contractTestPath = path.resolve(projectRoot, 'tests', 'contract');
   if (await fs.pathExists(contractTestPath)) {
     const contractFiles = await fs.readdir(contractTestPath);
     testSuites.find(s => s.name === 'contract')!.files = contractFiles
@@ -140,12 +141,11 @@ async function discoverTestFiles(): Promise<void> {
   }
 
   // E2E tests
-  const e2eFiles = await fs.readdir(
-    path.resolve('E:\\Users\\Jonandrop\\IdeaProjects\\LangPlug\\tests\\e2e')
-  );
+  const e2eTestsPath = path.resolve(projectRoot, 'tests', 'e2e');
+  const e2eFiles = await fs.readdir(e2eTestsPath);
   testSuites.find(s => s.name === 'e2e')!.files = e2eFiles
     .filter(f => f.endsWith('.test.ts'))
-    .map(f => path.resolve('E:\\Users\\Jonandrop\\IdeaProjects\\LangPlug\\tests\\e2e', f));
+    .map(f => path.resolve(e2eTestsPath, f));
 }
 
 /**
@@ -282,7 +282,8 @@ async function runTests(): Promise<void> {
     
     // Generate HTML report if requested
     if (options.report) {
-      const reportPath = path.resolve('E:\\Users\\Jonandrop\\IdeaProjects\\LangPlug\\test-report.html');
+      const projectRoot = path.resolve(__dirname, '..');
+      const reportPath = path.resolve(projectRoot, 'test-report.html');
       await runner.generateHTMLReport(reportPath);
       console.log(chalk.cyan(`\n📄 HTML report generated: ${reportPath}`));
     }
@@ -304,9 +305,9 @@ async function runTests(): Promise<void> {
     }
   } catch (error) {
     console.error(chalk.bold.red('\n💥 Test execution failed:\n'));
-    console.error(chalk.red(error.message || error));
-    if (options.verbose && error.stack) {
-      console.error(chalk.gray(error.stack));
+    console.error(chalk.red((error as Error).message || error));
+    if (options.verbose && (error as Error).stack) {
+      console.error(chalk.gray((error as Error).stack));
     }
     process.exit(1);
   }
@@ -320,20 +321,22 @@ async function watchTests(): Promise<void> {
   
   console.log(chalk.bold.cyan('\n👀 Watch Mode Enabled\n'));
   console.log(chalk.gray('Watching for file changes...\n'));
-  
+
+  const projectRoot = path.resolve(__dirname, '..');
+
   // Set up file watchers
   const watchers = [
-    chokidar.watch('E:\\Users\\Jonandrop\\IdeaProjects\\LangPlug\\Backend\\**/*.py', { 
-      ignored: /(^|[\/\\])\../, 
-      persistent: true 
+    chokidar.watch(path.resolve(projectRoot, 'Backend', '**', '*.py'), {
+      ignored: /(^|[\/\\])\../,
+      persistent: true
     }),
-    chokidar.watch('E:\\Users\\Jonandrop\\IdeaProjects\\LangPlug\\Frontend\\src\\**/*.{ts,tsx}', { 
-      ignored: /(^|[\/\\])\../, 
-      persistent: true 
+    chokidar.watch(path.resolve(projectRoot, 'Frontend', 'src', '**', '*.{ts,tsx}'), {
+      ignored: /(^|[\/\\])\../,
+      persistent: true
     }),
-    chokidar.watch('E:\\Users\\Jonandrop\\IdeaProjects\\LangPlug\\tests\\**/*.{ts,js}', { 
-      ignored: /(^|[\/\\])\../, 
-      persistent: true 
+    chokidar.watch(path.resolve(projectRoot, 'tests', '**', '*.{ts,js}'), {
+      ignored: /(^|[\/\\])\../,
+      persistent: true
     }),
   ];
   

@@ -6,7 +6,7 @@ A Netflix-style German language learning platform built with React, TypeScript, 
 
 - 🎬 Netflix-style interface for video selection
 - 🎯 Interactive vocabulary learning games (Tinder-style word swiping)
-- 📺 Custom video player with subtitle controls  
+- 📺 Custom video player with subtitle controls
 - 🔐 Secure authentication system
 - 📱 Responsive design for all devices
 - ⚡ Fast development with Vite and Hot Module Replacement
@@ -26,7 +26,7 @@ A Netflix-style German language learning platform built with React, TypeScript, 
 ## Quick Start
 
 ### Prerequisites
-- Node.js 18+ 
+- Node.js 18+
 - npm or yarn
 
 ### Installation

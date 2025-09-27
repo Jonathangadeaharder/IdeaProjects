@@ -81,17 +81,33 @@ class WhisperTranscriptionService(ITranscriptionService):
             model_path = Path(model_cache_dir) / model_file
 
             if not model_path.exists():
-                logger.info(f"Downloading Whisper model '{self.model_size}' (this may take 5-10 minutes)...")
-                logger.info("Model will be cached for future use")
-            else:
-                logger.info(f"Loading cached Whisper model: {self.model_size}")
+                model_size_mb = {
+                    "tiny": 39,
+                    "base": 74,
+                    "small": 244,
+                    "medium": 769,
+                    "large": 1550,
+                    "large-v2": 1550,
+                    "large-v3": 1550,
+                    "large-v3-turbo": 809
+                }.get(self.model_size, 1000)
 
+                logger.info(f"[MODEL DOWNLOAD] Downloading Whisper model '{self.model_size}' (~{model_size_mb}MB)")
+                logger.info(f"[MODEL DOWNLOAD] First-time download in progress...")
+                logger.info(f"[MODEL DOWNLOAD] Model will be cached at: {model_path}")
+                logger.info("[MODEL DOWNLOAD] Please wait, this is a one-time download...")
+            else:
+                logger.info(f"[MODEL LOAD] Loading cached Whisper model: {self.model_size}")
+                logger.info(f"[MODEL LOAD] Model location: {model_path}")
+
+            logger.info(f"[MODEL INIT] Initializing Whisper {self.model_size}...")
             self._model = whisper.load_model(
                 self.model_size,
                 device=self.device,
                 download_root=self.download_root
             )
-            logger.info(f"Whisper model '{self.model_size}' ready for transcription")
+            logger.info(f"[MODEL READY] Whisper model '{self.model_size}' loaded successfully!")
+            logger.info(f"[MODEL READY] Transcription service is now operational")
 
     def transcribe(
         self,

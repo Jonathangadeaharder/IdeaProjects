@@ -26,55 +26,38 @@ class FrontendLogEntry(BaseModel):
     userId: str = None
 
 
-@router.post("/frontend-logs", name="debug_receive_frontend_logs")
-async def receive_frontend_log(log_entry: FrontendLogEntry) -> dict[str, Any]:
-    """Receive and store frontend log entries"""
-    try:
-        # Log the frontend entry with appropriate level - simplified to avoid issues
-        log_level = getattr(logging, log_entry.level.upper(), logging.INFO)
+@router.post("/frontend-logs")
+async def log_frontend_entry(entry: FrontendLogEntry):
+    """
+    Log an entry from the frontend application
+    """
+    log_level = getattr(logging, entry.level.upper(), logging.INFO)
 
-        # Simple log without extra data to avoid any serialization issues
-        frontend_logger.log(
-            log_level, f"[Frontend][{log_entry.category}] {log_entry.message}"
-        )
+    # Format the log message
+    log_msg = f"[{entry.category}] {entry.message}"
+    if entry.data:
+        log_msg += f" | Data: {entry.data}"
+    if entry.error:
+        log_msg += f" | Error: {entry.error}"
+    if entry.url:
+        log_msg += f" | URL: {entry.url}"
+    if entry.userId:
+        log_msg += f" | User: {entry.userId}"
 
-        return {"success": True}
+    # Log with the appropriate level
+    frontend_logger.log(log_level, log_msg)
 
-    except Exception as e:
-        logger.error(f"Failed to process frontend log: {e!s}")
-        return {"success": False, "error": str(e)}
+    return {"success": True, "status": "logged", "timestamp": entry.timestamp}
 
 
-@router.get("/health", name="debug_health")
-async def debug_health() -> dict[str, str]:
-    """Debug health check endpoint"""
-    logger.info("Debug health check called")
+@router.get("/health")
+async def debug_health():
+    """
+    Debug health check endpoint
+    """
     return {
         "status": "healthy",
-        "debug_logging": "enabled",
-        "timestamp": logging.Formatter().formatTime(
-            logging.LogRecord(
-                name="debug",
-                level=logging.INFO,
-                pathname="",
-                lineno=0,
-                msg="",
-                args=(),
-                exc_info=None,
-            )
-        ),
+        "service": "langplug-backend",
+        "debug_mode": True
     }
 
-
-@router.post("/test-minimal", name="debug_test_minimal")
-async def test_minimal_post() -> dict[str, str]:
-    """Minimal POST endpoint without dependencies"""
-    logger.debug("Minimal POST endpoint called - immediate response")
-    return {"status": "ok", "message": "Minimal POST endpoint working"}
-
-
-@router.post("/test-with-data", name="debug_test_with_data")
-async def test_post_with_data(data: dict | None = None) -> dict[str, Any]:
-    """POST endpoint with data"""
-    logger.debug(f"POST with data called: {data}")
-    return {"status": "ok", "received_data": data}

@@ -1,7 +1,15 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { User } from '@/types'
-import * as api from '@/services/api'
+import '@/services/api'
+import { ApiError } from '@/client/core/ApiError'
+import {
+  authGetCurrentUserApiAuthMeGet,
+  authJwtBearerLoginApiAuthLoginPost,
+  authJwtBearerLogoutApiAuthLogoutPost,
+  registerRegisterApiAuthRegisterPost,
+} from '@/client/services.gen'
+import type { BearerResponse, UserRead, UserResponse } from '@/client/types.gen'
+import type { AuthResponse, User } from '@/types'
 
 interface AuthState {
   user: User | null
@@ -21,6 +29,61 @@ interface AuthState {
   setRedirectPath: (path: string | null) => void
 }
 
+const mapUser = (user: UserRead | UserResponse): User => ({
+  ...user,
+  name: user.username,
+  is_verified: 'is_verified' in user ? user.is_verified : false,
+})
+
+const extractErrorMessage = (error: unknown, fallback: string) => {
+  if (error instanceof ApiError) {
+    const detail = (error.body as { detail?: string })?.detail
+    if (detail) return detail
+    if (error.statusText) return error.statusText
+  }
+
+  if (typeof error === 'object' && error !== null) {
+    const errObj = error as {
+      message?: string
+      response?: { status?: number; data?: { detail?: string } | unknown }
+    }
+    const detail = (errObj.response?.data as { detail?: string })?.detail
+    if (detail) return detail
+    if (errObj.message) return errObj.message
+  }
+
+  if (error instanceof Error && error.message) {
+    return error.message
+  }
+
+  return fallback
+}
+
+const authenticate = async (email: string, password: string): Promise<AuthResponse> => {
+  try {
+    const bearer = (await authJwtBearerLoginApiAuthLoginPost({
+      formData: { username: email, password },
+    })) as BearerResponse
+
+    const token = bearer.access_token
+    if (!token) {
+      throw new Error('No access token received from server')
+    }
+
+    localStorage.setItem('authToken', token)
+
+    const userRead = await authGetCurrentUserApiAuthMeGet()
+    return {
+      token,
+      user: mapUser(userRead),
+      expires_at: '',
+    }
+  } catch (error) {
+    localStorage.removeItem('authToken')
+    throw error
+  }
+}
+
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
@@ -32,48 +95,57 @@ export const useAuthStore = create<AuthState>()(
       redirectPath: null,
 
       login: async (email: string, password: string) => {
-        set({ isLoading: true, error: null });
+        set({ isLoading: true, error: null })
         try {
-          const response = await api.login(email, password)
+          const response = await authenticate(email, password)
           set({
             user: response.user,
             token: response.token,
-            isAuthenticated: !!response.token, // Only authenticated if we have a token
+            isAuthenticated: true,
             isLoading: false,
             error: null,
-          });
-          if (response.token) {
-            localStorage.setItem('auth_token', response.token)
-          }
-        } catch (error: any) {
-          const errorMessage = error.response?.data?.detail || error.message || 'Login failed';
-          set({ isLoading: false, error: errorMessage });
+          })
+        } catch (error) {
+          const errorMessage = extractErrorMessage(error, 'Login failed')
+          set({
+            isLoading: false,
+            error: errorMessage,
+          })
+          throw error // Re-throw to let the component handle it
         }
       },
 
       register: async (email: string, password: string, name?: string) => {
-        set({ isLoading: true, error: null });
+        set({ isLoading: true, error: null })
         try {
-          const response = await api.register(email, password, name ?? '')
+          await registerRegisterApiAuthRegisterPost({
+            requestBody: {
+              email,
+              password,
+              username: name ?? email,
+            },
+          })
+
+          const response = await authenticate(email, password)
           set({
             user: response.user,
             token: response.token,
-            isAuthenticated: !!response.token, // Only authenticated if we have a token
+            isAuthenticated: true,
             isLoading: false,
             error: null,
           })
-          if (response.token) {
-            localStorage.setItem('auth_token', response.token)
-          }
-        } catch (error: any) {
-          const errorMessage = error.response?.data?.detail || error.message || 'Registration failed';
-          set({ isLoading: false, error: errorMessage });
+        } catch (error) {
+          const errorMessage = extractErrorMessage(error, 'Registration failed')
+          set({
+            isLoading: false,
+            error: errorMessage,
+          })
+          throw error // Re-throw to let the component handle it
         }
       },
 
       logout: async () => {
-        // Clear state synchronously for tests that don't await logout
-        localStorage.removeItem('auth_token')
+        localStorage.removeItem('authToken')
         set({
           user: null,
           token: null,
@@ -81,48 +153,48 @@ export const useAuthStore = create<AuthState>()(
           isLoading: false,
           error: null,
           redirectPath: '/login',
-        });
+        })
         try {
-          await api.logout();
+          await authJwtBearerLogoutApiAuthLogoutPost()
         } catch {
-          // Ignore API errors on logout
+          // ignore
         }
       },
 
       initializeAuth: async () => {
-        const storedToken = localStorage.getItem('auth_token')
+        const storedToken = localStorage.getItem('authToken')
         if (!storedToken) {
           return
         }
+
         set({ isLoading: true })
         try {
-          const user = await api.getProfile()
+          const userRead = await authGetCurrentUserApiAuthMeGet()
           set({
-            user,
+            user: mapUser(userRead),
             token: storedToken,
             isAuthenticated: true,
             isLoading: false,
             error: null,
           })
         } catch (error) {
-          localStorage.removeItem('auth_token')
+          localStorage.removeItem('authToken')
           set({
             user: null,
             token: null,
             isAuthenticated: false,
             isLoading: false,
+            error: extractErrorMessage(error, 'Session expired'),
           })
         }
       },
 
-      // Backwards-compatible alias
       checkAuth: async () => {
         await get().initializeAuth()
       },
 
-
       clearError: () => {
-        set({ error: null });
+        set({ error: null })
       },
 
       setUser: (user: User | null) => set({ user }),
@@ -139,5 +211,4 @@ export const useAuthStore = create<AuthState>()(
       }),
     }
   )
-);
-
+)

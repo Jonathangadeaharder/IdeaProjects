@@ -40,8 +40,10 @@ class Settings(BaseSettings):
         default=[
             "http://localhost:3000",
             "http://localhost:3001",
+            "http://localhost:3002",
             "http://127.0.0.1:3000",
             "http://127.0.0.1:3001",
+            "http://127.0.0.1:3002",
             "http://localhost:5173",
             "http://127.0.0.1:5173"
         ],
@@ -131,12 +133,60 @@ class Settings(BaseSettings):
         return base_path / "langplug.db"
 
     def get_videos_path(self) -> Path:
-        """Get the videos directory path"""
-        if self.videos_path:
-            return Path(self.videos_path)
+        """Get the videos directory path with WSL/Windows compatibility"""
+        import logging
+        logger = logging.getLogger(__name__)
 
-        # Default videos path (one level up from Backend)
-        return Path(__file__).parent.parent.parent / "videos"
+        logger.debug(f"get_videos_path called, self.videos_path = {self.videos_path}")
+
+        if self.videos_path:
+            logger.debug(f"Using configured videos_path: {self.videos_path}")
+            path = Path(self.videos_path)
+            # Handle WSL path conversion if needed
+            return self._ensure_accessible_path(path)
+
+        # Default videos path (Backend/../videos)
+        # Use absolute path calculation to avoid working directory issues
+        config_file = Path(__file__).resolve()
+        logger.debug(f"Config file: {config_file}")
+        default_path = config_file.parent.parent.parent / "videos"
+        logger.debug(f"Calculated default path: {default_path}")
+        return self._ensure_accessible_path(default_path)
+
+    def _ensure_accessible_path(self, path: Path) -> Path:
+        """Ensure path is accessible, converting WSL/Windows paths if needed"""
+        import logging
+        logger = logging.getLogger(__name__)
+
+        # Resolve relative paths first
+        if not path.is_absolute():
+            path = path.resolve()
+            logger.info(f"Resolved relative path to: {path}")
+
+        # If path exists and is accessible, return as-is
+        if path.exists() and path.is_dir():
+            logger.info(f"Videos path exists and is accessible: {path}")
+            return path
+
+        # Try WSL to Windows conversion
+        if str(path).startswith("/mnt/c/"):
+            windows_path_str = str(path).replace("/mnt/c/", "C:/").replace("/", "\\")
+            windows_path = Path(windows_path_str)
+            if windows_path.exists() and windows_path.is_dir():
+                logger.info(f"Converted WSL path {path} to accessible Windows path: {windows_path}")
+                return windows_path
+
+        # Try Windows to WSL conversion
+        if str(path).startswith("C:"):
+            wsl_path_str = str(path).replace("C:", "/mnt/c").replace("\\", "/")
+            wsl_path = Path(wsl_path_str)
+            if wsl_path.exists() and wsl_path.is_dir():
+                logger.info(f"Converted Windows path {path} to accessible WSL path: {wsl_path}")
+                return wsl_path
+
+        # Log warning if path is not accessible
+        logger.warning(f"Videos path is not accessible: {path}")
+        return path
 
     def get_data_path(self) -> Path:
         """Get the data directory path"""

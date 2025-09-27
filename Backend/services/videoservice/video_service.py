@@ -24,60 +24,107 @@ class VideoService:
             videos = []
 
             logger.info(f"Scanning for videos in: {videos_path}")
+            logger.info(f"Videos path absolute: {videos_path.resolve()}")
 
             if not videos_path.exists():
-                logger.warning(f"Videos path does not exist: {videos_path}")
+                logger.error(f"Videos path does not exist: {videos_path}")
+                logger.error(f"Attempted absolute path: {videos_path.resolve()}")
+                return videos
+
+            if not videos_path.is_dir():
+                logger.error(f"Videos path exists but is not a directory: {videos_path}")
+                return videos
+
+            # Check if directory is accessible
+            try:
+                list(videos_path.iterdir())
+            except PermissionError:
+                logger.error(f"Permission denied accessing videos directory: {videos_path}")
+                return videos
+            except Exception as e:
+                logger.error(f"Error accessing videos directory {videos_path}: {e}")
                 return videos
 
             # First, scan for video files directly in videos_path
-            for video_file in videos_path.glob("*.mp4"):
-                # Check for corresponding subtitle file
-                srt_file = video_file.with_suffix(".srt")
-                has_subtitles = srt_file.exists()
+            direct_videos = list(videos_path.glob("*.mp4"))
+            logger.info(f"Found {len(direct_videos)} direct video files in {videos_path}")
 
-                # Extract episode information from filename
-                filename = video_file.stem
-                episode_info = self._parse_episode_filename(filename)
+            for video_file in direct_videos:
+                try:
+                    # Check for corresponding subtitle file
+                    srt_file = video_file.with_suffix(".srt")
+                    has_subtitles = srt_file.exists()
 
-                video_info = VideoInfo(
-                    series="Default",
-                    season=episode_info.get("season", "1"),
-                    episode=episode_info.get("episode", filename),
-                    title=episode_info.get("title", filename),
-                    path=str(video_file.relative_to(videos_path)),
-                    has_subtitles=has_subtitles
-                )
-                videos.append(video_info)
-                logger.debug(f"Added video: {video_info.title}")
+                    # Extract episode information from filename
+                    filename = video_file.stem
+                    episode_info = self._parse_episode_filename(filename)
+
+                    # Ensure episode field doesn't exceed 20 character limit
+                    episode = episode_info.get("episode", filename)
+                    if len(episode) > 20:
+                        episode = episode[:17] + "..."
+
+                    video_info = VideoInfo(
+                        series="Default",
+                        season=episode_info.get("season", "1"),
+                        episode=episode,
+                        title=episode_info.get("title", filename),
+                        path=str(video_file.relative_to(videos_path)),
+                        has_subtitles=has_subtitles
+                    )
+                    videos.append(video_info)
+                    logger.info(f"Added direct video: {video_info.title} (series: {video_info.series})")
+                except Exception as e:
+                    logger.error(f"Error processing direct video file {video_file}: {e}")
 
             # Also scan for series directories
-            for series_dir in videos_path.iterdir():
-                if series_dir.is_dir():
+            series_dirs = [d for d in videos_path.iterdir() if d.is_dir()]
+            logger.info(f"Found {len(series_dirs)} series directories: {[d.name for d in series_dirs]}")
+
+            for series_dir in series_dirs:
+                try:
                     series_name = series_dir.name
-                    logger.debug(f"Found series directory: {series_name}")
+                    logger.info(f"Scanning series directory: {series_name}")
 
-                    # Scan for video files
-                    for video_file in series_dir.glob("*.mp4"):
-                        # Check for corresponding subtitle file
-                        srt_file = video_file.with_suffix(".srt")
-                        has_subtitles = srt_file.exists()
+                    # Scan for video files in series directory
+                    series_videos = list(series_dir.glob("*.mp4"))
+                    logger.info(f"Found {len(series_videos)} videos in series '{series_name}'")
 
-                        # Extract episode information from filename
-                        filename = video_file.stem
-                        episode_info = self._parse_episode_filename(filename)
+                    for video_file in series_videos:
+                        try:
+                            # Check for corresponding subtitle file
+                            srt_file = video_file.with_suffix(".srt")
+                            has_subtitles = srt_file.exists()
 
-                        video_info = VideoInfo(
-                            series=series_name,
-                            season=episode_info.get("season", "1"),
-                            episode=episode_info.get("episode", "Unknown"),
-                            title=episode_info.get("title", filename),
-                            path=str(video_file.relative_to(videos_path)),
-                            has_subtitles=has_subtitles
-                        )
-                        videos.append(video_info)
-                        logger.debug(f"Added video: {video_info.title}")
+                            # Extract episode information from filename
+                            filename = video_file.stem
+                            episode_info = self._parse_episode_filename(filename)
 
-            logger.info(f"Found {len(videos)} videos")
+                            # Ensure episode field doesn't exceed 20 character limit
+                            episode = episode_info.get("episode", "Unknown")
+                            if len(episode) > 20:
+                                episode = episode[:17] + "..."
+
+                            video_info = VideoInfo(
+                                series=series_name,
+                                season=episode_info.get("season", "1"),
+                                episode=episode,
+                                title=episode_info.get("title", filename),
+                                path=str(video_file.relative_to(videos_path)),
+                                has_subtitles=has_subtitles
+                            )
+                            videos.append(video_info)
+                            logger.info(f"Added series video: {video_info.title} (series: {video_info.series}, episode: {video_info.episode})")
+                        except Exception as e:
+                            logger.error(f"Error processing video file {video_file} in series {series_name}: {e}")
+                except Exception as e:
+                    logger.error(f"Error processing series directory {series_dir}: {e}")
+
+            logger.info(f"Total videos found: {len(videos)}")
+            if len(videos) == 0:
+                logger.warning("No videos were found! Check directory structure and file permissions.")
+                logger.info("Expected structure: videos/[SeriesName]/episode.mp4 or videos/episode.mp4")
+
             return videos
 
         except Exception as e:
@@ -85,18 +132,128 @@ class VideoService:
             raise Exception(f"Error scanning videos: {e!s}")
 
     def _parse_episode_filename(self, filename: str) -> dict[str, str]:
-        """Parse episode information from filename"""
-        # Simple parsing - can be enhanced
-        parts = filename.split()
+        """Parse episode information from filename using regex patterns"""
+        import re
+
         episode_info = {"title": filename}
 
-        for i, part in enumerate(parts):
-            if "episode" in part.lower() and i + 1 < len(parts):
-                episode_info["episode"] = parts[i + 1]
-            elif "staffel" in part.lower() and i + 1 < len(parts):
-                episode_info["season"] = parts[i + 1]
+        # Handle empty or very short filenames
+        if not filename or len(filename.strip()) < 2:
+            return episode_info
+
+        # Episode patterns (case insensitive) - handle spaces, underscores, dots
+        episode_patterns = [
+            r'episode[\s_\.]*(\d+)',  # "Episode 5", "Episode_7", "episode.15"
+            r'ep[\s_\.]*(\d+)',       # "Ep 5", "Ep_7", "ep.15"
+            r'e(\d+)',                # "E5"
+        ]
+
+        # Season patterns (case insensitive) - handle spaces, underscores, dots
+        season_patterns = [
+            r'season[\s_\.]*(\d+)',   # "Season 3", "Season_3", "season.3"
+            r'staffel[\s_\.]*(\d+)',  # "Staffel 3", "Staffel_3" (German)
+            r's(\d+)',                # "S3"
+        ]
+
+        # Search for episode numbers
+        for pattern in episode_patterns:
+            match = re.search(pattern, filename, re.IGNORECASE)
+            if match:
+                episode_info["episode"] = match.group(1)
+                break
+
+        # Search for season numbers
+        for pattern in season_patterns:
+            match = re.search(pattern, filename, re.IGNORECASE)
+            if match:
+                episode_info["season"] = match.group(1)
+                break
+
+        # Only include episode/season keys if we found actual numbers
+        # Remove if only keywords without numbers were found
+        if "episode" in episode_info and not episode_info["episode"].isdigit():
+            del episode_info["episode"]
+        if "season" in episode_info and not episode_info["season"].isdigit():
+            del episode_info["season"]
 
         return episode_info
+
+    def scan_videos_directory(self) -> dict[str, any]:
+        """Scan and return detailed information about the videos directory"""
+        try:
+            videos_path = settings.get_videos_path()
+
+            result = {
+                "videos_path": str(videos_path),
+                "videos_path_absolute": str(videos_path.resolve()),
+                "path_exists": videos_path.exists(),
+                "is_directory": videos_path.is_dir() if videos_path.exists() else False,
+                "direct_videos": [],
+                "series_directories": [],
+                "total_videos": 0,
+                "errors": []
+            }
+
+            logger.info(f"Detailed scan of videos directory: {videos_path}")
+
+            if not videos_path.exists():
+                error_msg = f"Videos directory does not exist: {videos_path}"
+                logger.error(error_msg)
+                result["errors"].append(error_msg)
+                return result
+
+            if not videos_path.is_dir():
+                error_msg = f"Videos path exists but is not a directory: {videos_path}"
+                logger.error(error_msg)
+                result["errors"].append(error_msg)
+                return result
+
+            # Scan direct video files
+            try:
+                direct_videos = list(videos_path.glob("*.mp4"))
+                result["direct_videos"] = [str(v.name) for v in direct_videos]
+                result["total_videos"] += len(direct_videos)
+                logger.info(f"Found {len(direct_videos)} direct videos")
+            except Exception as e:
+                error_msg = f"Error scanning direct videos: {e}"
+                logger.error(error_msg)
+                result["errors"].append(error_msg)
+
+            # Scan series directories
+            try:
+                for item in videos_path.iterdir():
+                    if item.is_dir():
+                        series_info = {
+                            "name": item.name,
+                            "path": str(item),
+                            "videos": []
+                        }
+
+                        try:
+                            series_videos = list(item.glob("*.mp4"))
+                            series_info["videos"] = [v.name for v in series_videos]
+                            result["total_videos"] += len(series_videos)
+                            logger.info(f"Found {len(series_videos)} videos in series '{item.name}'")
+                        except Exception as e:
+                            error_msg = f"Error scanning series {item.name}: {e}"
+                            logger.error(error_msg)
+                            result["errors"].append(error_msg)
+
+                        result["series_directories"].append(series_info)
+            except Exception as e:
+                error_msg = f"Error scanning series directories: {e}"
+                logger.error(error_msg)
+                result["errors"].append(error_msg)
+
+            logger.info(f"Scan complete. Total videos: {result['total_videos']}")
+            return result
+
+        except Exception as e:
+            logger.error(f"Fatal error during video scan: {e}", exc_info=True)
+            return {
+                "error": f"Fatal error during scan: {e}",
+                "videos_path": str(settings.get_videos_path()) if settings else "Unknown"
+            }
 
     def get_subtitle_file_path(self, subtitle_path: str) -> Path:
         """Convert subtitle path to actual file path, handling Windows absolute paths"""

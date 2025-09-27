@@ -17,10 +17,10 @@ This will start both servers with health monitoring
 
 ## ✨ **Automatic Virtual Environment System**
 
-✅ **No manual activation required**  
-✅ **Auto-detects correct Python environment**  
-✅ **Cross-platform (Windows/Linux/Mac/WSL)**  
-✅ **Smart dependency checking**  
+✅ **No manual activation required**
+✅ **Auto-detects correct Python environment**
+✅ **Cross-platform (Windows/Linux/Mac/WSL)**
+✅ **Smart dependency checking**
 ✅ **Works even if some AI features are missing**
 
 ## Prerequisites
@@ -41,7 +41,7 @@ cd Backend
 python -m venv api_venv
 # On Windows:
 api_venv\Scripts\activate
-# On Mac/Linux:  
+# On Mac/Linux:
 source api_venv/bin/activate
 
 pip install fastapi uvicorn pydantic python-multipart
@@ -61,7 +61,7 @@ npm run dev
 - **Solution**: Use `python install_dependencies.py` instead
 - **Cause**: Some packages have version conflicts
 
-### "npm/yarn not found"  
+### "npm/yarn not found"
 - **Solution**: Install Node.js from nodejs.org
 - **Verify**: Run `node --version` and `npm --version`
 
@@ -100,7 +100,7 @@ For a basic working version:
 
 Even with minimal setup:
 - ✅ Frontend UI (login, video selection)
-- ✅ Basic backend API  
+- ✅ Basic backend API
 - ✅ User registration/login
 - ✅ Video file detection
 - ❌ AI transcription (requires whisper)
@@ -122,6 +122,6 @@ The UI will work perfectly, and you can add AI features later by installing the 
 
 If you encounter issues:
 1. Check this guide first
-2. Try the manual installation: `python install_dependencies.py`  
+2. Try the manual installation: `python install_dependencies.py`
 3. Start with minimal setup to test the UI
 4. Add AI features incrementally

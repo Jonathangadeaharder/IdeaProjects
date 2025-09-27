@@ -1,0 +1,101 @@
+{
+  "session_id": "17d30205-33d6-45a4-9855-394fd2a3e6a1",
+  "user_id": "9dbcfbc3-f886-460b-abc6-33b212937fd9",
+  "game_type": "listening",
+  "difficulty": "beginner",
+  "video_id": "174fd98a-034f-4984-8fe1-a98402c751f6",
+  "start_time": "2025-09-25T10:40:31.746022",
+  "end_time": null,
+  "status": "active",
+  "score": 0,
+  "max_score": 50,
+  "questions_answered": 0,
+  "correct_answers": 0,
+  "current_question": 0,
+  "total_questions": 5,
+  "session_data": {
+    "questions": [
+      {
+        "question_id": "66b7a220-ed08-4858-b0f7-c385e458eac1",
+        "question_type": "multiple_choice",
+        "question_text": "What did the speaker say in segment 1?",
+        "options": [
+          "Option A",
+          "Option B",
+          "Option C",
+          "Option D"
+        ],
+        "correct_answer": "Option A",
+        "user_answer": null,
+        "is_correct": null,
+        "points": 10,
+        "timestamp": null
+      },
+      {
+        "question_id": "3b663d6b-38aa-4a0d-aceb-39d1503512e4",
+        "question_type": "multiple_choice",
+        "question_text": "What did the speaker say in segment 2?",
+        "options": [
+          "Option A",
+          "Option B",
+          "Option C",
+          "Option D"
+        ],
+        "correct_answer": "Option A",
+        "user_answer": null,
+        "is_correct": null,
+        "points": 10,
+        "timestamp": null
+      },
+      {
+        "question_id": "a6718765-94d7-47a0-aec0-855857febbb5",
+        "question_type": "multiple_choice",
+        "question_text": "What did the speaker say in segment 3?",
+        "options": [
+          "Option A",
+          "Option B",
+          "Option C",
+          "Option D"
+        ],
+        "correct_answer": "Option A",
+        "user_answer": null,
+        "is_correct": null,
+        "points": 10,
+        "timestamp": null
+      },
+      {
+        "question_id": "3f838340-3e26-407e-ac39-bdc854164a57",
+        "question_type": "multiple_choice",
+        "question_text": "What did the speaker say in segment 4?",
+        "options": [
+          "Option A",
+          "Option B",
+          "Option C",
+          "Option D"
+        ],
+        "correct_answer": "Option A",
+        "user_answer": null,
+        "is_correct": null,
+        "points": 10,
+        "timestamp": null
+      },
+      {
+        "question_id": "2c7c2bc6-4c43-4b00-8a9f-b735fe125294",
+        "question_type": "multiple_choice",
+        "question_text": "What did the speaker say in segment 5?",
+        "options": [
+          "Option A",
+          "Option B",
+          "Option C",
+          "Option D"
+        ],
+        "correct_answer": "Option A",
+        "user_answer": null,
+        "is_correct": null,
+        "points": 10,
+        "timestamp": null
+      }
+    ],
+    "created_at": "2025-09-25T10:40:31.746420"
+  }
+}

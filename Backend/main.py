@@ -5,8 +5,11 @@ Entry point for the FastAPI server
 """
 
 from pathlib import Path
+import logging
 
 import uvicorn
+
+logger = logging.getLogger(__name__)
 
 from core.app import create_app
 from core.config import settings
@@ -43,7 +46,7 @@ if __name__ == "__main__":
     }
 
     if reload_dirs:
-        print(f"📁 Watching directories: {reload_dirs}")
+        logger.info(f"Watching directories: {reload_dirs}")
 
     uvicorn.run(
         "core.app:create_app",

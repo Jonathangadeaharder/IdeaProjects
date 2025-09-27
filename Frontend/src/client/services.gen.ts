@@ -3,7 +3,7 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { HealthCheckHealthGetResponse, TestEndpointTestGetResponse, AuthJwtBearerLogoutApiAuthLogoutPostResponse, AuthJwtBearerLoginApiAuthLoginPostData, AuthJwtBearerLoginApiAuthLoginPostResponse, RegisterRegisterApiAuthRegisterPostData, RegisterRegisterApiAuthRegisterPostResponse, AuthTestPrefixApiAuthTestPrefixGetResponse, AuthGetCurrentUserApiAuthMeGetResponse, GetVideosApiVideosGetResponse, GetSubtitlesApiVideosSubtitlesSubtitlePathGetData, GetSubtitlesApiVideosSubtitlesSubtitlePathGetResponse, StreamVideoApiVideosSeriesEpisodeGetData, StreamVideoApiVideosSeriesEpisodeGetResponse, UploadSubtitleApiVideosSubtitleUploadPostData, UploadSubtitleApiVideosSubtitleUploadPostResponse, ScanVideosApiVideosScanPostResponse, GetUserVideosApiVideosUserGetResponse, GetVideoVocabularyApiVideosVideoIdVocabularyGetData, GetVideoVocabularyApiVideosVideoIdVocabularyGetResponse, GetVideoStatusApiVideosVideoIdStatusGetData, GetVideoStatusApiVideosVideoIdStatusGetResponse, UploadVideoGenericApiVideosUploadPostData, UploadVideoGenericApiVideosUploadPostResponse, UploadVideoToSeriesApiVideosUploadSeriesPostData, UploadVideoToSeriesApiVideosUploadSeriesPostResponse, ProcessChunkApiProcessChunkPostData, ProcessChunkApiProcessChunkPostResponse, TranscribeVideoApiProcessTranscribePostData, TranscribeVideoApiProcessTranscribePostResponse, FilterSubtitlesApiProcessFilterSubtitlesPostData, FilterSubtitlesApiProcessFilterSubtitlesPostResponse, TranslateSubtitlesApiProcessTranslateSubtitlesPostData, TranslateSubtitlesApiProcessTranslateSubtitlesPostResponse, PrepareEpisodeApiProcessPrepareEpisodePostData, PrepareEpisodeApiProcessPrepareEpisodePostResponse, FullPipelineApiProcessFullPipelinePostData, FullPipelineApiProcessFullPipelinePostResponse, GetTaskProgressApiProcessProgressTaskIdGetData, GetTaskProgressApiProcessProgressTaskIdGetResponse, GetVocabularyStatsApiVocabularyStatsGetResponse, GetBlockingWordsApiVocabularyBlockingWordsGetData, GetBlockingWordsApiVocabularyBlockingWordsGetResponse, MarkWordKnownApiVocabularyMarkKnownPostData, MarkWordKnownApiVocabularyMarkKnownPostResponse, PreloadVocabularyApiVocabularyPreloadPostResponse, GetLibraryStatsApiVocabularyLibraryStatsGetResponse, GetVocabularyLevelApiVocabularyLibraryLevelGetData, GetVocabularyLevelApiVocabularyLibraryLevelGetResponse, BulkMarkLevelApiVocabularyLibraryBulkMarkPostData, BulkMarkLevelApiVocabularyLibraryBulkMarkPostResponse, ProfileGetApiProfileGetResponse, ProfileGetSupportedLanguagesApiProfileLanguagesGetResponse, ProfileUpdateLanguagesApiProfileLanguagesPutData, ProfileUpdateLanguagesApiProfileLanguagesPutResponse, ProfileGetSettingsApiProfileSettingsGetResponse, ProfileUpdateSettingsApiProfileSettingsPutData, ProfileUpdateSettingsApiProfileSettingsPutResponse, LogsReceiveFrontendApiLogsFrontendPostData, LogsReceiveFrontendApiLogsFrontendPostResponse, LogsListFilesApiLogsListGetResponse, LogsDownloadFileApiLogsDownloadFilenameGetData, LogsDownloadFileApiLogsDownloadFilenameGetResponse, ProgressGetUserApiProgressUserGetResponse, ProgressUpdateUserApiProgressUpdatePostData, ProgressUpdateUserApiProgressUpdatePostResponse, ProgressGetDailyApiProgressDailyGetData, ProgressGetDailyApiProgressDailyGetResponse, GameStartSessionApiGameStartPostData, GameStartSessionApiGameStartPostResponse, GameGetSessionApiGameSessionSessionIdGetData, GameGetSessionApiGameSessionSessionIdGetResponse, GameSubmitAnswerApiGameAnswerPostData, GameSubmitAnswerApiGameAnswerPostResponse, GameGetUserSessionsApiGameSessionsGetData, GameGetUserSessionsApiGameSessionsGetResponse, ParseSrtContentApiSrtParsePostData, ParseSrtContentApiSrtParsePostResponse, ParseSrtFileApiSrtParseFilePostData, ParseSrtFileApiSrtParseFilePostResponse, ConvertToSrtApiSrtConvertToSrtPostData, ConvertToSrtApiSrtConvertToSrtPostResponse, ValidateSrtContentApiSrtValidateGetData, ValidateSrtContentApiSrtValidateGetResponse } from './types.gen';
+import type { HealthCheckHealthGetResponse, TestEndpointTestGetResponse, AuthJwtBearerLoginApiAuthLoginPostData, AuthJwtBearerLoginApiAuthLoginPostResponse, AuthJwtBearerLogoutApiAuthLogoutPostResponse, RegisterRegisterApiAuthRegisterPostData, RegisterRegisterApiAuthRegisterPostResponse, AuthGetCurrentUserApiAuthMeGetResponse, GetVideosApiVideosGetResponse, GetSubtitlesApiVideosSubtitlesSubtitlePathGetData, GetSubtitlesApiVideosSubtitlesSubtitlePathGetResponse, StreamVideoApiVideosSeriesEpisodeGetData, StreamVideoApiVideosSeriesEpisodeGetResponse, UploadSubtitleApiVideosSubtitleUploadPostData, UploadSubtitleApiVideosSubtitleUploadPostResponse, ScanVideosApiVideosScanPostResponse, GetUserVideosApiVideosUserGetResponse, GetVideoVocabularyApiVideosVideoIdVocabularyGetData, GetVideoVocabularyApiVideosVideoIdVocabularyGetResponse, GetVideoStatusApiVideosVideoIdStatusGetData, GetVideoStatusApiVideosVideoIdStatusGetResponse, UploadVideoGenericApiVideosUploadPostData, UploadVideoGenericApiVideosUploadPostResponse, UploadVideoToSeriesApiVideosUploadSeriesPostData, UploadVideoToSeriesApiVideosUploadSeriesPostResponse, ProcessChunkApiProcessChunkPostData, ProcessChunkApiProcessChunkPostResponse, TranscribeVideoApiProcessTranscribePostData, TranscribeVideoApiProcessTranscribePostResponse, FilterSubtitlesApiProcessFilterSubtitlesPostData, FilterSubtitlesApiProcessFilterSubtitlesPostResponse, TranslateSubtitlesApiProcessTranslateSubtitlesPostData, TranslateSubtitlesApiProcessTranslateSubtitlesPostResponse, PrepareEpisodeApiProcessPrepareEpisodePostData, PrepareEpisodeApiProcessPrepareEpisodePostResponse, FullPipelineApiProcessFullPipelinePostData, FullPipelineApiProcessFullPipelinePostResponse, GetTaskProgressApiProcessProgressTaskIdGetData, GetTaskProgressApiProcessProgressTaskIdGetResponse, GetSupportedLanguagesApiVocabularyLanguagesGetResponse, GetVocabularyStatsApiVocabularyStatsGetData, GetVocabularyStatsApiVocabularyStatsGetResponse, GetVocabularyLevelApiVocabularyLibraryLevelGetData, GetVocabularyLevelApiVocabularyLibraryLevelGetResponse, MarkWordKnownApiVocabularyMarkKnownPostData, MarkWordKnownApiVocabularyMarkKnownPostResponse, BulkMarkLevelApiVocabularyLibraryBulkMarkPostData, BulkMarkLevelApiVocabularyLibraryBulkMarkPostResponse, GetTestDataApiVocabularyTestDataGetResponse, GetBlockingWordsApiVocabularyBlockingWordsGetData, GetBlockingWordsApiVocabularyBlockingWordsGetResponse, ProfileGetApiProfileGetResponse, ProfileGetSupportedLanguagesApiProfileLanguagesGetResponse, ProfileUpdateLanguagesApiProfileLanguagesPutData, ProfileUpdateLanguagesApiProfileLanguagesPutResponse, ProfileGetSettingsApiProfileSettingsGetResponse, ProfileUpdateSettingsApiProfileSettingsPutData, ProfileUpdateSettingsApiProfileSettingsPutResponse, ProgressGetUserApiProgressUserGetResponse, ProgressUpdateUserApiProgressUpdatePostData, ProgressUpdateUserApiProgressUpdatePostResponse, ProgressGetDailyApiProgressDailyGetData, ProgressGetDailyApiProgressDailyGetResponse, GameStartSessionApiGameStartPostData, GameStartSessionApiGameStartPostResponse, GameGetSessionApiGameSessionSessionIdGetData, GameGetSessionApiGameSessionSessionIdGetResponse, GameSubmitAnswerApiGameAnswerPostData, GameSubmitAnswerApiGameAnswerPostResponse, GameGetUserSessionsApiGameSessionsGetData, GameGetUserSessionsApiGameSessionsGetResponse, ParseSrtContentApiSrtParsePostData, ParseSrtContentApiSrtParsePostResponse, ParseSrtFileApiSrtParseFilePostData, ParseSrtFileApiSrtParseFilePostResponse, ConvertToSrtApiSrtConvertToSrtPostData, ConvertToSrtApiSrtConvertToSrtPostResponse, ValidateSrtContentApiSrtValidateGetData, ValidateSrtContentApiSrtValidateGetResponse } from './types.gen';
 
 /**
  * Health Check
@@ -28,19 +28,6 @@ export const testEndpointTestGet = (): CancelablePromise<TestEndpointTestGetResp
 }); };
 
 /**
- * Auth:Jwt-Bearer.Logout
- * @returns unknown Successful Response
- * @throws ApiError
- */
-export const authJwtBearerLogoutApiAuthLogoutPost = (): CancelablePromise<AuthJwtBearerLogoutApiAuthLogoutPostResponse> => { return __request(OpenAPI, {
-    method: 'POST',
-    url: '/api/auth/logout',
-    errors: {
-        401: 'Missing token or inactive user.'
-    }
-}); };
-
-/**
  * Auth:Jwt-Bearer.Login
  * @param data The data for the request.
  * @param data.formData
@@ -55,6 +42,19 @@ export const authJwtBearerLoginApiAuthLoginPost = (data: AuthJwtBearerLoginApiAu
     errors: {
         400: 'Bad Request',
         422: 'Validation Error'
+    }
+}); };
+
+/**
+ * Auth:Jwt-Bearer.Logout
+ * @returns unknown Successful Response
+ * @throws ApiError
+ */
+export const authJwtBearerLogoutApiAuthLogoutPost = (): CancelablePromise<AuthJwtBearerLogoutApiAuthLogoutPostResponse> => { return __request(OpenAPI, {
+    method: 'POST',
+    url: '/api/auth/logout',
+    errors: {
+        401: 'Missing token or inactive user.'
     }
 }); };
 
@@ -74,17 +74,6 @@ export const registerRegisterApiAuthRegisterPost = (data: RegisterRegisterApiAut
         400: 'Bad Request',
         422: 'Validation Error'
     }
-}); };
-
-/**
- * Auth Test Prefix
- * Test endpoint to verify router prefix configuration
- * @returns unknown Successful Response
- * @throws ApiError
- */
-export const authTestPrefixApiAuthTestPrefixGet = (): CancelablePromise<AuthTestPrefixApiAuthTestPrefixGetResponse> => { return __request(OpenAPI, {
-    method: 'GET',
-    url: '/api/auth/test-prefix'
 }); };
 
 /**
@@ -403,33 +392,58 @@ export const getTaskProgressApiProcessProgressTaskIdGet = (data: GetTaskProgress
 }); };
 
 /**
- * Get Vocabulary Stats
- * Get vocabulary statistics for the current user
- * @returns VocabularyStats Successful Response
+ * Get Supported Languages
+ * Get list of supported languages
+ * @returns LanguagesResponse Successful Response
  * @throws ApiError
  */
-export const getVocabularyStatsApiVocabularyStatsGet = (): CancelablePromise<GetVocabularyStatsApiVocabularyStatsGetResponse> => { return __request(OpenAPI, {
+export const getSupportedLanguagesApiVocabularyLanguagesGet = (): CancelablePromise<GetSupportedLanguagesApiVocabularyLanguagesGetResponse> => { return __request(OpenAPI, {
     method: 'GET',
-    url: '/api/vocabulary/stats'
+    url: '/api/vocabulary/languages'
 }); };
 
 /**
- * Get Blocking Words
- * Get top blocking words for a video segment
+ * Get Vocabulary Stats
+ * Get vocabulary statistics for the current user
  * @param data The data for the request.
- * @param data.videoPath
- * @param data.segmentStart
- * @param data.segmentDuration
+ * @param data.targetLanguage Target language code
+ * @param data.translationLanguage Translation language code
+ * @returns VocabularyStats Successful Response
+ * @throws ApiError
+ */
+export const getVocabularyStatsApiVocabularyStatsGet = (data: GetVocabularyStatsApiVocabularyStatsGetData = {}): CancelablePromise<GetVocabularyStatsApiVocabularyStatsGetResponse> => { return __request(OpenAPI, {
+    method: 'GET',
+    url: '/api/vocabulary/stats',
+    query: {
+        target_language: data.targetLanguage,
+        translation_language: data.translationLanguage
+    },
+    errors: {
+        422: 'Validation Error'
+    }
+}); };
+
+/**
+ * Get Vocabulary Level
+ * Get vocabulary words for a specific level with user's known status
+ * @param data The data for the request.
+ * @param data.level
+ * @param data.targetLanguage Target language code
+ * @param data.translationLanguage Translation language code
+ * @param data.limit Maximum number of words to return
  * @returns unknown Successful Response
  * @throws ApiError
  */
-export const getBlockingWordsApiVocabularyBlockingWordsGet = (data: GetBlockingWordsApiVocabularyBlockingWordsGetData): CancelablePromise<GetBlockingWordsApiVocabularyBlockingWordsGetResponse> => { return __request(OpenAPI, {
+export const getVocabularyLevelApiVocabularyLibraryLevelGet = (data: GetVocabularyLevelApiVocabularyLibraryLevelGetData): CancelablePromise<GetVocabularyLevelApiVocabularyLibraryLevelGetResponse> => { return __request(OpenAPI, {
     method: 'GET',
-    url: '/api/vocabulary/blocking-words',
+    url: '/api/vocabulary/library/{level}',
+    path: {
+        level: data.level
+    },
     query: {
-        video_path: data.videoPath,
-        segment_start: data.segmentStart,
-        segment_duration: data.segmentDuration
+        target_language: data.targetLanguage,
+        translation_language: data.translationLanguage,
+        limit: data.limit
     },
     errors: {
         422: 'Validation Error'
@@ -438,7 +452,7 @@ export const getBlockingWordsApiVocabularyBlockingWordsGet = (data: GetBlockingW
 
 /**
  * Mark Word Known
- * Mark a word as known or unknown
+ * Mark a word concept as known or unknown
  * @param data The data for the request.
  * @param data.requestBody
  * @returns unknown Successful Response
@@ -449,47 +463,6 @@ export const markWordKnownApiVocabularyMarkKnownPost = (data: MarkWordKnownApiVo
     url: '/api/vocabulary/mark-known',
     body: data.requestBody,
     mediaType: 'application/json',
-    errors: {
-        422: 'Validation Error'
-    }
-}); };
-
-/**
- * Preload Vocabulary
- * Preload vocabulary data from text files into database (Admin only)
- * @returns unknown Successful Response
- * @throws ApiError
- */
-export const preloadVocabularyApiVocabularyPreloadPost = (): CancelablePromise<PreloadVocabularyApiVocabularyPreloadPostResponse> => { return __request(OpenAPI, {
-    method: 'POST',
-    url: '/api/vocabulary/preload'
-}); };
-
-/**
- * Get Library Stats
- * Get vocabulary statistics for all levels
- * @returns unknown Successful Response
- * @throws ApiError
- */
-export const getLibraryStatsApiVocabularyLibraryStatsGet = (): CancelablePromise<GetLibraryStatsApiVocabularyLibraryStatsGetResponse> => { return __request(OpenAPI, {
-    method: 'GET',
-    url: '/api/vocabulary/library/stats'
-}); };
-
-/**
- * Get Vocabulary Level
- * Get all vocabulary words for a specific level with user's known status
- * @param data The data for the request.
- * @param data.level
- * @returns unknown Successful Response
- * @throws ApiError
- */
-export const getVocabularyLevelApiVocabularyLibraryLevelGet = (data: GetVocabularyLevelApiVocabularyLibraryLevelGetData): CancelablePromise<GetVocabularyLevelApiVocabularyLibraryLevelGetResponse> => { return __request(OpenAPI, {
-    method: 'GET',
-    url: '/api/vocabulary/library/{level}',
-    path: {
-        level: data.level
-    },
     errors: {
         422: 'Validation Error'
     }
@@ -508,6 +481,36 @@ export const bulkMarkLevelApiVocabularyLibraryBulkMarkPost = (data: BulkMarkLeve
     url: '/api/vocabulary/library/bulk-mark',
     body: data.requestBody,
     mediaType: 'application/json',
+    errors: {
+        422: 'Validation Error'
+    }
+}); };
+
+/**
+ * Get Test Data
+ * Get test data to verify the multilingual setup works
+ * @returns unknown Successful Response
+ * @throws ApiError
+ */
+export const getTestDataApiVocabularyTestDataGet = (): CancelablePromise<GetTestDataApiVocabularyTestDataGetResponse> => { return __request(OpenAPI, {
+    method: 'GET',
+    url: '/api/vocabulary/test-data'
+}); };
+
+/**
+ * Get Blocking Words
+ * Get words that would block comprehension from video subtitles
+ * @param data The data for the request.
+ * @param data.videoPath Path to the video file
+ * @returns unknown Successful Response
+ * @throws ApiError
+ */
+export const getBlockingWordsApiVocabularyBlockingWordsGet = (data: GetBlockingWordsApiVocabularyBlockingWordsGetData): CancelablePromise<GetBlockingWordsApiVocabularyBlockingWordsGetResponse> => { return __request(OpenAPI, {
+    method: 'GET',
+    url: '/api/vocabulary/blocking-words',
+    query: {
+        video_path: data.videoPath
+    },
     errors: {
         422: 'Validation Error'
     }
@@ -577,54 +580,6 @@ export const profileUpdateSettingsApiProfileSettingsPut = (data: ProfileUpdateSe
     url: '/api/profile/settings',
     body: data.requestBody,
     mediaType: 'application/json',
-    errors: {
-        422: 'Validation Error'
-    }
-}); };
-
-/**
- * Logs Receive Frontend
- * Receive and save frontend logs to file
- * @param data The data for the request.
- * @param data.requestBody
- * @returns unknown Successful Response
- * @throws ApiError
- */
-export const logsReceiveFrontendApiLogsFrontendPost = (data: LogsReceiveFrontendApiLogsFrontendPostData): CancelablePromise<LogsReceiveFrontendApiLogsFrontendPostResponse> => { return __request(OpenAPI, {
-    method: 'POST',
-    url: '/api/logs/frontend',
-    body: data.requestBody,
-    mediaType: 'application/json',
-    errors: {
-        422: 'Validation Error'
-    }
-}); };
-
-/**
- * Logs List Files
- * List available log files
- * @returns unknown Successful Response
- * @throws ApiError
- */
-export const logsListFilesApiLogsListGet = (): CancelablePromise<LogsListFilesApiLogsListGetResponse> => { return __request(OpenAPI, {
-    method: 'GET',
-    url: '/api/logs/list'
-}); };
-
-/**
- * Logs Download File
- * Download a specific log file
- * @param data The data for the request.
- * @param data.filename
- * @returns unknown Successful Response
- * @throws ApiError
- */
-export const logsDownloadFileApiLogsDownloadFilenameGet = (data: LogsDownloadFileApiLogsDownloadFilenameGetData): CancelablePromise<LogsDownloadFileApiLogsDownloadFilenameGetResponse> => { return __request(OpenAPI, {
-    method: 'GET',
-    url: '/api/logs/download/{filename}',
-    path: {
-        filename: data.filename
-    },
     errors: {
         422: 'Validation Error'
     }

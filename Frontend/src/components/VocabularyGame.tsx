@@ -4,7 +4,12 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { CheckIcon, XMarkIcon, ArrowPathIcon } from '@heroicons/react/24/solid'
 import { toast } from 'react-hot-toast'
 import { NetflixButton, FlexCenter } from '@/styles/GlobalStyles'
-import type { VocabularyWord } from '@/types'
+import type { VocabularyWord as GeneratedVocabularyWord } from '@/client/types.gen'
+
+// Extend the generated type to include definition
+type VocabularyWord = GeneratedVocabularyWord & {
+  definition?: string
+}
 
 const GameContainer = styled.div`
   position: fixed;
@@ -410,14 +415,14 @@ export const VocabularyGame: React.FC<VocabularyGameProps> = ({
                 }
               }}
             >
-              <WordText>{currentWord.word}</WordText>
-              
-              <DifficultyBadge $level={currentWord.difficulty_level}>
-                {currentWord.difficulty_level?.toUpperCase() || 'UNKNOWN'} Level
+              <WordText>{currentWord?.word || ''}</WordText>
+
+              <DifficultyBadge $level={currentWord?.difficulty_level}>
+                {(currentWord?.difficulty_level || 'unknown').toUpperCase()} Level
               </DifficultyBadge>
               
-              {currentWord.definition && (
-                <Definition>{currentWord.definition}</Definition>
+              {currentWord?.definition && (
+                <Definition>{currentWord?.definition}</Definition>
               )}
               
               <SwipeHint>

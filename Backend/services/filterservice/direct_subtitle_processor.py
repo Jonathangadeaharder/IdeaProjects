@@ -11,7 +11,7 @@ from typing import Any
 from sqlalchemy import select
 
 from core.database import AsyncSessionLocal
-from database.models import Vocabulary, UserLearningProgress
+from database.models import VocabularyConcept, VocabularyTranslation, UserLearningProgress
 
 from .interface import FilteredSubtitle, FilteredWord, FilteringResult, WordStatus
 
@@ -205,13 +205,13 @@ class DirectSubtitleProcessor:
         if cache_key not in self._user_known_words_cache:
             try:
                 async with AsyncSessionLocal() as session:
-                    # Join UserLearningProgress with Vocabulary to get learned words
-                    query = select(Vocabulary.word).join(
-                        UserLearningProgress, 
-                        UserLearningProgress.word_id == Vocabulary.id
+                    # Join UserLearningProgress with VocabularyTranslation to get learned words
+                    query = select(VocabularyTranslation.word).join(
+                        UserLearningProgress,
+                        UserLearningProgress.concept_id == VocabularyTranslation.concept_id
                     ).where(
                         UserLearningProgress.user_id == str(user_id),
-                        Vocabulary.language == language,
+                        VocabularyTranslation.language_code == language,
                         UserLearningProgress.confidence_level >= 1  # Consider learned if confidence >= 1
                     ).distinct()
 
@@ -230,8 +230,11 @@ class DirectSubtitleProcessor:
         """Pre-load word difficulty levels for efficiency"""
         try:
             async with AsyncSessionLocal() as session:
-                query = select(Vocabulary.word, Vocabulary.difficulty_level).where(
-                    Vocabulary.language == language
+                query = select(VocabularyTranslation.word, VocabularyConcept.difficulty_level).join(
+                    VocabularyConcept,
+                    VocabularyConcept.id == VocabularyTranslation.concept_id
+                ).where(
+                    VocabularyTranslation.language_code == language
                 ).distinct()
 
                 result = await session.execute(query)
@@ -290,12 +293,14 @@ class DirectSubtitleProcessor:
             filtering_result = await self.process_subtitles(filtered_subtitles, user_id, user_level, language)
 
             # Convert blocker words to VocabularyWord objects
+            import uuid
             blocking_words = []
             for word in filtering_result.blocker_words:
                 vocab_word = VocabularyWord(
+                    concept_id=uuid.uuid4(),  # Generate unique ID for each word
                     word=word.text,
-                    definition="",
-                    difficulty_level=word.metadata.get("difficulty_level", "Unknown"),
+                    translation="",  # Changed from definition to translation
+                    difficulty_level=word.metadata.get("difficulty_level", "B1"),  # Default to B1 if unknown
                     known=False
                 )
                 blocking_words.append(vocab_word)

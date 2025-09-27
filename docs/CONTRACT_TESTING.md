@@ -24,14 +24,13 @@ confirm contract approvals, versioning, and automated test coverage before mergi
   - Error handling with detailed validation messages
   - TypeScript integration for compile-time safety
 
-#### 2. Validated API Client (`Frontend/src/client/validated-client.ts`)
-- **Purpose**: API client wrapper with built-in contract validation
+#### 2. Generated SDK (`Frontend/src/client/services.gen.ts`)
+- **Purpose**: OpenAPI-generated client functions
 - **Features**:
-  - Automatic request/response validation
-  - Environment-specific configuration
-  - Custom error types for contract violations
-  - Hook-style API functions for React integration
-  - Retry logic and timeout handling
+  - One-to-one mapping with backend routes
+  - TypeScript typings sourced from OpenAPI
+  - Shared Axios configuration via `services/api.ts`
+  - Works directly with React components and stores
 
 #### 3. Environment Configuration (`Frontend/src/config/api-config.ts`)
 - **Purpose**: Environment-specific API client configuration
@@ -63,7 +62,7 @@ describe('Auth API Contract', () => {
   it('should have correct register endpoint structure', () => {
     // Validates request/response structure
   });
-  
+
   it('should have correct login endpoint structure', () => {
     // Validates authentication flow
   });
@@ -77,26 +76,13 @@ describe('Schema Validation', () => {
   it('should validate UserResponse correctly', () => {
     // Tests valid and invalid response structures
   });
-  
+
   it('should handle validation errors gracefully', () => {
     // Tests error handling and messages
   });
 });
 ```
 
-#### Validated Client Tests (`Frontend/src/test/contract/validated-client.test.ts`)
-```typescript
-// Tests the validated API client wrapper
-describe('Validated API Client', () => {
-  it('should validate responses automatically', () => {
-    // Tests automatic validation integration
-  });
-  
-  it('should handle contract violations', () => {
-    // Tests error handling for invalid responses
-  });
-});
-```
 
 ## CI/CD Pipeline
 
@@ -197,12 +183,13 @@ describe('New Feature Contract', () => {
 });
 ```
 
-#### 4. Update Validated Client
+#### 4. Wire the Generated Function
 ```typescript
-// Add method to ValidatedApiClient
-async getNewFeature(id: number): Promise<NewFeatureResponse> {
-  const response = await clientSdk.getNewFeatureGet({ path: { id } });
-  return validateNewFeatureResponse(response.data);
+import { getNewFeatureGet } from '@/client/services.gen'
+
+export async function fetchNewFeature(id: string) {
+  const response = await getNewFeatureGet({ path: { id } })
+  return validateNewFeatureResponse(response)
 }
 ```
 

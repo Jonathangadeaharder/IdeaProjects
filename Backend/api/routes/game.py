@@ -5,12 +5,15 @@ import uuid
 from datetime import datetime
 from typing import Any
 
+from enum import Enum
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from core.config import settings
+from core.database import get_async_session
 from core.dependencies import current_active_user
-from database.models import User
+from database.models import GameSessionRecord, User
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +36,7 @@ class GameSession(BaseModel):
     correct_answers: int = 0
     current_question: int = 0
     total_questions: int = 10
-    session_data: dict[str, Any] = {}
+    session_data: dict[str, Any] = Field(default_factory=dict)
 
 
 class GameQuestion(BaseModel):
@@ -48,237 +51,279 @@ class GameQuestion(BaseModel):
     points: int = 10
     timestamp: datetime | None = None
 
+    @field_validator('question_text')
+    @classmethod
+    def validate_question_text(cls, v):
+        if not v or not v.strip():
+            raise ValueError('Question text cannot be empty')
+        return v
+
+
+class GameType(str, Enum):
+    """Valid game types"""
+    VOCABULARY = "vocabulary"
+    LISTENING = "listening"
+    COMPREHENSION = "comprehension"
+
+
+class GameDifficulty(str, Enum):
+    """Valid difficulty levels"""
+    BEGINNER = "beginner"
+    INTERMEDIATE = "intermediate"
+    ADVANCED = "advanced"
+
 
 class StartGameRequest(BaseModel):
     """Request model for starting a game session"""
-    game_type: str
-    difficulty: str = "intermediate"
+    game_type: GameType
+    difficulty: GameDifficulty = GameDifficulty.INTERMEDIATE
     video_id: str | None = None
-    total_questions: int = 10
+    total_questions: int = Field(default=10, ge=1, le=50)
 
 
 class AnswerRequest(BaseModel):
     """Request model for submitting an answer"""
     session_id: str
     question_id: str
-    answer: str
+    question_type: str = "multiple_choice"
+    user_answer: str
+    correct_answer: str | None = None
+    points: int = 10
+
+
+def _deserialize_session_payload(raw: str | None) -> dict[str, Any]:
+    if not raw:
+        return {}
+    try:
+        data = json.loads(raw)
+        if isinstance(data, dict):
+            return data
+    except json.JSONDecodeError:
+        logger.warning("Failed to decode stored game session payload", exc_info=True)
+    return {}
+
+
+def _record_to_game_session(record: GameSessionRecord) -> GameSession:
+    session_payload = _deserialize_session_payload(record.session_data)
+    return GameSession(
+        session_id=record.session_id,
+        user_id=str(record.user_id),
+        game_type=record.game_type,
+        difficulty=record.difficulty,
+        video_id=record.video_id,
+        start_time=record.start_time,
+        end_time=record.end_time,
+        status=record.status,
+        score=record.score,
+        max_score=record.max_score,
+        questions_answered=record.questions_answered,
+        correct_answers=record.correct_answers,
+        current_question=record.current_question,
+        total_questions=record.total_questions,
+        session_data=session_payload,
+    )
 
 
 @router.post("/start", response_model=GameSession, name="game_start_session")
 async def start_game_session(
     game_request: StartGameRequest,
-    current_user: User = Depends(current_active_user)
+    current_user: User = Depends(current_active_user),
+    db: AsyncSession = Depends(get_async_session),
 ):
     """Start a new game session"""
     try:
-        # Generate unique session ID
         session_id = str(uuid.uuid4())
+        now = datetime.utcnow()
 
-        # Create new game session
-        game_session = GameSession(
-            session_id=session_id,
-            user_id=str(current_user.id),
-            game_type=game_request.game_type,
-            difficulty=game_request.difficulty,
-            video_id=game_request.video_id,
-            start_time=datetime.now(),
-            total_questions=game_request.total_questions,
-            max_score=game_request.total_questions * 10  # 10 points per question
-        )
-
-        # Generate questions based on game type and difficulty
         questions = await generate_game_questions(
             game_request.game_type,
             game_request.difficulty,
             game_request.video_id,
-            game_request.total_questions
+            game_request.total_questions,
         )
 
-        # Store questions in session data
-        game_session.session_data = {
-            "questions": [q.dict() for q in questions],
-            "created_at": datetime.now().isoformat()
+        session_payload = {
+            "questions": [q.model_dump() for q in questions],
+            "created_at": now.isoformat(),
         }
 
-        # Ensure user data directory exists
-        user_data_path = settings.get_data_path() / str(current_user.id) / "game_sessions"
-        user_data_path.mkdir(parents=True, exist_ok=True)
+        record = GameSessionRecord(
+            session_id=session_id,
+            user_id=str(current_user.id),
+            game_type=game_request.game_type.value,
+            difficulty=game_request.difficulty.value,
+            video_id=game_request.video_id,
+            start_time=now,
+            status="active",
+            total_questions=game_request.total_questions,
+            max_score=game_request.total_questions * 10,
+            session_data=json.dumps(session_payload, ensure_ascii=False),
+        )
 
-        # Save session to file
-        session_path = user_data_path / f"{session_id}.json"
-        session_dict = game_session.dict()
-        session_dict['start_time'] = session_dict['start_time'].isoformat()
+        db.add(record)
+        await db.commit()
+        await db.refresh(record)
 
-        with open(session_path, 'w', encoding='utf-8') as f:
-            json.dump(session_dict, f, indent=2, ensure_ascii=False)
+        logger.info("Started game session %s for user %s", session_id, current_user.id)
+        return _record_to_game_session(record)
 
-        logger.info(f"Started game session {session_id} for user {current_user.id}")
-        return game_session
-
-    except Exception as e:
-        logger.error(f"Error starting game session: {e!s}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Error starting game session: {e!s}")
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.error("Error starting game session: %s", exc, exc_info=True)
+        await db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error starting game session: {exc!s}")
 
 
 @router.get("/session/{session_id}", response_model=GameSession, name="game_get_session")
 async def get_game_session(
     session_id: str,
-    current_user: User = Depends(current_active_user)
+    current_user: User = Depends(current_active_user),
+    db: AsyncSession = Depends(get_async_session),
 ):
     """Get a specific game session"""
     try:
-        session_path = settings.get_data_path() / str(current_user.id) / "game_sessions" / f"{session_id}.json"
+        result = await db.execute(
+            select(GameSessionRecord).where(
+                GameSessionRecord.session_id == session_id,
+                GameSessionRecord.user_id == str(current_user.id),
+            )
+        )
+        record = result.scalar_one_or_none()
 
-        if not session_path.exists():
+        if not record:
             raise HTTPException(status_code=404, detail="Game session not found")
 
-        with open(session_path, encoding='utf-8') as f:
-            session_data = json.load(f)
-
-        # Convert datetime strings back to datetime objects
-        session_data['start_time'] = datetime.fromisoformat(session_data['start_time'])
-        if session_data.get('end_time'):
-            session_data['end_time'] = datetime.fromisoformat(session_data['end_time'])
-
-        game_session = GameSession(**session_data)
-
-        logger.info(f"Retrieved game session {session_id} for user {current_user.id}")
-        return game_session
+        return _record_to_game_session(record)
 
     except HTTPException:
         raise
-    except Exception as e:
-        logger.error(f"Error getting game session: {e!s}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Error retrieving game session: {e!s}")
+    except Exception as exc:
+        logger.error("Error getting game session: %s", exc, exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error retrieving game session: {exc!s}")
 
 
 @router.post("/answer", name="game_submit_answer")
 async def submit_answer(
     answer_request: AnswerRequest,
-    current_user: User = Depends(current_active_user)
+    current_user: User = Depends(current_active_user),
+    db: AsyncSession = Depends(get_async_session),
 ):
     """Submit an answer for a game question"""
     try:
-        # Get current session
-        game_session = await get_game_session(answer_request.session_id, current_user)
+        result = await db.execute(
+            select(GameSessionRecord).where(
+                GameSessionRecord.session_id == answer_request.session_id,
+                GameSessionRecord.user_id == str(current_user.id),
+            )
+        )
+        record = result.scalar_one_or_none()
 
-        if game_session.status != "active":
+        if not record:
+            raise HTTPException(status_code=404, detail="Game session not found")
+
+        if record.status != "active":
             raise HTTPException(status_code=400, detail="Game session is not active")
 
-        # Find the question
-        questions = game_session.session_data.get("questions", [])
-        question = None
-        for q in questions:
-            if q["question_id"] == answer_request.question_id:
-                question = q
-                break
+        session_payload = _deserialize_session_payload(record.session_data)
+        questions = session_payload.get("questions", [])
+        question = next((q for q in questions if q.get("question_id") == answer_request.question_id), None)
 
         if not question:
             raise HTTPException(status_code=404, detail="Question not found")
 
-        # Check if already answered
         if question.get("user_answer") is not None:
             raise HTTPException(status_code=400, detail="Question already answered")
 
-        # Evaluate answer
-        is_correct = answer_request.answer.strip().lower() == question["correct_answer"].strip().lower()
-        points = question["points"] if is_correct else 0
+        # Use question's correct answer if available, otherwise use the one from request
+        expected_answer = (question.get("correct_answer") or answer_request.correct_answer or "").strip().lower()
+        user_answer = answer_request.user_answer.strip().lower()
+        is_correct = expected_answer and user_answer == expected_answer
 
-        # Update question
-        question["user_answer"] = answer_request.answer
+        # Debug logging
+        logger.info(f"Question correct_answer: {question.get('correct_answer')}")
+        logger.info(f"Request correct_answer: {answer_request.correct_answer}")
+        logger.info(f"Expected answer: '{expected_answer}'")
+        logger.info(f"User answer: '{user_answer}'")
+        logger.info(f"Is correct: {is_correct}")
+        points_available = int(question.get("points") or answer_request.points or 0)
+        points_awarded = points_available if is_correct else 0
+
+        question["user_answer"] = answer_request.user_answer
         question["is_correct"] = is_correct
-        question["timestamp"] = datetime.now().isoformat()
+        question["timestamp"] = datetime.utcnow().isoformat()
 
-        # Update session stats
-        game_session.questions_answered += 1
+        record.questions_answered += 1
+        record.current_question = min(record.current_question + 1, record.total_questions)
         if is_correct:
-            game_session.correct_answers += 1
-            game_session.score += points
+            record.correct_answers += 1
+            record.score += points_awarded
 
-        game_session.current_question += 1
+        if record.questions_answered >= record.total_questions:
+            record.status = "completed"
+            record.end_time = datetime.utcnow()
 
-        # Check if game is completed
-        if game_session.questions_answered >= game_session.total_questions:
-            game_session.status = "completed"
-            game_session.end_time = datetime.now()
+        record.session_data = json.dumps(session_payload, ensure_ascii=False)
+        record.updated_at = datetime.utcnow()
 
-        # Save updated session
-        session_path = settings.get_data_path() / str(current_user.id) / "game_sessions" / f"{answer_request.session_id}.json"
-        session_dict = game_session.dict()
-        session_dict['start_time'] = session_dict['start_time'].isoformat()
-        if session_dict.get('end_time'):
-            session_dict['end_time'] = session_dict['end_time'].isoformat()
+        await db.commit()
+        await db.refresh(record)
 
-        with open(session_path, 'w', encoding='utf-8') as f:
-            json.dump(session_dict, f, indent=2, ensure_ascii=False)
-
-        result = {
+        result_payload = {
             "is_correct": is_correct,
-            "points_earned": points,
-            "current_score": game_session.score,
-            "questions_remaining": game_session.total_questions - game_session.questions_answered,
-            "session_completed": game_session.status == "completed"
+            "points_earned": points_awarded,
+            "current_score": record.score,
+            "questions_remaining": max(record.total_questions - record.questions_answered, 0),
+            "session_completed": record.status == "completed",
         }
 
-        logger.info(f"Answer submitted for session {answer_request.session_id}, correct: {is_correct}")
-        return result
+        logger.info("Answer submitted for session %s (correct=%s)", answer_request.session_id, is_correct)
+        return result_payload
 
     except HTTPException:
         raise
-    except Exception as e:
-        logger.error(f"Error submitting answer: {e!s}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Error submitting answer: {e!s}")
+    except Exception as exc:
+        logger.error("Error submitting answer: %s", exc, exc_info=True)
+        await db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error submitting answer: {exc!s}")
 
 
 @router.get("/sessions", response_model=list[GameSession], name="game_get_user_sessions")
 async def get_user_game_sessions(
     limit: int = 10,
-    current_user: User = Depends(current_active_user)
+    current_user: User = Depends(current_active_user),
+    db: AsyncSession = Depends(get_async_session),
 ):
     """Get user's game sessions"""
     try:
-        sessions_path = settings.get_data_path() / str(current_user.id) / "game_sessions"
+        result = await db.execute(
+            select(GameSessionRecord)
+            .where(GameSessionRecord.user_id == str(current_user.id))
+            .order_by(GameSessionRecord.start_time.desc())
+            .limit(limit)
+        )
+        records = result.scalars().all()
 
-        if not sessions_path.exists():
-            return []
+        logger.info("Retrieved %s game sessions for user %s", len(records), current_user.id)
+        return [_record_to_game_session(record) for record in records]
 
-        sessions = []
-        session_files = list(sessions_path.glob("*.json"))
-
-        # Sort by creation time (most recent first)
-        session_files.sort(key=lambda x: x.stat().st_mtime, reverse=True)
-
-        for session_file in session_files[:limit]:
-            try:
-                with open(session_file, encoding='utf-8') as f:
-                    session_data = json.load(f)
-
-                # Convert datetime strings
-                session_data['start_time'] = datetime.fromisoformat(session_data['start_time'])
-                if session_data.get('end_time'):
-                    session_data['end_time'] = datetime.fromisoformat(session_data['end_time'])
-
-                sessions.append(GameSession(**session_data))
-
-            except Exception as e:
-                logger.warning(f"Error loading session file {session_file}: {e!s}")
-                continue
-
-        logger.info(f"Retrieved {len(sessions)} game sessions for user {current_user.id}")
-        return sessions
-
-    except Exception as e:
-        logger.error(f"Error getting user game sessions: {e!s}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Error retrieving game sessions: {e!s}")
+    except Exception as exc:
+        logger.error("Error getting user game sessions: %s", exc, exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error retrieving game sessions: {exc!s}")
 
 
 async def generate_game_questions(
-    game_type: str,
-    difficulty: str,
+    game_type: str | GameType,
+    difficulty: str | GameDifficulty,
     video_id: str | None,
     total_questions: int
 ) -> list[GameQuestion]:
     """Generate questions for a game session"""
+    if isinstance(game_type, GameType):
+        game_type = game_type.value
+    if isinstance(difficulty, GameDifficulty):
+        difficulty = difficulty.value
+
     questions = []
 
     # Sample questions based on game type
@@ -296,10 +341,10 @@ async def generate_game_questions(
         if not filtered_words:
             filtered_words = sample_words  # Fallback to all words
 
-        for i in range(min(total_questions, len(filtered_words))):
+        for i in range(total_questions):
             word_data = filtered_words[i % len(filtered_words)]
             question = GameQuestion(
-                question_id=str(uuid.uuid4()),
+                question_id=f"q{i + 1}",
                 question_type="translation",
                 question_text=f"What is the translation of '{word_data['word']}'?",
                 correct_answer=word_data["translation"],
@@ -311,7 +356,7 @@ async def generate_game_questions(
         # Generate listening comprehension questions
         for i in range(total_questions):
             question = GameQuestion(
-                question_id=str(uuid.uuid4()),
+                question_id=f"q{i + 1}",
                 question_type="multiple_choice",
                 question_text=f"What did the speaker say in segment {i+1}?",
                 options=["Option A", "Option B", "Option C", "Option D"],
@@ -324,7 +369,7 @@ async def generate_game_questions(
         # Generate comprehension questions
         for i in range(total_questions):
             question = GameQuestion(
-                question_id=str(uuid.uuid4()),
+                question_id=f"q{i + 1}",
                 question_type="multiple_choice",
                 question_text=f"What was the main idea of segment {i+1}?",
                 options=["Idea A", "Idea B", "Idea C", "Idea D"],

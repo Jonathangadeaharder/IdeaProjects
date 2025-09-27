@@ -32,7 +32,7 @@ class BackendAPITester:
         env["TESTING"] = "1"
         env["LANGPLUG_DEBUG"] = "true"
         
-        cmd = ["python", "-m", "uvicorn", "main:app", "--host", "127.0.0.1", "--port", "8001", "--log-level", "warning"]
+        cmd = ["python", "-m", "uvicorn", "core.app:create_app", "--factory", "--host", "127.0.0.1", "--port", "8001", "--log-level", "warning"]
         
         self.process = subprocess.Popen(cmd, cwd=self.backend_dir, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         
@@ -42,7 +42,7 @@ class BackendAPITester:
             try:
                 response = httpx.get(f"{self.base_url}/docs", timeout=2)
                 if response.status_code == 200:
-                    print(f"✅ Backend server ready at {self.base_url}")
+                    print(f"[GOOD] Backend server ready at {self.base_url}")
                     return True
             except:
                 time.sleep(0.5)
@@ -78,7 +78,7 @@ class BackendAPITester:
             
             user_response = response.json()
             self.test_user_id = user_response["id"]
-            print(f"✅ Test user registered: {user_data['username']}")
+            print(f"[GOOD] Test user registered: {user_data['username']}")
             return {**user_data, **user_response}
     
     async def login_user(self, email: str, password: str) -> str:
@@ -95,7 +95,7 @@ class BackendAPITester:
             
             login_response = response.json()
             self.session_token = login_response["access_token"]
-            print(f"✅ User logged in, token: {self.session_token[:20]}...")
+            print(f"[GOOD] User logged in, token: {self.session_token[:20]}...")
             return self.session_token
     
     def get_auth_headers(self) -> Dict[str, str]:

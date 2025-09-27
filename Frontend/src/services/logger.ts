@@ -34,9 +34,8 @@ class Logger {
     const envLogLevel = import.meta.env.VITE_LOG_LEVEL || 'DEBUG'
     this.logLevel = LogLevel[envLogLevel as keyof typeof LogLevel] || LogLevel.DEBUG
     
-    // Disable API logging for now due to backend timeout issues
-    // TODO: Re-enable when backend logging endpoint is fixed
-    this.apiEnabled = false
+    // API logging can be disabled via environment variable if needed
+    this.apiEnabled = import.meta.env.VITE_ENABLE_API_LOGGING !== 'false'
 
     // Set up global error handler
     this.setupGlobalErrorHandler()
@@ -143,7 +142,7 @@ class Logger {
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), 5000) // 5 second timeout
 
-      await fetch(`${API_BASE_URL}/debug/frontend-logs`, {
+      await fetch(`${API_BASE_URL}/api/debug/frontend-logs`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

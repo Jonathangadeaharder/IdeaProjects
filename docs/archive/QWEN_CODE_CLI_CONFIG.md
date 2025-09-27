@@ -151,7 +151,7 @@ qwen --help
 qwen search "import" --include-pattern="*.py"
 # Should not show results from venv/, __pycache__/, etc.
 
-qwen search "node_modules" 
+qwen search "node_modules"
 # Should not find actual node_modules directories in search results
 
 qwen search "*.db"

@@ -345,12 +345,46 @@ class ChunkProcessingService:
             logger.info(f"[CHUNK DEBUG] Generated chunk SRT file: {chunk_output_path}")
             logger.info(f"[CHUNK DEBUG] Chunk contains {len(chunk_segments)} segments")
 
+            # Set the subtitle path in task progress for frontend
+            # Convert to relative path from videos directory
+            videos_path = settings.get_videos_path()
+            relative_path = chunk_output_path.relative_to(videos_path)
+
+            # Update the ProcessingStatus with subtitle_path
+            current_status = task_progress[task_id]
+            task_progress[task_id] = ProcessingStatus(
+                status=current_status.status,
+                progress=current_status.progress,
+                current_step=current_status.current_step,
+                message=current_status.message,
+                started_at=current_status.started_at,
+                vocabulary=getattr(current_status, 'vocabulary', None),
+                subtitle_path=str(relative_path)
+            )
+            logger.info(f"[CHUNK DEBUG] Setting subtitle_path in task progress: {relative_path}")
+
         except Exception as e:
             logger.error(f"[CHUNK ERROR] Failed to generate filtered subtitles: {e}")
             # Still create an empty file so tests don't fail
             chunk_filename = f"{video_file.stem}_chunk_{int(start_time)}_{int(end_time)}.srt"
             chunk_output_path = video_file.parent / chunk_filename
             chunk_output_path.write_text("# Chunk processing completed\n", encoding='utf-8')
+
+            # Set subtitle path even on error so frontend doesn't fail
+            videos_path = settings.get_videos_path()
+            relative_path = chunk_output_path.relative_to(videos_path)
+
+            # Update the ProcessingStatus with subtitle_path even on error
+            current_status = task_progress[task_id]
+            task_progress[task_id] = ProcessingStatus(
+                status=current_status.status,
+                progress=current_status.progress,
+                current_step=current_status.current_step,
+                message=current_status.message,
+                started_at=current_status.started_at,
+                vocabulary=getattr(current_status, 'vocabulary', None),
+                subtitle_path=str(relative_path)
+            )
 
         logger.info(f"[CHUNK DEBUG] Generated filtered subtitles for {len(vocabulary)} vocabulary words")
 

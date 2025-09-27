@@ -11,6 +11,7 @@ import { LearningPlayer } from '@/components/LearningPlayer'
 import { PipelineProgress } from '@/components/PipelineProgress'
 import { ChunkedLearningPage } from '@/components/ChunkedLearningPage'
 import { VocabularyLibrary } from '@/components/VocabularyLibrary'
+import ProfileScreen from '@/screens/ProfileScreen'
 import { useAuthStore } from '@/store/useAuthStore'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 
@@ -76,6 +77,15 @@ export const AppRoutes: React.FC = () => {
         element={
           <ProtectedRoute>
             <VocabularyLibrary />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/profile"
+        element={
+          <ProtectedRoute>
+            <ProfileScreen />
           </ProtectedRoute>
         }
       />

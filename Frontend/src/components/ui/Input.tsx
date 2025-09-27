@@ -11,6 +11,7 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   iconPosition?: 'left' | 'right';
   variant?: 'default' | 'filled' | 'outlined';
   fullWidth?: boolean;
+  'data-testid'?: string;
 }
 
 const InputWrapper = styled.div.withConfig({

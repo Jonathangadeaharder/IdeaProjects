@@ -6,7 +6,7 @@ import { Card, CardHeader, CardContent, CardFooter } from '../Card'
 // Helper to render with theme
 const renderWithTheme = (component: React.ReactElement) => {
   return render(
-    <ThemeProvider theme={global.mockTheme}>
+    <ThemeProvider theme={(global as any).mockTheme}>
       {component}
     </ThemeProvider>
   )

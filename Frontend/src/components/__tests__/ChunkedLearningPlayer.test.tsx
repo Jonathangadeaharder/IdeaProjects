@@ -1,5 +1,5 @@
 import { describe, test, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import React from 'react';
 import { ChunkedLearningPlayer } from '../ChunkedLearningPlayer';
 
@@ -21,11 +21,9 @@ vi.mock('react-player', () => {
   };
 });
 
-// Mock the video service
+// Mock the video helper
 vi.mock('@/services/api', () => ({
-  videoService: {
-    getVideoStreamUrl: vi.fn((series, episode) => `http://localhost:8000/api/videos/${series}/${episode}`),
-  },
+  buildVideoStreamUrl: vi.fn((series: string, episode: string) => `http://localhost:8000/api/videos/${series}/${episode}`),
 }));
 
 // Mock logger
@@ -37,8 +35,7 @@ vi.mock('@/services/logger', () => ({
   },
 }));
 
-describe('ChunkedLearningPlayer', () => {
-  const defaultProps = {
+const createProps = (overrides: Partial<React.ComponentProps<typeof ChunkedLearningPlayer>> = {}) => ({
     videoPath: 'Superstore/Episode 1.mp4',
     series: 'Superstore',
     episode: 'Episode 1',
@@ -47,33 +44,47 @@ describe('ChunkedLearningPlayer', () => {
     startTime: 0,
     endTime: 300,
     onComplete: vi.fn(),
+    onSkipChunk: vi.fn(),
+    onBack: vi.fn(),
     learnedWords: ['test'],
     chunkInfo: {
       current: 1,
       total: 3,
       duration: '5:00',
     },
-  };
+    ...overrides,
+  })
+
+describe('ChunkedLearningPlayer', () => {
 
   test('renders without crashing', () => {
-    render(<ChunkedLearningPlayer {...defaultProps} />);
+    render(<ChunkedLearningPlayer {...createProps()} />);
     expect(screen.getByTestId('mock-react-player')).toBeInTheDocument();
   });
 
   test('displays chunk information', () => {
-    render(<ChunkedLearningPlayer {...defaultProps} />);
+    render(<ChunkedLearningPlayer {...createProps()} />);
     expect(screen.getByText('Playing Chunk')).toBeInTheDocument();
     expect(screen.getByText('1 of 3 • 5:00')).toBeInTheDocument();
   });
 
   test('displays learned words count', () => {
-    render(<ChunkedLearningPlayer {...defaultProps} />);
-    expect(screen.getByText('1 words learned')).toBeInTheDocument();
+    render(<ChunkedLearningPlayer {...createProps()} />);
+    expect(screen.getByText('1 learned')).toBeInTheDocument();
   });
 
-  test('builds correct subtitle URLs', () => {
-    // This test would verify that subtitle URLs are constructed correctly
-    // We'll need to add more specific tests once we can mock axios requests
-    expect(true).toBe(true);
+  test('invokes onBack when back button is clicked', () => {
+    const onBack = vi.fn();
+    render(<ChunkedLearningPlayer {...createProps({ onBack })} />);
+    fireEvent.click(screen.getByRole('button', { name: /back to episodes/i }));
+    expect(onBack).toHaveBeenCalled();
   });
+
+  test('invokes onSkipChunk when next button is clicked', () => {
+    const onSkipChunk = vi.fn();
+    render(<ChunkedLearningPlayer {...createProps({ onSkipChunk })} />);
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+    expect(onSkipChunk).toHaveBeenCalled();
+  });
+
 });

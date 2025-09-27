@@ -45,16 +45,6 @@ class VideoInfo(BaseModel):
         description="Video duration in seconds"
     )
 
-    @field_validator('path')
-    @classmethod
-    def validate_path_format(cls, v):
-        if not v.strip():
-            raise ValueError('Path cannot be empty or whitespace')
-        # Check for common video file extensions
-        valid_extensions = {'.mp4', '.avi', '.mkv', '.mov', '.wmv', '.flv', '.webm'}
-        if not any(v.lower().endswith(ext) for ext in valid_extensions):
-            raise ValueError(f'Path must end with a valid video extension: {", ".join(valid_extensions)}')
-        return v
 
     model_config = ConfigDict(
         json_schema_extra={

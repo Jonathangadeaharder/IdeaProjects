@@ -77,7 +77,7 @@ german_count = cursor.fetchone()[0]
 cursor.execute("SELECT COUNT(*) FROM vocabulary WHERE language = 'de' AND difficulty_level != 'A1'")
 a2_plus_count = cursor.fetchone()[0]
 
-print(f"✅ Loaded {german_count} German words ({a2_plus_count} above A1 level)")
+print(f"[GOOD] Loaded {german_count} German words ({a2_plus_count} above A1 level)")
 
 # Show the A2+ words that should be detected
 cursor.execute("""
@@ -86,10 +86,10 @@ cursor.execute("""
     ORDER BY difficulty_level, word
 """)
 
-print("\n🎯 A2+ words that should be detected in Superstore:")
+print("\n[INFO] A2+ words that should be detected in Superstore:")
 for word, level in cursor.fetchall():
     print(f"  {word} ({level})")
 
 conn.close()
-print("\n✅ Vocabulary loading complete!")
-print("🔄 Now restart your backend to see the vocabulary in action.")
+print("\n[GOOD] Vocabulary loading complete!")
+print("[INFO] Now restart your backend to see the vocabulary in action.")
