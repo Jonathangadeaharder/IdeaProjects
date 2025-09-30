@@ -11,7 +11,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.database import AsyncSessionLocal
-from database.models import VocabularyConcept, VocabularyTranslation
+from database.models import VocabularyWord, Language
 
 logger = logging.getLogger(__name__)
 
@@ -67,13 +67,19 @@ class VocabularyPreloadService:
                     loaded_count = 0
                     for word in words:
                         # Check if word already exists
-                        existing = await session.get(VocabularyConcept, word.lower())
+                        existing = await session.get(VocabularyWord, word.lower())
                         if not existing:
-                            vocab_entry = VocabularyConcept(
+                            vocab_entry = VocabularyWord(
                                 word=word.lower(),
-                                difficulty_level=level,
+                                lemma=word.lower(),
                                 language="de",
-                                word_type="unknown",
+                                difficulty_level=level,
+                                part_of_speech="noun",
+                                translation_en="",
+                                translation_native="",
+                                pronunciation="",
+                                notes="",
+                                frequency_rank=0,
                                 created_at=datetime.utcnow(),
                                 updated_at=datetime.utcnow()
                             )
@@ -116,27 +122,25 @@ class VocabularyPreloadService:
     async def _execute_get_level_words(self, session: AsyncSession, level: str) -> list[dict[str, str]]:
         """Execute the actual database query for level words"""
         from sqlalchemy import select
-        from database.models import VocabularyTranslation
+        from database.models import VocabularyWord
 
-        stmt = select(VocabularyConcept, VocabularyTranslation).join(
-            VocabularyTranslation, VocabularyTranslation.concept_id == VocabularyConcept.id
-        ).where(
-            VocabularyConcept.difficulty_level == level,
-            VocabularyTranslation.language_code == 'de'
-        ).order_by(VocabularyTranslation.word)
+        stmt = select(VocabularyWord).where(
+            VocabularyWord.difficulty_level == level,
+            VocabularyWord.language == 'de'
+        ).order_by(VocabularyWord.word)
 
         result = await session.execute(stmt)
-        rows = result.fetchall()
+        words_db = result.scalars().all()
 
         words = []
-        for concept, translation in rows:
+        for word_db in words_db:
             words.append({
-                "id": concept.id,
-                "word": translation.word,
-                "difficulty_level": concept.difficulty_level,
-                "word_type": concept.semantic_category or "noun",
-                "part_of_speech": concept.semantic_category or "noun",
-                "definition": "",
+                "id": word_db.id,
+                "word": word_db.word,
+                "difficulty_level": word_db.difficulty_level,
+                "word_type": word_db.part_of_speech or "noun",
+                "part_of_speech": word_db.part_of_speech or "noun",
+                "definition": word_db.notes or "",
             })
         return words
 
@@ -160,26 +164,22 @@ class VocabularyPreloadService:
     async def _execute_get_user_known_words(self, session: AsyncSession, user_id: int, level: str = None) -> set[str]:
         """Execute the actual database query for user known words"""
         from sqlalchemy import select
-        from database.models import UserLearningProgress, VocabularyTranslation
+        from database.models import UserVocabularyProgress, VocabularyWord
 
         if level:
-            stmt = select(VocabularyTranslation.word).join(
-                VocabularyConcept, VocabularyTranslation.concept_id == VocabularyConcept.id
-            ).join(
-                UserLearningProgress, UserLearningProgress.concept_id == VocabularyConcept.id
+            stmt = select(VocabularyWord.word).join(
+                UserVocabularyProgress, UserVocabularyProgress.vocabulary_id == VocabularyWord.id
             ).where(
-                UserLearningProgress.user_id == str(user_id),
-                VocabularyConcept.difficulty_level == level,
-                VocabularyTranslation.language_code == 'de'
+                UserVocabularyProgress.user_id == user_id,
+                VocabularyWord.difficulty_level == level,
+                VocabularyWord.language == 'de'
             )
         else:
-            stmt = select(VocabularyTranslation.word).join(
-                VocabularyConcept, VocabularyTranslation.concept_id == VocabularyConcept.id
-            ).join(
-                UserLearningProgress, UserLearningProgress.concept_id == VocabularyConcept.id
+            stmt = select(VocabularyWord.word).join(
+                UserVocabularyProgress, UserVocabularyProgress.vocabulary_id == VocabularyWord.id
             ).where(
-                UserLearningProgress.user_id == str(user_id),
-                VocabularyTranslation.language_code == 'de'
+                UserVocabularyProgress.user_id == user_id,
+                VocabularyWord.language == 'de'
             )
 
         result = await session.execute(stmt)
@@ -192,55 +192,60 @@ class VocabularyPreloadService:
             async with AsyncSessionLocal() as session:
                 from sqlalchemy import delete, select
 
-                from database.models import UserLearningProgress
+                from database.models import UserVocabularyProgress
 
-                # First, get the word from vocabulary translations table
-                from database.models import VocabularyTranslation
-                vocab_stmt = select(VocabularyTranslation).where(
-                    VocabularyTranslation.word == word.lower(),
-                    VocabularyTranslation.language_code == 'de'
+                # First, get the word from vocabulary table
+                from database.models import VocabularyWord
+                vocab_stmt = select(VocabularyWord).where(
+                    VocabularyWord.word == word.lower(),
+                    VocabularyWord.language == 'de'
                 )
                 vocab_result = await session.execute(vocab_stmt)
-                vocab_translation = vocab_result.scalar_one_or_none()
+                vocab_word = vocab_result.scalar_one_or_none()
 
-                if not vocab_translation:
+                if not vocab_word:
                     logger.warning(f"Word '{word}' not found in vocabulary")
                     return False
 
-                # Get the concept ID from the translation
-                concept_id = vocab_translation.concept_id
+                # Get the vocabulary ID
+                vocabulary_id = vocab_word.id
 
                 if known:
                     # Check if progress entry already exists
-                    existing_stmt = select(UserLearningProgress).where(
-                        UserLearningProgress.user_id == str(user_id),
-                        UserLearningProgress.concept_id == concept_id
+                    existing_stmt = select(UserVocabularyProgress).where(
+                        UserVocabularyProgress.user_id == user_id,
+                        UserVocabularyProgress.vocabulary_id == vocabulary_id
                     )
                     existing_result = await session.execute(existing_stmt)
                     existing_progress = existing_result.scalar_one_or_none()
 
                     if existing_progress:
                         # Update existing
-                        existing_progress.learned_at = datetime.utcnow()
+                        existing_progress.is_known = True
                         existing_progress.confidence_level = 5
                         existing_progress.review_count = (existing_progress.review_count or 0) + 1
-                        existing_progress.last_reviewed = datetime.utcnow()
+                        existing_progress.last_reviewed_at = datetime.utcnow()
                     else:
                         # Create new
-                        progress = UserLearningProgress(
-                            user_id=str(user_id),
-                            concept_id=concept_id,
-                            learned_at=datetime.utcnow(),
+                        progress = UserVocabularyProgress(
+                            user_id=user_id,
+                            vocabulary_id=vocabulary_id,
+                            lemma=vocab_word.lemma,
+                            language=vocab_word.language,
+                            is_known=True,
                             confidence_level=5,
                             review_count=1,
-                            last_reviewed=datetime.utcnow()
+                            last_reviewed_at=datetime.utcnow(),
+                            first_seen_at=datetime.utcnow(),
+                            created_at=datetime.utcnow(),
+                            updated_at=datetime.utcnow()
                         )
                         session.add(progress)
                 else:
-                    # Remove from known words
-                    delete_stmt = delete(UserLearningProgress).where(
-                        UserLearningProgress.user_id == str(user_id),
-                        UserLearningProgress.concept_id == concept_id
+                    # Set as unknown
+                    delete_stmt = delete(UserVocabularyProgress).where(
+                        UserVocabularyProgress.user_id == user_id,
+                        UserVocabularyProgress.vocabulary_id == vocabulary_id
                     )
                     await session.execute(delete_stmt)
 
@@ -283,9 +288,9 @@ class VocabularyPreloadService:
                         v.difficulty_level,
                         COUNT(*) as total_words,
                         0 as has_definition,
-                        COUNT(CASE WHEN ulp.word_id IS NOT NULL THEN 1 END) as user_known
-                    FROM vocabulary v
-                    LEFT JOIN user_learning_progress ulp ON v.id = ulp.word_id
+                        COUNT(CASE WHEN ulp.vocabulary_id IS NOT NULL THEN 1 END) as user_known
+                    FROM vocabulary_words v
+                    LEFT JOIN user_vocabulary_progress ulp ON v.id = ulp.vocabulary_id
                     WHERE v.language = 'de'
                     GROUP BY v.difficulty_level
                     ORDER BY v.difficulty_level
@@ -311,9 +316,9 @@ class VocabularyPreloadService:
                             v.difficulty_level,
                             COUNT(*) as total_words,
                             0 as has_definition,
-                            COUNT(CASE WHEN ulp.word_id IS NOT NULL THEN 1 END) as user_known
-                        FROM vocabulary v
-                        LEFT JOIN user_learning_progress ulp ON v.id = ulp.word_id
+                            COUNT(CASE WHEN ulp.vocabulary_id IS NOT NULL THEN 1 END) as user_known
+                        FROM vocabulary_words v
+                        LEFT JOIN user_vocabulary_progress ulp ON v.id = ulp.vocabulary_id
                         WHERE v.language = 'de'
                         GROUP BY v.difficulty_level
                         ORDER BY v.difficulty_level

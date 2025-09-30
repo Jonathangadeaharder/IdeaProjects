@@ -6,29 +6,14 @@ Wraps the SQLite vocabulary service with authentication requirements
 import logging
 from typing import Any
 
-try:
-    from sqlalchemy import select
-    from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-    from ...core.auth import jwt_authentication
-    from ...core.database import get_async_session
-    from ...database.models import User
-    from ..filterservice.interface import IUserVocabularyService
-    from .user_vocabulary_service import SQLiteUserVocabularyService
-except ImportError:
-    # Fallback for when running as script
-    import sys
-    from pathlib import Path
-    project_root = Path(__file__).parent.parent.parent
-    sys.path.insert(0, str(project_root))
-    from sqlalchemy import select
-
-    # JWT authentication is now handled through fastapi-users dependency injection
-    from sqlalchemy.ext.asyncio import AsyncSession
-
-    from database.models import User
-    from services.dataservice.user_vocabulary_service import SQLiteUserVocabularyService
-    from services.filterservice.interface import IUserVocabularyService
+from core.auth import jwt_authentication
+from core.database import get_async_session
+from database.models import User
+from services.filterservice.interface import IUserVocabularyService
+from services.dataservice.user_vocabulary_service import SQLiteUserVocabularyService
 
 class InsufficientPermissionsError(Exception):
     """Raised when user lacks required permissions"""

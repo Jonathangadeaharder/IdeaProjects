@@ -10,7 +10,8 @@ from passlib.context import CryptContext
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from database.models import User, UserSession
+from database.models import User
+# Note: AuthSession doesn't exist in models_v2, may need to be handled differently
 
 from .models import (
     AuthenticationError,
@@ -34,6 +35,8 @@ class AuthService:
         self.pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
         # Set default session lifetime
         self.session_lifetime_hours = 24
+        # In-memory session storage
+        self._sessions = {}
 
     def _hash_password(self, password: str) -> str:
         """Hash password using bcrypt"""
@@ -99,28 +102,6 @@ class AuthService:
         session_token = secrets.token_urlsafe(32)
         expires_at = datetime.now() + timedelta(hours=self.session_lifetime_hours)
 
-        # Store session in database
-        try:
-            new_session = UserSession(
-                user_id=user.id,
-                session_token=session_token,
-                expires_at=expires_at,
-                created_at=datetime.now(),
-                last_used=datetime.now(),
-                is_active=True
-            )
-            self.db_session.add(new_session)
-
-            # Update last login
-            stmt = update(User).where(User.id == user.id).values(
-                last_login=datetime.now()
-            )
-            await self.db_session.execute(stmt)
-            await self.db_session.commit()
-        except Exception as e:
-            await self.db_session.rollback()
-            raise AuthenticationError(f"Failed to create session: {e}")
-
         # Create AuthUser object for session
         auth_user = AuthUser(
             id=user.id,
@@ -133,45 +114,54 @@ class AuthService:
             last_login=getattr(user, 'last_login', None)
         )
 
-        return AuthSession(
+        # Create and store session in memory
+        new_session = AuthSession(
             session_token=session_token,
             user=auth_user,
             expires_at=expires_at,
             created_at=datetime.now()
         )
 
+        try:
+            # Store session in memory
+            self._sessions[session_token] = new_session
+
+            # Update last login in database
+            stmt = update(User).where(User.id == user.id).values(
+                last_login=datetime.now()
+            )
+            await self.db_session.execute(stmt)
+            await self.db_session.commit()
+        except Exception as e:
+            await self.db_session.rollback()
+            raise AuthenticationError(f"Failed to create session: {e}")
+
+        return new_session
+
     async def validate_session(self, session_token: str) -> User:
         """Validate session token and return user"""
-        # Get session from database with user data
+        # Get session from memory
         try:
-            stmt = select(UserSession, User).join(User).where(
-                UserSession.session_token == session_token,
-                UserSession.is_active == True
-            )
-            result = await self.db_session.execute(stmt)
-            session_user_data = result.first()
+            session = self._sessions.get(session_token)
 
-            if not session_user_data:
-                raise SessionExpiredError("Invalid or expired session")
-
-            session, user = session_user_data
+            if not session:
+                raise SessionExpiredError("Invalid session")
 
             # Check if session is expired
             if datetime.now() > session.expires_at:
-                # Mark session as inactive
-                stmt = update(UserSession).where(
-                    UserSession.session_token == session_token
-                ).values(is_active=False)
-                await self.db_session.execute(stmt)
-                await self.db_session.commit()
+                # Remove expired session from memory
+                self._sessions.pop(session_token, None)
                 raise SessionExpiredError("Session has expired")
 
-            # Update last used timestamp
-            stmt = update(UserSession).where(
-                UserSession.session_token == session_token
-            ).values(last_used=datetime.now())
-            await self.db_session.execute(stmt)
-            await self.db_session.commit()
+            # Get user from database
+            stmt = select(User).where(User.id == session.user.id)
+            result = await self.db_session.execute(stmt)
+            user = result.scalar_one_or_none()
+
+            if not user:
+                # Remove session if user doesn't exist
+                self._sessions.pop(session_token, None)
+                raise SessionExpiredError("User not found")
 
             return user
         except SessionExpiredError:
@@ -180,17 +170,12 @@ class AuthService:
             raise AuthenticationError(f"Failed to validate session: {e}")
 
     async def logout(self, session_token: str) -> bool:
-        """Logout user by deactivating session"""
+        """Logout user by removing session"""
         try:
-            # Deactivate session
-            stmt = update(UserSession).where(
-                UserSession.session_token == session_token
-            ).values(is_active=False)
-            result = await self.db_session.execute(stmt)
-            await self.db_session.commit()
-            return result.rowcount > 0
+            # Remove session from memory
+            removed = self._sessions.pop(session_token, None)
+            return removed is not None
         except Exception as e:
-            await self.db_session.rollback()
             raise AuthenticationError(f"Failed to logout: {e}")
 
     async def update_language_preferences(self, user_id: int, native_language: str, target_language: str) -> bool:
@@ -203,3 +188,9 @@ class AuthService:
         except Exception as e:
             await self.db_session.rollback()
             raise AuthenticationError(f"Failed to update language preferences: {e}")
+
+    def cleanup(self):
+        """Cleanup resources, particularly database session"""
+        if hasattr(self.db_session, 'close'):
+            self.db_session.close()
+        self._sessions.clear()
