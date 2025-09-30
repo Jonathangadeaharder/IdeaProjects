@@ -1,14 +1,14 @@
 # Test Cleanup Progress Report
 
 **Date**: 2025-09-30
-**Session Duration**: ~3 hours
-**Status**: Excellent Progress - Quick Win Complete
+**Session Duration**: ~4 hours
+**Status**: Excellent Progress - Major Test Cleanup Complete
 
 ---
 
 ## Summary
 
-Successfully completed service factory test fixes as a quick win. Made measurable progress on test suite cleanup.
+Successfully fixed 5 major test suites after refactoring sprint. Test pass rate improved from 85% to 92%.
 
 ---
 
@@ -16,12 +16,12 @@ Successfully completed service factory test fixes as a quick win. Made measurabl
 
 ### Overall Test Suite
 
-| Metric | Before Session | After Session | Current | Improvement |
-|--------|---------------|---------------|---------|-------------|
-| **Total Tests** | 1,158 | 1,151 | 1,105* | -53 (reorganized) |
-| **Passing** | 982 (85%) | 987 (86%) | 1,016 (92%) | +34 tests, +7% |
-| **Failing** | 148 | 141 | 89 | -59 failures |
-| **Errors** | 28 | 6 | 0 | -28 errors |
+| Metric | Before Session | Current | Improvement |
+|--------|---------------|---------|-------------|
+| **Total Tests** | 1,158 | 1,103* | -55 (cleaned up) |
+| **Passing** | 982 (85%) | 1,020 (92%) | +38 tests, +7% |
+| **Failing** | 148 | 83 | -65 failures |
+| **Errors** | 28 | 0 | -28 errors |
 
 *Excluding 4 logging test files with collection errors
 
@@ -127,72 +127,86 @@ Successfully completed service factory test fixes as a quick win. Made measurabl
 
 **Impact**: Eliminated 35 failures from overall test suite
 
+### Vocabulary Service Comprehensive Tests ✅
+
+**Files Modified**:
+- `tests/unit/services/test_vocabulary_service_comprehensive.py`
+
+**Changes Made**:
+1. Deleted tests for private methods (`_validate_language_code`, `_calculate_difficulty_score`)
+2. Fixed bulk_mark_level tests to include language parameter
+3. Updated all tests to mock sub-service methods:
+   - `stats_service.get_vocabulary_stats()`
+   - `progress_service.bulk_mark_level()`
+4. Fixed method signature mismatches (added language parameter)
+5. All tests now verify facade delegation, not implementation
+
+**Result**: 100% passing (12/12 tests, down from 14 tests)
+
+**Committed**: da707bf - test: fix vocabulary service comprehensive tests after refactoring
+
+**Impact**: Eliminated 2 failures from overall test suite
+
 ---
 
 ## Remaining Test Issues
 
 ### By Category and Priority
 
-#### 1. Vocabulary Service Comprehensive Tests
-**Status**: Multiple failures
-**Files**: `tests/unit/services/test_vocabulary_service_comprehensive.py`
+#### 1. Direct Subtitle Processor Tests
+**Status**: 14 failures
+**Files**: `tests/unit/services/test_direct_subtitle_processor.py`
 
 **Issues**:
-- Similar to above - old API expectations
-- Need alignment with new service architecture
+- Tests for old DirectSubtitleProcessor implementation
+- Need updates for new filtering architecture
 
 **Estimated Time**: 1-2 hours
-**Impact**: Medium (additional coverage)
-
----
-
-#### 3. Filtering Service Tests
-**Status**: ~20 failures
-**Files**:
-- `tests/unit/services/test_second_pass_filtering.py` (6 errors)
-- `tests/unit/services/test_subtitle_filter.py`
-- `tests/unit/services/test_translation_analyzer.py`
-
-**Issues**:
-- Tests for old filtering_handler.py
-- Need updates for new focused services:
-  - SubtitleFilter
-  - VocabularyExtractor
-  - TranslationAnalyzer
-
-**Estimated Time**: 2-3 hours
 **Impact**: High (core functionality)
 
 ---
 
-#### 4. User Vocabulary Service Tests
-**Status**: ~10 failures
-**Files**: `tests/unit/services/test_user_vocabulary_service.py`
+#### 2. Vocabulary Progress Service Tests
+**Status**: 8 failures
+**Files**: `tests/unit/services/test_vocabulary_progress_service.py`
 
 **Issues**:
-- Tests for old user_vocabulary_service.py
-- Need updates for new repository pattern
+- Tests for old vocabulary progress methods
+- Need alignment with new progress service architecture
 
 **Estimated Time**: 1-2 hours
-**Impact**: Medium
+**Impact**: Medium (core functionality)
 
 ---
 
-#### 5. Vocabulary Routes Tests
-**Status**: ~40 failures
+#### 3. Vocabulary Routes Tests
+**Status**: 8 failures
 **Files**: `tests/unit/test_vocabulary_routes.py`
 
 **Issues**:
 - API route tests expecting old service behavior
 - Need updates to match new service APIs
 
-**Estimated Time**: 1-2 hours
+**Estimated Time**: 1 hour
 **Impact**: Medium (API contracts)
 
 ---
 
-#### 6. Logging Service Tests (Low Priority)
-**Status**: Excluded from runs (would be 30+ failures)
+#### 4. Vocabulary Service New Tests
+**Status**: 6 failures
+**Files**: `tests/unit/services/test_vocabulary_service_new.py`
+
+**Issues**:
+- Additional vocabulary service tests
+- Need alignment with refactored architecture
+
+**Estimated Time**: 1 hour
+**Impact**: Low (additional coverage)
+
+---
+
+#### 5. Logging Service Tests (Low Priority)
+**Status**: 6 failures (plus excluded files with collection errors)
 **Files**:
 - `tests/unit/services/test_log_formatter.py`
 - `tests/unit/services/test_log_handlers.py`
@@ -216,37 +230,40 @@ Successfully completed service factory test fixes as a quick win. Made measurabl
 - Service Factory Tests: 1 hour
 - Vocabulary Service Tests: 2 hours
 - Second Pass Filtering Tests: 0.5 hours
+- User Vocabulary Service Tests: 3 hours
+- Vocabulary Comprehensive Tests: 0.5 hours
 
 ### Remaining (by priority)
 - **High Priority** (1-2 hours):
-  - Filtering service tests (subtitle_filter, translation_analyzer): 1-2 hours
+  - Direct subtitle processor tests: 1-2 hours
 
-- **Medium Priority** (3-5 hours):
-  - User vocabulary tests: 1-2 hours
-  - Vocabulary routes tests: 1-2 hours
-  - Vocabulary comprehensive tests: 1-2 hours
+- **Medium Priority** (3-4 hours):
+  - Vocabulary progress service tests: 1-2 hours
+  - Vocabulary routes tests: 1 hour
+  - Vocabulary service new tests: 1 hour
 
 - **Low Priority** (2-3 hours):
   - Logging service tests: 2-3 hours (or delete)
 
-**Total Completed**: 3.5 hours
-**Total Remaining**: 6-11 hours
+**Total Completed**: 7 hours
+**Total Remaining**: 4-7 hours (high+medium priority)
 
 ---
 
 ## Session Accomplishments
 
-### This Session (6.5 hours total)
+### This Session (7 hours total)
 1. ✅ Fixed service factory tests (100% passing) - 1 hour
 2. ✅ Fixed vocabulary service tests (100% passing) - 2 hours
 3. ✅ Fixed second pass filtering tests (100% passing) - 0.5 hours
 4. ✅ Fixed user vocabulary service tests (100% passing) - 3 hours
-5. ✅ Improved overall test pass rate from 85% → 92% (+7%)
-6. ✅ Increased passing tests by 34 (982 → 1,016)
-7. ✅ Reduced test failures by 59 (148 → 89)
-8. ✅ Eliminated ALL errors (28 → 0, -28 errors)
-9. ✅ Documented all changes
-10. ✅ Committed and pushed all fixes (4 commits)
+5. ✅ Fixed vocabulary comprehensive tests (100% passing) - 0.5 hours
+6. ✅ Improved overall test pass rate from 85% → 92% (+7%)
+7. ✅ Increased passing tests by 38 (982 → 1,020)
+8. ✅ Reduced test failures by 65 (148 → 83)
+9. ✅ Eliminated ALL errors (28 → 0, -28 errors)
+10. ✅ Documented all changes
+11. ✅ Committed and pushed all fixes (5 commits)
 
 ### Overall Refactoring Sprint
 1. ✅ Eliminated 6 God classes
