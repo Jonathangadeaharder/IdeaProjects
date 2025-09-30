@@ -35,7 +35,15 @@
 - Repository pattern properly implemented
 - 7+ responsibilities → 5 focused services
 - Architecture verified (5/5 verification + 14 architecture tests)
-- **PENDING COMMIT**
+- **COMMITTED**: (pending)
+
+✅ **direct_subtitle_processor.py** (420 → 128 facade, -70%)
+- Split into 5 focused services
+- Monster method eliminated (113 → 14 lines, -87%)
+- Language extensibility improved
+- 7+ responsibilities → 5 focused services
+- Architecture verified (6/6 verification + 20 architecture tests)
+- **COMMITTED**: 8ac492a
 
 ---
 
@@ -56,13 +64,15 @@
 
 ---
 
-### 2. direct_subtitle_processor.py (420 lines) ⭐⭐ MEDIUM PRIORITY
+### 2. ~~direct_subtitle_processor.py~~ (420 lines) ✅ COMPLETE
 **Location**: `services/filterservice/direct_subtitle_processor.py`
-**Size**: 420 lines
+**Size**: 420 → 128 lines facade + 5 services
 
-**Considerations**:
-- May overlap with filtering_handler
-- Could be simplified if filtering_handler is refactored first
+**Completed**:
+- Split into 5 focused services
+- Monster method eliminated (113 → 14 lines)
+- Language extensibility improved
+- 26 tests passing (100%)
 
 ---
 
@@ -88,8 +98,8 @@
 | ~~filtering_handler.py~~ | ~~621~~ | ✅ COMPLETE | ~~High~~ | ~~High~~ | ~~Medium~~ | Done |
 | ~~logging_service.py~~ | ~~622~~ | ✅ COMPLETE | ~~Medium~~ | ~~Medium~~ | ~~Medium~~ | Done |
 | ~~user_vocabulary_service.py~~ | ~~467~~ | ✅ COMPLETE | ~~Medium~~ | ~~Medium~~ | ~~Low~~ | Done |
+| ~~direct_subtitle_processor.py~~ | ~~420~~ | ✅ COMPLETE | ~~Medium~~ | ~~Low~~ | ~~Medium~~ | Done |
 | chunk_processor.py | 422 | ⭐⭐⭐ | High | Medium | Medium | Next |
-| direct_subtitle_processor.py | 420 | ⭐⭐ | Medium | Low | Medium | Pending |
 | service_factory.py | 386 | ⭐ | Low | Low | Low | Pending |
 
 **Priority Criteria**:
