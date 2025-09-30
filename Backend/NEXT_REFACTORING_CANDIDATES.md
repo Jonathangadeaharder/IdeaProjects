@@ -22,35 +22,26 @@
 - Architecture verified (10/10 tests passing)
 - **COMMITTED**: 01ceb8e
 
-✅ **logging_service.py** (622 → 266 facade, -57%)
+✅ **logging_service.py** (622 → 267 facade, -57%)
 - Split into 5 focused services
 - Fixed critical duplicate method bug
 - Removed all backward compatibility boilerplate (-33 lines)
 - 12+ responsibilities → 5 focused services
 - Architecture verified (10/10 tests passing)
-- **READY TO COMMIT**
+- **COMMITTED**: 2f8ba20
+
+✅ **user_vocabulary_service.py** (467 → 134 facade, -71%)
+- Split into 5 focused services
+- Repository pattern properly implemented
+- 7+ responsibilities → 5 focused services
+- Architecture verified (5/5 verification + 14 architecture tests)
+- **PENDING COMMIT**
 
 ---
 
 ## Top Refactoring Candidates
 
-### 1. user_vocabulary_service.py (466 lines) ⭐⭐⭐ TOP PRIORITY
-**Location**: `services/dataservice/user_vocabulary_service.py`
-**Size**: 466 lines
-
-**Considerations**:
-- Related to recently refactored vocabulary service
-- May share similar patterns/issues
-- Could benefit from consistency with new vocabulary architecture
-
-**Recommended Approach**:
-- Review for alignment with new vocabulary service architecture
-- Check for duplicate patterns
-- Consider integration opportunities
-
----
-
-### 3. chunk_processor.py (422 lines) ⭐⭐ MEDIUM PRIORITY
+### 1. chunk_processor.py (422 lines) ⭐⭐⭐ TOP PRIORITY
 **Location**: `services/processing/chunk_processor.py`
 **Size**: 422 lines
 
@@ -65,7 +56,7 @@
 
 ---
 
-### 4. direct_subtitle_processor.py (420 lines) ⭐ LOW PRIORITY
+### 2. direct_subtitle_processor.py (420 lines) ⭐⭐ MEDIUM PRIORITY
 **Location**: `services/filterservice/direct_subtitle_processor.py`
 **Size**: 420 lines
 
@@ -75,7 +66,7 @@
 
 ---
 
-### 5. service_factory.py (386 lines) ⭐ LOW PRIORITY
+### 3. service_factory.py (386 lines) ⭐ LOW PRIORITY
 **Location**: `services/service_factory.py`
 **Size**: 386 lines
 
@@ -96,9 +87,9 @@
 |------|-------|----------|------------|--------|--------|--------|
 | ~~filtering_handler.py~~ | ~~621~~ | ✅ COMPLETE | ~~High~~ | ~~High~~ | ~~Medium~~ | Done |
 | ~~logging_service.py~~ | ~~622~~ | ✅ COMPLETE | ~~Medium~~ | ~~Medium~~ | ~~Medium~~ | Done |
-| user_vocabulary_service.py | 466 | ⭐⭐⭐ | Medium | Medium | Low | Next |
-| chunk_processor.py | 422 | ⭐⭐ | High | Medium | Medium | Pending |
-| direct_subtitle_processor.py | 420 | ⭐ | Medium | Low | Medium | Pending |
+| ~~user_vocabulary_service.py~~ | ~~467~~ | ✅ COMPLETE | ~~Medium~~ | ~~Medium~~ | ~~Low~~ | Done |
+| chunk_processor.py | 422 | ⭐⭐⭐ | High | Medium | Medium | Next |
+| direct_subtitle_processor.py | 420 | ⭐⭐ | Medium | Low | Medium | Pending |
 | service_factory.py | 386 | ⭐ | Low | Low | Low | Pending |
 
 **Priority Criteria**:
