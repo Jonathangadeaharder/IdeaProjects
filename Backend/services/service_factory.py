@@ -18,12 +18,9 @@ from database.repositories import (
 # Import service implementations
 from services.authservice.auth_service import AuthService
 from services.vocabulary_service import VocabularyService
-from services.vocabulary import VocabularyLookupService, VocabularyProgressService, VocabularyAnalyticsService
+from services.vocabulary import VocabularyQueryService, VocabularyProgressService, VocabularyStatsService
 from services.filtering import SubtitleFilter, VocabularyExtractor, TranslationAnalyzer
-from services.logging import LogManager, LogHandlers, LogFormatter
-from services.logging.domain_logger import DomainLoggerService
-from services.logging.log_manager import LogManagerService
-from services.logging.log_config_manager import LogConfigManagerService
+from services.logging import LogFormatterService, LogHandlerService, LogManagerService, LogConfigManagerService
 from services.filterservice.direct_subtitle_processor import DirectSubtitleProcessor
 
 # Define simple service classes for testing
@@ -191,8 +188,8 @@ class ServiceFactory:
 
     @staticmethod
     def get_vocabulary_lookup_service():
-        """Create vocabulary lookup service"""
-        return VocabularyLookupService()
+        """Create vocabulary query service (lookup)"""
+        return VocabularyQueryService()
 
     @staticmethod
     def get_vocabulary_progress_service():
@@ -201,8 +198,8 @@ class ServiceFactory:
 
     @staticmethod
     def get_vocabulary_analytics_service():
-        """Create vocabulary analytics service"""
-        return VocabularyAnalyticsService()
+        """Create vocabulary stats service (analytics)"""
+        return VocabularyStatsService()
 
     @staticmethod
     def get_subtitle_filter():
@@ -222,17 +219,22 @@ class ServiceFactory:
     @staticmethod
     def get_log_manager():
         """Create log manager service"""
-        return LogManager.get_instance()
+        return LogManagerService()
 
     @staticmethod
     def get_log_handlers():
         """Create log handlers service"""
-        return LogHandlers()
+        return LogHandlerService()
 
     @staticmethod
     def get_log_formatter():
         """Create log formatter service"""
-        return LogFormatter()
+        return LogFormatterService()
+
+    @staticmethod
+    def get_logging_service():
+        """Create logging service (returns log manager)"""
+        return LogManagerService()
 
     @staticmethod
     def get_video_service():
