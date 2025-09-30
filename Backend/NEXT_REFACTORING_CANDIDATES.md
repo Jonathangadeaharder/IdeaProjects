@@ -14,31 +14,19 @@
 - Architecture verified
 - **COMMITTED**: 376738a
 
+✅ **filtering_handler.py** (621 → 239 facade, -62%)
+- Split into 5 focused services
+- Eliminated progress tracking duplication
+- 43% complexity reduction in longest method
+- 11 responsibilities → 5 focused services
+- Architecture verified (10/10 tests passing)
+- **READY TO COMMIT**
+
 ---
 
 ## Top Refactoring Candidates
 
-### 1. filtering_handler.py (621 lines) ⭐ TOP PRIORITY
-**Location**: `services/processing/filtering_handler.py`
-**Size**: 621 lines, 22KB
-**Current Structure**: Single FilteringHandler class
-
-**Potential Issues**:
-- Likely has complex filtering logic
-- May have multiple responsibilities (loading, parsing, filtering, progress tracking)
-- Could benefit from sub-handler pattern
-
-**Recommended Approach**:
-- Analyze for God class anti-pattern
-- Extract helper methods for parsing, filtering steps
-- Split into focused handlers if multiple concerns exist
-- Consider: LoadHandler, ParseHandler, FilterHandler, ProgressTracker
-
-**Estimated Impact**: Similar to vocabulary service (10-15% reduction, improved testability)
-
----
-
-### 2. logging_service.py (607 lines) ⭐ HIGH PRIORITY
+### 1. logging_service.py (607 lines) ⭐⭐⭐ TOP PRIORITY
 **Location**: `services/loggingservice/logging_service.py`
 **Size**: 607 lines, 21KB
 **Current Structure**: Likely monolithic logging service
@@ -57,7 +45,7 @@
 
 ---
 
-### 3. user_vocabulary_service.py (466 lines)
+### 2. user_vocabulary_service.py (466 lines) ⭐⭐ MEDIUM PRIORITY
 **Location**: `services/dataservice/user_vocabulary_service.py`
 **Size**: 466 lines
 
@@ -73,7 +61,7 @@
 
 ---
 
-### 4. chunk_processor.py (422 lines)
+### 3. chunk_processor.py (422 lines) ⭐⭐ MEDIUM PRIORITY
 **Location**: `services/processing/chunk_processor.py`
 **Size**: 422 lines
 
@@ -88,7 +76,7 @@
 
 ---
 
-### 5. direct_subtitle_processor.py (420 lines)
+### 4. direct_subtitle_processor.py (420 lines) ⭐ LOW PRIORITY
 **Location**: `services/filterservice/direct_subtitle_processor.py`
 **Size**: 420 lines
 
@@ -98,7 +86,7 @@
 
 ---
 
-### 6. service_factory.py (386 lines)
+### 5. service_factory.py (386 lines) ⭐ LOW PRIORITY
 **Location**: `services/service_factory.py`
 **Size**: 386 lines
 
@@ -115,14 +103,14 @@
 
 ## Refactoring Priority Matrix
 
-| File | Lines | Priority | Complexity | Impact | Effort |
-|------|-------|----------|------------|--------|--------|
-| filtering_handler.py | 621 | ⭐⭐⭐ | High | High | Medium |
-| logging_service.py | 607 | ⭐⭐⭐ | Medium | Medium | Medium |
-| user_vocabulary_service.py | 466 | ⭐⭐ | Medium | Medium | Low |
-| chunk_processor.py | 422 | ⭐⭐ | High | Medium | Medium |
-| direct_subtitle_processor.py | 420 | ⭐ | Medium | Low | Medium |
-| service_factory.py | 386 | ⭐ | Low | Low | Low |
+| File | Lines | Priority | Complexity | Impact | Effort | Status |
+|------|-------|----------|------------|--------|--------|--------|
+| ~~filtering_handler.py~~ | ~~621~~ | ✅ COMPLETE | ~~High~~ | ~~High~~ | ~~Medium~~ | Done |
+| logging_service.py | 607 | ⭐⭐⭐ | Medium | Medium | Medium | Next |
+| user_vocabulary_service.py | 466 | ⭐⭐ | Medium | Medium | Low | Pending |
+| chunk_processor.py | 422 | ⭐⭐ | High | Medium | Medium | Pending |
+| direct_subtitle_processor.py | 420 | ⭐ | Medium | Low | Medium | Pending |
+| service_factory.py | 386 | ⭐ | Low | Low | Low | Pending |
 
 **Priority Criteria**:
 - ⭐⭐⭐ High: Large, complex, frequently modified
