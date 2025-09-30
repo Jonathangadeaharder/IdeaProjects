@@ -2,12 +2,12 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 from typing import Any, Dict, Optional
 from dataclasses import dataclass, field
 from enum import Enum
 
-from database.models import VocabularyConcept, VocabularyTranslation, Language, UserLearningProgress
+from database.models import VocabularyWord, Language, UserVocabularyProgress
 
 
 class CEFRLevel(str, Enum):
@@ -42,7 +42,7 @@ class TestUser:
 
 
 @dataclass
-class TestVocabularyConcept:
+class TestVocabularyWord:
     """Test vocabulary concept data structure."""
     id: Optional[str] = None
     word: str = ""
@@ -61,24 +61,7 @@ class TestVocabularyConcept:
         }
 
 
-@dataclass
-class TestVocabularyTranslation:
-    """Test vocabulary translation data structure."""
-    id: Optional[str] = None
-    concept_id: str = ""
-    translation: str = ""
-    target_language_code: str = "en"
-    confidence_score: float = 0.9
-    created_at: Optional[datetime] = None
 
-    def to_dict(self) -> Dict[str, Any]:
-        """Convert to dictionary for API requests."""
-        return {
-            "concept_id": self.concept_id,
-            "translation": self.translation,
-            "target_language_code": self.target_language_code,
-            "confidence_score": self.confidence_score
-        }
 
 
 class UserBuilder:
@@ -94,7 +77,7 @@ class UserBuilder:
             id=str(uuid.uuid4()),
             username=f"testuser_{unique_id}",
             email=f"test_{unique_id}@example.com",
-            created_at=datetime.utcnow()
+            created_at=datetime.now(UTC)
         )
 
     def with_username(self, username: str) -> UserBuilder:
@@ -124,7 +107,7 @@ class UserBuilder:
 
     def with_last_login(self, last_login: datetime = None) -> UserBuilder:
         """Set last login time."""
-        self._user.last_login = last_login or datetime.utcnow()
+        self._user.last_login = last_login or datetime.now(UTC)
         return self
 
     def build(self) -> TestUser:
@@ -134,7 +117,7 @@ class UserBuilder:
         return user
 
 
-class VocabularyConceptBuilder:
+class VocabularyWordBuilder:
     """Builder for creating test vocabulary concepts."""
 
     def __init__(self):
@@ -142,81 +125,40 @@ class VocabularyConceptBuilder:
 
     def _reset(self):
         """Reset builder to default state."""
-        self._concept = TestVocabularyConcept(
+        self._concept = TestVocabularyWord(
             id=str(uuid.uuid4()),
             word=f"testword_{str(uuid.uuid4())[:8]}",
-            created_at=datetime.utcnow()
+            created_at=datetime.now(UTC)
         )
 
-    def with_word(self, word: str) -> VocabularyConceptBuilder:
+    def with_word(self, word: str) -> VocabularyWordBuilder:
         """Set custom word."""
         self._concept.word = word
         return self
 
-    def with_level(self, level: CEFRLevel) -> VocabularyConceptBuilder:
+    def with_level(self, level: CEFRLevel) -> VocabularyWordBuilder:
         """Set CEFR level."""
         self._concept.level = level.value
         return self
 
-    def with_language(self, language_code: str) -> VocabularyConceptBuilder:
+    def with_language(self, language_code: str) -> VocabularyWordBuilder:
         """Set language code."""
         self._concept.language_code = language_code
         return self
 
-    def with_frequency_rank(self, rank: int) -> VocabularyConceptBuilder:
+    def with_frequency_rank(self, rank: int) -> VocabularyWordBuilder:
         """Set frequency rank."""
         self._concept.frequency_rank = rank
         return self
 
-    def build(self) -> TestVocabularyConcept:
+    def build(self) -> TestVocabularyWord:
         """Build the concept instance."""
         concept = self._concept
         self._reset()
         return concept
 
 
-class VocabularyTranslationBuilder:
-    """Builder for creating test vocabulary translations."""
 
-    def __init__(self):
-        self._reset()
-
-    def _reset(self):
-        """Reset builder to default state."""
-        self._translation = TestVocabularyTranslation(
-            id=str(uuid.uuid4()),
-            concept_id=str(uuid.uuid4()),
-            translation=f"translation_{str(uuid.uuid4())[:8]}",
-            created_at=datetime.utcnow()
-        )
-
-    def for_concept(self, concept_id: str) -> VocabularyTranslationBuilder:
-        """Set concept ID this translation belongs to."""
-        self._translation.concept_id = concept_id
-        return self
-
-    def with_translation(self, translation: str) -> VocabularyTranslationBuilder:
-        """Set translation text."""
-        self._translation.translation = translation
-        return self
-
-    def to_language(self, language_code: str) -> VocabularyTranslationBuilder:
-        """Set target language."""
-        self._translation.target_language_code = language_code
-        return self
-
-    def with_confidence(self, score: float) -> VocabularyTranslationBuilder:
-        """Set confidence score."""
-        if not 0.0 <= score <= 1.0:
-            raise ValueError("Confidence score must be between 0.0 and 1.0")
-        self._translation.confidence_score = score
-        return self
-
-    def build(self) -> TestVocabularyTranslation:
-        """Build the translation instance."""
-        translation = self._translation
-        self._reset()
-        return translation
 
 
 class TestDataSets:
@@ -233,22 +175,22 @@ class TestDataSets:
         return UserBuilder().as_admin().build()
 
     @staticmethod
-    def create_german_vocabulary_set() -> list[TestVocabularyConcept]:
-        """Create a set of German vocabulary concepts."""
+    def create_german_vocabulary_set() -> list[TestVocabularyWord]:
+        """Create a set of German vocabulary words."""
         return [
-            VocabularyConceptBuilder()
+            VocabularyWordBuilder()
             .with_word("das Haus")
             .with_level(CEFRLevel.A1)
             .with_language("de")
             .with_frequency_rank(100)
             .build(),
-            VocabularyConceptBuilder()
+            VocabularyWordBuilder()
             .with_word("die Katze")
             .with_level(CEFRLevel.A1)
             .with_language("de")
             .with_frequency_rank(150)
             .build(),
-            VocabularyConceptBuilder()
+            VocabularyWordBuilder()
             .with_word("verstehen")
             .with_level(CEFRLevel.A2)
             .with_language("de")
@@ -256,54 +198,38 @@ class TestDataSets:
             .build()
         ]
 
-    @staticmethod
-    def create_translations_for_concept(concept_id: str) -> list[TestVocabularyTranslation]:
-        """Create translations for a given concept."""
-        return [
-            VocabularyTranslationBuilder()
-            .for_concept(concept_id)
-            .with_translation("house")
-            .to_language("en")
-            .with_confidence(0.95)
-            .build(),
-            VocabularyTranslationBuilder()
-            .for_concept(concept_id)
-            .with_translation("casa")
-            .to_language("es")
-            .with_confidence(0.90)
-            .build()
-        ]
+
 
     @staticmethod
-    def create_multilevel_vocabulary() -> Dict[str, list[TestVocabularyConcept]]:
-        """Create vocabulary concepts across different CEFR levels."""
+    def create_multilevel_vocabulary() -> Dict[str, list[TestVocabularyWord]]:
+        """Create vocabulary words across different CEFR levels."""
         return {
             "A1": [
-                VocabularyConceptBuilder()
+                VocabularyWordBuilder()
                 .with_word("ich")
                 .with_level(CEFRLevel.A1)
                 .with_language("de")
                 .build(),
-                VocabularyConceptBuilder()
+                VocabularyWordBuilder()
                 .with_word("du")
                 .with_level(CEFRLevel.A1)
                 .with_language("de")
                 .build()
             ],
             "B1": [
-                VocabularyConceptBuilder()
+                VocabularyWordBuilder()
                 .with_word("jedoch")
                 .with_level(CEFRLevel.B1)
                 .with_language("de")
                 .build(),
-                VocabularyConceptBuilder()
+                VocabularyWordBuilder()
                 .with_word("obwohl")
                 .with_level(CEFRLevel.B1)
                 .with_language("de")
                 .build()
             ],
             "C1": [
-                VocabularyConceptBuilder()
+                VocabularyWordBuilder()
                 .with_word("diesbezüglich")
                 .with_level(CEFRLevel.C1)
                 .with_language("de")
@@ -323,21 +249,12 @@ def create_user(**kwargs) -> TestUser:
     return user
 
 
-def create_vocabulary_concept(**kwargs) -> TestVocabularyConcept:
-    """Create a vocabulary concept with optional overrides."""
-    builder = VocabularyConceptBuilder()
-    concept = builder.build()
+def create_vocabulary_word(**kwargs) -> TestVocabularyWord:
+    """Create a vocabulary word with optional overrides."""
+    builder = VocabularyWordBuilder()
+    word = builder.build()
     for key, value in kwargs.items():
-        if hasattr(concept, key):
-            setattr(concept, key, value)
-    return concept
+        if hasattr(word, key):
+            setattr(word, key, value)
+    return word
 
-
-def create_vocabulary_translation(**kwargs) -> TestVocabularyTranslation:
-    """Create a vocabulary translation with optional overrides."""
-    builder = VocabularyTranslationBuilder()
-    translation = builder.build()
-    for key, value in kwargs.items():
-        if hasattr(translation, key):
-            setattr(translation, key, value)
-    return translation

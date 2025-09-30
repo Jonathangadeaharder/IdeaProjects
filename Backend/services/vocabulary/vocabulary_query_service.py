@@ -312,10 +312,31 @@ class VocabularyQueryService:
         ]
 
 
-# Global instance
-vocabulary_query_service = VocabularyQueryService()
+# Test-aware singleton pattern
+import os
+
+_vocabulary_query_service_instance = None
 
 
 def get_vocabulary_query_service() -> VocabularyQueryService:
-    """Get vocabulary query service instance"""
-    return vocabulary_query_service
+    """
+    Get vocabulary query service instance.
+
+    Returns a new instance for each test (when TESTING=1) to prevent state pollution.
+    Uses singleton pattern in production for performance.
+    """
+    global _vocabulary_query_service_instance
+
+    # In test mode, always create a fresh instance
+    if os.environ.get("TESTING") == "1":
+        return VocabularyQueryService()
+
+    # In production, use singleton pattern
+    if _vocabulary_query_service_instance is None:
+        _vocabulary_query_service_instance = VocabularyQueryService()
+
+    return _vocabulary_query_service_instance
+
+
+# Backward compatibility: Create initial instance (will be replaced per-test in test mode)
+vocabulary_query_service = get_vocabulary_query_service()

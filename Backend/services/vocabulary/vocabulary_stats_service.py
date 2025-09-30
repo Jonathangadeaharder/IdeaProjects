@@ -16,22 +16,20 @@ logger = logging.getLogger(__name__)
 class VocabularyStatsService:
     """Handles vocabulary statistics, analytics, and supported languages"""
 
-    async def get_vocabulary_stats(self, *args, **kwargs):
-        """Get vocabulary statistics by level - handles both signatures"""
-        # Check if called with positional args (new signature for comprehensive tests)
-        if len(args) >= 3 and hasattr(args[0], 'execute'):
-            # New signature: get_vocabulary_stats(db_session, user_id, target_language, native_language)
-            db_session, user_id, target_language = args[0], args[1], args[2]
-            native_language = args[3] if len(args) > 3 else "en"
-            return await self._get_vocabulary_stats_with_session(db_session, user_id, target_language, native_language)
-        else:
-            # Original signature: get_vocabulary_stats(target_language="de", user_id=None)
-            target_language = args[0] if args else kwargs.get('target_language', 'de')
-            user_id = args[1] if len(args) > 1 else kwargs.get('user_id', None)
-            return await self._get_vocabulary_stats_original(target_language, user_id)
+    async def get_vocabulary_stats(self, db_session: AsyncSession, user_id: int, target_language: str, translation_language: str = "en"):
+        """Get vocabulary statistics by level with injected database session
 
-    async def _get_vocabulary_stats_original(self, target_language="de", user_id=None):
-        """Original get_vocabulary_stats implementation - manages own session"""
+        This is the primary method used by API routes.
+        For backward compatibility with old tests, use get_vocabulary_stats_legacy().
+        """
+        return await self._get_vocabulary_stats_with_session(db_session, user_id, target_language, translation_language)
+
+    async def get_vocabulary_stats_legacy(self, target_language="de", user_id=None):
+        """Legacy get_vocabulary_stats for backward compatibility with old tests
+
+        This method manages its own database session and returns a plain dict.
+        New code should use get_vocabulary_stats() with dependency injection instead.
+        """
         levels_list = ["A1", "A2", "B1", "B2", "C1", "C2"]
         stats = {
             "target_language": target_language,
@@ -227,10 +225,31 @@ class VocabularyStatsService:
                 return []
 
 
-# Global instance
-vocabulary_stats_service = VocabularyStatsService()
+# Test-aware singleton pattern
+import os
+
+_vocabulary_stats_service_instance = None
 
 
 def get_vocabulary_stats_service() -> VocabularyStatsService:
-    """Get vocabulary stats service instance"""
-    return vocabulary_stats_service
+    """
+    Get vocabulary stats service instance.
+
+    Returns a new instance for each test (when TESTING=1) to prevent state pollution.
+    Uses singleton pattern in production for performance.
+    """
+    global _vocabulary_stats_service_instance
+
+    # In test mode, always create a fresh instance
+    if os.environ.get("TESTING") == "1":
+        return VocabularyStatsService()
+
+    # In production, use singleton pattern
+    if _vocabulary_stats_service_instance is None:
+        _vocabulary_stats_service_instance = VocabularyStatsService()
+
+    return _vocabulary_stats_service_instance
+
+
+# Backward compatibility: Create initial instance (will be replaced per-test in test mode)
+vocabulary_stats_service = get_vocabulary_stats_service()

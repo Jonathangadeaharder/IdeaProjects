@@ -7,9 +7,9 @@ import logging
 from typing import Dict, List, Optional, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from services.vocabulary.vocabulary_query_service import vocabulary_query_service
-from services.vocabulary.vocabulary_progress_service import vocabulary_progress_service
-from services.vocabulary.vocabulary_stats_service import vocabulary_stats_service
+from services.vocabulary.vocabulary_query_service import get_vocabulary_query_service
+from services.vocabulary.vocabulary_progress_service import get_vocabulary_progress_service
+from services.vocabulary.vocabulary_stats_service import get_vocabulary_stats_service
 from core.database import AsyncSessionLocal
 
 logger = logging.getLogger(__name__)
@@ -19,9 +19,11 @@ class VocabularyService:
     """Facade for vocabulary operations - delegates to specialized services"""
 
     def __init__(self):
-        self.query_service = vocabulary_query_service
-        self.progress_service = vocabulary_progress_service
-        self.stats_service = vocabulary_stats_service
+        # Get sub-service instances (fresh in test mode, singleton in production)
+        # Cache them on this instance so mocking works
+        self.query_service = get_vocabulary_query_service()
+        self.progress_service = get_vocabulary_progress_service()
+        self.stats_service = get_vocabulary_stats_service()
 
     def _get_session(self):
         """Get database session context manager"""
@@ -155,10 +157,31 @@ class VocabularyService:
         }
 
 
-# Global instance
-vocabulary_service = VocabularyService()
+# Test-aware singleton pattern
+import os
+
+_vocabulary_service_instance = None
 
 
 def get_vocabulary_service() -> VocabularyService:
-    """Get vocabulary service instance"""
-    return vocabulary_service
+    """
+    Get vocabulary service instance.
+
+    Returns a new instance for each test (when TESTING=1) to prevent state pollution.
+    Uses singleton pattern in production for performance.
+    """
+    global _vocabulary_service_instance
+
+    # In test mode, always create a fresh instance
+    if os.environ.get("TESTING") == "1":
+        return VocabularyService()
+
+    # In production, use singleton pattern
+    if _vocabulary_service_instance is None:
+        _vocabulary_service_instance = VocabularyService()
+
+    return _vocabulary_service_instance
+
+
+# Backward compatibility: Create initial instance (will be replaced per-test in test mode)
+vocabulary_service = get_vocabulary_service()

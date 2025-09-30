@@ -24,7 +24,10 @@ class TestVocabularyProgressService:
 
     @pytest.fixture
     def mock_db_session(self):
-        return AsyncMock()
+        session = AsyncMock()
+        # Configure synchronous methods on AsyncSession
+        session.add = Mock()  # session.add() is synchronous even on AsyncSession
+        return session
 
 
 class TestMarkWordKnown:
@@ -36,7 +39,10 @@ class TestMarkWordKnown:
 
     @pytest.fixture
     def mock_db_session(self):
-        return AsyncMock()
+        session = AsyncMock()
+        # Configure synchronous methods on AsyncSession
+        session.add = Mock()  # session.add() is synchronous even on AsyncSession
+        return session
 
     @pytest.fixture
     def mock_vocab_word(self):

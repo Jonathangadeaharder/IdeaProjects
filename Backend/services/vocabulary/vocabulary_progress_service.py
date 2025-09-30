@@ -230,10 +230,31 @@ class VocabularyProgressService:
         }
 
 
-# Global instance
-vocabulary_progress_service = VocabularyProgressService()
+# Test-aware singleton pattern
+import os
+
+_vocabulary_progress_service_instance = None
 
 
 def get_vocabulary_progress_service() -> VocabularyProgressService:
-    """Get vocabulary progress service instance"""
-    return vocabulary_progress_service
+    """
+    Get vocabulary progress service instance.
+
+    Returns a new instance for each test (when TESTING=1) to prevent state pollution.
+    Uses singleton pattern in production for performance.
+    """
+    global _vocabulary_progress_service_instance
+
+    # In test mode, always create a fresh instance
+    if os.environ.get("TESTING") == "1":
+        return VocabularyProgressService()
+
+    # In production, use singleton pattern
+    if _vocabulary_progress_service_instance is None:
+        _vocabulary_progress_service_instance = VocabularyProgressService()
+
+    return _vocabulary_progress_service_instance
+
+
+# Backward compatibility: Create initial instance (will be replaced per-test in test mode)
+vocabulary_progress_service = get_vocabulary_progress_service()

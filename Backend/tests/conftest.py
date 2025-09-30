@@ -49,6 +49,58 @@ def force_asyncio_backend():
     else:
         yield
 
+
+# Clear lru_cache between tests to prevent state pollution
+@pytest.fixture(scope="function", autouse=True)
+def clear_service_caches():
+    """
+    Clear specific lru_cache decorated functions between tests.
+
+    This prevents state pollution from cached service instances, registries,
+    and other cached functions that would otherwise persist across tests.
+
+    Critical for preventing "passes individually, fails in suite" flaky tests.
+    """
+    def safe_clear_caches():
+        """Clear known lru_cache decorated functions."""
+        # Import and clear specific known cached functions
+        cleared_count = 0
+        try:
+            from services.service_factory import get_service_registry
+            if hasattr(get_service_registry, 'cache_clear'):
+                get_service_registry.cache_clear()
+                cleared_count += 1
+        except Exception as e:
+            pass
+
+        try:
+            from core.task_dependencies import get_task_progress_registry
+            if hasattr(get_task_progress_registry, 'cache_clear'):
+                get_task_progress_registry.cache_clear()
+                cleared_count += 1
+        except Exception as e:
+            pass
+
+        try:
+            from core.service_dependencies import get_translation_service
+            if hasattr(get_translation_service, 'cache_clear'):
+                get_translation_service.cache_clear()
+                cleared_count += 1
+        except Exception as e:
+            pass
+
+        return cleared_count
+
+    # Clear all caches before test
+    # Note: Vocabulary services now use test-aware singleton pattern
+    # and automatically create fresh instances in test mode (TESTING=1)
+    safe_clear_caches()
+
+    yield
+
+    # Clear all caches after test
+    safe_clear_caches()
+
 # Ensure testing mode
 os.environ["TESTING"] = "1"
 # Force debug mode for tests to enable debug endpoints
@@ -448,23 +500,31 @@ def test_pollution_detector():
     """
     Automatically detect test pollution and mock state leakage.
 
-    This fixture runs before and after each test to validate clean state.
+    Performance optimization: Only run pollution detection when explicitly enabled
+    via PYTEST_DETECT_POLLUTION environment variable.
     """
-    import gc
+    import os
 
-    # Store initial state - count mock objects
+    # Skip expensive pollution detection unless explicitly enabled
+    if not os.environ.get("PYTEST_DETECT_POLLUTION", "").lower() in ("1", "true", "yes"):
+        yield
+        return
+
+    import gc
+    import warnings
+
+    # Store initial state - count mock objects (expensive operation)
     initial_mock_state = len([obj for obj in gc.get_objects()
                              if isinstance(obj, (MagicMock, AsyncMock))])
 
     yield
 
-    # Check for mock pollution after test
+    # Check for mock pollution after test (expensive operation)
     final_mock_state = len([obj for obj in gc.get_objects()
                            if isinstance(obj, (MagicMock, AsyncMock))])
 
     # Warn if significant mock object increase (potential pollution)
     if final_mock_state > initial_mock_state + 50:
-        import warnings
         warnings.warn(
             f"Potential mock pollution detected: "
             f"{final_mock_state - initial_mock_state} mock objects created",
@@ -517,7 +577,7 @@ async def clean_database(app: FastAPI):
 
                 # Truncate all tables
                 for table_name in table_names:
-                    await session.execute(f"DELETE FROM {table_name}")
+                    await session.execute("DELETE FROM " + table_name)
 
                 await session.commit()
 

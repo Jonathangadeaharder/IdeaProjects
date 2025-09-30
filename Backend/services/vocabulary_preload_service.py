@@ -4,7 +4,7 @@ Loads vocabulary data from text files into the database
 """
 
 import logging
-from datetime import datetime
+from datetime import datetime, UTC
 from pathlib import Path
 
 from sqlalchemy import text
@@ -80,8 +80,8 @@ class VocabularyPreloadService:
                                 pronunciation="",
                                 notes="",
                                 frequency_rank=0,
-                                created_at=datetime.utcnow(),
-                                updated_at=datetime.utcnow()
+                                created_at=datetime.now(UTC),
+                                updated_at=datetime.now(UTC)
                             )
                             session.add(vocab_entry)
                             loaded_count += 1
@@ -224,7 +224,7 @@ class VocabularyPreloadService:
                         existing_progress.is_known = True
                         existing_progress.confidence_level = 5
                         existing_progress.review_count = (existing_progress.review_count or 0) + 1
-                        existing_progress.last_reviewed_at = datetime.utcnow()
+                        existing_progress.last_reviewed_at = datetime.now(UTC)
                     else:
                         # Create new
                         progress = UserVocabularyProgress(
@@ -235,10 +235,10 @@ class VocabularyPreloadService:
                             is_known=True,
                             confidence_level=5,
                             review_count=1,
-                            last_reviewed_at=datetime.utcnow(),
-                            first_seen_at=datetime.utcnow(),
-                            created_at=datetime.utcnow(),
-                            updated_at=datetime.utcnow()
+                            last_reviewed_at=datetime.now(UTC),
+                            first_seen_at=datetime.now(UTC),
+                            created_at=datetime.now(UTC),
+                            updated_at=datetime.now(UTC)
                         )
                         session.add(progress)
                 else:
