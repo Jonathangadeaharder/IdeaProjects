@@ -16,10 +16,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(tags=["authentication"])
 
 
-# All authentication endpoints are now handled by FastAPI-Users
-# Register: POST /auth/register
-# Login: POST /auth/login
-# Logout: POST /auth/logout
+# Note: Core authentication endpoints (register, login, logout) are handled by FastAPI-Users
 
 
 @router.get("/me", response_model=UserResponse, name="auth_get_current_user")

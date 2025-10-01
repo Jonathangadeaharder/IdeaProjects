@@ -1,17 +1,17 @@
-import logging
-
-logger = logging.getLogger(__name__)
-
 """
 NLLB-200 Translation Service Implementation
 Facebook/Meta's No Language Left Behind model
 """
 
+import logging
+from typing import ClassVar
 
 import torch
 from transformers import AutoModelForSeq2SeqLM, AutoTokenizer, pipeline
 
 from .interface import ITranslationService, TranslationResult
+
+logger = logging.getLogger(__name__)
 
 
 class NLLBTranslationService(ITranslationService):
@@ -21,7 +21,7 @@ class NLLBTranslationService(ITranslationService):
     """
 
     # Language code mappings for NLLB
-    LANGUAGE_CODES = {
+    LANGUAGE_CODES: ClassVar[dict[str, str]] = {
         "en": "eng_Latn",  # English
         "de": "deu_Latn",  # German
         "es": "spa_Latn",  # Spanish
