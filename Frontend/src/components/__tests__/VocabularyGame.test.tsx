@@ -37,12 +37,7 @@ describe('VocabularyGame Component', () => {
     it('calls onWordAnswered when know button clicked', async () => {
       render(<VocabularyGame words={mockWords} onComplete={mockOnComplete} onWordAnswered={mockOnWordAnswered} />);
 
-      // Note: This test would be more robust with aria-label="I know this word"
-      // on the know button in the component. For now, using semantic selection:
-      const buttons = screen.getAllByRole('button');
-      const knowButton = buttons.find(button =>
-        getComputedStyle(button).color.includes('70, 211, 105') // Green "know" button
-      ) || buttons[buttons.length - 2]; // Second-to-last button (know button, skip is last)
+      const knowButton = screen.getByLabelText("I know this word");
 
       await act(async () => {
         fireEvent.click(knowButton);
@@ -54,12 +49,7 @@ describe('VocabularyGame Component', () => {
     it('calls onWordAnswered when unknown button clicked', async () => {
       render(<VocabularyGame words={mockWords} onComplete={mockOnComplete} onWordAnswered={mockOnWordAnswered} />);
 
-      // Note: This test would be more robust with aria-label="I don't know this word"
-      // on the unknown button in the component. For now, using semantic selection:
-      const buttons = screen.getAllByRole('button');
-      const unknownButton = buttons.find(button =>
-        getComputedStyle(button).color.includes('239, 68, 68') // Red "unknown" button
-      ) || buttons[0]; // Fallback to first button (but document the assumption)
+      const unknownButton = screen.getByLabelText("I don't know this word");
 
       await act(async () => {
         fireEvent.click(unknownButton);
@@ -82,10 +72,7 @@ describe('VocabularyGame Component', () => {
 
       expect(screen.getByText('Hallo')).toBeInTheDocument();
 
-      const buttons = screen.getAllByRole('button');
-      const knowButton = buttons.find(button =>
-        getComputedStyle(button).color.includes('70, 211, 105')
-      ) || buttons[buttons.length - 2];
+      const knowButton = screen.getByLabelText("I know this word");
 
       await act(async () => {
         fireEvent.click(knowButton);
@@ -101,10 +88,7 @@ describe('VocabularyGame Component', () => {
       const singleWord = [mockWords[0]];
       render(<VocabularyGame words={singleWord} onComplete={mockOnComplete} onWordAnswered={mockOnWordAnswered} />);
 
-      const buttons = screen.getAllByRole('button');
-      const knowButton = buttons.find(button =>
-        getComputedStyle(button).color.includes('70, 211, 105')
-      ) || buttons[buttons.length - 2];
+      const knowButton = screen.getByLabelText("I know this word");
 
       await act(async () => {
         fireEvent.click(knowButton);
@@ -120,10 +104,7 @@ describe('VocabularyGame Component', () => {
       const singleWord = [mockWords[0]];
       render(<VocabularyGame words={singleWord} onComplete={mockOnComplete} />);
 
-      const buttons = screen.getAllByRole('button');
-      const knowButton = buttons.find(button =>
-        getComputedStyle(button).color.includes('70, 211, 105')
-      ) || buttons[buttons.length - 2];
+      const knowButton = screen.getByLabelText("I know this word");
 
       await act(async () => {
         fireEvent.click(knowButton);
@@ -141,10 +122,7 @@ describe('VocabularyGame Component', () => {
       // Should show initial progress
       expect(screen.getByText(/1.*of.*2.*words/)).toBeInTheDocument();
 
-      const buttons = screen.getAllByRole('button');
-      const knowButton = buttons.find(button =>
-        getComputedStyle(button).color.includes('70, 211, 105')
-      ) || buttons[buttons.length - 2];
+      const knowButton = screen.getByLabelText("I know this word");
 
       await act(async () => {
         fireEvent.click(knowButton);
@@ -202,8 +180,7 @@ describe('VocabularyGame Component', () => {
 
       expect(screen.getByText('Hallo')).toBeInTheDocument();
 
-      const buttons = screen.getAllByRole('button');
-      const skipButton = buttons[buttons.length - 1]; // Last button is skip
+      const skipButton = screen.getByLabelText("Skip remaining words");
 
       await act(async () => {
         fireEvent.click(skipButton);
@@ -273,10 +250,7 @@ describe('VocabularyGame Component', () => {
     it('WhenAnimationsEnabled_ThenShowsCardAnimations', async () => {
       render(<VocabularyGame words={mockWords} onComplete={mockOnComplete} onWordAnswered={mockOnWordAnswered} />);
 
-      const buttons = screen.getAllByRole('button');
-      const knowButton = buttons.find(button =>
-        getComputedStyle(button).color.includes('70, 211, 105')
-      ) || buttons[buttons.length - 2];
+      const knowButton = screen.getByLabelText("I know this word");
 
       await act(async () => {
         fireEvent.click(knowButton);
@@ -292,10 +266,7 @@ describe('VocabularyGame Component', () => {
       const singleWord = [mockWords[0]];
       render(<VocabularyGame words={singleWord} onComplete={mockOnComplete} />);
 
-      const buttons = screen.getAllByRole('button');
-      const knowButton = buttons.find(button =>
-        getComputedStyle(button).color.includes('70, 211, 105')
-      ) || buttons[buttons.length - 2];
+      const knowButton = screen.getByLabelText("I know this word");
 
       await act(async () => {
         fireEvent.click(knowButton);
@@ -310,10 +281,7 @@ describe('VocabularyGame Component', () => {
     it('WhenCorrectAnswer_ThenShowsPositiveFeedback', async () => {
       render(<VocabularyGame words={mockWords} onComplete={mockOnComplete} onWordAnswered={mockOnWordAnswered} />);
 
-      const buttons = screen.getAllByRole('button');
-      const knowButton = buttons.find(button =>
-        getComputedStyle(button).color.includes('70, 211, 105')
-      ) || buttons[buttons.length - 2];
+      const knowButton = screen.getByLabelText("I know this word");
 
       await act(async () => {
         fireEvent.click(knowButton);
@@ -360,10 +328,7 @@ describe('VocabularyGame Component', () => {
     it('WhenRapidClicking_ThenHandlesGracefully', async () => {
       render(<VocabularyGame words={mockWords} onComplete={mockOnComplete} onWordAnswered={mockOnWordAnswered} />);
 
-      const buttons = screen.getAllByRole('button');
-      const knowButton = buttons.find(button =>
-        getComputedStyle(button).color.includes('70, 211, 105')
-      ) || buttons[buttons.length - 2];
+      const knowButton = screen.getByLabelText("I know this word");
 
       // Rapid clicking should not break the game
       await act(async () => {
@@ -442,10 +407,7 @@ describe('VocabularyGame Component', () => {
       render(<VocabularyGame words={mockWords} onComplete={mockOnComplete} onWordAnswered={mockOnWordAnswered} />);
 
       // Rapidly progress through all words
-      const buttons = screen.getAllByRole('button');
-      const knowButton = buttons.find(button =>
-        getComputedStyle(button).color.includes('70, 211, 105')
-      ) || buttons[buttons.length - 2];
+      const knowButton = screen.getByLabelText("I know this word");
 
       // Click through all words to complete the game
       await act(async () => {

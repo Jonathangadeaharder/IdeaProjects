@@ -448,6 +448,7 @@ export const VocabularyGame: React.FC<VocabularyGameProps> = ({
       <ActionButtons>
         <ActionButton
           data-testid="mark-unknown-button"
+          aria-label="I don't know this word"
           $type="unknown"
           onClick={() => handleAnswer(false)}
           disabled={isProcessing}
@@ -457,6 +458,7 @@ export const VocabularyGame: React.FC<VocabularyGameProps> = ({
 
         <ActionButton
           data-testid="mark-known-button"
+          aria-label="I know this word"
           $type="know"
           onClick={() => handleAnswer(true)}
           disabled={isProcessing}
@@ -466,7 +468,12 @@ export const VocabularyGame: React.FC<VocabularyGameProps> = ({
       </ActionButtons>
 
       <div style={{ marginTop: '24px' }}>
-        <NetflixButton variant="secondary" onClick={handleSkip}>
+        <NetflixButton
+          data-testid="skip-remaining-button"
+          aria-label="Skip remaining words"
+          variant="secondary"
+          onClick={handleSkip}
+        >
           Skip Remaining
         </NetflixButton>
       </div>
