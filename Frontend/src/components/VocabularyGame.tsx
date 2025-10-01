@@ -418,8 +418,8 @@ export const VocabularyGame: React.FC<VocabularyGameProps> = ({
               }}
             >
               <WordText data-testid="vocabulary-word">{currentWord?.word || ''}</WordText>
-              {currentWord?.lemma && currentWord?.lemma.toLowerCase() !== currentWord?.word?.toLowerCase() && (
-                <Definition>Base form: {currentWord.lemma}</Definition>
+              {currentWord?.lemma && (
+                <Definition>Lemma: {currentWord.lemma}</Definition>
               )}
 
               <DifficultyBadge data-testid="difficulty-badge" $level={currentWord?.difficulty_level}>
