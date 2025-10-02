@@ -101,16 +101,10 @@ class ChunkTranslationService(IChunkTranslationService):
             logger.warning(f"[CHUNK DEBUG] No subtitle segments found in {srt_file_path}")
             return []
 
-        # Map active words to their segments
-        active_word_segments = self._map_active_words_to_segments(vocabulary, subtitle_segments)
-
-        if not active_word_segments:
-            logger.info("[CHUNK DEBUG] No active words found in segments")
-            return []
-
-        # Build translation texts
+        # Translate ALL segments (not just vocabulary segments)
+        # The Frontend needs complete translations for all subtitles
         translation_segments = await self._build_translation_texts(
-            task_id, task_progress, active_word_segments, language_preferences
+            task_id, task_progress, subtitle_segments, language_preferences
         )
 
         logger.info(f"[CHUNK DEBUG] Built {len(translation_segments)} translation segments")
@@ -152,16 +146,16 @@ class ChunkTranslationService(IChunkTranslationService):
         self,
         task_id: str,
         task_progress: dict[str, Any],
-        active_word_segments: list[tuple[dict, SRTSegment]],
+        subtitle_segments: list[SRTSegment],
         language_preferences: dict[str, Any],
     ) -> list[SRTSegment]:
         """
-        Build translated text segments for active vocabulary words
+        Build translated text segments for all subtitle segments
 
         Args:
             task_id: Processing task ID
             task_progress: Progress tracking dictionary
-            active_word_segments: List of (word, segment) tuples
+            subtitle_segments: List of subtitle segments to translate
             language_preferences: User language preferences
 
         Returns:
@@ -181,13 +175,11 @@ class ChunkTranslationService(IChunkTranslationService):
             """Translate segments with progress tracking"""
             translation_segments = []
 
-            for i, (_word_info, segment) in enumerate(
-                tqdm(active_word_segments, desc="Translating segments", disable=False)
-            ):
+            for i, segment in enumerate(tqdm(subtitle_segments, desc="Translating segments", disable=False)):
                 try:
                     # Update progress
                     if task_id and task_progress_dict:
-                        progress = 85.0 + (10.0 * (i + 1) / len(active_word_segments))
+                        progress = 85.0 + (10.0 * (i + 1) / len(subtitle_segments))
                         task_progress_dict[task_id].progress = progress
 
                     # Create translation segment
