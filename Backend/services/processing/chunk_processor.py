@@ -101,8 +101,33 @@ class ChunkProcessingService(IChunkProcessingService, IChunkHandler):
                 language_preferences,
             )
 
-            # Complete processing
-            self.utilities.complete_processing(task_id, task_progress, vocabulary)
+            # Step 6: Write translation segments to file
+            translation_srt_path = None
+            if translation_segments:
+                from pathlib import Path as PathLib
+
+                from utils.srt_parser import SRTParser
+
+                # Generate translation file path
+                srt_file_str = str(srt_file) if srt_file else str(video_file).replace(".mp4", ".srt")
+                translation_srt_path = srt_file_str.replace(".srt", "_translation.srt")
+
+                # Write translation SRT file
+                translation_content = SRTParser.segments_to_srt(translation_segments)
+                PathLib(translation_srt_path).write_text(translation_content, encoding="utf-8")
+
+                logger.info(
+                    f"[CHUNK DEBUG] Wrote {len(translation_segments)} translation segments to {translation_srt_path}"
+                )
+
+            # Complete processing with subtitle paths
+            self.utilities.complete_processing(
+                task_id,
+                task_progress,
+                vocabulary,
+                subtitle_path=str(srt_file) if srt_file else None,
+                translation_path=translation_srt_path,
+            )
 
             # Cleanup temporary audio file if it was created
             self.transcription_service.cleanup_temp_audio_file(audio_file, video_file)

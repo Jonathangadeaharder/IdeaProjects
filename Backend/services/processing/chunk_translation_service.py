@@ -9,6 +9,7 @@ from typing import Any
 
 from tqdm import tqdm
 
+from core.config import settings
 from services.interfaces.translation_interface import IChunkTranslationService
 from services.translationservice.factory import TranslationServiceFactory
 from services.translationservice.interface import ITranslationService
@@ -48,9 +49,10 @@ class ChunkTranslationService(IChunkTranslationService):
         service_key = (source_lang, target_lang, quality)
 
         if service_key not in self._translation_services:
-            logger.info(f"Creating new translation service: {source_lang} -> {target_lang} ({quality})")
+            service_name = settings.translation_service
+            logger.info(f"Creating translation service '{service_name}': {source_lang} -> {target_lang} ({quality})")
             self._translation_services[service_key] = TranslationServiceFactory.create_service(
-                source_lang=source_lang, target_lang=target_lang, quality=quality
+                service_name=service_name, source_lang=source_lang, target_lang=target_lang, quality=quality
             )
 
         return self._translation_services[service_key]
