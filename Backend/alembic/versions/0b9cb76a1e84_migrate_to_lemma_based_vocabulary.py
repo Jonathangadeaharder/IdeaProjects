@@ -10,7 +10,6 @@ from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.dialects import postgresql
 
 
 # revision identifiers, used by Alembic.
@@ -66,24 +65,24 @@ def upgrade() -> None:
     # Create indexes (if they don't exist)
     try:
         op.create_index('idx_vocabulary_lemma', 'vocabulary_words', ['lemma'])
-    except:
-        pass
+    except Exception:
+        pass  # Index may already exist
     try:
         op.create_index('idx_vocabulary_language', 'vocabulary_words', ['language'])
-    except:
-        pass
+    except Exception:
+        pass  # Index may already exist
     try:
         op.create_index('idx_vocabulary_level', 'vocabulary_words', ['difficulty_level'])
-    except:
-        pass
+    except Exception:
+        pass  # Index may already exist
     try:
         op.create_index('idx_vocabulary_lemma_lang', 'vocabulary_words', ['lemma', 'language'])
-    except:
-        pass
+    except Exception:
+        pass  # Index may already exist
     try:
         op.create_index('idx_vocabulary_word_lang', 'vocabulary_words', ['word', 'language'])
-    except:
-        pass
+    except Exception:
+        pass  # Index may already exist
 
     # Create user_vocabulary_progress
     op.create_table(

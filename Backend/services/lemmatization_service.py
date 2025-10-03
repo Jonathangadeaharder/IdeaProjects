@@ -6,7 +6,6 @@ import logging
 
 try:
     import spacy
-    from spacy.tokens import Doc
 
     SPACY_AVAILABLE = True
 except ImportError:

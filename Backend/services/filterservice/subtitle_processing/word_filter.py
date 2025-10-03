@@ -40,8 +40,6 @@ class WordFilter:
         Returns:
             FilteredWord with status and metadata updated
         """
-        word_text = word.text.lower().strip()
-
         # Check if proper name - filter out immediately
         if is_proper_name(word.text, language):
             word.status = WordStatus.FILTERED_OTHER
