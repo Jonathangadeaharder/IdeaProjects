@@ -7,6 +7,16 @@ import pytest
 
 from core.token_blacklist import TokenBlacklist
 
+# Check if redis is available for tests that require it
+try:
+    import redis  # noqa: F401
+
+    REDIS_INSTALLED = True
+except ImportError:
+    REDIS_INSTALLED = False
+
+skip_if_no_redis = pytest.mark.skipif(not REDIS_INSTALLED, reason="redis package not installed")
+
 
 class TestTokenBlacklist:
     """Test TokenBlacklist initialization and basic functionality."""
@@ -36,6 +46,7 @@ class TestTokenBlacklist:
             assert client is None
 
     @pytest.mark.anyio
+    @skip_if_no_redis
     async def test_get_redis_client_success(self):
         """Test successful Redis client creation."""
         mock_redis = AsyncMock()
@@ -50,6 +61,7 @@ class TestTokenBlacklist:
                 mock_redis.ping.assert_called_once()
 
     @pytest.mark.anyio
+    @skip_if_no_redis
     async def test_get_redis_client_connection_failure(self):
         """Test Redis client creation with connection failure."""
         mock_redis = AsyncMock()
@@ -177,6 +189,7 @@ class TestTokenBlacklistMemoryOperations:
         assert valid_token in memory_blacklist._memory_blacklist
 
 
+@skip_if_no_redis
 class TestTokenBlacklistRedisOperations:
     """Test token blacklist operations using Redis storage."""
 
