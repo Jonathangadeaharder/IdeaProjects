@@ -16,11 +16,11 @@ class TestAuthModelValidation:
         from api.models.auth import RegisterRequest
 
         # Arrange & Act
-        request = RegisterRequest(username="testuser", password="ValidPass123")
+        request = RegisterRequest(username="testuser", password="ValidPass123!")
 
         # Assert
         assert request.username == "testuser"
-        assert request.password == "ValidPass123"
+        assert request.password == "ValidPass123!"
 
     def test_When_password_missing_uppercase_Then_validation_error_raised(self):
         """Password without uppercase should raise validation error."""
@@ -52,7 +52,7 @@ class TestAuthModelValidation:
 
         # Act & Assert
         with pytest.raises(ValidationError) as exc_info:
-            RegisterRequest(username="ab", password="ValidPass123")
+            RegisterRequest(username="ab", password="ValidPass123!")
 
         # Verify error is about username validation
         errors = exc_info.value.errors()
@@ -64,7 +64,7 @@ class TestAuthModelValidation:
 
         # Test missing username
         with pytest.raises(ValidationError):
-            RegisterRequest(password="ValidPass123")
+            RegisterRequest(password="ValidPass123!")
 
         # Test missing password
         with pytest.raises(ValidationError):

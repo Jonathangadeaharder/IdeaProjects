@@ -17,7 +17,7 @@ class TestAuthApiContractCompliance:
     def test_register_endpoint_contract(self, client: TestClient):
         """Test register endpoint follows OpenAPI contract"""
         # Valid registration request
-        valid_request = {"username": "testuser123", "email": "testuser123@example.com", "password": "ValidPass123"}
+        valid_request = {"username": "testuser123", "email": "testuser123@example.com", "password": "ValidPass123!"}
 
         response = client.post("/api/auth/register", json=valid_request)
 
@@ -44,17 +44,17 @@ class TestAuthApiContractCompliance:
         """Test register endpoint validation follows contract"""
         invalid_requests = [
             # Invalid username
-            {"username": "ab", "email": "test@example.com", "password": "ValidPass123"},  # Too short
-            {"username": "", "email": "test@example.com", "password": "ValidPass123"},  # Empty
-            {"username": "user@invalid", "email": "test@example.com", "password": "ValidPass123"},  # Invalid chars
+            {"username": "ab", "email": "test@example.com", "password": "ValidPass123!"},  # Too short
+            {"username": "", "email": "test@example.com", "password": "ValidPass123!"},  # Empty
+            {"username": "user@invalid", "email": "test@example.com", "password": "ValidPass123!"},  # Invalid chars
             # Invalid password
             {"username": "validuser", "email": "test@example.com", "password": "short"},  # Too short
             {"username": "validuser", "email": "test@example.com", "password": "nodigits"},  # No digits
             {"username": "validuser", "email": "test@example.com", "password": "NOLOWER123"},  # No lowercase
             {"username": "validuser", "email": "test@example.com", "password": "noupper123"},  # No uppercase
             # Invalid email
-            {"username": "validuser", "email": "invalid-email", "password": "ValidPass123"},  # Invalid email
-            {"username": "validuser", "email": "", "password": "ValidPass123"},  # Empty email
+            {"username": "validuser", "email": "invalid-email", "password": "ValidPass123!"},  # Invalid email
+            {"username": "validuser", "email": "", "password": "ValidPass123!"},  # Empty email
         ]
 
         for invalid_request in invalid_requests:
@@ -202,11 +202,11 @@ class TestAuthApiRequestValidation:
     def test_register_request_model_validation(self):
         """Test UserCreate model validates correctly"""
         # Valid request
-        valid_data = {"username": "testuser123", "email": "test@example.com", "password": "ValidPass123"}
+        valid_data = {"username": "testuser123", "email": "test@example.com", "password": "ValidPass123!"}
         request = UserCreate(**valid_data)
         assert request.username == "testuser123"
         assert request.email == "test@example.com"
-        assert request.password == "ValidPass123"
+        assert request.password == "ValidPass123!"
 
         # Invalid requests should raise ValidationError
         invalid_cases = [

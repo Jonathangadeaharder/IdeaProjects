@@ -14,7 +14,7 @@ class TestRegisterRequestValidation:
 
     def test_validate_password_strength_valid_password(self):
         """Test password validation with valid passwords"""
-        valid_passwords = ["TestPass1234", "SecurePassword1", "MyStr0ngP@ss", "ValidPass123!"]
+        valid_passwords = ["TestPass1234!", "SecurePassword1!", "MyStr0ngP@ss", "ValidPass123!"]
 
         for password in valid_passwords:
             request = RegisterRequest(username="testuser", password=password)
@@ -61,13 +61,13 @@ class TestRegisterRequestValidation:
         valid_usernames = ["testuser", "user123", "my-username", "user_name", "Test-User_123"]
 
         for username in valid_usernames:
-            request = RegisterRequest(username=username, password="ValidPass123")
+            request = RegisterRequest(username=username, password="ValidPass123!")
             assert request.username == username
 
     def test_username_validation_too_short(self):
         """Test username validation fails when too short"""
         with pytest.raises(ValidationError) as exc_info:
-            RegisterRequest(username="ab", password="ValidPass123")
+            RegisterRequest(username="ab", password="ValidPass123!")
 
         error_messages = str(exc_info.value)
         assert "String should have at least 3 characters" in error_messages
@@ -76,7 +76,7 @@ class TestRegisterRequestValidation:
         """Test username validation fails when too long"""
         long_username = "a" * 51  # 51 characters
         with pytest.raises(ValidationError) as exc_info:
-            RegisterRequest(username=long_username, password="ValidPass123")
+            RegisterRequest(username=long_username, password="ValidPass123!")
 
         error_messages = str(exc_info.value)
         assert "String should have at most 50 characters" in error_messages
@@ -87,7 +87,7 @@ class TestRegisterRequestValidation:
 
         for username in invalid_usernames:
             with pytest.raises(ValidationError):
-                RegisterRequest(username=username, password="ValidPass123")
+                RegisterRequest(username=username, password="ValidPass123!")
 
     def test_password_length_validation(self):
         """Test password length constraints"""
