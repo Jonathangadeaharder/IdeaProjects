@@ -231,8 +231,8 @@ async def mark_word_known_by_lemma(
 
 @router.get("/stats", name="get_vocabulary_stats")
 async def get_vocabulary_stats(
-    target_language: str = Query("de", description="Target language code"),
-    translation_language: str = Query("en", description="Translation language code"),
+    target_language: str = Query("de", pattern=r"^[a-z]{2,3}$", description="Target language code"),
+    translation_language: str = Query("en", pattern=r"^[a-z]{2,3}$", description="Translation language code"),
     current_user: User = Depends(current_active_user),
     db: AsyncSession = Depends(get_async_session),
 ):
