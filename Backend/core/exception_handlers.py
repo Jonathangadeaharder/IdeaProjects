@@ -119,33 +119,3 @@ def setup_exception_handlers(app: FastAPI):
             status_code=500,
             content={"error": {"type": "internal_error", "message": "An internal server error occurred"}},
         )
-
-
-class DatabaseError(Exception):
-    """Custom database error"""
-
-    pass
-
-
-class AuthenticationError(Exception):
-    """Custom authentication error"""
-
-    pass
-
-
-class AuthorizationError(Exception):
-    """Custom authorization error"""
-
-    pass
-
-
-class ValidationError(Exception):
-    """Custom validation error"""
-
-    pass
-
-
-class NotFoundError(Exception):
-    """Custom not found error"""
-
-    pass

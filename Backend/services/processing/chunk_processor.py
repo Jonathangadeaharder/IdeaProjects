@@ -47,10 +47,10 @@ Performance Notes:
     - Translation: ~2-5 seconds for 10-20 segments
     - Total: ~10-20 seconds per 30s chunk
 
-Warning:
-    Currently wraps entire processing in a transaction, including ML inference and file I/O.
-    This can hold database locks for extended periods. Consider refactoring to only wrap
-    database operations (vocabulary filtering, progress updates) in transactions.
+Architecture Notes:
+    - Database operations are handled by delegated services using their own sessions
+    - Orchestration layer coordinates file I/O and ML inference without transaction overhead
+    - Each service manages its own transactional boundaries for atomicity
 """
 
 import logging
@@ -112,7 +112,7 @@ class ChunkProcessingService(IChunkProcessingService, IChunkHandler):
     Note:
         Progress tracking updates task_progress dictionary in-place.
         Automatically cleans up temporary audio files.
-        Transaction wraps entire processing - see module docstring warning.
+        Delegated services handle their own database transactions.
     """
 
     def __init__(self, db_session: AsyncSession):
@@ -138,7 +138,6 @@ class ChunkProcessingService(IChunkProcessingService, IChunkHandler):
     ) -> None:
         """
         Process a specific chunk of video for vocabulary learning
-        Uses transaction boundaries to ensure atomic operations
 
         Args:
             video_path: Path to video file
@@ -150,98 +149,86 @@ class ChunkProcessingService(IChunkProcessingService, IChunkHandler):
             session_token: Optional session token for authentication
 
         Note:
-            Uses manual transaction management (begin_nested) instead of @transactional decorator
-            because the session is an instance variable, not a function parameter.
-            The decorator pattern requires session to be passed as a parameter.
-
-        Warning:
-            This wraps the entire chunk processing (including ML inference and file I/O) in a
-            transaction, which can hold database locks for a long time. Consider refactoring
-            to only wrap the database operations (vocabulary filtering, progress updates) in
-            transactions, not the file I/O and ML operations.
+            Database operations are handled by delegated services using their own sessions.
+            This orchestration layer coordinates file I/O and ML inference without transaction overhead.
         """
-        # Wrap entire processing in transaction for atomicity
-        # TODO: Optimize transaction scope to only cover database operations
-        async with self.db_session.begin_nested():
-            try:
-                # Resolve video path and initialize progress
-                video_file = self.utilities.resolve_video_path(video_path)
-                self.utilities.initialize_progress(task_id, task_progress, video_file, start_time, end_time)
+        try:
+            # Resolve video path and initialize progress
+            video_file = self.utilities.resolve_video_path(video_path)
+            self.utilities.initialize_progress(task_id, task_progress, video_file, start_time, end_time)
 
-                # Authenticate user
-                user = await self.utilities.get_authenticated_user(user_id, session_token)
-                language_preferences = self.utilities.load_user_language_preferences(user)
+            # Authenticate user
+            user = await self.utilities.get_authenticated_user(user_id, session_token)
+            language_preferences = self.utilities.load_user_language_preferences(user)
 
-                # Step 1: Extract audio chunk (0-20% progress)
-                audio_file = await self.transcription_service.extract_audio_chunk(
-                    task_id, task_progress, video_file, start_time, end_time
+            # Step 1: Extract audio chunk (0-20% progress)
+            audio_file = await self.transcription_service.extract_audio_chunk(
+                task_id, task_progress, video_file, start_time, end_time
+            )
+
+            # Step 2: Transcribe chunk (5-35% progress)
+            srt_file = await self.transcription_service.transcribe_chunk(
+                task_id, task_progress, video_file, audio_file, language_preferences, start_time, end_time
+            )
+
+            # Step 3: Filter vocabulary (35-65% progress)
+            vocabulary = await self._filter_vocabulary(task_id, task_progress, srt_file, user, language_preferences)
+
+            # Step 4: Generate filtered subtitles (85-95% progress)
+            filtered_srt = await self._generate_filtered_subtitles(
+                task_id, task_progress, srt_file, vocabulary, language_preferences
+            )
+
+            # Step 5: Build translation segments (95-100% progress)
+            translation_segments = await self.translation_service.build_translation_segments(
+                task_id,
+                task_progress,
+                srt_file,
+                vocabulary,
+                language_preferences,
+            )
+
+            # Step 6: Write translation segments to file
+            translation_srt_path = None
+            if translation_segments:
+                from pathlib import Path as PathLib
+
+                from utils.srt_parser import SRTParser
+
+                # Generate translation file path
+                srt_file_str = str(srt_file) if srt_file else str(video_file).replace(".mp4", ".srt")
+                translation_srt_path = srt_file_str.replace(".srt", "_translation.srt")
+
+                # Write translation SRT file
+                translation_content = SRTParser.segments_to_srt(translation_segments)
+                PathLib(translation_srt_path).write_text(translation_content, encoding="utf-8")
+
+                logger.info(
+                    f"[CHUNK DEBUG] Wrote {len(translation_segments)} translation segments to {translation_srt_path}"
                 )
 
-                # Step 2: Transcribe chunk (5-35% progress)
-                srt_file = await self.transcription_service.transcribe_chunk(
-                    task_id, task_progress, video_file, audio_file, language_preferences, start_time, end_time
-                )
+            # Complete processing with subtitle paths
+            self.utilities.complete_processing(
+                task_id,
+                task_progress,
+                vocabulary,
+                subtitle_path=str(srt_file) if srt_file else None,
+                translation_path=translation_srt_path,
+            )
 
-                # Step 3: Filter vocabulary (35-65% progress)
-                vocabulary = await self._filter_vocabulary(task_id, task_progress, srt_file, user, language_preferences)
+            # Cleanup temporary audio file if it was created
+            self.transcription_service.cleanup_temp_audio_file(audio_file, video_file)
 
-                # Step 4: Generate filtered subtitles (85-95% progress)
-                filtered_srt = await self._generate_filtered_subtitles(
-                    task_id, task_progress, srt_file, vocabulary, language_preferences
-                )
+            # Cleanup old chunk files
+            self.utilities.cleanup_old_chunk_files(video_file, start_time, end_time)
 
-                # Step 5: Build translation segments (95-100% progress)
-                # Use the chunk SRT file, not the full video SRT file
-                translation_segments = await self.translation_service.build_translation_segments(
-                    task_id,
-                    task_progress,
-                    srt_file,  # Use chunk-specific SRT file
-                    vocabulary,
-                    language_preferences,
-                )
-
-                # Step 6: Write translation segments to file
-                translation_srt_path = None
-                if translation_segments:
-                    from pathlib import Path as PathLib
-
-                    from utils.srt_parser import SRTParser
-
-                    # Generate translation file path
-                    srt_file_str = str(srt_file) if srt_file else str(video_file).replace(".mp4", ".srt")
-                    translation_srt_path = srt_file_str.replace(".srt", "_translation.srt")
-
-                    # Write translation SRT file
-                    translation_content = SRTParser.segments_to_srt(translation_segments)
-                    PathLib(translation_srt_path).write_text(translation_content, encoding="utf-8")
-
-                    logger.info(
-                        f"[CHUNK DEBUG] Wrote {len(translation_segments)} translation segments to {translation_srt_path}"
-                    )
-
-                # Complete processing with subtitle paths
-                self.utilities.complete_processing(
-                    task_id,
-                    task_progress,
-                    vocabulary,
-                    subtitle_path=str(srt_file) if srt_file else None,
-                    translation_path=translation_srt_path,
-                )
-
-                # Cleanup temporary audio file if it was created
+        except Exception as e:
+            logger.error(f"Chunk processing failed for task {task_id}: {e}", exc_info=True)
+            # Cleanup temporary audio file on error
+            if "audio_file" in locals():
                 self.transcription_service.cleanup_temp_audio_file(audio_file, video_file)
-
-                # Cleanup old chunk files
-                self.utilities.cleanup_old_chunk_files(video_file, start_time, end_time)
-
-            except Exception as e:
-                logger.error(f"Chunk processing failed for task {task_id}: {e}", exc_info=True)
-                # Cleanup temporary audio file on error
-                if "audio_file" in locals():
-                    self.transcription_service.cleanup_temp_audio_file(audio_file, video_file)
-                self.utilities.handle_error(task_id, task_progress, e)
-                # Transaction will auto-rollback on exception
-                raise
+            self.utilities.handle_error(task_id, task_progress, e)
+            raise
 
     async def _filter_vocabulary(
         self,

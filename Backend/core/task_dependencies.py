@@ -1,7 +1,5 @@
 """Task and lifecycle dependencies for FastAPI"""
 
-from functools import lru_cache
-
 from .logging_config import get_logger
 
 logger = get_logger(__name__)
@@ -10,9 +8,14 @@ logger = get_logger(__name__)
 _task_progress_registry: dict = {}
 
 
-@lru_cache
 def get_task_progress_registry() -> dict:
-    """Get task progress registry for background tasks"""
+    """
+    Get task progress registry for background tasks
+
+    Note:
+        Returns reference to global registry without caching.
+        Previously used @lru_cache which caused test state pollution.
+    """
     return _task_progress_registry
 
 
@@ -61,9 +64,8 @@ async def cleanup_services():
 
     await engine.dispose()
 
-    # Clear task progress registry cache
-    if hasattr(get_task_progress_registry, "cache_clear"):
-        get_task_progress_registry.cache_clear()
+    # Clear task progress registry content (not cache, as we removed @lru_cache)
+    _task_progress_registry.clear()
 
     logger.info("Service cleanup complete")
 

@@ -86,15 +86,16 @@ def clear_service_caches():
         try:
             from core.task_dependencies import get_task_progress_registry
 
-            if hasattr(get_task_progress_registry, "cache_clear"):
-                get_task_progress_registry.cache_clear()
-                cleared_count += 1
+            # Clear registry contents between tests
+            registry = get_task_progress_registry()
+            registry.clear()
+            cleared_count += 1
         except (ImportError, AttributeError):
-            # Expected: module not found or function doesn't have cache_clear
+            # Expected: module not found or registry doesn't exist
             pass
 
-        # Note: get_translation_service no longer uses @lru_cache
-        # Removed to fix test isolation issues
+        # Note: get_translation_service and get_task_progress_registry
+        # no longer use @lru_cache - removed to fix test isolation issues
 
         return cleared_count
 
