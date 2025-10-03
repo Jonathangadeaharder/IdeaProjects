@@ -3,7 +3,7 @@ Unit tests for video service endpoint functionality
 Tests the processChunk API endpoint with proper mocking and assertions
 """
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from httpx import AsyncClient
@@ -27,14 +27,17 @@ class TestVideoServiceEndpoint:
 
         # Mock the file system and processing dependencies
         with (
-            patch("api.routes.episode_processing_routes.Path") as mock_path_class,
+            patch("api.routes.episode_processing_routes.settings") as mock_settings,
             patch("api.routes.episode_processing_routes.run_chunk_processing") as mock_run_processing,
         ):
             # Setup mocks - create a mock path that exists
-            mock_path_instance = AsyncMock()
-            mock_path_instance.exists.return_value = True
-            mock_path_instance.__truediv__ = lambda self, other: mock_path_instance
-            mock_path_class.return_value = mock_path_instance
+            mock_videos_base_path = MagicMock()
+            mock_settings.get_videos_path.return_value = mock_videos_base_path
+
+            # Mock the path division operation (base_path / filename)
+            mock_full_path = MagicMock()
+            mock_full_path.exists.return_value = True  # File exists
+            mock_videos_base_path.__truediv__.return_value = mock_full_path
 
             # Act: Call the endpoint
             response = await async_client.post("/api/process/chunk", json=test_request, headers=headers)
