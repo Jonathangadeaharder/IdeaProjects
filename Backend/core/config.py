@@ -1,5 +1,5 @@
 """
-Configuration management using Pydantic Settings
+Configuration management using Pydantic Settings.
 """
 
 import json
@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8", "extra": "ignore"}
 
     # Server settings
-    host: str = Field(default="0.0.0.0", alias="LANGPLUG_HOST")
+    host: str = Field(default="0.0.0.0", alias="LANGPLUG_HOST")  # nosec B104 - Required for Docker/development
     port: int = Field(default=8000, alias="LANGPLUG_PORT")
     reload: bool = Field(default=True, alias="LANGPLUG_RELOAD")
     debug: bool = Field(default=True, alias="LANGPLUG_DEBUG")
