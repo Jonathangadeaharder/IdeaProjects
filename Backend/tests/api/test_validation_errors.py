@@ -14,7 +14,7 @@ from tests.auth_helpers import AuthTestHelperAsync
     [
         ("/api/vocabulary/mark-known", {}),
         ("/api/vocabulary/library/bulk-mark", {}),
-        ("/api/process/translate-subtitles", {}),
+        # ("/api/process/translate-subtitles", {}),  # Removed: deprecated during refactoring
         ("/api/process/filter-subtitles", {}),
     ],
 )
