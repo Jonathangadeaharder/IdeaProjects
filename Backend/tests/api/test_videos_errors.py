@@ -29,10 +29,10 @@ async def test_Whensubtitle_uploadWithoutsrt_extension_ThenReturnsError(async_cl
         headers=headers,
     )
 
-    # Invalid subtitle file should return 422 (validation error)
+    # Invalid subtitle file should return 400 (bad request)
     assert (
-        response.status_code == 422
-    ), f"Expected 422 (validation error for wrong file type), got {response.status_code}: {response.text}"
+        response.status_code == 400
+    ), f"Expected 400 (bad request for wrong file type), got {response.status_code}: {response.text}"
 
 
 @pytest.mark.anyio

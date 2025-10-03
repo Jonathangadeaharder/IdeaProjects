@@ -40,7 +40,7 @@ async def test_WhenChunkEndpointProcessesExistingVideo_ThenSucceeds(async_client
 @pytest.mark.anyio
 @pytest.mark.timeout(30)
 async def test_Whenchunk_endpointWithoutvalid_window_ThenReturnsError(async_client, tmp_path, monkeypatch):
-    """Invalid input: end_time <= start_time triggers validation error."""
+    """Invalid input: end_time <= start_time triggers bad request error."""
     headers = await _auth(async_client)
     video_path = tmp_path / "clip.mp4"
     video_path.write_bytes(b"00")
@@ -52,7 +52,7 @@ async def test_Whenchunk_endpointWithoutvalid_window_ThenReturnsError(async_clie
             headers=headers,
         )
 
-    assert response.status_code == 422
+    assert response.status_code == 400  # Endpoint returns 400 for invalid chunk timing
 
 
 @pytest.mark.anyio

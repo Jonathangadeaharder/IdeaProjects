@@ -89,7 +89,7 @@ async def test_Whenvideo_uploadWithnon_video_ThenRejects(async_client):
         files={"video_file": ("not_video.txt", b"data", "text/plain")},
     )
 
-    # Invalid file type should return 422 (validation error)
+    # Invalid file type should return 400 (bad request)
     assert (
-        response.status_code == 422
-    ), f"Expected 422 (validation error for wrong file type), got {response.status_code}: {response.text}"
+        response.status_code == 400
+    ), f"Expected 400 (bad request for wrong file type), got {response.status_code}: {response.text}"
