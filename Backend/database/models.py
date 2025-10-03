@@ -37,6 +37,10 @@ class User(Base):
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
     last_login = Column(DateTime, nullable=True)
 
+    # Language preferences - simplified from separate table
+    native_language = Column(String(5), default="en", nullable=False)  # User's native language (e.g., "en", "es")
+    target_language = Column(String(5), default="de", nullable=False)  # Language user is learning (e.g., "de", "es")
+
     # Relationships
     vocabulary_progress = relationship("UserVocabularyProgress", back_populates="user", cascade="all, delete-orphan")
     game_sessions = relationship("GameSession", back_populates="user", cascade="all, delete-orphan")
