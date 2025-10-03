@@ -13,6 +13,19 @@ from services.filterservice.interface import FilteredSubtitle, FilteredWord
 from services.translationservice.factory import TranslationServiceFactory
 from services.vocabulary_service import VocabularyService
 
+# Check if spaCy German models are available
+try:
+    import spacy
+
+    spacy.load("de_core_news_lg")
+    SPACY_DE_AVAILABLE = True
+except (ImportError, OSError):
+    SPACY_DE_AVAILABLE = False
+
+skip_if_no_spacy_de = pytest.mark.skipif(
+    not SPACY_DE_AVAILABLE, reason="spaCy German language model (de_core_news_lg) not installed"
+)
+
 
 @pytest.fixture
 async def test_engine():
@@ -71,6 +84,7 @@ async def german_vocabulary(test_db_session: AsyncSession):
     return words
 
 
+@skip_if_no_spacy_de
 class TestVocabularyServiceSessionManagement:
     """Test that VocabularyService creates sessions correctly"""
 
@@ -120,6 +134,7 @@ class TestVocabularyServiceSessionManagement:
         assert hasattr(result, "learning_subtitles")
 
 
+@skip_if_no_spacy_de
 class TestTranslationServiceMethodCalls:
     """Test that translation services are called with correct methods"""
 
@@ -180,6 +195,7 @@ class TestTranslationServiceMethodCalls:
         assert translated_text == "Hallo"
 
 
+@skip_if_no_spacy_de
 class TestIntegrationWithoutMocks:
     """Integration tests that exercise actual code without mocking"""
 
@@ -255,6 +271,7 @@ class TestIntegrationWithoutMocks:
         assert not service.is_initialized
 
 
+@skip_if_no_spacy_de
 class TestBugReproduction:
     """Tests that reproduce the exact bugs we fixed"""
 

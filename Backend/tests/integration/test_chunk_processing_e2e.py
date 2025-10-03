@@ -18,6 +18,19 @@ from services.processing.chunk_translation_service import ChunkTranslationServic
 from services.processing.chunk_utilities import ChunkUtilities
 from services.translationservice.factory import TranslationServiceFactory
 
+# Check if spaCy German models are available
+try:
+    import spacy
+
+    spacy.load("de_core_news_lg")
+    SPACY_DE_AVAILABLE = True
+except (ImportError, OSError):
+    SPACY_DE_AVAILABLE = False
+
+skip_if_no_spacy_de = pytest.mark.skipif(
+    not SPACY_DE_AVAILABLE, reason="spaCy German language model (de_core_news_lg) not installed"
+)
+
 
 @pytest.fixture
 async def test_engine():
@@ -132,6 +145,7 @@ def temp_video_file():
     path.unlink(missing_ok=True)
 
 
+@skip_if_no_spacy_de
 class TestChunkProcessingServiceInstantiation:
     """Test that all chunk processing services instantiate correctly"""
 
@@ -171,6 +185,7 @@ class TestChunkProcessingServiceInstantiation:
         assert processor.translation_service is not None
 
 
+@skip_if_no_spacy_de
 class TestChunkProcessingLanguagePreferencesFlow:
     """Test language preferences resolution in chunk processing"""
 
@@ -209,6 +224,7 @@ class TestChunkProcessingLanguagePreferencesFlow:
         assert runtime_settings["target"] == target
 
 
+@skip_if_no_spacy_de
 class TestChunkProcessingTranslationServiceFlow:
     """Test translation service creation in chunk processing"""
 
@@ -248,6 +264,7 @@ class TestChunkProcessingTranslationServiceFlow:
         assert service2 is not None
 
 
+@skip_if_no_spacy_de
 class TestChunkProcessingVocabularyIntegration:
     """Test vocabulary service integration in chunk processing"""
 
@@ -268,6 +285,7 @@ class TestChunkProcessingVocabularyIntegration:
         assert word_info["found"] is True
 
 
+@skip_if_no_spacy_de
 class TestChunkProcessingEndToEnd:
     """End-to-end chunk processing integration tests"""
 
@@ -317,6 +335,7 @@ class TestChunkProcessingEndToEnd:
         assert isinstance(processor.translation_service, ChunkTranslationService)
 
 
+@skip_if_no_spacy_de
 class TestChunkProcessingErrorScenarios:
     """Test error handling in chunk processing"""
 
@@ -329,7 +348,7 @@ class TestChunkProcessingErrorScenarios:
         await test_db_session.close()
 
         # Should handle closed session gracefully
-        with pytest.raises(Exception):
+        with pytest.raises((Exception, RuntimeError, ValueError)):
             # This should fail gracefully, not crash unexpectedly
             await processor.utilities.get_authenticated_user(999, None)
 
@@ -341,6 +360,7 @@ class TestChunkProcessingErrorScenarios:
             TranslationServiceFactory.create_service("invalid-service-name")
 
 
+@skip_if_no_spacy_de
 class TestChunkProcessingBugsReproduction:
     """Tests that reproduce the exact bugs we fixed"""
 
@@ -388,6 +408,7 @@ class TestChunkProcessingBugsReproduction:
 
 
 @pytest.mark.integration
+@skip_if_no_spacy_de
 class TestChunkProcessingIntegrationSummary:
     """Summary tests confirming all integration points work"""
 
