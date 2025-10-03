@@ -6,33 +6,16 @@ Tests the entire auth flow from registration to logout
 import asyncio
 from uuid import uuid4
 
+import httpx
 import pytest
-from fastapi.testclient import TestClient
-from httpx import ASGITransport, AsyncClient
 
-from core.app import create_app
+# Use global fixtures from conftest.py for proper database setup
+# Don't define local app/client/async_client fixtures
 
 
 @pytest.mark.integration
 class TestAuthenticationWorkflow:
     """Integration tests for complete authentication workflows"""
-
-    @pytest.fixture
-    def app(self):
-        """Create application instance for testing"""
-        return create_app()
-
-    @pytest.fixture
-    def client(self, app):
-        """Create test HTTP client"""
-        return TestClient(app)
-
-    @pytest.fixture
-    async def async_client(self, app):
-        """Create async test HTTP client using httpx with ASGI transport"""
-        transport = ASGITransport(app=app)
-        async with AsyncClient(transport=transport, base_url="http://testserver") as ac:
-            yield ac
 
     @pytest.fixture
     def unique_user_data(self):
@@ -88,7 +71,7 @@ class TestAuthenticationWorkflow:
         # This depends on your logout implementation
 
     @pytest.mark.asyncio
-    async def test_registration_validation_errors(self, async_client: AsyncClient):
+    async def test_registration_validation_errors(self, async_client: httpx.AsyncClient):
         """Test registration with various validation errors"""
 
         # Test invalid email
@@ -109,7 +92,7 @@ class TestAuthenticationWorkflow:
         assert response.status_code == 422
 
     @pytest.mark.asyncio
-    async def test_duplicate_registration(self, async_client: AsyncClient, unique_user_data):
+    async def test_duplicate_registration(self, async_client: httpx.AsyncClient, unique_user_data):
         """Test registration with duplicate email/username"""
 
         # First registration should succeed
@@ -122,7 +105,7 @@ class TestAuthenticationWorkflow:
         assert "already_exists" in response2.json()["detail"].lower()
 
     @pytest.mark.asyncio
-    async def test_login_with_invalid_credentials(self, async_client: AsyncClient, unique_user_data):
+    async def test_login_with_invalid_credentials(self, async_client: httpx.AsyncClient, unique_user_data):
         """Test login with various invalid credentials"""
 
         # Register user first
@@ -146,7 +129,7 @@ class TestAuthenticationWorkflow:
         assert response.status_code == 400
 
     @pytest.mark.asyncio
-    async def test_protected_endpoints_without_auth(self, async_client: AsyncClient):
+    async def test_protected_endpoints_without_auth(self, async_client: httpx.AsyncClient):
         """Test accessing protected endpoints without authentication"""
 
         # Test /api/auth/me without token
@@ -162,7 +145,7 @@ class TestAuthenticationWorkflow:
         assert response.status_code == 401
 
     @pytest.mark.asyncio
-    async def test_concurrent_registrations(self, async_client: AsyncClient):
+    async def test_concurrent_registrations(self, async_client: httpx.AsyncClient):
         """Test handling of concurrent registration attempts"""
 
         # Create multiple registration tasks with same email
@@ -196,7 +179,7 @@ class TestAuthenticationWorkflow:
         assert failed_count >= 4  # At least 4 should fail
 
     @pytest.mark.asyncio
-    async def test_token_expiration(self, async_client: AsyncClient, unique_user_data):
+    async def test_token_expiration(self, async_client: httpx.AsyncClient, unique_user_data):
         """Test token expiration handling"""
 
         # Register and login
@@ -220,7 +203,7 @@ class TestAuthenticationWorkflow:
         # 3. Or use freezegun library
 
     @pytest.mark.asyncio
-    async def test_password_reset_flow(self, async_client: AsyncClient, unique_user_data):
+    async def test_password_reset_flow(self, async_client: httpx.AsyncClient, unique_user_data):
         """Test password reset workflow"""
 
         # Register user
@@ -237,7 +220,7 @@ class TestAuthenticationWorkflow:
         # 3. Verify login with new password
 
     @pytest.mark.asyncio
-    async def test_user_profile_update(self, async_client: AsyncClient, unique_user_data):
+    async def test_user_profile_update(self, async_client: httpx.AsyncClient, unique_user_data):
         """Test user profile update workflow"""
 
         # Register and login
@@ -262,7 +245,7 @@ class TestAuthenticationWorkflow:
             assert updated_data.get("last_name") == "Name"
 
     @pytest.mark.asyncio
-    async def test_rate_limiting(self, async_client: AsyncClient):
+    async def test_rate_limiting(self, async_client: httpx.AsyncClient):
         """Test rate limiting on authentication endpoints"""
 
         # Attempt multiple rapid login attempts
@@ -283,7 +266,7 @@ class TestAuthenticationWorkflow:
         # You might see 429 (Too Many Requests) status codes
 
     @pytest.mark.asyncio
-    async def test_session_management(self, async_client: AsyncClient, unique_user_data):
+    async def test_session_management(self, async_client: httpx.AsyncClient, unique_user_data):
         """Test session management and multiple login sessions"""
 
         # Register user
@@ -305,7 +288,7 @@ class TestAuthenticationWorkflow:
             assert response.status_code == 200
 
     @pytest.mark.asyncio
-    async def test_account_deactivation(self, async_client: AsyncClient, unique_user_data):
+    async def test_account_deactivation(self, async_client: httpx.AsyncClient, unique_user_data):
         """Test account deactivation workflow"""
 
         # Register and login
