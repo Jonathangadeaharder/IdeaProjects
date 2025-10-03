@@ -71,7 +71,7 @@ jobs:
           REDIS_URL: redis://localhost:6379
           LANGPLUG_SECRET_KEY: test-secret-key-for-ci-only-not-for-production-use
         run: |
-          python -m pytest tests/ -v --cov=. --cov-report=xml
+          python -m pytest tests/ --cov=api --cov=core --cov=services --cov-report=xml --tb=short
 
       - name: Run Frontend tests
         working-directory: ./Frontend
