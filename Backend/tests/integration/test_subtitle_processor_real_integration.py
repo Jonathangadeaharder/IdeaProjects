@@ -11,6 +11,19 @@ from database.models import Base, VocabularyWord
 from services.filterservice.direct_subtitle_processor import DirectSubtitleProcessor
 from services.filterservice.interface import FilteredSubtitle, FilteredWord
 
+# Check if spaCy German models are available
+try:
+    import spacy
+
+    spacy.load("de_core_news_lg")
+    SPACY_DE_AVAILABLE = True
+except (ImportError, OSError):
+    SPACY_DE_AVAILABLE = False
+
+skip_if_no_spacy_de = pytest.mark.skipif(
+    not SPACY_DE_AVAILABLE, reason="spaCy German language model (de_core_news_lg) not installed"
+)
+
 
 @pytest.fixture
 async def test_engine():
@@ -112,6 +125,7 @@ def sample_subtitles():
     ]
 
 
+@skip_if_no_spacy_de
 class TestDirectSubtitleProcessorRealIntegration:
     """Test DirectSubtitleProcessor with real services"""
 
@@ -166,6 +180,7 @@ class TestDirectSubtitleProcessorRealIntegration:
         assert result is not None
 
 
+@skip_if_no_spacy_de
 class TestSubtitleProcessorWordLookupIntegration:
     """Test word lookup integration in subtitle processor"""
 
@@ -227,6 +242,7 @@ class TestSubtitleProcessorWordLookupIntegration:
         assert result2 is not None
 
 
+@skip_if_no_spacy_de
 class TestSubtitleProcessorServiceBoundaries:
     """Test service boundaries and integration points"""
 
@@ -285,6 +301,7 @@ class TestSubtitleProcessorServiceBoundaries:
         assert result is not None
 
 
+@skip_if_no_spacy_de
 class TestSubtitleProcessorErrorHandling:
     """Test error handling in subtitle processor"""
 
