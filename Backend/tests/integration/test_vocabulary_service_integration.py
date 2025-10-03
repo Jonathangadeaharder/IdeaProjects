@@ -3,7 +3,6 @@ Integration tests for vocabulary service using the new architecture
 """
 
 import pytest
-from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from database.repositories import UserVocabularyProgressRepository, VocabularyRepositorySync
@@ -16,9 +15,9 @@ class TestVocabularyServiceIntegration:
     """Integration tests for vocabulary service"""
 
     @pytest.fixture(autouse=True)
-    def setup(self, db_session: Session):
+    def setup(self, isolated_db_session: Session):
         """Setup for each test"""
-        self.db_session = db_session
+        self.db_session = isolated_db_session
         self.vocabulary_repository = VocabularyRepositorySync()
         self.progress_repository = UserVocabularyProgressRepository()
         self.vocabulary_service = VocabularyService(self.vocabulary_repository, self.progress_repository)
@@ -145,11 +144,11 @@ class TestVocabularyServiceIntegration:
 class TestVocabularyAPIIntegration:
     """Integration tests for vocabulary API endpoints"""
 
-    def test_vocabulary_search_endpoint(self, test_client: TestClient, authenticated_user, test_vocabulary_words):
+    def test_vocabulary_search_endpoint(self, client, authenticated_user, test_vocabulary_words):
         """Test vocabulary search API endpoint"""
         headers = authenticated_user["headers"]
 
-        response = test_client.get(
+        response = client.get(
             "/vocabulary/search", params={"query": "Hund", "language": "de", "limit": 10}, headers=headers
         )
 
@@ -158,36 +157,34 @@ class TestVocabularyAPIIntegration:
         assert len(data) == 1
         assert data[0]["word"] == "der Hund"
 
-    def test_vocabulary_level_endpoint(self, test_client: TestClient, authenticated_user, test_vocabulary_words):
+    def test_vocabulary_level_endpoint(self, client, authenticated_user, test_vocabulary_words):
         """Test vocabulary by level API endpoint"""
         headers = authenticated_user["headers"]
 
-        response = test_client.get("/vocabulary/level/A1", params={"language": "de"}, headers=headers)
+        response = client.get("/vocabulary/level/A1", params={"language": "de"}, headers=headers)
 
         assert response.status_code == 200
         data = response.json()
         assert len(data) == 2  # Hund and Katze
         assert all(word["difficulty_level"] == "A1" for word in data)
 
-    def test_mark_word_endpoint(self, test_client: TestClient, authenticated_user, test_vocabulary_words):
+    def test_mark_word_endpoint(self, client, authenticated_user, test_vocabulary_words):
         """Test mark word API endpoint"""
         headers = authenticated_user["headers"]
         word = test_vocabulary_words[0]
 
-        response = test_client.post(
-            "/vocabulary/mark", json={"vocabulary_id": word.id, "is_known": True}, headers=headers
-        )
+        response = client.post("/vocabulary/mark", json={"vocabulary_id": word.id, "is_known": True}, headers=headers)
 
         assert response.status_code == 200
         data = response.json()
         assert data["is_known"] is True
         assert data["vocabulary_id"] == word.id
 
-    def test_vocabulary_stats_endpoint(self, test_client: TestClient, authenticated_user, test_user_progress):
+    def test_vocabulary_stats_endpoint(self, client, authenticated_user, test_user_progress):
         """Test vocabulary stats API endpoint"""
         headers = authenticated_user["headers"]
 
-        response = test_client.get("/vocabulary/stats", params={"language": "de"}, headers=headers)
+        response = client.get("/vocabulary/stats", params={"language": "de"}, headers=headers)
 
         assert response.status_code == 200
         data = response.json()
@@ -196,16 +193,16 @@ class TestVocabularyAPIIntegration:
         assert "unknown_words" in data
         assert "percentage_known" in data
 
-    def test_authentication_required(self, test_client: TestClient, test_vocabulary_words):
+    def test_authentication_required(self, client, test_vocabulary_words):
         """Test that authentication is required for vocabulary endpoints"""
         # Test without authentication
-        response = test_client.get("/vocabulary/search", params={"query": "test"})
+        response = client.get("/vocabulary/search", params={"query": "test"})
         assert response.status_code == 401
 
-        response = test_client.get("/vocabulary/level/A1")
+        response = client.get("/vocabulary/level/A1")
         assert response.status_code == 401
 
-        response = test_client.post("/vocabulary/mark", json={"vocabulary_id": 1, "is_known": True})
+        response = client.post("/vocabulary/mark", json={"vocabulary_id": 1, "is_known": True})
         assert response.status_code == 401
 
 

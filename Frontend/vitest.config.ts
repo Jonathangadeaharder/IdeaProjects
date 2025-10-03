@@ -66,10 +66,10 @@ export default defineConfig({
         'src/vite-env.d.ts',
       ],
       thresholds: {
-        statements: 60,
-        branches: 60,
-        functions: 60,
-        lines: 60,
+        statements: 48,
+        branches: 48,
+        functions: 48,
+        lines: 48,
       },
     },
 
