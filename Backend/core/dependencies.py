@@ -35,6 +35,17 @@ except ImportError:
     cleanup_services = None
     init_services = None
 
+try:
+    from .repository_dependencies import (
+        get_processing_session_repository,
+        get_user_repository,
+        get_user_vocabulary_progress_repository,
+        get_vocabulary_repository,
+    )
+except ImportError:
+    # Fallback for import issues
+    pass
+
 # Export for backward compatibility
 __all__ = [
     "cleanup_services",
@@ -44,12 +55,16 @@ __all__ = [
     "get_chunk_utilities",
     "get_current_user_ws",
     "get_optional_user",
+    "get_processing_session_repository",
     "get_subtitle_processor",
     "get_task_progress_registry",
     "get_transcription_service",
     "get_translation_service",
     "get_user_from_query_token",
+    "get_user_repository",
     "get_user_subtitle_processor",
+    "get_user_vocabulary_progress_repository",
+    "get_vocabulary_repository",
     "get_vocabulary_service",
     "init_services",
     "security",
