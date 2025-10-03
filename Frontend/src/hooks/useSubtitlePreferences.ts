@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Dispatch, SetStateAction } from 'react'
 import { logger } from '@/services/logger'
 
 export type SubtitleMode = 'off' | 'original' | 'translation' | 'both'
@@ -10,7 +10,7 @@ const STORAGE_KEY = 'langplug_subtitle_mode'
  * @param defaultMode - Default subtitle mode if none is saved
  * @returns [subtitleMode, setSubtitleMode] - Current mode and setter function
  */
-export function useSubtitlePreferences(defaultMode: SubtitleMode = 'original'): [SubtitleMode, (mode: SubtitleMode) => void] {
+export function useSubtitlePreferences(defaultMode: SubtitleMode = 'original'): [SubtitleMode, Dispatch<SetStateAction<SubtitleMode>>] {
   const [subtitleMode, setSubtitleMode] = useState<SubtitleMode>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY)
