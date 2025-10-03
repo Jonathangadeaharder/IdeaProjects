@@ -90,7 +90,7 @@
     "test:all": "cd ../tests && npx ts-node scripts/run-all-tests.ts",
     "generate-client": "openapi-ts",
     "validate-contract": "cd .. && npx ts-node scripts/validate-contract.ts",
-    "prebuild": "npm run generate-client && npm run validate-contract",
+    "prebuild": "npm run generate-client",
     "dev:full": "npm run generate-client && npm run validate-contract && npm run dev",
     "update-openapi": "cd ../Backend && python export_openapi.py && cd ../Frontend && npm run generate-client"
   },
