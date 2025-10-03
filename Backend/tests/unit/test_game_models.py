@@ -11,8 +11,9 @@ from uuid import uuid4
 import pytest
 from pydantic import ValidationError
 
-# Import game models from routes since they're defined there
-from api.routes.game import GameQuestion, GameSession
+# Import game models from their service modules
+from services.gameservice.game_question_service import GameQuestion
+from services.gameservice.game_session_service import GameSession
 
 
 class TestGameSessionValidation:
