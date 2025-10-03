@@ -82,4 +82,4 @@ runs:
         echo "Python path: $(which python)"
         echo "Pip version: $(pip --version)"
         echo "Installed packages:"
-        pip list --format=columns | head -20
+        pip list --format=columns | head -20 || true

@@ -53,6 +53,10 @@ vi.mock('@/styles/GlobalStyles', () => ({
   GlobalStyle: () => <div data-testid="global-style" />
 }))
 
+vi.mock('@/components/ui/Loading', () => ({
+  Loading: () => <div data-testid="loading">Loading...</div>
+}))
+
 // Mock the auth store
 vi.mock('@/store/useAuthStore')
 
