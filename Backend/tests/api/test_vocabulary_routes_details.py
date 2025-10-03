@@ -33,31 +33,26 @@ async def test_Whenmark_known_can_unmarkCalled_ThenSucceeds(async_client):
 @pytest.mark.timeout(30)
 async def test_Whenbulk_markCalled_ThenReturnscounts(async_client):
     """Happy path: bulk mark returns the number of affected words."""
-    from services.vocabulary_preload_service import get_vocabulary_preload_service
+    from unittest.mock import AsyncMock, patch
 
-    class FakeService:
-        async def bulk_mark_level_known(self, user_id: int, level: str, known: bool, db=None):
-            return 7
+    from services.vocabulary_service import vocabulary_service
 
-    # Override the dependency instead of monkeypatching
-    fake_service = FakeService()
-    async_client._transport.app.dependency_overrides[get_vocabulary_preload_service] = lambda: fake_service
+    # Mock the progress_service.bulk_mark_level method
+    mock_bulk_mark = AsyncMock(return_value={"updated_count": 7})
 
     flow = await _auth(async_client)
 
-    response = await async_client.post(
-        "/api/vocabulary/library/bulk-mark",
-        json={"level": "A1", "known": True},
-        headers=flow["headers"],
-    )
+    with patch.object(vocabulary_service.progress_service, "bulk_mark_level", mock_bulk_mark):
+        response = await async_client.post(
+            "/api/vocabulary/library/bulk-mark",
+            json={"level": "A1", "known": True, "target_language": "de"},
+            headers=flow["headers"],
+        )
 
     assert response.status_code == 200
     body = response.json()
     assert body["word_count"] == 7
     assert body["level"] == "A1"
-
-    # Clean up dependency override
-    del async_client._transport.app.dependency_overrides[get_vocabulary_preload_service]
 
 
 @pytest.mark.skip(

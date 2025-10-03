@@ -39,8 +39,16 @@ async def test_Whensubtitle_uploadWithoutsrt_extension_ThenReturnsError(async_cl
 @pytest.mark.timeout(30)
 async def test_WhenVideoUploadConflict_ThenReturns409(async_client, monkeypatch, tmp_path):
     """Boundary: uploading the same filename twice yields 409 conflict."""
+    from core.file_security import FileSecurityValidator
+
     headers = await _auth(async_client)
-    with patch.object(type(settings), "get_videos_path", return_value=tmp_path):
+    upload_dir = tmp_path / "uploads"
+    upload_dir.mkdir(parents=True, exist_ok=True)
+
+    with (
+        patch.object(type(settings), "get_videos_path", return_value=tmp_path),
+        patch.object(FileSecurityValidator, "ALLOWED_UPLOAD_DIR", upload_dir),
+    ):
         files = {"video_file": ("Episode.mp4", b"x", "video/mp4")}
         first = await async_client.post("/api/videos/upload/Series", files=files, headers=headers)
         assert first.status_code == 200
