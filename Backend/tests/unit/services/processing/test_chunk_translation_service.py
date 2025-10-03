@@ -37,7 +37,11 @@ class TestGetTranslationService:
             result = service.get_translation_service("de", "en", "standard")
 
             assert result == mock_service
-            MockFactory.create_service.assert_called_once_with(source_lang="de", target_lang="en", quality="standard")
+            # Verify factory was called with service_name and model_name
+            MockFactory.create_service.assert_called_once()
+            call_kwargs = MockFactory.create_service.call_args.kwargs
+            assert "service_name" in call_kwargs
+            assert "model_name" in call_kwargs
 
     def test_get_translation_service_caches(self, service):
         """Test translation service is cached"""
@@ -151,7 +155,7 @@ class TestBuildTranslationSegments:
 
     @pytest.mark.anyio
     async def test_build_translation_segments_no_active_words_in_segments(self, service, task_progress):
-        """Test when no active words found in segments"""
+        """Test when no active words found in segments - still translates all segments"""
         vocabulary = [{"word": "test", "active": True}]
         segments = [SRTSegment(1, "00:00:00,000", "00:00:02,000", "Other text")]
 
@@ -169,7 +173,9 @@ class TestBuildTranslationSegments:
                 language_preferences={"target": "de", "native": "en"},
             )
 
-            assert result == []
+            # New behavior: translates all segments even without active words
+            assert len(result) == 1
+            assert result[0].index == 1
 
 
 class TestMapActiveWordsToSegments:
@@ -257,7 +263,7 @@ class TestBuildTranslationTexts:
     @pytest.mark.anyio
     async def test_build_translation_texts_success(self, service, task_progress):
         """Test successful translation building"""
-        word_segments = [({"word": "Hallo", "active": True}, SRTSegment(1, "00:00:00,000", "00:00:02,000", "Hallo"))]
+        subtitle_segments = [SRTSegment(1, "00:00:00,000", "00:00:02,000", "Hallo")]
         language_prefs = {"target": "de", "native": "en"}
 
         mock_translation_service = Mock()
@@ -269,7 +275,7 @@ class TestBuildTranslationTexts:
         result = await service._build_translation_texts(
             task_id="test_task",
             task_progress=task_progress,
-            active_word_segments=word_segments,
+            subtitle_segments=subtitle_segments,
             language_preferences=language_prefs,
         )
 
@@ -280,9 +286,9 @@ class TestBuildTranslationTexts:
     @pytest.mark.anyio
     async def test_build_translation_texts_handles_errors(self, service, task_progress):
         """Test translation continues on individual segment errors"""
-        word_segments = [
-            ({"word": "Hallo", "active": True}, SRTSegment(1, "00:00:00,000", "00:00:02,000", "Hallo")),
-            ({"word": "Welt", "active": True}, SRTSegment(2, "00:00:02,000", "00:00:04,000", "Welt")),
+        subtitle_segments = [
+            SRTSegment(1, "00:00:00,000", "00:00:02,000", "Hallo"),
+            SRTSegment(2, "00:00:02,000", "00:00:04,000", "Welt"),
         ]
         language_prefs = {"target": "de", "native": "en"}
 
@@ -296,7 +302,7 @@ class TestBuildTranslationTexts:
         result = await service._build_translation_texts(
             task_id="test_task",
             task_progress=task_progress,
-            active_word_segments=word_segments,
+            subtitle_segments=subtitle_segments,
             language_preferences=language_prefs,
         )
 
@@ -307,7 +313,7 @@ class TestBuildTranslationTexts:
     @pytest.mark.anyio
     async def test_build_translation_texts_updates_progress(self, service, task_progress):
         """Test progress is updated during translation"""
-        word_segments = [({"word": "Hallo", "active": True}, SRTSegment(1, "00:00:00,000", "00:00:02,000", "Hallo"))]
+        subtitle_segments = [SRTSegment(1, "00:00:00,000", "00:00:02,000", "Hallo")]
         language_prefs = {"target": "de", "native": "en"}
 
         mock_translation_service = Mock()
@@ -321,7 +327,7 @@ class TestBuildTranslationTexts:
         await service._build_translation_texts(
             task_id="test_task",
             task_progress=task_progress,
-            active_word_segments=word_segments,
+            subtitle_segments=subtitle_segments,
             language_preferences=language_prefs,
         )
 

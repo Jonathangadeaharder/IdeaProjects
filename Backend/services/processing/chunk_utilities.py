@@ -87,7 +87,7 @@ class ChunkUtilities(IChunkUtilities):
 
         except Exception as e:
             logger.error(f"Failed to authenticate user {normalized_id}: {e}")
-            raise ChunkUtilitiesError(f"Authentication failed: {e}")
+            raise ChunkUtilitiesError(f"Authentication failed: {e}") from e
 
     @staticmethod
     def _normalize_user_identifier(user_identifier: Any) -> Any:
@@ -190,7 +190,7 @@ class ChunkUtilities(IChunkUtilities):
         task_progress: dict[str, Any],
         vocabulary: list | None = None,
         subtitle_path: str | None = None,
-        translation_path: str | None = None
+        translation_path: str | None = None,
     ) -> None:
         """
         Mark chunk processing as completed

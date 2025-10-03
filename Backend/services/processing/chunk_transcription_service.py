@@ -69,10 +69,10 @@ class ChunkTranscriptionService(IChunkTranscriptionService):
                     process.communicate(),
                     timeout=600,  # 10 minutes timeout
                 )
-            except TimeoutError:
+            except TimeoutError as e:
                 process.kill()
                 await process.wait()
-                raise ChunkTranscriptionError("FFmpeg audio extraction timed out after 600 seconds")
+                raise ChunkTranscriptionError("FFmpeg audio extraction timed out after 600 seconds") from e
 
             if process.returncode != 0:
                 error_msg = stderr.decode("utf-8", errors="replace") if stderr else "Unknown ffmpeg error"
@@ -91,13 +91,13 @@ class ChunkTranscriptionService(IChunkTranscriptionService):
             logger.info(f"Audio extracted for {video_file.name} ({start_time}-{end_time}s) -> {audio_output}")
             return audio_output
 
-        except FileNotFoundError:
+        except FileNotFoundError as e:
             logger.error("FFmpeg not found - cannot extract audio chunk")
             raise ChunkTranscriptionError(
                 "FFmpeg is not installed or not in PATH. "
                 "Please install FFmpeg to enable video chunk processing. "
                 "See: https://ffmpeg.org/download.html"
-            )
+            ) from e
 
         except ChunkTranscriptionError:
             # Re-raise our custom exceptions
@@ -112,7 +112,7 @@ class ChunkTranscriptionService(IChunkTranscriptionService):
                 except Exception as cleanup_error:
                     logger.warning(f"Failed to cleanup after error: {cleanup_error}")
             logger.error(f"Audio extraction error: {e}", exc_info=True)
-            raise ChunkTranscriptionError(f"Audio extraction failed: {e}")
+            raise ChunkTranscriptionError(f"Audio extraction failed: {e}") from e
 
     async def transcribe_chunk(
         self,
@@ -176,7 +176,7 @@ class ChunkTranscriptionService(IChunkTranscriptionService):
 
             else:
                 # No real audio file extracted - transcription service unavailable
-                logger.error(f"Audio file equals video file - no audio extraction occurred")
+                logger.error("Audio file equals video file - no audio extraction occurred")
                 raise ChunkTranscriptionError(
                     "Cannot transcribe chunk: Audio extraction did not produce a separate audio file. "
                     "This indicates FFmpeg is not available or failed."
@@ -187,7 +187,7 @@ class ChunkTranscriptionService(IChunkTranscriptionService):
             raise
         except Exception as e:
             logger.error(f"Transcription error: {e}", exc_info=True)
-            raise ChunkTranscriptionError(f"Chunk transcription failed: {e}")
+            raise ChunkTranscriptionError(f"Chunk transcription failed: {e}") from e
 
     def _create_srt_from_segments(self, segments: list, output_path: Path) -> None:
         """
@@ -219,7 +219,7 @@ class ChunkTranscriptionService(IChunkTranscriptionService):
 
         except Exception as e:
             logger.error(f"Failed to create SRT from segments: {e}")
-            raise ChunkTranscriptionError(f"SRT creation from segments failed: {e}")
+            raise ChunkTranscriptionError(f"SRT creation from segments failed: {e}") from e
 
     def _create_chunk_srt(self, text: str, output_path: Path, start_time: float, duration: float) -> None:
         """Create an SRT file from transcribed text"""
@@ -242,7 +242,7 @@ class ChunkTranscriptionService(IChunkTranscriptionService):
 
         except Exception as e:
             logger.error(f"Failed to create SRT file: {e}")
-            raise ChunkTranscriptionError(f"SRT creation failed: {e}")
+            raise ChunkTranscriptionError(f"SRT creation failed: {e}") from e
 
     def _format_srt_timestamp(self, seconds: float) -> str:
         """Format seconds as SRT timestamp (HH:MM:SS,mmm)"""

@@ -1,0 +1,111 @@
+@startuml frontend-components
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+LAYOUT_WITH_LEGEND()
+
+title Frontend Component Diagram - React Application Architecture
+
+Person(user, "User", "Language learner")
+Container(backend, "Backend API", "FastAPI", "REST API and WebSocket")
+
+Container_Boundary(frontend, "Frontend Application - React + TypeScript") {
+
+    Component(app, "App Component", "React Component", "Root application component, routing, and layout")
+
+    Component(pages_auth, "Auth Pages", "React Pages", "Login, Register, Password Reset pages")
+    Component(pages_dashboard, "Dashboard Page", "React Page", "User dashboard with video library")
+    Component(pages_learning, "Learning Page", "React Page", "Video player with chunked learning interface")
+    Component(pages_vocabulary, "Vocabulary Page", "React Page", "Vocabulary management and review")
+    Component(pages_game, "Game Page", "React Page", "Interactive vocabulary learning games")
+
+    Component(comp_player, "ChunkedLearningPlayer", "React Component", "Video player with subtitle display and chunk navigation")
+    Component(comp_flow, "ChunkedLearningFlow", "React Component", "Orchestrates learning workflow and vocabulary interaction")
+    Component(comp_video_selection, "VideoSelection", "React Component", "Video library browser and episode selector")
+    Component(comp_vocab_game, "VocabularyGame", "React Component", "Interactive vocabulary learning game interface")
+    Component(comp_subtitle_viewer, "SubtitleViewer", "React Component", "Displays subtitles with vocabulary highlighting")
+
+    Component(ui_button, "Button", "UI Component", "Reusable button component")
+    Component(ui_card, "Card", "UI Component", "Reusable card container")
+    Component(ui_input, "Input", "UI Component", "Reusable form input")
+    Component(ui_loading, "Loading", "UI Component", "Loading spinner and progress indicators")
+
+    Component(api_client, "API Client", "OpenAPI Generated", "Type-safe API client for backend communication")
+    Component(websocket_client, "WebSocket Client", "WebSocket", "Real-time connection for progress updates")
+
+    Component(store_auth, "Auth Store", "Zustand", "User authentication state management")
+    Component(store_video, "Video Store", "Zustand", "Video library and playback state")
+    Component(store_vocabulary, "Vocabulary Store", "Zustand", "Vocabulary learning state and progress")
+
+    Component(context_theme, "Theme Context", "React Context", "Global theme and UI preferences")
+
+    Component(hooks_api, "API Hooks", "Custom Hooks", "TanStack Query hooks for data fetching")
+    Component(hooks_player, "Player Hooks", "Custom Hooks", "Video player control hooks")
+}
+
+Rel(user, app, "Interacts with", "Browser")
+
+Rel(app, pages_auth, "Routes to")
+Rel(app, pages_dashboard, "Routes to")
+Rel(app, pages_learning, "Routes to")
+Rel(app, pages_vocabulary, "Routes to")
+Rel(app, pages_game, "Routes to")
+
+Rel(pages_dashboard, comp_video_selection, "Uses")
+Rel(pages_learning, comp_player, "Uses")
+Rel(pages_learning, comp_flow, "Uses")
+Rel(pages_vocabulary, comp_subtitle_viewer, "Uses")
+Rel(pages_game, comp_vocab_game, "Uses")
+
+Rel(comp_flow, comp_player, "Controls")
+Rel(comp_flow, comp_subtitle_viewer, "Uses")
+Rel(comp_player, hooks_player, "Uses")
+
+Rel(comp_video_selection, ui_card, "Uses")
+Rel(comp_player, ui_button, "Uses")
+Rel(comp_vocab_game, ui_card, "Uses")
+Rel(pages_auth, ui_input, "Uses")
+Rel(pages_auth, ui_button, "Uses")
+
+Rel(comp_video_selection, hooks_api, "Uses")
+Rel(comp_flow, hooks_api, "Uses")
+Rel(comp_vocab_game, hooks_api, "Uses")
+
+Rel(hooks_api, api_client, "Uses")
+Rel(hooks_api, store_auth, "Reads/Writes")
+Rel(hooks_api, store_video, "Reads/Writes")
+Rel(hooks_api, store_vocabulary, "Reads/Writes")
+
+Rel(comp_flow, websocket_client, "Listens to")
+Rel(pages_learning, websocket_client, "Connects to")
+
+Rel(app, context_theme, "Provides")
+Rel(pages_dashboard, context_theme, "Consumes")
+
+Rel(api_client, backend, "HTTP requests", "HTTPS/JSON")
+Rel(websocket_client, backend, "Real-time updates", "WebSocket")
+
+note right of api_client
+  Generated from OpenAPI spec:
+  - Type-safe API methods
+  - Automatic request/response
+    validation
+  - Error handling
+end note
+
+note right of store_auth
+  Zustand Stores:
+  - Persistent state
+  - Simple API
+  - No boilerplate
+  - TypeScript support
+end note
+
+note right of hooks_api
+  TanStack Query:
+  - Data fetching
+  - Caching
+  - Mutations
+  - Optimistic updates
+end note
+
+@enduml

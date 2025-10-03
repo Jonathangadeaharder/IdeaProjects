@@ -20,7 +20,7 @@ router = APIRouter(tags=["vocabulary"])
 class MarkKnownRequest(BaseModel):
     """Request to mark a word as known"""
 
-    concept_id: str = Field(..., description="The concept ID to mark")
+    concept_id: str | None = Field(None, description="The concept ID to mark (optional)")
     word: str | None = Field(None, description="The word text (optional)")
     lemma: str | None = Field(None, description="The word lemma (optional)")
     language: str = Field("de", description="Language code")
@@ -29,12 +29,14 @@ class MarkKnownRequest(BaseModel):
     @field_validator("concept_id")
     @classmethod
     def validate_concept_id(cls, v):
-        """Validate that concept_id is a valid UUID format"""
+        """Validate that concept_id is a valid UUID format if provided"""
+        if v is None:
+            return v
         try:
             uuid.UUID(v)
             return v
         except ValueError:
-            raise ValueError("concept_id must be a valid UUID")
+            raise ValueError("concept_id must be a valid UUID") from None
 
 
 class BulkMarkLevelRequest(BaseModel):
@@ -67,7 +69,7 @@ async def get_word_info(
         raise
     except Exception as e:
         logger.error(f"Error getting word info: {e}")
-        raise HTTPException(status_code=500, detail="Error retrieving word information")
+        raise HTTPException(status_code=500, detail="Error retrieving word information") from e
 
 
 @router.post("/mark-known", name="mark_word_known")
@@ -90,7 +92,7 @@ async def mark_word_known(
         )
 
         # Format response with result data
-        return {
+        response_data = {
             "success": result.get("success", True),
             "concept_id": request.concept_id,
             "known": request.known,
@@ -98,9 +100,13 @@ async def mark_word_known(
             "lemma": result.get("lemma"),
             "level": result.get("level"),
         }
+        # Include message if present (e.g., error messages)
+        if "message" in result:
+            response_data["message"] = result["message"]
+        return response_data
     except Exception as e:
         logger.error(f"Error marking word: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Error updating word status")
+        raise HTTPException(status_code=500, detail="Error updating word status") from e
 
 
 @router.post("/mark-known-lemma", name="mark_word_known_by_lemma")
@@ -126,7 +132,7 @@ async def mark_word_known_by_lemma(
         return result
     except Exception as e:
         logger.error(f"Error marking word by lemma: {e}")
-        raise HTTPException(status_code=500, detail="Error updating word status")
+        raise HTTPException(status_code=500, detail="Error updating word status") from e
 
 
 @router.get("/stats", name="get_vocabulary_stats")
@@ -145,7 +151,7 @@ async def get_vocabulary_stats(
         return stats
     except Exception as e:
         logger.error(f"Error getting stats: {e}")
-        raise HTTPException(status_code=500, detail="Error retrieving statistics")
+        raise HTTPException(status_code=500, detail="Error retrieving statistics") from e
 
 
 @router.get("/library", name="get_vocabulary_library")
@@ -165,7 +171,7 @@ async def get_vocabulary_library(
         return library
     except Exception as e:
         logger.error(f"Error getting library: {e}")
-        raise HTTPException(status_code=500, detail="Error retrieving vocabulary library")
+        raise HTTPException(status_code=500, detail="Error retrieving vocabulary library") from e
 
 
 @router.get("/library/{level}", name="get_vocabulary_level")
@@ -198,7 +204,7 @@ async def get_vocabulary_level(
         }
     except Exception as e:
         logger.error(f"Error getting level: {e}")
-        raise HTTPException(status_code=500, detail="Error retrieving vocabulary level")
+        raise HTTPException(status_code=500, detail="Error retrieving vocabulary level") from e
 
 
 @router.post("/search", name="search_vocabulary")
@@ -211,7 +217,7 @@ async def search_vocabulary(request: SearchVocabularyRequest, db: AsyncSession =
         return {"results": results, "count": len(results)}
     except Exception as e:
         logger.error(f"Error searching vocabulary: {e}")
-        raise HTTPException(status_code=500, detail="Error searching vocabulary")
+        raise HTTPException(status_code=500, detail="Error searching vocabulary") from e
 
 
 @router.post("/library/bulk-mark", name="bulk_mark_level")
@@ -239,7 +245,7 @@ async def bulk_mark_level(
         }
     except Exception as e:
         logger.error(f"Error bulk marking level: {e}")
-        raise HTTPException(status_code=500, detail="Error updating level")
+        raise HTTPException(status_code=500, detail="Error updating level") from e
 
 
 @router.get("/languages", name="get_supported_languages")
@@ -262,7 +268,7 @@ async def get_supported_languages(db: AsyncSession = Depends(get_async_session))
         }
     except Exception as e:
         logger.error(f"Error getting languages: {e}")
-        raise HTTPException(status_code=500, detail="Error retrieving languages")
+        raise HTTPException(status_code=500, detail="Error retrieving languages") from e
 
 
 @router.get("/test-data", name="get_test_data")
@@ -288,7 +294,7 @@ async def get_test_data(
         }
     except Exception as e:
         logger.error(f"Error getting test data: {e}")
-        raise HTTPException(status_code=500, detail="Error retrieving test data")
+        raise HTTPException(status_code=500, detail="Error retrieving test data") from e
 
 
 @router.get("/blocking-words", name="get_blocking_words")
@@ -319,4 +325,4 @@ async def get_blocking_words(
         raise
     except Exception as e:
         logger.error(f"Error getting blocking words: {e}")
-        raise HTTPException(status_code=500, detail="Error retrieving blocking words")
+        raise HTTPException(status_code=500, detail="Error retrieving blocking words") from e

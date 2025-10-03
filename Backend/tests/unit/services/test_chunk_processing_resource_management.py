@@ -181,7 +181,7 @@ class TestChunkTranscriptionServiceErrorHandling:
 
     @pytest.mark.asyncio
     async def test_When_ffmpeg_not_found_Then_fallback_mode(self):
-        """Test FFmpeg not found triggers fallback mode"""
+        """Test FFmpeg not found raises clear error (fail-fast)"""
         # Arrange
         service = ChunkTranscriptionService()
         task_progress = {"task123": Mock(progress=0, current_step="", message="")}
@@ -192,12 +192,12 @@ class TestChunkTranscriptionServiceErrorHandling:
 
             # Mock FFmpeg not found
             with patch("asyncio.create_subprocess_exec", side_effect=FileNotFoundError()):
-                with patch("asyncio.sleep", new_callable=AsyncMock):
-                    # Act
-                    audio_file = await service.extract_audio_chunk("task123", task_progress, video_file, 0.0, 10.0)
+                # Act & Assert - Fail fast with clear error
+                with pytest.raises(ChunkTranscriptionError) as exc_info:
+                    await service.extract_audio_chunk("task123", task_progress, video_file, 0.0, 10.0)
 
-                    # Assert - Falls back to returning video file
-                    assert audio_file == video_file
+                # Verify error message mentions FFmpeg
+                assert "ffmpeg" in str(exc_info.value).lower()
 
     @pytest.mark.asyncio
     async def test_When_unexpected_error_Then_cleanup_and_raise(self):
@@ -220,7 +220,7 @@ class TestChunkTranscriptionServiceErrorHandling:
 
     @pytest.mark.asyncio
     async def test_When_transcription_fails_Then_fallback_to_existing_srt(self):
-        """Test transcription failure falls back to existing SRT file"""
+        """Test transcription failure raises clear error (fail-fast)"""
         # Arrange
         service = ChunkTranscriptionService()
         task_progress = {"task123": Mock(progress=0, current_step="", message="")}
@@ -235,16 +235,15 @@ class TestChunkTranscriptionServiceErrorHandling:
 
             # Mock transcription service failure
             mock_transcription_service = Mock()
-            mock_transcription_service.transcribe_audio = AsyncMock(side_effect=Exception("Transcription failed"))
+            mock_transcription_service.transcribe = Mock(side_effect=Exception("Transcription failed"))
 
             with patch("core.service_dependencies.get_transcription_service", return_value=mock_transcription_service):
-                # Act
-                result = await service.transcribe_chunk(
-                    "task123", task_progress, video_file, audio_file, {"target": "de"}
-                )
+                # Act & Assert - Fail fast with clear error
+                with pytest.raises(ChunkTranscriptionError) as exc_info:
+                    await service.transcribe_chunk("task123", task_progress, video_file, audio_file, {"target": "de"})
 
-                # Assert - Falls back to existing SRT
-                assert str(srt_file) in result or result == service.find_matching_srt_file(video_file)
+                # Verify error message mentions transcription failure
+                assert "transcription failed" in str(exc_info.value).lower()
 
 
 class TestChunkTranscriptionServiceTimeoutConfiguration:
@@ -416,7 +415,7 @@ class TestChunkTranscriptionServiceProgressTracking:
                     await service.extract_audio_chunk("task123", task_progress, video_file, 0.0, 10.0)
 
                     # Assert - Progress was updated
-                    assert task_progress["task123"].progress == 20.0
+                    assert task_progress["task123"].progress == 5
                     assert "Extracting audio" in task_progress["task123"].current_step
 
     @pytest.mark.asyncio
@@ -435,13 +434,14 @@ class TestChunkTranscriptionServiceProgressTracking:
             # Mock transcription service
             mock_transcription_service = Mock()
             mock_result = Mock()
-            mock_result.text = "Transcribed text"
-            mock_transcription_service.transcribe_audio = AsyncMock(return_value=mock_result)
+            mock_result.full_text = "Transcribed text"
+            mock_result.segments = None  # Trigger full_text fallback path
+            mock_transcription_service.transcribe = Mock(return_value=mock_result)
 
             with patch("core.service_dependencies.get_transcription_service", return_value=mock_transcription_service):
                 # Act
                 await service.transcribe_chunk("task123", task_progress, video_file, audio_file, {"target": "de"})
 
                 # Assert - Progress was updated
-                assert task_progress["task123"].progress == 50.0
+                assert task_progress["task123"].progress == 35
                 assert "Transcribing" in task_progress["task123"].current_step

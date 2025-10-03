@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, memo, useCallback, useMemo } from 'react'
 import { toast } from 'react-hot-toast'
 import { useNavigate } from 'react-router-dom'
 import styled from 'styled-components'
+import { Grid } from 'react-window'
+import type { CellComponentProps } from 'react-window'
 import {
   bulkMarkLevelApiVocabularyLibraryBulkMarkPost,
   getVocabularyLevelApiVocabularyLibraryLevelGet,
@@ -331,8 +333,103 @@ const PageInfo = styled.span`
 const LEVELS = ['A1', 'A2', 'B1', 'B2']
 const ITEMS_PER_PAGE = 100
 
+// Constants for virtual scrolling
+const CARD_WIDTH = 296  // 280px card + 16px gap
+const CARD_HEIGHT = 140  // Approximate card height
+const MIN_COLUMNS = 1
+const MAX_COLUMNS = 4
+
+// Hook to track window size for responsive grid
+const useWindowSize = () => {
+  const [size, setSize] = useState({
+    width: typeof window !== 'undefined' ? window.innerWidth : 1200,
+    height: typeof window !== 'undefined' ? window.innerHeight : 800,
+  })
+
+  useEffect(() => {
+    const handleResize = () => {
+      setSize({
+        width: window.innerWidth,
+        height: window.innerHeight,
+      })
+    }
+
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
+  return size
+}
+
+// Memoized components to prevent unnecessary re-renders
+
+interface WordCardItemProps {
+  word: VocabularyLibraryWord
+  onWordClick: (word: VocabularyLibraryWord) => void
+}
+
+const WordCardItem = memo(({ word, onWordClick }: WordCardItemProps) => {
+  return (
+    <WordCard
+      $known={word.known}
+      onClick={() => onWordClick(word)}
+    >
+      <div className="word-header">
+        <div className="word">{word.word}</div>
+        <div className="known-badge" />
+      </div>
+
+      <div className="word-details">
+        {word.translation && (
+          <div className="definition">{word.translation}</div>
+        )}
+      </div>
+    </WordCard>
+  )
+})
+WordCardItem.displayName = 'WordCardItem'
+
+interface StatCardItemProps {
+  label: string
+  value: string | number
+}
+
+const StatCardItem = memo(({ label, value }: StatCardItemProps) => {
+  return (
+    <StatCard>
+      <div className="stat-number">{value}</div>
+      <div className="stat-label">{label}</div>
+    </StatCard>
+  )
+})
+StatCardItem.displayName = 'StatCardItem'
+
+interface LevelTabItemProps {
+  level: string
+  active: boolean
+  userKnown: number
+  totalWords: number
+  onClick: (level: string) => void
+}
+
+const LevelTabItem = memo(({ level, active, userKnown, totalWords, onClick }: LevelTabItemProps) => {
+  return (
+    <LevelTab
+      $active={active}
+      onClick={() => onClick(level)}
+    >
+      {level}
+      <div style={{ fontSize: '0.8rem', opacity: 0.8 }}>
+        {userKnown} / {totalWords}
+      </div>
+    </LevelTab>
+  )
+})
+LevelTabItem.displayName = 'LevelTabItem'
+
 export const VocabularyLibrary: React.FC = () => {
   const navigate = useNavigate()
+  const windowSize = useWindowSize()
   const [activeLevel, setActiveLevel] = useState<string>('A1')
   const [levelData, setLevelData] = useState<VocabularyLevel | null>(null)
   const [stats, setStats] = useState<VocabularyStats | null>(null)
@@ -340,6 +437,7 @@ export const VocabularyLibrary: React.FC = () => {
   const [bulkLoading, setBulkLoading] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [currentPage, setCurrentPage] = useState(0)
+  const [useVirtualScrolling, setUseVirtualScrolling] = useState(false)
 
   useEffect(() => {
     logger.info('VocabularyLibrary', 'Component mounted, loading vocabulary stats')
@@ -436,7 +534,7 @@ export const VocabularyLibrary: React.FC = () => {
     }
   }
 
-  const handleWordClick = async (word: VocabularyLibraryWord) => {
+  const handleWordClick = useCallback(async (word: VocabularyLibraryWord) => {
     const newStatus = !word.known
     logger.userAction('word-toggle', 'VocabularyLibrary', {
       word: word.word,
@@ -454,17 +552,13 @@ export const VocabularyLibrary: React.FC = () => {
       })
 
       // Update local state
-      if (levelData) {
-        const updatedWords = levelData.words.map(w =>
+      setLevelData((prevLevelData) => {
+        if (!prevLevelData) return null
+
+        const updatedWords = prevLevelData.words.map(w =>
           w.id === word.id ? { ...w, known: newStatus } : w
         )
         const knownCount = updatedWords.filter(w => w.known).length
-
-        setLevelData({
-          ...levelData,
-          words: updatedWords,
-          known_count: knownCount
-        })
 
         logger.info('VocabularyLibrary', 'Word status updated successfully', {
           word: word.word,
@@ -472,7 +566,13 @@ export const VocabularyLibrary: React.FC = () => {
           newKnownCount: knownCount,
           totalWords: updatedWords.length
         })
-      }
+
+        return {
+          ...prevLevelData,
+          words: updatedWords,
+          known_count: knownCount
+        }
+      })
 
       // Reload stats
       await loadStats()
@@ -501,7 +601,7 @@ export const VocabularyLibrary: React.FC = () => {
         }
       })
     }
-  }
+  }, [activeLevel])
 
   const handleBulkMark = async (known: boolean) => {
     logger.userAction('bulk-mark', 'VocabularyLibrary', {
@@ -551,6 +651,67 @@ export const VocabularyLibrary: React.FC = () => {
     return total_words > 0 ? (user_known / total_words) * 100 : 0
   }
 
+  const handleLevelChange = useCallback((level: string) => {
+    setActiveLevel(level)
+  }, [])
+
+  // Calculate grid dimensions for virtual scrolling
+  const gridConfig = useMemo(() => {
+    const containerWidth = Math.min(windowSize.width - 64, 1200) // Account for padding
+    const columnCount = Math.max(
+      MIN_COLUMNS,
+      Math.min(MAX_COLUMNS, Math.floor(containerWidth / CARD_WIDTH))
+    )
+    const rowCount = levelData ? Math.ceil(levelData.words.length / columnCount) : 0
+
+    return {
+      columnCount,
+      rowCount,
+      containerWidth,
+      containerHeight: Math.min(windowSize.height - 500, 800) // Leave space for header/controls
+    }
+  }, [windowSize.width, windowSize.height, levelData?.words.length])
+
+  // Enable virtual scrolling for large datasets (>200 words)
+  useEffect(() => {
+    if (levelData && levelData.words.length > 200) {
+      setUseVirtualScrolling(true)
+    } else {
+      setUseVirtualScrolling(false)
+    }
+  }, [levelData?.words.length])
+
+  // Create Grid Cell component for virtual scrolling
+  type CellData = {
+    words: VocabularyLibraryWord[]
+    columnCount: number
+    onWordClick: (word: VocabularyLibraryWord) => void
+  }
+
+  const cellData = useMemo<CellData>(() => ({
+    words: levelData?.words || [],
+    columnCount: gridConfig.columnCount,
+    onWordClick: handleWordClick
+  }), [levelData?.words, gridConfig.columnCount, handleWordClick])
+
+  const GridCell = useCallback((props: CellComponentProps<CellData>) => {
+    const { columnIndex, rowIndex, style, words, columnCount, onWordClick } = props
+
+    const index = rowIndex * columnCount + columnIndex
+    if (index >= words.length) return null
+
+    const word = words[index]
+
+    return (
+      <div style={{...style, padding: '8px'}}>
+        <WordCardItem
+          word={word}
+          onWordClick={onWordClick}
+        />
+      </div>
+    )
+  }, [])
+
   return (
     <Container>
       <BackButton onClick={() => navigate('/')}>
@@ -564,41 +725,26 @@ export const VocabularyLibrary: React.FC = () => {
 
       {stats && (
         <StatsGrid>
-          <StatCard>
-            <div className="stat-number">{stats.total_words}</div>
-            <div className="stat-label">Total Words</div>
-          </StatCard>
-          <StatCard>
-            <div className="stat-number">{stats.total_known}</div>
-            <div className="stat-label">Words Known</div>
-          </StatCard>
-          <StatCard>
-            <div className="stat-number">
-              {stats.total_words > 0 ? Math.round((stats.total_known / stats.total_words) * 100) : 0}%
-            </div>
-            <div className="stat-label">Progress</div>
-          </StatCard>
-          <StatCard>
-            <div className="stat-number">{LEVELS.length}</div>
-            <div className="stat-label">Levels Available</div>
-          </StatCard>
+          <StatCardItem label="Total Words" value={stats.total_words} />
+          <StatCardItem label="Words Known" value={stats.total_known} />
+          <StatCardItem
+            label="Progress"
+            value={`${stats.total_words > 0 ? Math.round((stats.total_known / stats.total_words) * 100) : 0}%`}
+          />
+          <StatCardItem label="Levels Available" value={LEVELS.length} />
         </StatsGrid>
       )}
 
       <LevelTabs>
         {LEVELS.map(level => (
-          <LevelTab
+          <LevelTabItem
             key={level}
-            $active={activeLevel === level}
-            onClick={() => setActiveLevel(level)}
-          >
-            {level}
-            {stats && (
-              <div style={{ fontSize: '0.8rem', opacity: 0.8 }}>
-                {stats.levels[level]?.user_known || 0} / {stats.levels[level]?.total_words || 0}
-              </div>
-            )}
-          </LevelTab>
+            level={level}
+            active={activeLevel === level}
+            userKnown={stats?.levels[level]?.user_known || 0}
+            totalWords={stats?.levels[level]?.total_words || 0}
+            onClick={handleLevelChange}
+          />
         ))}
       </LevelTabs>
 
@@ -662,28 +808,31 @@ export const VocabularyLibrary: React.FC = () => {
         </LoadingSpinner>
       ) : levelData ? (
         <>
-          <WordsGrid>
-            {levelData.words.map(word => (
-              <WordCard
-                key={word.id}
-                $known={word.known}
-                onClick={() => handleWordClick(word)}
-              >
-                <div className="word-header">
-                  <div className="word">{word.word}</div>
-                  <div className="known-badge" />
-                </div>
+          {useVirtualScrolling ? (
+            <div style={{ margin: '0 auto', maxWidth: `${gridConfig.containerWidth}px` }}>
+              <Grid
+                columnCount={gridConfig.columnCount}
+                columnWidth={CARD_WIDTH}
+                defaultHeight={gridConfig.containerHeight}
+                rowCount={gridConfig.rowCount}
+                rowHeight={CARD_HEIGHT}
+                cellComponent={GridCell}
+                cellProps={cellData}
+              />
+            </div>
+          ) : (
+            <WordsGrid>
+              {levelData.words.map(word => (
+                <WordCardItem
+                  key={word.id}
+                  word={word}
+                  onWordClick={handleWordClick}
+                />
+              ))}
+            </WordsGrid>
+          )}
 
-                <div className="word-details">
-                  {word.translation && (
-                    <div className="definition">{word.translation}</div>
-                  )}
-                </div>
-              </WordCard>
-            ))}
-          </WordsGrid>
-
-          {!searchTerm && levelData.total_count > ITEMS_PER_PAGE && (
+          {!searchTerm && !useVirtualScrolling && levelData.total_count > ITEMS_PER_PAGE && (
             <PaginationContainer>
               <PaginationButton
                 $disabled={currentPage === 0}

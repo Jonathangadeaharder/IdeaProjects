@@ -8,6 +8,7 @@ from typing import Any
 from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from core.transaction import transactional
 from database.models import UserVocabularyProgress, VocabularyWord
 
 logger = logging.getLogger(__name__)
@@ -20,10 +21,14 @@ class VocabularyProgressService:
         """Initialize with optional query service dependency"""
         self.query_service = query_service
 
+    @transactional
     async def mark_word_known(
         self, user_id: int, word: str, language: str, is_known: bool, db: AsyncSession
     ) -> dict[str, Any]:
-        """Mark a word as known or unknown for a user"""
+        """
+        Mark a word as known or unknown for a user
+        Uses transaction boundaries to ensure atomic updates
+        """
         # Get word info from query service
         if not self.query_service:
             from .vocabulary_query_service import vocabulary_query_service
@@ -71,7 +76,7 @@ class VocabularyProgressService:
             )
             db.add(progress)
 
-        await db.commit()
+        await db.flush()  # Flush to DB within transaction, commit handled by decorator
 
         return {
             "success": True,
@@ -82,10 +87,14 @@ class VocabularyProgressService:
             "confidence_level": progress.confidence_level,
         }
 
+    @transactional
     async def bulk_mark_level(
         self, db: AsyncSession, user_id: int, language: str, level: str, is_known: bool
     ) -> dict[str, Any]:
-        """Mark all words of a level as known or unknown"""
+        """
+        Mark all words of a level as known or unknown
+        Uses transaction boundaries to ensure atomic bulk updates
+        """
         # Get all words for the level
         stmt = select(VocabularyWord.id, VocabularyWord.lemma).where(
             and_(VocabularyWord.language == language, VocabularyWord.difficulty_level == level)
@@ -128,7 +137,7 @@ class VocabularyProgressService:
         if new_progress_records:
             db.add_all(new_progress_records)
 
-        await db.commit()
+        await db.flush()  # Flush to DB within transaction, commit handled by decorator
 
         return {
             "success": True,

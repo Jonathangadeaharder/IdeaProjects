@@ -9,7 +9,6 @@ from typing import Any
 
 from tqdm import tqdm
 
-from core.config import settings
 from services.interfaces.translation_interface import IChunkTranslationService
 from services.translationservice.factory import TranslationServiceFactory
 from services.translationservice.interface import ITranslationService
@@ -53,9 +52,7 @@ class ChunkTranslationService(IChunkTranslationService):
             # OPUS models follow pattern: Helsinki-NLP/opus-mt-{source}-{target}
             model_name = f"Helsinki-NLP/opus-mt-{source_lang}-{target_lang}"
 
-            logger.info(
-                f"Creating translation service: {source_lang} -> {target_lang} " f"(model: {model_name})"
-            )
+            logger.info(f"Creating translation service: {source_lang} -> {target_lang} " f"(model: {model_name})")
 
             self._translation_services[service_key] = TranslationServiceFactory.create_service(
                 service_name="opus",  # Use OPUS service type

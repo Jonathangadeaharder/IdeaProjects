@@ -3,6 +3,7 @@ Video management API routes
 """
 
 import logging
+from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
@@ -15,6 +16,7 @@ from api.models.vocabulary import VocabularyWord
 from core.config import settings
 from core.database import get_async_session
 from core.dependencies import current_active_user, get_task_progress_registry, get_user_from_query_token
+from core.file_security import FileSecurityValidator
 from database.models import User
 from services.videoservice.video_service import VideoService
 
@@ -65,7 +67,7 @@ async def get_subtitles(
         raise
     except Exception as e:
         logger.error(f"Error serving subtitles {subtitle_path}: {e}")
-        raise HTTPException(status_code=500, detail=f"Error serving subtitles: {e!s}")
+        raise HTTPException(status_code=500, detail=f"Error serving subtitles: {e!s}") from e
 
 
 @router.get(
@@ -110,33 +112,37 @@ async def stream_video(
         raise
     except Exception as e:
         logger.error(f"Error in stream_video: {e!s}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Error streaming video: {e!s}")
+        raise HTTPException(status_code=500, detail=f"Error streaming video: {e!s}") from e
 
 
 @router.post("/subtitle/upload", name="upload_subtitle")
 async def upload_subtitle(
     video_path: str, subtitle_file: UploadFile = File(...), current_user: User = Depends(current_active_user)
 ):
-    """Upload subtitle file for a video - Requires authentication"""
+    """
+    Upload subtitle file for a video - Requires authentication
+    Uses FileSecurityValidator for secure file handling
+    """
     try:
-        # Validate file type
-        if not subtitle_file.filename.endswith((".srt", ".vtt", ".sub")):
-            raise HTTPException(status_code=400, detail="File must be a subtitle file (.srt, .vtt, or .sub)")
+        # Validate file security using FileSecurityValidator
+        allowed_extensions = {".srt", ".vtt", ".sub"}
+        try:
+            safe_path = await FileSecurityValidator.validate_file_upload(subtitle_file, allowed_extensions)
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e)) from e
 
-        # Read content and validate size
+        # Read content
         content = await subtitle_file.read()
-        file_size_kb = len(content) / 1024
 
-        MAX_SUBTITLE_SIZE_KB = 1024  # 1MB limit for subtitles
-        if file_size_kb > MAX_SUBTITLE_SIZE_KB:
-            raise HTTPException(
-                status_code=413,
-                detail=f"Subtitle file too large. Maximum size is {MAX_SUBTITLE_SIZE_KB}KB, got {file_size_kb:.1f}KB",
-            )
-
-        # Get video file path
+        # Get video file path and validate it exists
         videos_path = settings.get_videos_path()
-        video_file = videos_path / video_path
+        try:
+            # Validate video_path to prevent path traversal
+            video_file_path = str(videos_path / video_path)
+            FileSecurityValidator.validate_file_path(video_file_path)
+            video_file = videos_path / video_path
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=f"Invalid video path: {e}") from e
 
         if not video_file.exists():
             raise HTTPException(status_code=404, detail="Video file not found")
@@ -144,11 +150,11 @@ async def upload_subtitle(
         # Save subtitle with same name as video
         subtitle_path = video_file.with_suffix(".srt")
 
-        # Write uploaded file (content already read for size validation)
+        # Write uploaded file
         with open(subtitle_path, "wb") as buffer:
             buffer.write(content)
 
-        logger.info(f"Uploaded subtitle: {subtitle_path}")
+        logger.info(f"[SECURITY] Uploaded subtitle: {subtitle_path}")
 
         return {
             "success": True,
@@ -158,9 +164,9 @@ async def upload_subtitle(
 
     except HTTPException:
         raise
-    except Exception as e:
+    except (OSError, PermissionError) as e:
         logger.error(f"Error uploading subtitle: {e!s}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Error uploading subtitle: {e!s}")
+        raise HTTPException(status_code=500, detail=f"Error uploading subtitle: {e!s}") from e
 
 
 @router.post("/scan", name="scan_videos")
@@ -208,7 +214,7 @@ async def get_video_vocabulary(video_id: str, current_user: User = Depends(curre
         raise
     except Exception as e:
         logger.error(f"Error extracting vocabulary for video {video_id}: {e!s}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Error extracting vocabulary: {e!s}")
+        raise HTTPException(status_code=500, detail=f"Error extracting vocabulary: {e!s}") from e
 
 
 class ProcessingStatus(BaseModel):
@@ -268,7 +274,7 @@ async def get_video_status(
         raise
     except Exception as e:
         logger.error(f"Error getting video status for {video_id}: {e!s}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Error getting video status: {e!s}")
+        raise HTTPException(status_code=500, detail=f"Error getting video status: {e!s}") from e
 
 
 @router.post("/upload", name="upload_video_generic")
@@ -279,77 +285,91 @@ async def upload_video_generic(
     return await upload_video(series, video_file, current_user)
 
 
+def _validate_series_name(series: str) -> str:
+    """Validate and sanitize series name to prevent path traversal"""
+    safe_series = FileSecurityValidator.sanitize_filename(series)
+    if safe_series != series or ".." in series or "/" in series or "\\" in series:
+        raise HTTPException(status_code=400, detail="Invalid series name")
+    return safe_series
+
+
+async def _validate_video_file_upload(video_file: UploadFile) -> Path:
+    """Validate uploaded video file for security"""
+    allowed_extensions = {".mp4", ".avi", ".mkv", ".mov", ".webm"}
+    try:
+        return await FileSecurityValidator.validate_file_upload(video_file, allowed_extensions)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+async def _write_video_file(video_file: UploadFile, destination: Path) -> None:
+    """Write uploaded video file in chunks for memory efficiency"""
+    CHUNK_SIZE = 1024 * 1024  # 1MB chunks
+
+    with open(destination, "wb") as buffer:
+        while True:
+            chunk = await video_file.read(CHUNK_SIZE)
+            if not chunk:
+                break
+            buffer.write(chunk)
+
+
+def _build_video_info_response(destination: Path, safe_series: str) -> VideoInfo:
+    """Build VideoInfo response from uploaded video metadata"""
+    video_service = VideoService(None, None)
+    episode_info = video_service._parse_episode_filename(destination.stem)
+
+    return VideoInfo(
+        series=safe_series,
+        season=episode_info.get("season", "1"),
+        episode=episode_info.get("episode", "Unknown"),
+        title=episode_info.get("title", destination.stem),
+        path=str(destination.relative_to(settings.get_videos_path())),
+        has_subtitles=False,
+        duration=0,
+    )
+
+
 @router.post("/upload/{series}", name="upload_video_to_series")
 async def upload_video(
     series: str, video_file: UploadFile = File(...), current_user: User = Depends(current_active_user)
 ):
-    """Upload a new video file to a series - Requires authentication"""
+    """
+    Upload a new video file to a series - Requires authentication
+    Uses FileSecurityValidator for secure file handling with path traversal prevention
+    """
     try:
-        # Validate file type
-        if not video_file.content_type or not video_file.content_type.startswith("video/"):
-            raise HTTPException(status_code=400, detail="File must be a video")
+        # Validate series name and file
+        safe_series = _validate_series_name(series)
+        safe_path = await _validate_video_file_upload(video_file)
 
-        # Get series directory
-        series_path = settings.get_videos_path() / series
+        # Prepare destination
+        series_path = settings.get_videos_path() / safe_series
         series_path.mkdir(parents=True, exist_ok=True)
 
-        # Generate safe filename
-        safe_filename = video_file.filename
-        if not safe_filename or not safe_filename.endswith((".mp4", ".avi", ".mkv", ".mov")):
-            raise HTTPException(status_code=400, detail="Invalid video file format")
+        final_path = FileSecurityValidator.get_safe_upload_path(video_file.filename, preserve_name=True)
+        final_destination = series_path / final_path.name
 
-        # Save file
-        file_path = series_path / safe_filename
-
-        # Check if file already exists
-        if file_path.exists():
+        if final_destination.exists():
             raise HTTPException(status_code=409, detail="File already exists")
 
-        # Read and validate file size in chunks
-        total_size = 0
-        MAX_VIDEO_SIZE_MB = 500  # 500MB limit for videos
-        CHUNK_SIZE = 1024 * 1024  # 1MB chunks
-        max_size_bytes = MAX_VIDEO_SIZE_MB * 1024 * 1024
+        # Write video file
+        await _write_video_file(video_file, final_destination)
 
-        with open(file_path, "wb") as buffer:
-            while True:
-                chunk = await video_file.read(CHUNK_SIZE)
-                if not chunk:
-                    break
+        # Cleanup temporary file
+        if safe_path.exists() and safe_path != final_destination:
+            safe_path.unlink(missing_ok=True)
 
-                total_size += len(chunk)
-                if total_size > max_size_bytes:
-                    # Delete partially written file
-                    buffer.close()
-                    file_path.unlink(missing_ok=True)
-                    raise HTTPException(
-                        status_code=413,
-                        detail=f"Video file too large. Maximum size is {MAX_VIDEO_SIZE_MB}MB, got {total_size / (1024 * 1024):.1f}MB",
-                    )
+        logger.info(f"[SECURITY] Uploaded video: {final_destination}")
 
-                buffer.write(chunk)
-
-        logger.info(f"Uploaded video: {file_path}")
-
-        # Return video info
-        video_service = VideoService(None, None)  # We only need the parsing method
-        episode_info = video_service._parse_episode_filename(file_path.stem)
-
-        return VideoInfo(
-            series=series,
-            season=episode_info.get("season", "1"),
-            episode=episode_info.get("episode", "Unknown"),
-            title=episode_info.get("title", file_path.stem),
-            path=str(file_path.relative_to(settings.get_videos_path())),
-            has_subtitles=False,  # New uploads won't have subtitles initially
-            duration=0,
-        )
+        # Build and return response
+        return _build_video_info_response(final_destination, safe_series)
 
     except HTTPException:
         raise
-    except Exception as e:
+    except (OSError, PermissionError) as e:
         logger.error(f"Error uploading video: {e!s}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Error uploading video: {e!s}")
+        raise HTTPException(status_code=500, detail=f"Error uploading video: {e!s}") from e
 
 
 def parse_episode_filename(filename: str) -> dict[str, str | None]:

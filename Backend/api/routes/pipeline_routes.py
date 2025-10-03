@@ -41,7 +41,7 @@ async def full_pipeline(
 
     except Exception as e:
         logger.error(f"Failed to start processing pipeline: {e!s}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Processing pipeline failed: {e!s}")
+        raise HTTPException(status_code=500, detail=f"Processing pipeline failed: {e!s}") from e
 
 
 @router.get("/progress/{task_id}", name="get_task_progress")

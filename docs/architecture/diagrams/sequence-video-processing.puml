@@ -1,0 +1,230 @@
+@startuml sequence-video-processing
+!theme mars
+
+title Video Processing Flow - Transcription, Translation, and Vocabulary Extraction
+
+actor "User" as user
+participant "Frontend\n(React)" as frontend
+participant "WebSocket\nClient" as ws_client
+participant "Processing Routes\n(/process)" as routes
+participant "Processing\nService" as processing
+participant "Transcription\nService" as transcription
+participant "Whisper AI\n(or Parakeet)" as whisper
+participant "Translation\nService" as translation
+participant "NLLB AI\n(or OPUS-MT)" as nllb
+participant "Vocabulary\nService" as vocabulary
+participant "SpaCy NLP" as spacy
+participant "Video Repository" as video_repo
+participant "Vocab Repository" as vocab_repo
+participant "Database" as db
+participant "WebSocket\nServer" as ws_server
+
+user -> frontend: Click "Process Episode"\non video selection
+activate frontend
+
+frontend -> ws_client: Connect WebSocket\n/ws/progress/{task_id}
+activate ws_client
+
+ws_client -> ws_server: Establish connection
+activate ws_server
+
+ws_server --> ws_client: Connected (task_id)
+
+frontend -> routes: POST /process/episode/{id}\n{user_id, video_id,\nsource_lang, target_lang}
+activate routes
+
+routes -> processing: Start processing workflow
+activate processing
+
+processing -> video_repo: Get video metadata
+activate video_repo
+video_repo -> db: SELECT * FROM videos\nWHERE id = ?
+activate db
+db --> video_repo: Video record
+deactivate db
+video_repo --> processing: Video object\n(file_path, duration)
+deactivate video_repo
+
+processing -> db: Create processing task\n(status: PROCESSING)
+activate db
+db --> processing: Task ID created
+deactivate db
+
+processing -> ws_server: Send progress update\n{progress: 0, status: "Starting"}
+ws_server --> ws_client: Progress: 0%
+ws_client --> frontend: Update UI: "Starting..."
+frontend --> user: Show progress bar: 0%
+
+== Transcription Phase ==
+
+processing -> transcription: Transcribe audio\n(file_path, source_lang)
+activate transcription
+
+transcription -> transcription: Extract audio from video\nffmpeg audio extraction
+
+processing -> ws_server: Progress update\n{progress: 10, status: "Extracting audio"}
+ws_server --> ws_client: Progress: 10%
+ws_client --> frontend: Update UI
+frontend --> user: Show: "Extracting audio..."
+
+transcription -> whisper: Process audio file\n(audio_path, language)
+activate whisper
+
+whisper -> whisper: Load model\n(whisper-large-v3 or parakeet)
+
+processing -> ws_server: Progress update\n{progress: 20, status: "Transcribing"}
+ws_server --> ws_client: Progress: 20%
+ws_client --> frontend: Update UI
+frontend --> user: Show: "Transcribing..."
+
+whisper -> whisper: Speech-to-text processing\nChunk-by-chunk analysis
+
+whisper --> transcription: Transcript segments\n[{text, start, end, confidence}]
+deactivate whisper
+
+transcription -> transcription: Format as SRT subtitles\nTimestamp formatting
+
+transcription --> processing: Subtitle file path\n+ Transcript data
+deactivate transcription
+
+processing -> ws_server: Progress update\n{progress: 40, status: "Transcription complete"}
+ws_server --> ws_client: Progress: 40%
+ws_client --> frontend: Update UI
+frontend --> user: Show: "Transcription done"
+
+== Translation Phase ==
+
+processing -> translation: Translate subtitles\n(transcript, source_lang,\ntarget_lang)
+activate translation
+
+translation -> translation: Prepare text segments\nfor translation
+
+processing -> ws_server: Progress update\n{progress: 50, status: "Translating"}
+ws_server --> ws_client: Progress: 50%
+ws_client --> frontend: Update UI
+frontend --> user: Show: "Translating..."
+
+translation -> nllb: Translate text\n(segments, lang_pair)
+activate nllb
+
+nllb -> nllb: Load translation model\n(nllb-200-distilled-600M\nor opus-mt)
+
+nllb -> nllb: Batch translation\nOptimized for GPU/CPU
+
+nllb --> translation: Translated segments\n[{original, translation,\nconfidence}]
+deactivate nllb
+
+translation -> translation: Create translated SRT\nMaintain timestamps
+
+translation --> processing: Translation file path\n+ Translated data
+deactivate translation
+
+processing -> ws_server: Progress update\n{progress: 70, status: "Translation complete"}
+ws_server --> ws_client: Progress: 70%
+ws_client --> frontend: Update UI
+frontend --> user: Show: "Translation done"
+
+== Vocabulary Extraction Phase ==
+
+processing -> vocabulary: Extract vocabulary\n(transcript, translation,\nsource_lang, target_lang)
+activate vocabulary
+
+vocabulary -> vocabulary: Combine source and\ntranslated text
+
+processing -> ws_server: Progress update\n{progress: 80, status: "Extracting vocabulary"}
+ws_server --> ws_client: Progress: 80%
+ws_client --> frontend: Update UI
+frontend --> user: Show: "Extracting vocabulary..."
+
+vocabulary -> spacy: NLP analysis\n(text, language)
+activate spacy
+
+spacy -> spacy: Tokenization\nPOS tagging\nNamed entity recognition
+
+spacy -> spacy: Filter content words\n(nouns, verbs, adjectives)
+
+spacy --> vocabulary: Word list with metadata\n[{word, pos, lemma, frequency}]
+deactivate spacy
+
+vocabulary -> vocabulary: Calculate difficulty\nbased on frequency, length
+
+vocabulary -> vocab_repo: Save vocabulary items
+activate vocab_repo
+
+vocab_repo -> db: INSERT INTO vocabulary\n(word, translation,\ndifficulty, language)
+activate db
+db --> vocab_repo: Vocabulary IDs
+deactivate db
+
+vocab_repo -> db: INSERT INTO user_vocabulary\n(user_id, vocab_id,\nknowledge_level: 0)
+activate db
+db --> vocab_repo: User vocabulary records
+deactivate db
+
+vocab_repo --> vocabulary: Saved vocabulary count
+deactivate vocab_repo
+
+vocabulary --> processing: Vocabulary extraction\ncomplete (N words)
+deactivate vocabulary
+
+== Finalization Phase ==
+
+processing -> db: Update video record\n(subtitles_path,\ntranslation_path)
+activate db
+db --> processing: Updated
+deactivate db
+
+processing -> db: Update processing task\n(status: COMPLETED,\nprogress: 100)
+activate db
+db --> processing: Task completed
+deactivate db
+
+processing -> ws_server: Final progress update\n{progress: 100,\nstatus: "Complete"}
+ws_server --> ws_client: Progress: 100%
+ws_client --> frontend: Update UI
+frontend --> user: Show: "Processing complete!"
+
+processing --> routes: Success response\n{video_id, task_id,\nvocabulary_count,\nsubtitle_path,\ntranslation_path}
+deactivate processing
+
+routes --> frontend: 200 OK\nProcessing completed
+deactivate routes
+
+frontend -> frontend: Redirect to\nlearning page
+
+frontend --> user: Navigate to\nvideo player
+deactivate frontend
+
+ws_client -> ws_server: Close connection
+deactivate ws_server
+deactivate ws_client
+
+note over user, db
+    Processing Pipeline:
+    1. Transcription (0-40%): Extract audio -> Whisper AI -> SRT subtitles
+    2. Translation (40-70%): Translate segments -> NLLB AI -> Translated SRT
+    3. Vocabulary (70-90%): NLP analysis -> SpaCy -> Extract words -> Save to DB
+    4. Finalization (90-100%): Update records -> Complete task
+
+    WebSocket provides real-time progress updates throughout the entire pipeline.
+end note
+
+note over whisper
+    Transcription Models:
+    - Whisper (OpenAI): whisper-large-v3
+    - Parakeet (NVIDIA): parakeet-ctc-1.1b
+
+    Supports multiple languages
+    with high accuracy
+end note
+
+note over nllb
+    Translation Models:
+    - NLLB-200 (Meta): 200 languages
+    - OPUS-MT (Helsinki): Language pairs
+
+    Optimized for batch processing
+    GPU acceleration when available
+end note
+
+@enduml

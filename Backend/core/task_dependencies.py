@@ -61,12 +61,7 @@ async def cleanup_services():
 
     await engine.dispose()
 
-    # Clear LRU cache for singleton services that have cache
-    from .service_dependencies import get_translation_service
-
-    if hasattr(get_translation_service, "cache_clear"):
-        get_translation_service.cache_clear()
-
+    # Clear task progress registry cache
     if hasattr(get_task_progress_registry, "cache_clear"):
         get_task_progress_registry.cache_clear()
 

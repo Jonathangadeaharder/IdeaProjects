@@ -6,7 +6,6 @@ No complex dependencies, no fancy logging, just works
 import secrets
 from datetime import datetime, timedelta
 
-from passlib.context import CryptContext
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -17,10 +16,12 @@ from core.exceptions import (
     SessionExpiredError,
     UserAlreadyExistsError,
 )
+from core.transaction import transactional
 from database.models import User
 
 # Import data models from local models module
 from .models import AuthSession, AuthUser
+from .password_validator import PasswordValidator
 
 
 class AuthService:
@@ -31,28 +32,34 @@ class AuthService:
 
     def __init__(self, db_session: AsyncSession):
         self.db_session = db_session
-        # Initialize password context with bcrypt
-        self.pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
         # Set default session lifetime
         self.session_lifetime_hours = 24
         # In-memory session storage
         self._sessions = {}
 
     def _hash_password(self, password: str) -> str:
-        """Hash password using bcrypt"""
-        return self.pwd_context.hash(password)
+        """Hash password using Argon2 (via PasswordValidator)"""
+        return PasswordValidator.hash_password(password)
 
     def _verify_password(self, plain_password: str, hashed_password: str) -> bool:
-        """Verify password against bcrypt hash"""
-        return self.pwd_context.verify(plain_password, hashed_password)
+        """Verify password against Argon2 hash"""
+        return PasswordValidator.verify_password(plain_password, hashed_password)
 
+    @transactional
     async def register_user(self, username: str, password: str) -> User:
-        """Register a new user"""
-        # Validate input
+        """
+        Register a new user
+        Uses transaction boundaries to ensure atomic user creation
+        Enforces strong password policy
+        """
+        # Validate username
         if not username or len(username) < 3:
             raise ValueError("Username must be at least 3 characters long")
-        if not password or len(password) < 6:
-            raise ValueError("Password must be at least 6 characters long")
+
+        # Validate password strength
+        is_valid, error_msg = PasswordValidator.validate(password)
+        if not is_valid:
+            raise ValueError(error_msg)
 
         # Check if user exists
         stmt = select(User).where(User.username == username)
@@ -61,7 +68,7 @@ class AuthService:
         if existing_user:
             raise UserAlreadyExistsError(f"User '{username}' already exists")
 
-        # Create user with hashed password (bcrypt includes salt internally)
+        # Create user with hashed password (Argon2)
         password_hash = self._hash_password(password)
 
         try:
@@ -76,17 +83,21 @@ class AuthService:
             )
 
             self.db_session.add(new_user)
-            await self.db_session.commit()
+            await self.db_session.flush()  # Flush within transaction, commit handled by decorator
             await self.db_session.refresh(new_user)
 
             return new_user
 
         except Exception as e:
-            await self.db_session.rollback()
-            raise AuthenticationError(f"Failed to register user: {e}")
+            # Transaction will auto-rollback on exception
+            raise AuthenticationError(f"Failed to register user: {e}") from e
 
+    @transactional
     async def login(self, username: str, password: str) -> AuthSession:
-        """Login user and create session"""
+        """
+        Login user and create session
+        Uses transaction boundaries for session creation and last_login update
+        """
         # Get user from database
         stmt = select(User).where(User.username == username)
         result = await self.db_session.execute(stmt)
@@ -126,10 +137,10 @@ class AuthService:
             # Update last login in database
             stmt = update(User).where(User.id == user.id).values(last_login=datetime.now())
             await self.db_session.execute(stmt)
-            await self.db_session.commit()
+            await self.db_session.flush()  # Flush within transaction, commit handled by decorator
         except Exception as e:
-            await self.db_session.rollback()
-            raise AuthenticationError(f"Failed to create session: {e}")
+            # Transaction will auto-rollback on exception
+            raise AuthenticationError(f"Failed to create session: {e}") from e
 
         return new_session
 
@@ -162,7 +173,7 @@ class AuthService:
         except SessionExpiredError:
             raise
         except Exception as e:
-            raise AuthenticationError(f"Failed to validate session: {e}")
+            raise AuthenticationError(f"Failed to validate session: {e}") from e
 
     async def logout(self, session_token: str) -> bool:
         """Logout user by removing session"""
@@ -171,7 +182,7 @@ class AuthService:
             removed = self._sessions.pop(session_token, None)
             return removed is not None
         except Exception as e:
-            raise AuthenticationError(f"Failed to logout: {e}")
+            raise AuthenticationError(f"Failed to logout: {e}") from e
 
     async def update_language_preferences(self, user_id: int, native_language: str, target_language: str) -> bool:
         """Update user's language preferences"""
@@ -182,7 +193,7 @@ class AuthService:
             return True
         except Exception as e:
             await self.db_session.rollback()
-            raise AuthenticationError(f"Failed to update language preferences: {e}")
+            raise AuthenticationError(f"Failed to update language preferences: {e}") from e
 
     def cleanup(self):
         """Cleanup resources, particularly database session"""

@@ -60,8 +60,8 @@ class ParakeetTranscriptionService(ITranscriptionService):
                 self._model.eval()
                 logger.info(f"Parakeet model loaded: {self.model_name}")
 
-            except ImportError:
-                raise ImportError("NeMo toolkit not installed. Install with: pip install nemo_toolkit[asr]")
+            except ImportError as e:
+                raise ImportError("NeMo toolkit not installed. Install with: pip install nemo_toolkit[asr]") from e
 
     def transcribe(self, audio_path: str, language: str | None = None) -> TranscriptionResult:
         """Transcribe an audio file"""

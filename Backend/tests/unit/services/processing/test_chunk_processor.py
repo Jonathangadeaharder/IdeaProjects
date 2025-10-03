@@ -14,13 +14,11 @@ from services.processing.chunk_processor import ChunkProcessingService
 class TestChunkProcessingServiceInitialization:
     """Test service initialization"""
 
-    def test_initialization(self):
+    def test_initialization(self, mock_db_session):
         """Test service initializes with required components"""
-        mock_session = AsyncMock()
+        service = ChunkProcessingService(mock_db_session)
 
-        service = ChunkProcessingService(mock_session)
-
-        assert service.db_session == mock_session
+        assert service.db_session == mock_db_session
         assert service.transcription_service is not None
         assert service.translation_service is not None
         assert service.utilities is not None
@@ -30,9 +28,9 @@ class TestProcessChunk:
     """Test main chunk processing orchestration"""
 
     @pytest.fixture
-    def service(self):
+    def service(self, mock_db_session):
         """Create service instance with mocked session"""
-        return ChunkProcessingService(AsyncMock())
+        return ChunkProcessingService(mock_db_session)
 
     @pytest.fixture
     def task_progress(self):
@@ -109,8 +107,8 @@ class TestFilterVocabulary:
     """Test vocabulary filtering from subtitles"""
 
     @pytest.fixture
-    def service(self):
-        return ChunkProcessingService(AsyncMock())
+    def service(self, mock_db_session):
+        return ChunkProcessingService(mock_db_session)
 
     @pytest.fixture
     def task_progress(self):
@@ -120,11 +118,9 @@ class TestFilterVocabulary:
     async def test_filter_vocabulary_with_words(self, service, task_progress):
         """Test filtering vocabulary returns words"""
         # Arrange
-        video_file = Path("/video.mp4")
+        srt_file = "/subtitles.srt"
         user = Mock(id=1)
         language_prefs = {"level": "A1", "target": "de"}
-
-        service.transcription_service.find_matching_srt_file = Mock(return_value="/subtitles.srt")
 
         # Mock vocabulary_filter service from chunk_services
         mock_word = {"word": "Haus", "difficulty": "A1", "active": True}
@@ -137,7 +133,7 @@ class TestFilterVocabulary:
             result = await service._filter_vocabulary(
                 task_id="test_task",
                 task_progress=task_progress,
-                video_file=video_file,
+                srt_file=srt_file,
                 user=user,
                 language_preferences=language_prefs,
             )
@@ -152,11 +148,9 @@ class TestFilterVocabulary:
     async def test_filter_vocabulary_empty_result(self, service, task_progress):
         """Test filtering with no vocabulary words"""
         # Arrange
-        video_file = Path("/video.mp4")
+        srt_file = "/subtitles.srt"
         user = Mock(id=1)
         language_prefs = {"level": "A1", "target": "de"}
-
-        service.transcription_service.find_matching_srt_file = Mock(return_value="/subtitles.srt")
 
         # Mock vocabulary_filter service returning empty list
         mock_vocabulary = []
@@ -168,7 +162,7 @@ class TestFilterVocabulary:
             result = await service._filter_vocabulary(
                 task_id="test_task",
                 task_progress=task_progress,
-                video_file=video_file,
+                srt_file=srt_file,
                 user=user,
                 language_preferences=language_prefs,
             )
@@ -182,8 +176,8 @@ class TestGenerateFilteredSubtitles:
     """Test filtered subtitle generation"""
 
     @pytest.fixture
-    def service(self):
-        return ChunkProcessingService(AsyncMock())
+    def service(self, mock_db_session):
+        return ChunkProcessingService(mock_db_session)
 
     @pytest.fixture
     def task_progress(self):
@@ -193,13 +187,8 @@ class TestGenerateFilteredSubtitles:
     async def test_generate_filtered_subtitles_success(self, service, task_progress, tmp_path):
         """Test successful subtitle generation"""
         # Arrange
-        video_file = tmp_path / "video.mp4"
-        video_file.touch()
-
         source_srt = tmp_path / "video_de.srt"
         source_srt.write_text("1\n00:00:00,000 --> 00:00:02,000\nHallo Welt\n\n", encoding="utf-8")
-
-        service.transcription_service.find_matching_srt_file = Mock(return_value=str(source_srt))
 
         vocabulary = [{"word": "Hallo"}, {"word": "Welt"}]
         language_prefs = {"target": "de"}
@@ -208,7 +197,7 @@ class TestGenerateFilteredSubtitles:
         result = await service._generate_filtered_subtitles(
             task_id="test_task",
             task_progress=task_progress,
-            video_file=video_file,
+            srt_file=str(source_srt),
             vocabulary=vocabulary,
             language_preferences=language_prefs,
         )
@@ -225,8 +214,7 @@ class TestGenerateFilteredSubtitles:
     async def test_generate_filtered_subtitles_missing_source(self, service, task_progress):
         """Test handling of missing source SRT"""
         # Arrange
-        video_file = Path("/nonexistent/video.mp4")
-        service.transcription_service.find_matching_srt_file = Mock(return_value="/nonexistent.srt")
+        srt_file = "/nonexistent.srt"
 
         vocabulary = [{"word": "test"}]
         language_prefs = {"target": "de"}
@@ -235,7 +223,7 @@ class TestGenerateFilteredSubtitles:
         result = await service._generate_filtered_subtitles(
             task_id="test_task",
             task_progress=task_progress,
-            video_file=video_file,
+            srt_file=srt_file,
             vocabulary=vocabulary,
             language_preferences=language_prefs,
         )
@@ -248,8 +236,8 @@ class TestHealthCheck:
     """Test health check functionality"""
 
     @pytest.fixture
-    def service(self):
-        return ChunkProcessingService(AsyncMock())
+    def service(self, mock_db_session):
+        return ChunkProcessingService(mock_db_session)
 
     @pytest.mark.anyio
     async def test_health_check(self, service):
@@ -268,8 +256,8 @@ class TestLifecycleMethods:
     """Test service lifecycle methods"""
 
     @pytest.fixture
-    def service(self):
-        return ChunkProcessingService(AsyncMock())
+    def service(self, mock_db_session):
+        return ChunkProcessingService(mock_db_session)
 
     @pytest.mark.anyio
     async def test_initialize(self, service):
@@ -288,8 +276,8 @@ class TestHandleMethod:
     """Test handler interface implementation"""
 
     @pytest.fixture
-    def service(self):
-        return ChunkProcessingService(AsyncMock())
+    def service(self, mock_db_session):
+        return ChunkProcessingService(mock_db_session)
 
     @pytest.mark.anyio
     async def test_handle_delegates_to_process_chunk(self, service):
@@ -319,8 +307,8 @@ class TestValidateParameters:
     """Test parameter validation"""
 
     @pytest.fixture
-    def service(self):
-        return ChunkProcessingService(AsyncMock())
+    def service(self, mock_db_session):
+        return ChunkProcessingService(mock_db_session)
 
     def test_validate_parameters_all_present(self, service):
         """Test validation with all required parameters"""

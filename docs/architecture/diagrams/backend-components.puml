@@ -1,0 +1,98 @@
+@startuml backend-components
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+LAYOUT_WITH_LEGEND()
+
+title Backend Component Diagram - FastAPI Application Architecture
+
+Container(frontend, "Frontend App", "React", "User interface")
+ContainerDb(database, "Database", "PostgreSQL", "Data persistence")
+Container(ai_services, "AI Services", "ML Models", "Transcription/Translation")
+
+Container_Boundary(backend, "Backend API - FastAPI") {
+
+    Component(api_auth, "Auth Routes", "FastAPI Router", "User authentication and registration endpoints")
+    Component(api_videos, "Video Routes", "FastAPI Router", "Video management endpoints")
+    Component(api_vocab, "Vocabulary Routes", "FastAPI Router", "Vocabulary and learning endpoints")
+    Component(api_processing, "Processing Routes", "FastAPI Router", "Video processing orchestration endpoints")
+    Component(api_websocket, "WebSocket Routes", "FastAPI WebSocket", "Real-time progress update endpoints")
+
+    Component(service_auth, "Auth Service", "Service Layer", "User authentication, JWT token management")
+    Component(service_video, "Video Service", "Service Layer", "Video metadata and file management")
+    Component(service_vocab, "Vocabulary Service", "Service Layer", "Vocabulary extraction and management")
+    Component(service_transcription, "Transcription Service", "Service Layer", "Audio transcription orchestration")
+    Component(service_translation, "Translation Service", "Service Layer", "Subtitle translation orchestration")
+    Component(service_processing, "Processing Service", "Service Layer", "End-to-end video processing workflow")
+
+    Component(repo_user, "User Repository", "Repository Layer", "User CRUD operations")
+    Component(repo_video, "Video Repository", "Repository Layer", "Video CRUD operations")
+    Component(repo_vocab, "Vocabulary Repository", "Repository Layer", "Vocabulary CRUD operations")
+
+    Component(core_config, "Configuration", "Core", "Settings and environment management")
+    Component(core_auth, "Auth Core", "Core", "FastAPI-Users configuration, JWT strategy")
+    Component(core_database, "Database Core", "Core", "SQLAlchemy engine, session management")
+    Component(core_middleware, "Middleware", "Core", "CORS, error handling, logging")
+
+    Component(models, "Database Models", "SQLAlchemy", "ORM models: User, Video, Vocabulary, etc.")
+}
+
+Rel(frontend, api_auth, "HTTP requests", "JSON")
+Rel(frontend, api_videos, "HTTP requests", "JSON")
+Rel(frontend, api_vocab, "HTTP requests", "JSON")
+Rel(frontend, api_processing, "HTTP requests", "JSON")
+Rel(frontend, api_websocket, "WebSocket", "Real-time")
+
+Rel(api_auth, service_auth, "Calls")
+Rel(api_videos, service_video, "Calls")
+Rel(api_vocab, service_vocab, "Calls")
+Rel(api_processing, service_processing, "Calls")
+
+Rel(service_auth, repo_user, "Uses")
+Rel(service_video, repo_video, "Uses")
+Rel(service_vocab, repo_vocab, "Uses")
+
+Rel(service_processing, service_transcription, "Orchestrates")
+Rel(service_processing, service_translation, "Orchestrates")
+Rel(service_processing, service_vocab, "Orchestrates")
+
+Rel(service_transcription, ai_services, "Invokes Whisper/Parakeet")
+Rel(service_translation, ai_services, "Invokes NLLB/OPUS")
+Rel(service_vocab, ai_services, "Invokes SpaCy")
+
+Rel(repo_user, core_database, "Uses session")
+Rel(repo_video, core_database, "Uses session")
+Rel(repo_vocab, core_database, "Uses session")
+
+Rel(core_database, models, "Maps to")
+Rel(core_database, database, "Connects", "SQLAlchemy")
+
+Rel(core_auth, service_auth, "Used by")
+Rel(core_config, core_auth, "Configures")
+Rel(core_config, core_database, "Configures")
+Rel(core_middleware, api_auth, "Wraps")
+
+note right of api_auth
+  API Layer:
+  - FastAPI routers
+  - Request validation
+  - Response serialization
+  - OpenAPI documentation
+end note
+
+note right of service_auth
+  Service Layer:
+  - Business logic
+  - Transaction management
+  - Service orchestration
+  - Error handling
+end note
+
+note right of repo_user
+  Repository Layer:
+  - Data access abstraction
+  - Query optimization
+  - Database operations
+  - ORM mapping
+end note
+
+@enduml

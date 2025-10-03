@@ -8,6 +8,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, field_validator
 
+from core.config import settings
 from core.dependencies import current_active_user
 from core.language_preferences import (
     SUPPORTED_LANGUAGES,
@@ -84,7 +85,9 @@ async def get_profile(current_user: User = Depends(current_active_user)):
         )
     except Exception as e:
         logger.error(f"Error getting profile: {e!s}", exc_info=True)
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Error getting profile: {e!s}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Error getting profile: {e!s}"
+        ) from e
 
 
 @router.put("/languages", response_model=dict[str, Any], name="profile_update_languages")
@@ -120,12 +123,12 @@ async def update_language_preferences(
         }
 
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
     except Exception as e:
         logger.error(f"Error updating language preferences: {e!s}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Error updating preferences: {e!s}"
-        )
+        ) from e
 
 
 @router.get("/languages", response_model=dict[str, dict[str, str]], name="profile_get_supported_languages")
@@ -175,7 +178,7 @@ async def get_user_settings(current_user: User = Depends(current_active_user)):
 
     except Exception as e:
         logger.error(f"Error getting user settings: {e!s}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Error retrieving user settings: {e!s}")
+        raise HTTPException(status_code=500, detail=f"Error retrieving user settings: {e!s}") from e
 
 
 @router.put("/settings", response_model=UserSettings, name="profile_update_settings")
@@ -201,4 +204,4 @@ async def update_user_settings(settings_update: UserSettings, current_user: User
 
     except Exception as e:
         logger.error(f"Error updating user settings: {e!s}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Error updating user settings: {e!s}")
+        raise HTTPException(status_code=500, detail=f"Error updating user settings: {e!s}") from e

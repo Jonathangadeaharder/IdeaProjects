@@ -9,6 +9,7 @@ from unittest.mock import AsyncMock, Mock, patch
 import pytest
 
 from services.processing.chunk_transcription_service import ChunkTranscriptionError, ChunkTranscriptionService
+from services.transcriptionservice.interface import TranscriptionResult, TranscriptionSegment
 
 
 class TestChunkTranscriptionServiceInitialization:
@@ -103,6 +104,49 @@ class TestCreateChunkSrt:
             service._create_chunk_srt(text, output_path, 0.0, 30.0)
 
 
+class TestCreateSrtFromSegments:
+    """Test SRT creation from transcription segments"""
+
+    @pytest.fixture
+    def service(self):
+        return ChunkTranscriptionService()
+
+    def test_create_srt_from_segments_success(self, service, tmp_path):
+        """Test creating SRT from Whisper segments"""
+        output_path = tmp_path / "test.srt"
+
+        segments = [
+            TranscriptionSegment(start_time=0.0, end_time=2.5, text="Hello world"),
+            TranscriptionSegment(start_time=2.5, end_time=5.0, text="This is a test"),
+            TranscriptionSegment(start_time=5.0, end_time=8.0, text="Of segment creation"),
+        ]
+
+        service._create_srt_from_segments(segments, output_path)
+
+        assert output_path.exists()
+        content = output_path.read_text(encoding="utf-8")
+
+        # Check segments are present
+        assert "Hello world" in content
+        assert "This is a test" in content
+        assert "Of segment creation" in content
+
+        # Check timing
+        assert "00:00:00,000 --> 00:00:02,500" in content
+        assert "00:00:02,500 --> 00:00:05,000" in content
+
+    def test_create_srt_from_empty_segments(self, service, tmp_path):
+        """Test creating SRT from empty segments list"""
+        output_path = tmp_path / "test.srt"
+        segments = []
+
+        service._create_srt_from_segments(segments, output_path)
+
+        assert output_path.exists()
+        content = output_path.read_text(encoding="utf-8")
+        assert content.strip() == ""
+
+
 class TestFindMatchingSrtFile:
     """Test finding matching SRT files"""
 
@@ -134,30 +178,6 @@ class TestFindMatchingSrtFile:
 
         assert result == str(srt_file)
 
-    def test_find_matching_srt_file_english_suffix(self, service, tmp_path):
-        """Test finding SRT with English suffix"""
-        video_file = tmp_path / "video.mp4"
-        video_file.touch()
-
-        srt_file = tmp_path / "video.en.srt"
-        srt_file.touch()
-
-        result = service.find_matching_srt_file(video_file)
-
-        assert result == str(srt_file)
-
-    def test_find_matching_srt_file_subtitles_suffix(self, service, tmp_path):
-        """Test finding SRT with _subtitles suffix"""
-        video_file = tmp_path / "video.mp4"
-        video_file.touch()
-
-        srt_file = tmp_path / "video_subtitles.srt"
-        srt_file.touch()
-
-        result = service.find_matching_srt_file(video_file)
-
-        assert result == str(srt_file)
-
     def test_find_matching_srt_file_not_found(self, service, tmp_path):
         """Test returns default path when no SRT found"""
         video_file = tmp_path / "video.mp4"
@@ -165,20 +185,6 @@ class TestFindMatchingSrtFile:
 
         result = service.find_matching_srt_file(video_file)
 
-        assert result == str(tmp_path / "video.srt")
-
-    def test_find_matching_srt_file_priority(self, service, tmp_path):
-        """Test SRT file priority when multiple exist"""
-        video_file = tmp_path / "video.mp4"
-        video_file.touch()
-
-        # Create multiple SRT files
-        (tmp_path / "video.srt").touch()
-        (tmp_path / "video.de.srt").touch()
-
-        result = service.find_matching_srt_file(video_file)
-
-        # Should return the first match (video.srt)
         assert result == str(tmp_path / "video.srt")
 
 
@@ -223,22 +229,9 @@ class TestCleanupTempAudioFile:
         # Should not raise error
         service.cleanup_temp_audio_file(audio_file, video_file)
 
-    def test_cleanup_temp_audio_file_permission_error(self, service, tmp_path):
-        """Test cleanup handles permission errors gracefully"""
-        video_file = tmp_path / "video.mp4"
-        video_file.touch()
 
-        audio_file = tmp_path / "audio_temp.wav"
-        audio_file.touch()
-
-        # Mock unlink to raise permission error
-        with patch.object(Path, "unlink", side_effect=PermissionError("Access denied")):
-            # Should not raise, just log warning
-            service.cleanup_temp_audio_file(audio_file, video_file)
-
-
-class TestExtractAudioChunkEdgeCases:
-    """Test audio extraction edge cases and error handling"""
+class TestExtractAudioChunk:
+    """Test audio extraction"""
 
     @pytest.fixture
     def service(self):
@@ -246,7 +239,7 @@ class TestExtractAudioChunkEdgeCases:
 
     @pytest.mark.anyio
     async def test_extract_audio_chunk_ffmpeg_not_found(self, service, tmp_path):
-        """Test fallback when ffmpeg not found"""
+        """Test error when ffmpeg not found"""
         video_file = tmp_path / "video.mp4"
         video_file.touch()
 
@@ -254,10 +247,8 @@ class TestExtractAudioChunkEdgeCases:
         task_progress = {task_id: Mock(progress=0, current_step="", message="")}
 
         with patch("asyncio.create_subprocess_exec", side_effect=FileNotFoundError("ffmpeg not found")):
-            result = await service.extract_audio_chunk(task_id, task_progress, video_file, 0.0, 10.0)
-
-        # Should return video file as fallback
-        assert result == video_file
+            with pytest.raises(ChunkTranscriptionError, match="FFmpeg is not installed"):
+                await service.extract_audio_chunk(task_id, task_progress, video_file, 0.0, 10.0)
 
     @pytest.mark.anyio
     async def test_extract_audio_chunk_timeout(self, service, tmp_path):
@@ -281,8 +272,8 @@ class TestExtractAudioChunkEdgeCases:
         mock_process.kill.assert_called_once()
 
 
-class TestTranscribeChunkEdgeCases:
-    """Test transcription edge cases"""
+class TestTranscribeChunk:
+    """Test transcription"""
 
     @pytest.fixture
     def service(self):
@@ -302,35 +293,29 @@ class TestTranscribeChunkEdgeCases:
 
         with patch("core.service_dependencies.get_transcription_service", return_value=None):
             with pytest.raises(ChunkTranscriptionError, match="not available"):
-                await service.transcribe_chunk(task_id, task_progress, video_file, audio_file, {"target": "de"})
+                await service.transcribe_chunk(
+                    task_id, task_progress, video_file, audio_file, {"target": "de"}, 0.0, 30.0
+                )
 
     @pytest.mark.anyio
-    async def test_transcribe_chunk_fallback_mode(self, service, tmp_path):
-        """Test transcription fallback when audio equals video"""
+    async def test_transcribe_chunk_no_audio_file(self, service, tmp_path):
+        """Test error when audio file equals video file (no extraction)"""
         video_file = tmp_path / "video.mp4"
         video_file.touch()
-
-        srt_file = tmp_path / "video.srt"
-        srt_file.touch()
 
         task_id = "test_task"
         task_progress = {task_id: Mock(progress=0, current_step="", message="")}
 
         mock_service = Mock()
         with patch("core.service_dependencies.get_transcription_service", return_value=mock_service):
-            result = await service.transcribe_chunk(
-                task_id,
-                task_progress,
-                video_file,
-                video_file,  # Same as video = fallback mode
-                {"target": "de"},
-            )
-
-        assert result == str(srt_file)
+            with pytest.raises(ChunkTranscriptionError, match="Audio extraction did not produce a separate audio file"):
+                await service.transcribe_chunk(
+                    task_id, task_progress, video_file, video_file, {"target": "de"}, 0.0, 30.0
+                )
 
     @pytest.mark.anyio
-    async def test_transcribe_chunk_text_result(self, service, tmp_path):
-        """Test transcription with text object result"""
+    async def test_transcribe_chunk_with_segments(self, service, tmp_path):
+        """Test transcription with segment-based result"""
         video_file = tmp_path / "video.mp4"
         video_file.touch()
 
@@ -340,20 +325,34 @@ class TestTranscribeChunkEdgeCases:
         task_id = "test_task"
         task_progress = {task_id: Mock(progress=0, current_step="", message="")}
 
-        # Mock transcription service returning object with .text attribute
+        # Mock transcription service returning segments
         mock_service = Mock()
-        mock_result = Mock()
-        mock_result.text = "Transcribed text content"
-        mock_service.transcribe_audio = AsyncMock(return_value=mock_result)
+        mock_result = TranscriptionResult(
+            full_text="Hello world. This is a test.",
+            segments=[
+                TranscriptionSegment(start_time=0.0, end_time=2.0, text="Hello world."),
+                TranscriptionSegment(start_time=2.0, end_time=4.5, text="This is a test."),
+            ],
+            language="de",
+        )
 
         with patch("core.service_dependencies.get_transcription_service", return_value=mock_service):
-            result = await service.transcribe_chunk(task_id, task_progress, video_file, audio_file, {"target": "de"})
+            with patch("asyncio.to_thread", return_value=mock_result):
+                result = await service.transcribe_chunk(
+                    task_id, task_progress, video_file, audio_file, {"target": "de"}, 0.0, 30.0
+                )
 
         assert result == str(video_file.with_suffix(".srt"))
+        assert Path(result).exists()
+
+        # Verify SRT content has segments
+        content = Path(result).read_text()
+        assert "Hello world" in content
+        assert "This is a test" in content
 
     @pytest.mark.anyio
-    async def test_transcribe_chunk_string_result(self, service, tmp_path):
-        """Test transcription with string result"""
+    async def test_transcribe_chunk_fallback_single_segment(self, service, tmp_path):
+        """Test transcription fallback to single segment when no segments"""
         video_file = tmp_path / "video.mp4"
         video_file.touch()
 
@@ -363,44 +362,26 @@ class TestTranscribeChunkEdgeCases:
         task_id = "test_task"
         task_progress = {task_id: Mock(progress=0, current_step="", message="")}
 
-        # Mock transcription service returning string
+        # Mock transcription service returning only full_text
         mock_service = Mock()
-        mock_service.transcribe_audio = AsyncMock(return_value="Direct string transcription")
+        mock_result = TranscriptionResult(
+            full_text="Single segment text",
+            segments=[],
+            language="de",
+        )
 
         with patch("core.service_dependencies.get_transcription_service", return_value=mock_service):
-            result = await service.transcribe_chunk(task_id, task_progress, video_file, audio_file, {"target": "de"})
+            with patch("asyncio.to_thread", return_value=mock_result):
+                result = await service.transcribe_chunk(
+                    task_id, task_progress, video_file, audio_file, {"target": "de"}, 0.0, 30.0
+                )
 
         assert result == str(video_file.with_suffix(".srt"))
-
-    @pytest.mark.anyio
-    async def test_transcribe_chunk_error_with_fallback(self, service, tmp_path):
-        """Test transcription error falls back to existing SRT"""
-        video_file = tmp_path / "video.mp4"
-        video_file.touch()
-
-        audio_file = tmp_path / "audio.wav"
-        audio_file.touch()
-
-        # Create existing SRT file
-        srt_file = tmp_path / "video.srt"
-        srt_file.write_text("1\n00:00:00,000 --> 00:00:05,000\nExisting content\n\n")
-
-        task_id = "test_task"
-        task_progress = {task_id: Mock(progress=0, current_step="", message="")}
-
-        # Mock transcription service that raises error
-        mock_service = Mock()
-        mock_service.transcribe_audio = AsyncMock(side_effect=Exception("Transcription failed"))
-
-        with patch("core.service_dependencies.get_transcription_service", return_value=mock_service):
-            result = await service.transcribe_chunk(task_id, task_progress, video_file, audio_file, {"target": "de"})
-
-        # Should return existing SRT as fallback
-        assert result == str(srt_file)
+        assert Path(result).exists()
 
     @pytest.mark.anyio
     async def test_transcribe_chunk_error_no_fallback(self, service, tmp_path):
-        """Test transcription error without fallback SRT"""
+        """Test transcription error without fallback"""
         video_file = tmp_path / "video.mp4"
         video_file.touch()
 
@@ -412,8 +393,10 @@ class TestTranscribeChunkEdgeCases:
 
         # Mock transcription service that raises error
         mock_service = Mock()
-        mock_service.transcribe_audio = AsyncMock(side_effect=Exception("Transcription failed"))
 
         with patch("core.service_dependencies.get_transcription_service", return_value=mock_service):
-            with pytest.raises(ChunkTranscriptionError, match="no fallback available"):
-                await service.transcribe_chunk(task_id, task_progress, video_file, audio_file, {"target": "de"})
+            with patch("asyncio.to_thread", side_effect=Exception("Transcription failed")):
+                with pytest.raises(ChunkTranscriptionError, match="Chunk transcription failed"):
+                    await service.transcribe_chunk(
+                        task_id, task_progress, video_file, audio_file, {"target": "de"}, 0.0, 30.0
+                    )

@@ -181,7 +181,7 @@ async def start_game_session(
     except Exception as exc:
         logger.error("Error starting game session: %s", exc, exc_info=True)
         await db.rollback()
-        raise HTTPException(status_code=500, detail=f"Error starting game session: {exc!s}")
+        raise HTTPException(status_code=500, detail=f"Error starting game session: {exc!s}") from exc
 
 
 @router.get("/session/{session_id}", response_model=GameSession, name="game_get_session")
@@ -209,7 +209,7 @@ async def get_game_session(
         raise
     except Exception as exc:
         logger.error("Error getting game session: %s", exc, exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Error retrieving game session: {exc!s}")
+        raise HTTPException(status_code=500, detail=f"Error retrieving game session: {exc!s}") from exc
 
 
 def _validate_game_session(record: GameSessionRecord | None) -> None:
@@ -322,7 +322,7 @@ async def submit_answer(
     except Exception as exc:
         logger.error("Error submitting answer: %s", exc, exc_info=True)
         await db.rollback()
-        raise HTTPException(status_code=500, detail=f"Error submitting answer: {exc!s}")
+        raise HTTPException(status_code=500, detail=f"Error submitting answer: {exc!s}") from exc
 
 
 @router.get("/sessions", response_model=list[GameSession], name="game_get_user_sessions")
@@ -346,7 +346,7 @@ async def get_user_game_sessions(
 
     except Exception as exc:
         logger.error("Error getting user game sessions: %s", exc, exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Error retrieving game sessions: {exc!s}")
+        raise HTTPException(status_code=500, detail=f"Error retrieving game sessions: {exc!s}") from exc
 
 
 def _normalize_enum_values(game_type: str | GameType, difficulty: str | GameDifficulty) -> tuple[str, str]:

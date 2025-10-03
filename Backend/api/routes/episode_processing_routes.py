@@ -19,7 +19,6 @@ from database.models import User
 from ..models.processing import (
     ChunkProcessingRequest,
     ProcessingStatus,
-    TranscribeRequest,
 )
 
 logger = logging.getLogger(__name__)
@@ -107,6 +106,4 @@ async def process_chunk(
         raise
     except Exception as e:
         logger.error(f"Failed to start chunk processing: {e!s}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Chunk processing failed: {e!s}")
-
-
+        raise HTTPException(status_code=500, detail=f"Chunk processing failed: {e!s}") from e

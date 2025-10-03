@@ -81,10 +81,12 @@ def fast_passwords():
 
             mock_verify.side_effect = fast_verify_and_update
 
-            # Also patch any direct service imports
-            with patch("services.authservice.auth_service.CryptContext") as mock_auth_crypto:
+            # Also patch PasswordValidator in auth_service (replaces CryptContext)
+            with patch("services.authservice.auth_service.PasswordValidator") as mock_pass_validator:
                 fast_context = FastCryptContext()
-                mock_auth_crypto.return_value = fast_context
+                # Mock PasswordValidator methods
+                mock_pass_validator.hash_password.side_effect = fast_context.hash
+                mock_pass_validator.verify_password.side_effect = fast_context.verify
 
                 yield
 

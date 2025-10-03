@@ -137,7 +137,7 @@ async def transcribe_video(
             logger.info(f"Videos path: {videos_path}")
         except Exception as e:
             logger.error(f"Error getting videos path: {e}")
-            raise HTTPException(status_code=500, detail="Configuration error")
+            raise HTTPException(status_code=500, detail="Configuration error") from e
 
         full_path = Path(request.video_path) if request.video_path.startswith("/") else videos_path / request.video_path
 
@@ -167,4 +167,4 @@ async def transcribe_video(
         raise
     except Exception as e:
         logger.error(f"Failed to start transcription: {e!s}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Transcription failed: {e!s}")
+        raise HTTPException(status_code=500, detail=f"Transcription failed: {e!s}") from e

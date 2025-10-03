@@ -1,0 +1,332 @@
+@startuml entity-relationship
+!theme mars
+
+title Entity-Relationship Diagram - LangPlug Database Schema
+
+' Define entities with attributes
+entity "User" as user {
+    **Primary Key**
+    --
+    + id : UUID <<PK>>
+    --
+    **Authentication**
+    --
+    * email : VARCHAR(320) <<UNIQUE>>
+    * hashed_password : VARCHAR(1024)
+    is_active : BOOLEAN = TRUE
+    is_superuser : BOOLEAN = FALSE
+    is_verified : BOOLEAN = FALSE
+    --
+    **Profile**
+    --
+    username : VARCHAR(100) <<UNIQUE>>
+    first_name : VARCHAR(100)
+    last_name : VARCHAR(100)
+    --
+    **Preferences**
+    --
+    native_language : VARCHAR(10)
+    target_language : VARCHAR(10)
+    preferred_difficulty : VARCHAR(20)
+    --
+    **Timestamps**
+    --
+    created_at : TIMESTAMP
+    last_login : TIMESTAMP
+    updated_at : TIMESTAMP
+}
+
+entity "Video" as video {
+    **Primary Key**
+    --
+    + id : UUID <<PK>>
+    --
+    **Metadata**
+    --
+    * series_name : VARCHAR(255)
+    * episode_number : INTEGER
+    season_number : INTEGER
+    title : VARCHAR(500)
+    description : TEXT
+    --
+    **File Information**
+    --
+    * file_path : VARCHAR(1000)
+    * duration : INTEGER (seconds)
+    file_size : BIGINT (bytes)
+    video_format : VARCHAR(50)
+    --
+    **Processing Status**
+    --
+    is_processed : BOOLEAN = FALSE
+    subtitles_path : VARCHAR(1000)
+    translation_path : VARCHAR(1000)
+    --
+    **Language**
+    --
+    original_language : VARCHAR(10)
+    available_translations : JSON
+    --
+    **Timestamps**
+    --
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+}
+
+entity "Vocabulary" as vocabulary {
+    **Primary Key**
+    --
+    + id : UUID <<PK>>
+    --
+    **Word Information**
+    --
+    * word : VARCHAR(255)
+    * translation : VARCHAR(255)
+    * language : VARCHAR(10)
+    target_language : VARCHAR(10)
+    --
+    **Linguistic Data**
+    --
+    part_of_speech : VARCHAR(50)
+    lemma : VARCHAR(255)
+    phonetic : VARCHAR(255)
+    --
+    **Learning Metadata**
+    --
+    difficulty_level : INTEGER (1-10)
+    frequency_score : FLOAT
+    context_sentence : TEXT
+    --
+    **Audio**
+    --
+    audio_url : VARCHAR(1000)
+    --
+    **Source**
+    --
+    source_video_id : UUID <<FK>>
+    source_timestamp : INTEGER
+    --
+    **Timestamps**
+    --
+    created_at : TIMESTAMP
+}
+
+entity "UserVocabulary" as user_vocabulary {
+    **Primary Key**
+    --
+    + id : UUID <<PK>>
+    --
+    **Foreign Keys**
+    --
+    * user_id : UUID <<FK>>
+    * vocabulary_id : UUID <<FK>>
+    --
+    **Learning Progress**
+    --
+    knowledge_level : INTEGER (0-5)
+        0: New
+        1: Recognized
+        2: Familiar
+        3: Known
+        4: Mastered
+        5: Native
+    --
+    **Practice Data**
+    --
+    times_reviewed : INTEGER = 0
+    times_correct : INTEGER = 0
+    times_incorrect : INTEGER = 0
+    --
+    **Spaced Repetition**
+    --
+    last_reviewed : TIMESTAMP
+    next_review : TIMESTAMP
+    review_interval : INTEGER (days)
+    ease_factor : FLOAT = 2.5
+    --
+    **Timestamps**
+    --
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+    --
+    **Constraints**
+    --
+    <<UNIQUE(user_id, vocabulary_id)>>
+}
+
+entity "ProcessingTask" as processing_task {
+    **Primary Key**
+    --
+    + id : UUID <<PK>>
+    --
+    **Foreign Keys**
+    --
+    * user_id : UUID <<FK>>
+    * video_id : UUID <<FK>>
+    --
+    **Task Configuration**
+    --
+    * source_language : VARCHAR(10)
+    * target_language : VARCHAR(10)
+    task_type : VARCHAR(50)
+        "transcription"
+        "translation"
+        "vocabulary"
+        "full_processing"
+    --
+    **Status Tracking**
+    --
+    * status : VARCHAR(50)
+        "PENDING"
+        "PROCESSING"
+        "COMPLETED"
+        "FAILED"
+        "CANCELLED"
+    progress : INTEGER (0-100)
+    current_step : VARCHAR(100)
+    --
+    **Results**
+    --
+    result_data : JSON
+    error_message : TEXT
+    vocabulary_count : INTEGER
+    --
+    **Performance**
+    --
+    processing_time : INTEGER (seconds)
+    --
+    **Timestamps**
+    --
+    created_at : TIMESTAMP
+    started_at : TIMESTAMP
+    completed_at : TIMESTAMP
+}
+
+entity "LearningSession" as learning_session {
+    **Primary Key**
+    --
+    + id : UUID <<PK>>
+    --
+    **Foreign Keys**
+    --
+    * user_id : UUID <<FK>>
+    * video_id : UUID <<FK>>
+    --
+    **Session Data**
+    --
+    session_type : VARCHAR(50)
+        "video_learning"
+        "vocabulary_game"
+        "review"
+    --
+    **Progress**
+    --
+    current_timestamp : INTEGER
+    chunks_completed : INTEGER
+    vocabulary_learned : INTEGER
+    --
+    **Statistics**
+    --
+    duration : INTEGER (seconds)
+    words_reviewed : INTEGER
+    words_mastered : INTEGER
+    accuracy_rate : FLOAT
+    --
+    **Timestamps**
+    --
+    started_at : TIMESTAMP
+    ended_at : TIMESTAMP
+}
+
+entity "VideoChunk" as video_chunk {
+    **Primary Key**
+    --
+    + id : UUID <<PK>>
+    --
+    **Foreign Keys**
+    --
+    * video_id : UUID <<FK>>
+    --
+    **Chunk Information**
+    --
+    * chunk_index : INTEGER
+    * start_time : INTEGER (seconds)
+    * end_time : INTEGER (seconds)
+    --
+    **Content**
+    --
+    subtitle_text : TEXT
+    translated_text : TEXT
+    --
+    **Vocabulary References**
+    --
+    vocabulary_ids : JSON (array of UUIDs)
+    --
+    **Timestamps**
+    --
+    created_at : TIMESTAMP
+}
+
+' Define relationships
+user ||--o{ user_vocabulary : "learns"
+vocabulary ||--o{ user_vocabulary : "tracked by"
+
+user ||--o{ processing_task : "initiates"
+video ||--o{ processing_task : "processed by"
+
+video ||--o{ vocabulary : "contains"
+video ||--o{ video_chunk : "divided into"
+
+user ||--o{ learning_session : "participates in"
+video ||--o{ learning_session : "used in"
+
+note top of user
+    FastAPI-Users integration:
+    - Handles authentication
+    - JWT + Cookie strategy
+    - Password hashing (bcrypt)
+    - Email verification
+    - Role-based access control
+end note
+
+note top of vocabulary
+    Vocabulary extraction:
+    - SpaCy NLP for word extraction
+    - Difficulty calculated from frequency
+    - Linked to source video and timestamp
+    - Supports multiple language pairs
+end note
+
+note top of user_vocabulary
+    Spaced Repetition System (SRS):
+    - Tracks individual learning progress
+    - Next review calculated using SM-2 algorithm
+    - Knowledge levels from New (0) to Native (5)
+    - Statistics for game difficulty adjustment
+end note
+
+note top of processing_task
+    Async Processing:
+    - Tracks long-running AI operations
+    - WebSocket progress updates
+    - Handles transcription, translation, vocabulary
+    - Stores results and error states
+end note
+
+note top of video_chunk
+    Chunked Learning:
+    - Videos divided into learnable segments
+    - Each chunk contains subtitles + translation
+    - References extracted vocabulary
+    - Enables focused learning workflow
+end note
+
+note bottom of learning_session
+    Analytics & Progress:
+    - Tracks user engagement
+    - Measures learning effectiveness
+    - Provides data for recommendations
+    - Supports gamification features
+end note
+
+@enduml

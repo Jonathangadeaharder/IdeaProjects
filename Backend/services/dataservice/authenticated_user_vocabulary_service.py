@@ -82,7 +82,7 @@ class AuthenticatedUserVocabularyService(IUserVocabularyService):
             return user
         except Exception as e:
             self.logger.error(f"Authentication failed: {e!s}")
-            raise AuthenticationRequiredError("Authentication failed")
+            raise AuthenticationRequiredError("Authentication failed") from e
 
     async def is_word_known(self, requesting_user: User, user_id: str, word: str, language: str = "en") -> bool:
         """

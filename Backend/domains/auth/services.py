@@ -81,8 +81,8 @@ class AuthenticationService:
             user_id: str = payload.get("sub")
             if user_id is None:
                 raise AuthenticationError("Invalid token")
-        except JWTError:
-            raise AuthenticationError("Invalid token")
+        except JWTError as e:
+            raise AuthenticationError("Invalid token") from e
 
         user = await self.user_repository.get_by_id(db, int(user_id))
         if user is None:

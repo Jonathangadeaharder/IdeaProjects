@@ -125,45 +125,77 @@ class TestVocabularyRoutesCore:
         """Test marking word as known endpoint success"""
         flow = await AuthTestHelperAsync.register_and_login_async(async_client)
 
-        concept_id = uuid4()
+        # Use actual word instead of UUID
+        word = "haus"
 
-        with patch("api.routes.vocabulary.get_async_session") as mock_get_session:
-            mock_session = AsyncMock()
-            mock_get_session.return_value.__aenter__.return_value = mock_session
-
-            # Mock no existing progress
-            mock_result = AsyncMock()
-            mock_result.scalar_one_or_none.return_value = None
-            mock_session.execute.return_value = mock_result
+        # Mock at service layer instead of database layer
+        with patch("api.routes.vocabulary.vocabulary_service") as mock_service:
+            # Mock the service method to return success
+            mock_service.mark_word_known = AsyncMock(
+                return_value={
+                    "success": True,
+                    "word": word,
+                    "lemma": "haus",
+                    "level": "A1",
+                }
+            )
 
             response = await async_client.post(
                 "/api/vocabulary/mark-known",
-                json={"concept_id": str(concept_id), "known": True},
+                json={"word": word, "language": "de", "known": True},
                 headers=flow["headers"],
             )
 
             assert response.status_code == 200
             data = response.json()
-            assert data["success"] is True
-            assert data["concept_id"] == str(concept_id)
+            assert data["success"] is True, f"Expected success=True, got: {data}"
+            assert data["word"] == word
+
+            # Verify service was called with correct parameters
+            mock_service.mark_word_known.assert_called_once()
+            call_args = mock_service.mark_word_known.call_args
+            assert call_args.kwargs["word"] == word
+            assert call_args.kwargs["language"] == "de"
+            assert call_args.kwargs["is_known"] is True
 
     @pytest.mark.anyio
     async def test_mark_word_unknown_success(self, async_client):
         """Test marking word as unknown endpoint success"""
         flow = await AuthTestHelperAsync.register_and_login_async(async_client)
 
-        concept_id = uuid4()
+        # Use actual word instead of UUID
+        word = "welt"
 
-        # Test real endpoint behavior - focus on API contract, not implementation
-        response = await async_client.post(
-            "/api/vocabulary/mark-known", json={"concept_id": str(concept_id), "known": False}, headers=flow["headers"]
-        )
+        # Mock at service layer instead of database layer
+        with patch("api.routes.vocabulary.vocabulary_service") as mock_service:
+            # Mock the service method to return success
+            mock_service.mark_word_known = AsyncMock(
+                return_value={
+                    "success": True,
+                    "word": word,
+                    "lemma": "welt",
+                    "level": "A1",
+                }
+            )
 
-        assert response.status_code == 200
-        data = response.json()
-        assert data["success"] is True
-        assert data["concept_id"] == str(concept_id)
-        assert data["known"] is False
+            response = await async_client.post(
+                "/api/vocabulary/mark-known",
+                json={"word": word, "language": "de", "known": False},
+                headers=flow["headers"],
+            )
+
+            assert response.status_code == 200
+            data = response.json()
+            assert data["success"] is True
+            assert data["word"] == word
+            assert data["known"] is False
+
+            # Verify service was called with correct parameters
+            mock_service.mark_word_known.assert_called_once()
+            call_args = mock_service.mark_word_known.call_args
+            assert call_args.kwargs["word"] == word
+            assert call_args.kwargs["language"] == "de"
+            assert call_args.kwargs["is_known"] is False
 
     @pytest.mark.anyio
     async def test_bulk_mark_level_known_success(self, async_client):
@@ -298,18 +330,19 @@ class TestVocabularyRoutesErrorHandling:
         """Test mark known with realistic error scenarios"""
         flow = await AuthTestHelperAsync.register_and_login_async(async_client)
 
-        # Test with valid UUID - should succeed even if concept doesn't exist in DB
-        # This tests graceful handling of missing concepts
+        # Test with valid UUID - implementation returns success=False when word not found
+        # This tests fail-fast behavior for missing vocabulary words
         response = await async_client.post(
-            "/api/vocabulary/mark-known", json={"concept_id": str(uuid4()), "known": True}, headers=flow["headers"]
+            "/api/vocabulary/mark-known",
+            json={"concept_id": str(uuid4()), "language": "de", "known": True},
+            headers=flow["headers"],
         )
 
-        # Should succeed - system gracefully handles non-existent concepts
+        # Current implementation: returns success=False for non-existent words (fail-fast)
         assert response.status_code == 200
         data = response.json()
-        assert data["success"] is True
-        assert "concept_id" in data
-        assert data["known"] is True
+        assert data["success"] is False
+        assert data["message"] == "Word not in vocabulary database"
 
     @pytest.mark.anyio
     async def test_vocabulary_level_database_error(self, async_client):

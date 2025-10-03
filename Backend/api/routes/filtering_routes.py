@@ -151,7 +151,7 @@ async def filter_subtitles(
         raise
     except Exception as e:
         logger.error(f"Failed to start filtering: {e!s}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Filtering failed: {e!s}")
+        raise HTTPException(status_code=500, detail=f"Filtering failed: {e!s}") from e
 
 
 @router.post("/apply-selective-translations", name="apply_selective_translations")
@@ -190,7 +190,7 @@ async def apply_selective_translations(
 
     except Exception as e:
         logger.error(f"Failed to apply selective translations: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Selective translation failed: {e!s}")
+        raise HTTPException(status_code=500, detail=f"Selective translation failed: {e!s}") from e
 
 
 async def _save_filtered_subtitles_to_file(filtered_subtitles: list[FilteredSubtitle], output_path: str) -> None:

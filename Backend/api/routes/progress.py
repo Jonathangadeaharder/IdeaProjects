@@ -84,7 +84,7 @@ async def get_user_progress(current_user: User = Depends(current_active_user)):
 
     except Exception as e:
         logger.error(f"Error getting user progress: {e!s}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Error retrieving user progress: {e!s}")
+        raise HTTPException(status_code=500, detail=f"Error retrieving user progress: {e!s}") from e
 
 
 @router.post("/update", name="progress_update_user")
@@ -122,7 +122,7 @@ async def update_user_progress(progress_update: dict[str, Any], current_user: Us
 
     except Exception as e:
         logger.error(f"Error updating user progress: {e!s}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Error updating user progress: {e!s}")
+        raise HTTPException(status_code=500, detail=f"Error updating user progress: {e!s}") from e
 
 
 @router.get("/daily", response_model=list[DailyProgress], name="progress_get_daily")
@@ -162,4 +162,4 @@ async def get_daily_progress(days: int = 7, current_user: User = Depends(current
 
     except Exception as e:
         logger.error(f"Error getting daily progress: {e!s}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Error retrieving daily progress: {e!s}")
+        raise HTTPException(status_code=500, detail=f"Error retrieving daily progress: {e!s}") from e

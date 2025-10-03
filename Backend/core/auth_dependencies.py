@@ -30,8 +30,8 @@ async def get_current_user_ws(token: str, db: Annotated[AsyncSession, Depends(ge
         if user is None:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid authentication")
         return user
-    except Exception:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid authentication")
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid authentication") from e
 
 
 async def get_optional_user(
@@ -69,8 +69,9 @@ async def get_user_from_query_token(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication token required")
 
     try:
-        from .auth import auth_backend, get_user_db, get_user_manager
         from fastapi_users.db import SQLAlchemyUserDatabase
+
+        from .auth import auth_backend, get_user_db, get_user_manager
 
         # Get JWT strategy from auth backend
         strategy = auth_backend.get_strategy()
@@ -105,7 +106,7 @@ async def get_user_from_query_token(
         raise
     except Exception as e:
         logger.error(f"Token authentication failed: {e}", exc_info=True)
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication failed")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication failed") from e
 
 
 __all__ = ["current_active_user", "get_current_user_ws", "get_optional_user", "get_user_from_query_token", "security"]

@@ -1,0 +1,38 @@
+@startuml system-context
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+LAYOUT_WITH_LEGEND()
+
+title System Context Diagram - LangPlug Language Learning Platform
+
+Person(user, "Language Learner", "User learning a new language through video content")
+Person(admin, "Administrator", "System administrator managing content and users")
+
+System(langplug, "LangPlug Platform", "Language learning platform providing video-based learning with AI-powered transcription, translation, and vocabulary extraction")
+
+System_Ext(whisper, "Whisper AI Service", "Speech-to-text transcription service (OpenAI Whisper or NVIDIA Parakeet)")
+System_Ext(nllb, "NLLB Translation Service", "Neural machine translation service (Meta NLLB or Helsinki OPUS)")
+System_Ext(spacy, "SpaCy NLP Service", "Natural language processing for vocabulary extraction and analysis")
+System_Ext(storage, "Video Storage", "File system storage for video files and processed content")
+System_Ext(database, "Database System", "PostgreSQL/SQLite database for persistent data storage")
+
+Rel(user, langplug, "Uses", "HTTPS/WebSocket")
+Rel(admin, langplug, "Manages", "HTTPS")
+
+Rel(langplug, whisper, "Transcribes audio", "Python API")
+Rel(langplug, nllb, "Translates subtitles", "Python API")
+Rel(langplug, spacy, "Extracts vocabulary", "Python API")
+Rel(langplug, storage, "Reads/Writes", "File System")
+Rel(langplug, database, "Reads/Writes", "SQL")
+
+note right of langplug
+  Core Features:
+  - Video upload and processing
+  - AI-powered transcription
+  - Automatic translation
+  - Vocabulary extraction
+  - Interactive learning games
+  - Progress tracking
+end note
+
+@enduml

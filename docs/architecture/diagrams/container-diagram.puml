@@ -1,0 +1,62 @@
+@startuml container-diagram
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+LAYOUT_WITH_LEGEND()
+
+title Container Diagram - LangPlug Platform Architecture
+
+Person(user, "Language Learner", "User learning through video content")
+Person(admin, "Administrator", "System administrator")
+
+System_Boundary(langplug, "LangPlug Platform") {
+    Container(frontend, "Frontend Application", "React + TypeScript", "Single-page application providing user interface for video learning, vocabulary games, and progress tracking. Port 3000")
+
+    Container(backend, "Backend API", "FastAPI + Python 3.11", "RESTful API handling business logic, authentication, and orchestrating AI services. Port 8000")
+
+    Container(websocket, "WebSocket Server", "FastAPI WebSocket", "Real-time communication for processing progress updates and live notifications")
+
+    ContainerDb(database, "Database", "PostgreSQL / SQLite", "Stores users, videos, vocabulary, learning progress, and processing tasks")
+
+    Container(transcription, "Transcription Service", "Whisper / Parakeet", "AI model for speech-to-text conversion from video audio tracks")
+
+    Container(translation, "Translation Service", "NLLB / OPUS-MT", "AI model for translating subtitles between language pairs")
+
+    Container(nlp, "NLP Service", "SpaCy", "Natural language processing for vocabulary extraction and linguistic analysis")
+
+    ContainerDb(storage, "File Storage", "File System", "Stores uploaded videos, generated subtitles, and processed media files")
+}
+
+Rel(user, frontend, "Uses", "HTTPS")
+Rel(admin, frontend, "Manages", "HTTPS")
+
+Rel(frontend, backend, "Makes API calls", "HTTPS/JSON")
+Rel(frontend, websocket, "Receives updates", "WebSocket (WSS)")
+
+Rel(backend, database, "Reads/Writes", "SQLAlchemy ORM")
+Rel(backend, storage, "Reads/Writes", "File I/O")
+Rel(backend, transcription, "Invokes", "Python API")
+Rel(backend, translation, "Invokes", "Python API")
+Rel(backend, nlp, "Invokes", "Python API")
+Rel(backend, websocket, "Pushes updates", "Internal")
+
+note right of frontend
+  Technologies:
+  - React 18
+  - TypeScript
+  - Zustand (state)
+  - TanStack Query
+  - OpenAPI client
+  - Tailwind CSS
+end note
+
+note right of backend
+  Technologies:
+  - FastAPI
+  - FastAPI-Users (auth)
+  - SQLAlchemy 2.0
+  - Alembic (migrations)
+  - Pydantic v2
+  - JWT + Cookie auth
+end note
+
+@enduml

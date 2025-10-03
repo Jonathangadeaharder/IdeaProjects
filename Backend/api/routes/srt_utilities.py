@@ -88,7 +88,7 @@ async def parse_srt_content(request: ParseSRTRequest):
         )
 
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Failed to parse SRT content: {e!s}")
+        raise HTTPException(status_code=400, detail=f"Failed to parse SRT content: {e!s}") from e
 
 
 @router.post("/parse-file")
@@ -123,7 +123,7 @@ async def parse_srt_file(file: UploadFile = File(...)):
         return await parse_srt_content(request)
 
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Failed to process SRT file: {e!s}")
+        raise HTTPException(status_code=400, detail=f"Failed to process SRT file: {e!s}") from e
 
 
 @router.post("/convert-to-srt")
@@ -165,7 +165,7 @@ async def convert_to_srt(request: ConvertToSRTRequest):
         )
 
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Failed to convert to SRT format: {e!s}")
+        raise HTTPException(status_code=400, detail=f"Failed to convert to SRT format: {e!s}") from e
 
 
 @router.get("/validate")

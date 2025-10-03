@@ -125,7 +125,7 @@ class VideoService:
 
         except Exception as e:
             logger.error(f"Error scanning videos: {e!s}", exc_info=True)
-            raise Exception(f"Error scanning videos: {e!s}")
+            raise Exception(f"Error scanning videos: {e!s}") from e
 
     def _search_pattern_in_filename(self, patterns: list[str], filename: str) -> str | None:
         """Search for pattern match in filename"""

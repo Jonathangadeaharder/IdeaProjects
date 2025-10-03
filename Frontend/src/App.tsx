@@ -1,25 +1,29 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, lazy, Suspense } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import { GlobalStyle } from '@/styles/GlobalStyles'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
-import { LoginForm } from '@/components/auth/LoginForm'
-import { RegisterForm } from '@/components/auth/RegisterForm'
-import { VideoSelection } from '@/components/VideoSelection'
-import { EpisodeSelection } from '@/components/EpisodeSelection'
-import { ChunkedLearningPage } from '@/components/ChunkedLearningPage'
-import { VocabularyLibrary } from '@/components/VocabularyLibrary'
-import ProfileScreen from '@/screens/ProfileScreen'
 import { useAuthStore } from '@/store/useAuthStore'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
+import { Loading } from '@/components/ui/Loading'
 import { setupAuthInterceptors } from '@/services/auth-interceptor'
+
+// Lazy load route components for code splitting
+const LoginForm = lazy(() => import('@/components/auth/LoginForm').then(m => ({ default: m.LoginForm })))
+const RegisterForm = lazy(() => import('@/components/auth/RegisterForm').then(m => ({ default: m.RegisterForm })))
+const VideoSelection = lazy(() => import('@/components/VideoSelection').then(m => ({ default: m.VideoSelection })))
+const EpisodeSelection = lazy(() => import('@/components/EpisodeSelection').then(m => ({ default: m.EpisodeSelection })))
+const ChunkedLearningPage = lazy(() => import('@/components/ChunkedLearningPage').then(m => ({ default: m.ChunkedLearningPage })))
+const VocabularyLibrary = lazy(() => import('@/components/VocabularyLibrary').then(m => ({ default: m.VocabularyLibrary })))
+const ProfileScreen = lazy(() => import('@/screens/ProfileScreen'))
 
 // Exported for testing - this is the routing logic without the Router wrapper
 export const AppRoutes: React.FC = () => {
   const { isAuthenticated } = useAuthStore()
 
   return (
-    <Routes>
+    <Suspense fallback={<Loading />}>
+      <Routes>
       {/* Public routes */}
       <Route
         path="/login"
@@ -87,7 +91,8 @@ export const AppRoutes: React.FC = () => {
           <Navigate to={isAuthenticated ? "/" : "/login"} replace />
         }
       />
-    </Routes>
+      </Routes>
+    </Suspense>
   )
 }
 

@@ -28,8 +28,8 @@ if str(BACKEND_ROOT) not in sys.path:
 from core.app import create_app
 
 # Import fast fixtures (autouse fixtures will be applied automatically)
-from tests.fixtures.fast_auth import *  # noqa: F403
-from tests.fixtures.mock_services import *  # noqa: F403
+from tests.fixtures.fast_auth import *
+from tests.fixtures.mock_services import *
 
 # Force test mode and asyncio backend only in tests
 os.environ["TESTING"] = "1"
@@ -65,16 +65,22 @@ def clear_service_caches():
     """
 
     def safe_clear_caches():
-        """Clear known lru_cache decorated functions."""
-        # Import and clear specific known cached functions
+        """
+        Clear known lru_cache decorated functions.
+
+        Only catches expected exceptions (ImportError, AttributeError).
+        Follows fail-fast principle - unexpected exceptions will propagate.
+        """
         cleared_count = 0
+
         try:
             from services.service_factory import get_service_registry
 
             if hasattr(get_service_registry, "cache_clear"):
                 get_service_registry.cache_clear()
                 cleared_count += 1
-        except Exception:
+        except (ImportError, AttributeError):
+            # Expected: module not found or function doesn't have cache_clear
             pass
 
         try:
@@ -83,17 +89,12 @@ def clear_service_caches():
             if hasattr(get_task_progress_registry, "cache_clear"):
                 get_task_progress_registry.cache_clear()
                 cleared_count += 1
-        except Exception:
+        except (ImportError, AttributeError):
+            # Expected: module not found or function doesn't have cache_clear
             pass
 
-        try:
-            from core.service_dependencies import get_translation_service
-
-            if hasattr(get_translation_service, "cache_clear"):
-                get_translation_service.cache_clear()
-                cleared_count += 1
-        except Exception:
-            pass
+        # Note: get_translation_service no longer uses @lru_cache
+        # Removed to fix test isolation issues
 
         return cleared_count
 

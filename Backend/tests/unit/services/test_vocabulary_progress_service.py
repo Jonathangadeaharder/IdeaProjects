@@ -78,7 +78,8 @@ class TestMarkWordKnown:
         assert result["level"] == "A1"
         assert result["is_known"] is True
         assert result["confidence_level"] == 1
-        mock_db_session.commit.assert_called_once()
+        # Transaction managed by @transactional decorator - no explicit commit()
+        mock_db_session.flush.assert_called()
         # Removed add.assert_called_once() - testing behavior (data persisted), not implementation
 
     @patch("services.lemmatization_service.lemmatization_service")
@@ -115,7 +116,8 @@ class TestMarkWordKnown:
         assert mock_progress.is_known is True
         assert mock_progress.confidence_level == 3  # Increased from 2
         assert mock_progress.review_count == 2
-        mock_db_session.commit.assert_called_once()
+        # Transaction managed by @transactional decorator - no explicit commit()
+        mock_db_session.flush.assert_called()
 
     @patch("services.lemmatization_service.lemmatization_service")
     async def test_mark_word_known_word_not_found(self, mock_lemma_service, service, mock_db_session):

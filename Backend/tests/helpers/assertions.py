@@ -34,7 +34,7 @@ def assert_json_response(response, expected_code: int = 200) -> dict[str, Any]:
     try:
         return response.json()
     except json.JSONDecodeError as e:
-        raise AssertionError(f"Invalid JSON response: {e}")
+        raise AssertionError(f"Invalid JSON response: {e}") from e
 
 
 def assert_success_response(response, expected_code: int = 200) -> dict[str, Any]:

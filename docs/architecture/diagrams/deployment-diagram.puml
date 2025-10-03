@@ -1,0 +1,228 @@
+@startuml deployment-diagram
+!theme mars
+
+title Deployment Diagram - LangPlug Platform Infrastructure
+
+!define RECTANGLE(name, desc) rectangle name as "desc"
+!define NODE(name, desc, tech) node name as "desc\n<$tech>"
+
+' User devices
+node "User's Browser" as browser {
+    component "Frontend Application" as frontend_app {
+        artifact "React SPA" as react_spa
+        artifact "JavaScript Bundle" as js_bundle
+        artifact "Static Assets" as static_assets
+    }
+
+    note right of react_spa
+        - React 18
+        - TypeScript
+        - Zustand state
+        - TanStack Query
+        - Tailwind CSS
+    end note
+}
+
+' Application Server
+node "Application Server\n(Ubuntu 22.04 / Docker)" as app_server {
+    component "FastAPI Backend" as backend_app {
+        artifact "API Service\n(Uvicorn ASGI)" as api_service <<Python>>
+        artifact "WebSocket Server" as websocket_server <<Python>>
+        artifact "Background Workers\n(Optional Celery)" as workers <<Python>>
+    }
+
+    component "Web Server" as web_server {
+        artifact "Nginx" as nginx <<Reverse Proxy>>
+    }
+
+    note right of api_service
+        - FastAPI
+        - Python 3.11+
+        - SQLAlchemy 2.0
+        - FastAPI-Users
+        - Pydantic v2
+        - Port: 8000
+    end note
+}
+
+' AI Model Server
+node "AI Model Server\n(GPU-enabled: CUDA 12.1)" as ai_server {
+    component "Transcription Service" as transcription {
+        artifact "Whisper Model\n(Large-v3)" as whisper <<PyTorch>>
+        artifact "Parakeet Model\n(CTC 1.1B)" as parakeet <<NVIDIA NeMo>>
+    }
+
+    component "Translation Service" as translation {
+        artifact "NLLB-200 Model\n(Distilled 600M)" as nllb <<Transformers>>
+        artifact "OPUS-MT Models" as opus <<Transformers>>
+    }
+
+    component "NLP Service" as nlp {
+        artifact "SpaCy Pipeline" as spacy <<SpaCy>>
+        artifact "Language Models" as lang_models
+    }
+
+    note right of whisper
+        GPU: NVIDIA A100/V100/T4
+        VRAM: 16GB+ recommended
+        CPU fallback available
+        Multi-language support
+    end note
+
+    note right of nllb
+        Supports 200+ languages
+        Batch processing optimized
+        GPU acceleration
+        Quantization for efficiency
+    end note
+}
+
+' Database Server
+node "Database Server\n(Ubuntu 22.04)" as db_server {
+    database "PostgreSQL 15" as postgres {
+        storage "User Data" as user_data
+        storage "Video Metadata" as video_data
+        storage "Vocabulary" as vocab_data
+        storage "Learning Progress" as progress_data
+    }
+
+    note right of postgres
+        - Connection pooling
+        - Async SQLAlchemy
+        - Alembic migrations
+        - Read replicas (prod)
+        - Port: 5432
+    end note
+}
+
+' File Storage
+node "Storage Server\n(NAS / Object Storage)" as storage_server {
+    storage "Video Files" as video_storage {
+        folder "Original Videos" as original_videos
+        folder "Processed Media" as processed_media
+        folder "Subtitle Files (.srt)" as subtitle_files
+        folder "Translation Files" as translation_files
+    }
+
+    note right of video_storage
+        - High-capacity storage
+        - Fast read/write for video
+        - Backup & replication
+        - Optional: AWS S3, Azure Blob
+    end note
+}
+
+' CDN (Optional Production)
+cloud "CDN\n(Optional Production)" as cdn {
+    component "Static Asset Delivery" as cdn_static
+    component "Video Streaming" as cdn_video
+
+    note right of cdn_static
+        - CloudFlare / AWS CloudFront
+        - Global edge locations
+        - Caching strategy
+        - SSL/TLS termination
+    end note
+}
+
+' Communication protocols and connections
+browser -down-> nginx : HTTPS/443\nWebSocket (WSS)
+nginx -down-> api_service : HTTP/8000\nReverse Proxy
+nginx -down-> websocket_server : WS/8000\nUpgrade Connection
+
+api_service -right-> postgres : PostgreSQL Protocol\nSQLAlchemy async
+api_service -down-> transcription : Python API\nAsync invocation
+api_service -down-> translation : Python API\nAsync invocation
+api_service -down-> nlp : Python API\nSync invocation
+
+api_service -down-> video_storage : File I/O\nRead/Write operations
+workers -down-> video_storage : File I/O\nBackground processing
+
+cdn -up-> browser : HTTPS\nCached content
+cdn -down-> nginx : Origin fetch\nCache miss
+
+' Development configuration
+package "Development Environment" as dev_env {
+    node "Developer Machine\n(Windows WSL2 / macOS)" as dev_machine {
+        component "Frontend Dev Server" as frontend_dev {
+            artifact "Vite Dev Server\nPort 3000" as vite
+        }
+
+        component "Backend Dev Server" as backend_dev {
+            artifact "Uvicorn\nPort 8000\nHot Reload" as uvicorn_dev
+        }
+
+        database "SQLite" as sqlite {
+            storage "Development DB" as dev_db
+        }
+
+        storage "Local Storage" as local_storage
+    }
+
+    note right of dev_machine
+        Development Setup:
+        - Frontend: npm run dev (Vite)
+        - Backend: uvicorn with --reload
+        - SQLite for quick iteration
+        - Local file storage
+        - No GPU required (CPU models)
+    end note
+}
+
+' Production deployment notes
+note top of app_server
+    Production Deployment Options:
+    1. Docker Compose (single server)
+    2. Kubernetes (scalable)
+    3. AWS ECS/EKS
+    4. Azure Container Apps
+    5. Google Cloud Run
+
+    Scaling strategy:
+    - Horizontal: Multiple API instances
+    - Load balancer: Nginx / AWS ALB
+    - Database: Read replicas
+    - AI: Dedicated GPU nodes
+end note
+
+note bottom of ai_server
+    AI Model Deployment:
+    - Containerized (Docker)
+    - Model versioning
+    - A/B testing capability
+    - Graceful model updates
+    - Monitoring & logging
+
+    Performance:
+    - Batch inference
+    - Model quantization
+    - GPU memory optimization
+    - Request queuing
+end note
+
+note bottom of storage_server
+    Storage Strategy:
+    Development:
+    - Local filesystem
+    - SQLite database
+
+    Production:
+    - Object storage (S3/Azure)
+    - PostgreSQL cluster
+    - CDN for static assets
+    - Video streaming optimization
+end note
+
+' Security notes
+note left of browser
+    Security Layers:
+    - HTTPS/TLS encryption
+    - JWT + HttpOnly cookies
+    - CORS configuration
+    - Rate limiting
+    - Input validation
+    - SQL injection prevention
+    - XSS protection
+end note
+
+@enduml

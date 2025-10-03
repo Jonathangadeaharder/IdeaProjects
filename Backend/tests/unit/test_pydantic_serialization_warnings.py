@@ -229,16 +229,22 @@ class TestPydanticWarningsDetection:
 
     def test_vocabulary_filter_service_output_validates(self):
         """Test that VocabularyFilterService._create_vocabulary_word_dict produces valid structure"""
-        from unittest.mock import Mock
 
         from services.processing.chunk_services.vocabulary_filter_service import VocabularyFilterService
 
         service = VocabularyFilterService()
 
-        mock_word = Mock(word="Buch", lemma="buch", difficulty_level="A1", translation="book", part_of_speech="noun")
+        # Use a dict instead of Mock to avoid Mock.model_dump() triggering Pydantic path
+        word_dict_input = {
+            "word": "Buch",
+            "lemma": "buch",
+            "difficulty_level": "A1",
+            "translation": "book",
+            "part_of_speech": "noun",
+        }
 
         # Get the dict created by the service
-        vocab_dict = service._create_vocabulary_word_dict(mock_word)
+        vocab_dict = service._create_vocabulary_word_dict(word_dict_input)
 
         # Verify structure
         assert "known" in vocab_dict, "Should have 'known' field"

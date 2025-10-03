@@ -47,7 +47,7 @@ def download_video(url: str, destination: str, filename: str | None = None) -> s
         full_path.touch()
         return str(full_path)
     except Exception as e:
-        raise Exception(f"Failed to create file at {full_path}: {e}")
+        raise Exception(f"Failed to create file at {full_path}: {e}") from e
 
 
 def is_valid_url(url: str) -> bool:

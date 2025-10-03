@@ -1,0 +1,116 @@
+@startuml sequence-authentication
+!theme mars
+
+title User Authentication Flow - JWT Login with Cookie
+
+actor "User" as user
+participant "Frontend\n(React)" as frontend
+participant "API Gateway\n(FastAPI)" as gateway
+participant "Auth Routes\n(/auth)" as routes
+participant "FastAPI-Users\n(Auth Manager)" as fastapi_users
+participant "Auth Service" as auth_service
+participant "User Repository" as repo
+participant "Database\n(PostgreSQL)" as db
+
+user -> frontend: Enter credentials\n(email, password)
+activate frontend
+
+frontend -> frontend: Validate form\n(email format, required fields)
+
+frontend -> gateway: POST /auth/jwt/login\n{email, password}
+activate gateway
+
+gateway -> gateway: CORS validation\nRate limiting check
+
+gateway -> routes: Forward request
+activate routes
+
+routes -> fastapi_users: Authenticate user
+activate fastapi_users
+
+fastapi_users -> auth_service: Verify credentials
+activate auth_service
+
+auth_service -> repo: Get user by email
+activate repo
+
+repo -> db: SELECT * FROM users\nWHERE email = ?
+activate db
+
+db --> repo: User record\n(id, email, hashed_password,\nis_active, is_verified)
+deactivate db
+
+repo --> auth_service: User object
+deactivate repo
+
+auth_service -> auth_service: Verify password hash\nbcrypt.checkpw()
+
+alt Password Invalid
+    auth_service --> fastapi_users: Invalid credentials
+    fastapi_users --> routes: 400 Bad Request
+    routes --> gateway: Error response
+    gateway --> frontend: Authentication failed
+    frontend --> user: Show error:\n"Invalid email or password"
+else Password Valid
+    auth_service -> auth_service: Check user is_active\nCheck user is_verified
+
+    alt User Inactive or Unverified
+        auth_service --> fastapi_users: User not active/verified
+        fastapi_users --> routes: 400 Bad Request
+        routes --> gateway: Error response
+        gateway --> frontend: Account not active
+        frontend --> user: Show error:\n"Account not activated"
+    else User Active and Verified
+        auth_service --> fastapi_users: User authenticated
+        deactivate auth_service
+
+        fastapi_users -> fastapi_users: Generate JWT token\nPayload: {user_id, exp, iat}
+
+        fastapi_users -> fastapi_users: Create cookie\nHttpOnly, Secure, SameSite
+
+        fastapi_users -> repo: Update last_login timestamp
+        activate repo
+
+        repo -> db: UPDATE users\nSET last_login = NOW()\nWHERE id = ?
+        activate db
+        db --> repo: Success
+        deactivate db
+        deactivate repo
+
+        fastapi_users --> routes: Token + User data
+        deactivate fastapi_users
+
+        routes --> gateway: 200 OK\n{access_token, token_type}\nSet-Cookie: JWT
+        deactivate routes
+
+        gateway --> frontend: Success + JWT cookie
+        deactivate gateway
+
+        frontend -> frontend: Store user state\n(Zustand store)
+
+        frontend -> frontend: Redirect to\n/dashboard
+
+        frontend --> user: Show dashboard\nAuthenticated session
+        deactivate frontend
+    end
+end
+
+note over frontend, db
+    Security measures:
+    - Password hashing with bcrypt
+    - HttpOnly cookies prevent XSS
+    - Secure flag for HTTPS only
+    - SameSite prevents CSRF
+    - JWT expiration (configurable)
+    - Rate limiting on login endpoint
+end note
+
+note over user, frontend
+    User experience:
+    - Immediate feedback on errors
+    - Clear error messages
+    - Automatic redirect on success
+    - Session persistence with cookie
+end note
+
+@enduml

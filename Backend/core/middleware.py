@@ -8,7 +8,6 @@ from collections.abc import Callable
 from datetime import datetime
 
 from fastapi import FastAPI, HTTPException, Request, Response, status
-from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
@@ -18,7 +17,6 @@ from services.authservice.auth_service import (
     UserAlreadyExistsError,
 )
 
-from .config import settings
 from .exceptions import LangPlugException
 
 logger = logging.getLogger(__name__)

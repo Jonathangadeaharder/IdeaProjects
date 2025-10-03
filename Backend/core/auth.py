@@ -39,16 +39,15 @@ class UserCreate(BaseUserCreate):
     @field_validator("password")
     @classmethod
     def validate_password(cls, v):
-        import re
+        """
+        Validate password using PasswordValidator for strong security
+        Requires 12 characters minimum with complexity requirements
+        """
+        from services.authservice.password_validator import PasswordValidator
 
-        if len(v) < 8:
-            raise ValueError("Password must be at least 8 characters long")
-        if not re.search(r"[A-Z]", v):
-            raise ValueError("Password must contain at least one uppercase letter")
-        if not re.search(r"[a-z]", v):
-            raise ValueError("Password must contain at least one lowercase letter")
-        if not re.search(r"\d", v):
-            raise ValueError("Password must contain at least one digit")
+        is_valid, error_msg = PasswordValidator.validate(v)
+        if not is_valid:
+            raise ValueError(error_msg)
         return v
 
 
@@ -83,8 +82,8 @@ class UserManager(BaseUserManager[User, int]):  # Changed UUID to int
         """Parse string ID to integer for integer-based user IDs"""
         try:
             return int(value)
-        except ValueError:
-            raise ValueError(f"Invalid user ID: {value}")
+        except ValueError as e:
+            raise ValueError(f"Invalid user ID: {value}") from e
 
     async def on_after_register(self, user: User, request: Request | None = None):
         pass
@@ -110,8 +109,9 @@ cookie_transport = CookieTransport(cookie_max_age=3600)
 
 
 def get_jwt_strategy() -> JWTStrategy:
-    # 24 hour token lifetime for long video processing sessions
-    return JWTStrategy(secret=SECRET, lifetime_seconds=86400)
+    # 1 hour token lifetime (reduced from 24h for security)
+    # Use refresh tokens for longer sessions
+    return JWTStrategy(secret=SECRET, lifetime_seconds=3600)
 
 
 # Authentication backend

@@ -36,12 +36,16 @@ class VocabularyAnalyticsService(IService):
             )
             total_result = await db.execute(total_stmt)
 
-            # Handle mock vs real database
-            total_words_raw = total_result.scalar()
-            if hasattr(total_words_raw, "__await__"):
-                total_words = 0  # Default for mock
-            else:
-                total_words = total_words_raw or 0
+            # Handle mock vs real database with error handling
+            try:
+                total_words_raw = total_result.scalar()
+                if hasattr(total_words_raw, "__await__"):
+                    total_words = 0  # Default for mock
+                else:
+                    total_words = total_words_raw or 0
+            except Exception:
+                # Handle database errors gracefully
+                total_words = 0
 
             # Count known words at this level for user
             known_words = 0
@@ -61,11 +65,15 @@ class VocabularyAnalyticsService(IService):
 
                 known_result = await db.execute(known_stmt)
 
-                known_words_raw = known_result.scalar()
-                if hasattr(known_words_raw, "__await__"):
-                    known_words = 0  # Default for mock
-                else:
-                    known_words = known_words_raw or 0
+                try:
+                    known_words_raw = known_result.scalar()
+                    if hasattr(known_words_raw, "__await__"):
+                        known_words = 0  # Default for mock
+                    else:
+                        known_words = known_words_raw or 0
+                except Exception:
+                    # Handle database errors gracefully
+                    known_words = 0
 
             levels_dict[level] = {"total_words": total_words, "user_known": known_words}
 

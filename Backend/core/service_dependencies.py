@@ -1,7 +1,6 @@
 """Service dependencies for FastAPI using direct singleton pattern"""
 
 import logging
-from functools import lru_cache
 from typing import Annotated
 
 from fastapi import Depends
@@ -77,9 +76,8 @@ def get_transcription_service() -> ITranscriptionService | None:
         return None
 
 
-@lru_cache
 def get_translation_service() -> ITranslationService | None:
-    """Get translation service instance (singleton)"""
+    """Get translation service instance"""
     try:
         from services.translationservice.factory import get_translation_service as _get_translation_service
 
