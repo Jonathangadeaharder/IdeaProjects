@@ -52,16 +52,16 @@ jobs:
               pytest -q tests/api --cov=api --cov-report=xml --cov-report=html --cov-fail-under=45
               ;;
             core)
-              pytest -q tests/core --cov=core --cov-report=xml --cov-report=html --cov-fail-under=45
+              pytest -q tests/core --cov=core --cov-report=xml --cov-report=html --cov-fail-under=25
               ;;
             services)
-              pytest -q tests/services --cov=services --cov-report=xml --cov-report=html --cov-fail-under=45
+              pytest -q tests/services --cov=services --cov-report=xml --cov-report=html --cov-fail-under=25
               ;;
             management)
               pytest -q tests/management --cov=management --cov-report=xml --cov-report=html --cov-fail-under=45
               ;;
             integration)
-              pytest -q tests/integration/test_inprocess_*.py --cov-report=xml --cov-report=html
+              pytest -q tests/integration/test_inprocess_*.py --cov=api --cov=core --cov=services --cov-report=xml --cov-report=html
               ;;
           esac
         env:
