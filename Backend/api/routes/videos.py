@@ -207,7 +207,7 @@ async def upload_subtitle(
         # Validate file security using FileSecurityValidator
         allowed_extensions = {".srt", ".vtt", ".sub"}
         try:
-            safe_path = await FileSecurityValidator.validate_file_upload(subtitle_file, allowed_extensions)
+            await FileSecurityValidator.validate_file_upload(subtitle_file, allowed_extensions)
         except ValueError as e:
             raise HTTPException(status_code=400, detail=str(e)) from e
 

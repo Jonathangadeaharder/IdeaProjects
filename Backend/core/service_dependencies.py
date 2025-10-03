@@ -7,7 +7,17 @@ from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database.models import User
-from services.interfaces import *
+from services.interfaces import (
+    IAuthService,
+    IChunkTranscriptionService,
+    IChunkTranslationService,
+    IChunkUtilities,
+    IProcessingPipelineService,
+    ISubtitleProcessor,
+    ITranscriptionService,
+    ITranslationService,
+    IVocabularyService,
+)
 
 from .auth_dependencies import current_active_user
 from .database import get_async_session as get_db_session
