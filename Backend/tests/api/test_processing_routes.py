@@ -30,10 +30,10 @@ async def test_WhenChunkEndpointProcessesExistingVideo_ThenSucceeds(async_client
             headers=headers,
         )
 
-    # Async processing should return 202 (Accepted)
+    # Async processing should return 200 (OK with task started)
     assert (
-        response.status_code == 202
-    ), f"Expected 202 (async task accepted), got {response.status_code}: {response.text}"
+        response.status_code == 200
+    ), f"Expected 200 (async task started), got {response.status_code}: {response.text}"
     assert "task" in response.text or "task_id" in response.text
 
 

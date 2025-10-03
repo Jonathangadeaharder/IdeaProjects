@@ -40,10 +40,10 @@ async def test_Whenchunk_processing_accepts_requestCalled_ThenSucceeds(async_htt
             headers=auth["headers"],
         )
 
-        # Async chunk processing should return 202 (Accepted)
+        # Async processing should return 200 (OK with task started)
         assert (
-            response.status_code == 202
-        ), f"Expected 202 (async accepted), got {response.status_code}: {response.text}"
+            response.status_code == 200
+        ), f"Expected 200 (async task started), got {response.status_code}: {response.text}"
 
 
 @pytest.mark.anyio

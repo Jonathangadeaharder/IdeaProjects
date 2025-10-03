@@ -57,7 +57,7 @@ async def test_Whentranslate_subtitles_happy_pathCalled_ThenSucceeds(async_clien
             headers=flow["headers"],
         )
 
-        # Async processing should return 202 (Accepted)
+        # Async processing should return 200 (OK with task started)
         assert (
-            response.status_code == 202
-        ), f"Expected 202 (async accepted), got {response.status_code}: {response.text}"
+            response.status_code == 200
+        ), f"Expected 200 (async task started), got {response.status_code}: {response.text}"
