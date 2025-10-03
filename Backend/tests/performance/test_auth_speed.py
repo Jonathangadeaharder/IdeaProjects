@@ -57,7 +57,7 @@ async def test_login_with_WrongPassword_fails_fast(async_client) -> None:
     )
     elapsed = time.perf_counter() - started
 
-    # Invalid credentials should return 401 (unauthorized)
-    assert status == 401, f"Expected 401 (unauthorized - invalid credentials), got {status}"
+    # FastAPI-Users returns 400 for bad credentials (LOGIN_BAD_CREDENTIALS)
+    assert status == 400, f"Expected 400 (bad credentials), got {status}"
     assert "access_token" not in payload
     assert elapsed < AUTH_ROUND_TRIP_BUDGET
