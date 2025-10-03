@@ -18,5 +18,8 @@ async def test_Whentranscribe_fails_without_serviceCalled_ThenSucceeds(async_htt
         headers=flow["headers"],
     )
 
-    # Missing video file should return 404 (not found)
-    assert response.status_code == 404, f"Expected 404 (video not found), got {response.status_code}: {response.text}"
+    # When transcription service is not available, should return 422 before checking video
+    assert (
+        response.status_code == 422
+    ), f"Expected 422 (service not available), got {response.status_code}: {response.text}"
+    assert "Transcription service is not available" in response.json()["detail"]
