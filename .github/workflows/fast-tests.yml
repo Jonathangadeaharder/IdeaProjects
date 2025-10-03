@@ -81,6 +81,8 @@ jobs:
             --tb=short \
             --disable-warnings \
             --durations=10
+        env:
+          LANGPLUG_SECRET_KEY: test-secret-key-for-ci-only-not-for-production-use
 
       - name: Lint with ruff (if available)
         run: |
