@@ -159,3 +159,25 @@ async def process_chunk(
     except Exception as e:
         logger.error(f"Failed to start chunk processing: {e!s}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Chunk processing failed: {e!s}") from e
+
+
+async def run_processing_pipeline(
+    video_path: str,
+    task_id: str,
+    task_progress: dict[str, Any],
+    user_id: int,
+) -> None:
+    """
+    Full processing pipeline stub (deprecated - use individual endpoints).
+
+    This function was removed during refactoring. Use the following endpoints instead:
+    1. POST /api/process/transcribe - Transcribe video
+    2. POST /api/process/filter-subtitles - Filter vocabulary
+    3. POST /api/process/apply-selective-translations - Translate filtered words
+
+    TODO: Remove this stub and update pipeline_routes.py to use the correct endpoints.
+    """
+    raise NotImplementedError(
+        "Full pipeline processing has been deprecated. "
+        "Use individual endpoints: /transcribe, /filter-subtitles, /apply-selective-translations"
+    )
