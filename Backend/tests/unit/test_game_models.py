@@ -205,7 +205,7 @@ class TestGameQuestionValidation:
             "user_answer": "Blue",
             "is_correct": True,
             "points": 10,
-            "timestamp": datetime.now(),
+            "timestamp": datetime.now().isoformat(),
         }
 
         question = GameQuestion(**question_data)
