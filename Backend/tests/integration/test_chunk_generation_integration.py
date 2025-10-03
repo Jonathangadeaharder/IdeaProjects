@@ -24,7 +24,7 @@ async def test_Whenchunk_processing_accepts_requestCalled_ThenSucceeds(async_htt
 
         transcription = Mock(is_initialized=True)
         transcription.transcribe.return_value = Mock(segments=[])
-        monkeypatch.setattr("api.routes.processing.get_transcription_service", lambda: transcription)
+        monkeypatch.setattr("core.dependencies.get_transcription_service", lambda: transcription)
 
         filter_chain = Mock()
         filter_chain.process_file.return_value = {

@@ -24,7 +24,7 @@ async def test_Whentranscribe_endpointCalled_ThenReturnstask(async_http_client, 
         transcriber = Mock()
         transcriber.is_initialized = True
         transcriber.transcribe.return_value = Mock(segments=[])
-        monkeypatch.setattr("api.routes.processing.get_transcription_service", lambda: transcriber)
+        monkeypatch.setattr("core.dependencies.get_transcription_service", lambda: transcriber)
 
         response = await async_http_client.post(
             "/api/process/transcribe",

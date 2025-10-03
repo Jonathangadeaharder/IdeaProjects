@@ -28,7 +28,7 @@ async def test_WhenFilterSubtitlesCalled_ThenReturnsTaskMetadata(async_client):
     mock_settings.default_language = "en"
 
     with (
-        patch("api.routes.processing.settings", mock_settings),
+        patch("api.routes.filtering_routes.settings", mock_settings),
         patch("pathlib.Path.exists", return_value=True),
     ):
         response = await async_client.post("/api/process/filter-subtitles", json=payload, headers=headers)

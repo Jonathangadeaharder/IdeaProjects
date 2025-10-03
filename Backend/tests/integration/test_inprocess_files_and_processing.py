@@ -41,9 +41,9 @@ async def test_Whentranslate_subtitles_happy_pathCalled_ThenSucceeds(async_clien
         translator = Mock()
         translator.is_initialized = True
         translator.translate_batch.return_value = []
-        monkeypatch.setattr("api.routes.processing.get_translation_service", lambda: translator)
+        monkeypatch.setattr("core.dependencies.get_translation_service", lambda: translator)
         monkeypatch.setattr(
-            "api.routes.processing.get_transcription_service",
+            "core.dependencies.get_transcription_service",
             lambda: Mock(is_initialized=True, transcribe=Mock(return_value=Mock(segments=[]))),
         )
 
