@@ -264,12 +264,12 @@ The repository now has a robust, well-tested CI/CD infrastructure ready for cont
 
 ---
 
-**Generated**: 2025-10-04T06:00:00Z (Updated: 2025-10-04T09:30:00Z)
+**Generated**: 2025-10-04T06:00:00Z (Updated: 2025-10-04T10:00:00Z)
 **Author**: Claude (Sonnet 4.5)
-**Task Duration**: ~6 hours (initial) + ~1 hour (improvements)
-**Total Effort**: 36 commits, 58+ test fixes, 7 workflows debugged, 5 performance optimizations
+**Task Duration**: ~6 hours (initial) + ~1.5 hours (improvements)
+**Total Effort**: 38 commits, 58+ test fixes, 7 workflows debugged, 6 performance optimizations
 
-## Post-Debugging Improvements (Oct 4, 08:00-09:30)
+## Post-Debugging Improvements (Oct 4, 08:00-10:00)
 
 After completing the initial debugging, the following performance and consistency improvements were implemented based on the recommendations:
 
@@ -306,3 +306,19 @@ After completing the initial debugging, the following performance and consistenc
 - Deploy workflow uses multi-path cache for both requirements.txt and requirements-dev.txt
 - Estimated build time reduction: 30-60 seconds per workflow run
 - Reduces network traffic and improves reliability
+
+### 37. **d84e726** - `perf: add job timeouts to prevent quota waste from hung jobs`
+
+- Added timeout-minutes configuration to 15 jobs across 8 workflows that were missing them
+- Timeouts configured by job type:
+  - Linting/Docs: 10 minutes
+  - Unit tests: 15-20 minutes
+  - Contract tests: 15-25 minutes
+  - E2E tests: 30 minutes
+  - Docker builds: 30 minutes
+  - Deployments: 20 minutes
+  - Security scans: 15 minutes
+  - Nightly CI: 30 minutes
+  - Notifications: 5 minutes
+- Prevents hung jobs from running for 6 hours (default), wasting quota
+- **Estimated maximum quota savings: Up to 6 hours per hung job prevented**
