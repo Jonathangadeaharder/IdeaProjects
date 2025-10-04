@@ -192,7 +192,7 @@ class Logger {
 
   private async sendBatchToBackend(batch: LogEntry[]) {
     try {
-      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), 5000)

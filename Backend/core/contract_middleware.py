@@ -124,6 +124,10 @@ class ContractValidationMiddleware(BaseHTTPMiddleware):
         if path.startswith("/api/videos/subtitles/"):
             return True
 
+        # Skip validation for test and debug endpoints
+        if path.startswith("/api/test/") or path.startswith("/api/debug/"):
+            return True
+
         return path in ["/openapi.json", "/docs", "/redoc"]
 
     def _validate_request_contract(self, method: str, path: str, schema: dict[str, Any]) -> JSONResponse | None:

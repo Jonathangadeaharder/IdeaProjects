@@ -124,11 +124,14 @@ async def process_chunk(
         generates chunk-specific subtitle segments.
     """
     try:
+        # Normalize Windows backslashes to forward slashes for WSL compatibility
+        normalized_path = request.video_path.replace("\\", "/")
         full_path = (
-            Path(request.video_path)
-            if request.video_path.startswith("/")
-            else settings.get_videos_path() / request.video_path
+            Path(normalized_path) if normalized_path.startswith("/") else settings.get_videos_path() / normalized_path
         )
+
+        logger.info(f"Processing chunk for video: {full_path}")
+
         # Validate chunk timing first
         if request.start_time < 0 or request.end_time <= request.start_time:
             raise HTTPException(status_code=400, detail="Invalid chunk timing")

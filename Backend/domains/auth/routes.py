@@ -17,13 +17,13 @@ router = APIRouter(prefix="/auth", tags=["authentication"])
 security = HTTPBearer()
 
 
-@router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
 async def register_user(
     user_data: UserCreate,
     db: Session = Depends(get_db),
     auth_service: AuthenticationService = Depends(get_auth_service),
 ):
-    """Register a new user"""
+    """Register a new user and return authentication token"""
     try:
         return await auth_service.register_user(db, user_data)
     except ValidationError as e:

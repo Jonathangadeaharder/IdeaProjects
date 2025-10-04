@@ -183,7 +183,9 @@ async def transcribe_video(
             logger.error(f"Error getting videos path: {e}")
             raise HTTPException(status_code=500, detail="Configuration error") from e
 
-        full_path = Path(request.video_path) if request.video_path.startswith("/") else videos_path / request.video_path
+        # Normalize Windows backslashes to forward slashes for WSL compatibility
+        normalized_path = request.video_path.replace("\\", "/")
+        full_path = Path(normalized_path) if normalized_path.startswith("/") else videos_path / normalized_path
 
         logger.info(f"Full video path: {full_path}")
 

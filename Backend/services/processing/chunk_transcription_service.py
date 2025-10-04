@@ -130,6 +130,9 @@ class ChunkTranscriptionService(IChunkTranscriptionService):
         duration = end_time - start_time
         audio_output = video_file.parent / f"{video_file.stem}_chunk_{start_time}s_{end_time}s.wav"
 
+        logger.info(f"Extracting audio from video: {video_file}")
+        logger.info(f"Output audio file: {audio_output}")
+
         try:
             # Build ffmpeg command for audio extraction
             cmd = [
@@ -168,6 +171,8 @@ class ChunkTranscriptionService(IChunkTranscriptionService):
 
             if process.returncode != 0:
                 error_msg = stderr.decode("utf-8", errors="replace") if stderr else "Unknown ffmpeg error"
+                logger.error(f"FFmpeg failed for video: {video_file}")
+                logger.error(f"FFmpeg error output: {error_msg}")
                 # Clean up partial output file if it exists
                 if audio_output.exists():
                     try:
@@ -175,10 +180,20 @@ class ChunkTranscriptionService(IChunkTranscriptionService):
                         logger.debug(f"Cleaned up partial audio file: {audio_output}")
                     except Exception as cleanup_error:
                         logger.warning(f"Failed to cleanup partial file: {cleanup_error}")
-                raise ChunkTranscriptionError(f"FFmpeg audio extraction failed: {error_msg}")
+                raise ChunkTranscriptionError(
+                    f"FFmpeg audio extraction failed for {video_file.name}. "
+                    f"Video path: {video_file}. Error: {error_msg}"
+                )
 
             if not audio_output.exists():
-                raise ChunkTranscriptionError(f"Audio extraction failed: Output file not created at {audio_output}")
+                logger.error("FFmpeg completed but output file not created")
+                logger.error(f"Expected output: {audio_output}")
+                logger.error(f"Input video: {video_file}")
+                logger.error(f"Video exists: {video_file.exists()}")
+                raise ChunkTranscriptionError(
+                    f"Audio extraction failed: FFmpeg completed but output file not created. "
+                    f"Video: {video_file}, Expected output: {audio_output}"
+                )
 
             logger.info(f"Audio extracted for {video_file.name} ({start_time}-{end_time}s) -> {audio_output}")
             return audio_output

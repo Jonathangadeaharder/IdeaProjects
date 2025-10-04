@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import styled from 'styled-components'
 import { toast } from 'react-hot-toast'
 import { useAuthStore } from '@/store/useAuthStore'
@@ -102,7 +102,7 @@ export const RegisterForm: React.FC = () => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
-  const [name, setName] = useState('')
+  const [username, setUsername] = useState('')
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
 
@@ -116,11 +116,11 @@ export const RegisterForm: React.FC = () => {
     if (!email.includes('@')) {
       return 'Please enter a valid email address'
     }
-    if (!name.trim()) {
-      return 'Name is required'
+    if (!username.trim()) {
+      return 'Username is required'
     }
-    if (name.length < 2) {
-      return 'Name must be at least 2 characters long'
+    if (username.length < 2) {
+      return 'Username must be at least 2 characters long'
     }
     if (!password) {
       return 'Password is required'
@@ -146,7 +146,7 @@ export const RegisterForm: React.FC = () => {
     }
 
     try {
-      await register(email, password, name)
+      await register(email, password, username)
       setSuccess(true)
       toast.success('Account created successfully! Redirecting to dashboard...')
       setTimeout(() => navigate('/'), 2000)
@@ -188,38 +188,42 @@ export const RegisterForm: React.FC = () => {
         <form onSubmit={handleSubmit}>
           <Input
             type="email"
+            name="email"
             placeholder="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             disabled={isLoading}
-            data-testid="register-email-input"
+            data-testid="email-input"
           />
 
           <Input
             type="text"
-            placeholder="Name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
+            name="username"
+            placeholder="Username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
             disabled={isLoading}
-            data-testid="register-name-input"
+            data-testid="username-input"
           />
 
           <Input
             type="password"
+            name="password"
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             disabled={isLoading}
-            data-testid="register-password-input"
+            data-testid="password-input"
           />
 
           <Input
             type="password"
+            name="confirm_password"
             placeholder="Confirm Password"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             disabled={isLoading}
-            data-testid="register-confirm-password-input"
+            data-testid="confirm-password-input"
           />
 
           <PasswordRequirements>
@@ -240,14 +244,14 @@ export const RegisterForm: React.FC = () => {
           <RegisterButton
             type="submit"
             disabled={isLoading || success}
-            data-testid="register-submit-button"
+            data-testid="register-submit"
           >
             {isLoading ? 'Creating Account...' : 'Sign Up'}
           </RegisterButton>
         </form>
 
         <SignInText>
-          Already have an account? <a href="/login">Sign in now</a>.
+          Already have an account? <Link to="/login" data-testid="login-link">Sign in now</Link>.
         </SignInText>
       </RegisterCard>
     </RegisterContainer>

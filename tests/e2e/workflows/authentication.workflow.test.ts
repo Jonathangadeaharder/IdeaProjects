@@ -71,13 +71,26 @@ test.describe('Authentication Workflow @smoke', () => {
       // Password input with explicit validation
       const passwordInput = page.locator('[data-testid="password-input"]');
       if (!(await passwordInput.isVisible())) {
-        const typePasswordInput = page.locator('input[type="password"]');
+        const typePasswordInput = page.locator('input[type="password"]').first();
         if (!(await typePasswordInput.isVisible())) {
           throw new Error('Password input not found - missing data-testid="password-input" instrumentation');
         }
         await typePasswordInput.fill(testUser.password);
       } else {
         await passwordInput.fill(testUser.password);
+      }
+
+      // Confirm Password input with explicit validation
+      const confirmPasswordInput = page.locator('[data-testid="confirm-password-input"]');
+      if (!(await confirmPasswordInput.isVisible())) {
+        const typePasswordInputs = page.locator('input[type="password"]');
+        const count = await typePasswordInputs.count();
+        if (count < 2) {
+          throw new Error('Confirm password input not found - missing data-testid="confirm-password-input" instrumentation');
+        }
+        await typePasswordInputs.nth(1).fill(testUser.password);
+      } else {
+        await confirmPasswordInput.fill(testUser.password);
       }
 
       // Submit button with explicit validation

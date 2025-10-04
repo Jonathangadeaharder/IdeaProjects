@@ -53,6 +53,10 @@ async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
     async with AsyncSessionLocal() as session:
         try:
             yield session
+            await session.commit()  # Commit changes before closing
+        except Exception:
+            await session.rollback()  # Rollback on error
+            raise
         finally:
             await session.close()
 

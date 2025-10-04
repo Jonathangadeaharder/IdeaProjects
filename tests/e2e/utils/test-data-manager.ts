@@ -1,4 +1,4 @@
-import axios, { AxiosInstance } from 'axios';
+import axios, { AxiosError, AxiosInstance } from 'axios';
 import { faker } from '@faker-js/faker';
 
 export interface TestUser {
@@ -29,7 +29,7 @@ export class TestDataManager {
   private api: AxiosInstance;
   private readonly baseUrl: string;
 
-  constructor(baseUrl: string = 'http://localhost:8001') {
+  constructor(baseUrl: string = 'http://localhost:8000') {
     this.baseUrl = baseUrl;
     this.api = axios.create({
       baseURL: baseUrl,
@@ -58,8 +58,9 @@ export class TestDataManager {
 
       return user;
     } catch (error) {
-      console.error('Failed to create test user:', error.response?.data || error.message);
-      throw new Error(`Failed to create test user: ${error.message}`);
+      const axiosError = error as AxiosError;
+      console.error('Failed to create test user:', axiosError.response?.data || axiosError.message);
+      throw new Error(`Failed to create test user: ${axiosError.message}`);
     }
   }
 
@@ -78,8 +79,9 @@ export class TestDataManager {
         token: response.data.access_token,
       };
     } catch (error) {
-      console.error('Failed to login user:', error.response?.data || error.message);
-      throw new Error(`Failed to login user: ${error.message}`);
+      const axiosError = error as AxiosError;
+      console.error('Failed to login user:', axiosError.response?.data || axiosError.message);
+      throw new Error(`Failed to login user: ${axiosError.message}`);
     }
   }
 
@@ -99,8 +101,9 @@ export class TestDataManager {
       vocabulary.id = response.data.id;
       return vocabulary;
     } catch (error) {
-      console.error('Failed to create test vocabulary:', error.response?.data || error.message);
-      throw new Error(`Failed to create test vocabulary: ${error.message}`);
+      const axiosError = error as AxiosError;
+      console.error('Failed to create test vocabulary:', axiosError.response?.data || axiosError.message);
+      throw new Error(`Failed to create test vocabulary: ${axiosError.message}`);
     }
   }
 
@@ -122,8 +125,9 @@ export class TestDataManager {
       video.id = response.data.id;
       return video;
     } catch (error) {
-      console.error('Failed to create test video:', error.response?.data || error.message);
-      throw new Error(`Failed to create test video: ${error.message}`);
+      const axiosError = error as AxiosError;
+      console.error('Failed to create test video:', axiosError.response?.data || axiosError.message);
+      throw new Error(`Failed to create test video: ${axiosError.message}`);
     }
   }
 
@@ -139,8 +143,9 @@ export class TestDataManager {
 
       return response.data;
     } catch (error) {
-      console.error('Failed to start game session:', error.response?.data || error.message);
-      throw new Error(`Failed to start game session: ${error.message}`);
+      const axiosError = error as AxiosError;
+      console.error('Failed to start game session:', axiosError.response?.data || axiosError.message);
+      throw new Error(`Failed to start game session: ${axiosError.message}`);
     }
   }
 
@@ -152,8 +157,9 @@ export class TestDataManager {
 
       return response.data;
     } catch (error) {
-      console.error('Failed to submit game answer:', error.response?.data || error.message);
-      throw new Error(`Failed to submit game answer: ${error.message}`);
+      const axiosError = error as AxiosError;
+      console.error('Failed to submit game answer:', axiosError.response?.data || axiosError.message);
+      throw new Error(`Failed to submit game answer: ${axiosError.message}`);
     }
   }
 
@@ -167,8 +173,9 @@ export class TestDataManager {
 
       return response.data.task_id;
     } catch (error) {
-      console.error('Failed to process video:', error.response?.data || error.message);
-      throw new Error(`Failed to process video: ${error.message}`);
+      const axiosError = error as AxiosError;
+      console.error('Failed to process video:', axiosError.response?.data || axiosError.message);
+      throw new Error(`Failed to process video: ${axiosError.message}`);
     }
   }
 
@@ -180,8 +187,9 @@ export class TestDataManager {
 
       return response.data;
     } catch (error) {
-      console.error('Failed to get processing status:', error.response?.data || error.message);
-      throw new Error(`Failed to get processing status: ${error.message}`);
+      const axiosError = error as AxiosError;
+      console.error('Failed to get processing status:', axiosError.response?.data || axiosError.message);
+      throw new Error(`Failed to get processing status: ${axiosError.message}`);
     }
   }
 
@@ -190,7 +198,8 @@ export class TestDataManager {
       const headers = user?.token ? { Authorization: `Bearer ${user.token}` } : {};
       await this.api.delete('/api/test/cleanup', { headers });
     } catch (error) {
-      console.error('Failed to cleanup test data:', error.response?.data || error.message);
+      const axiosError = error as AxiosError;
+      console.error('Failed to cleanup test data:', axiosError.response?.data || axiosError.message);
       // Don't throw in cleanup
     }
   }
@@ -211,7 +220,8 @@ export class TestDataManager {
         // Wait before checking again
         await new Promise(resolve => setTimeout(resolve, 2000));
       } catch (error) {
-        if (error.message.includes('Processing failed')) {
+        const err = error as Error;
+        if (err.message.includes('Processing failed')) {
           throw error;
         }
         // Continue waiting for other errors

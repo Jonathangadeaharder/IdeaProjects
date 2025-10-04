@@ -19,6 +19,7 @@ from api.routes import (
     processing,
     progress,
     srt_utilities,
+    test,
     user_profile,
     videos,
     vocabulary,
@@ -150,12 +151,13 @@ def create_app() -> FastAPI:
     app.include_router(game.router, prefix="/api/game")
     app.include_router(srt_utilities.router)  # Already includes /api/srt prefix
 
-    # Only include debug routes in debug mode
+    # Only include debug and test routes in debug mode
     if settings.debug:
         app.include_router(debug.router, prefix="/api/debug")
-        logger.info("Debug routes enabled (debug mode)")
+        app.include_router(test.router, prefix="/api/test")
+        logger.info("Debug and test routes enabled (debug mode)")
     else:
-        logger.info("Debug routes disabled (production mode)")
+        logger.info("Debug and test routes disabled (production mode)")
 
     logger.info("FastAPI application created and configured")
     return app

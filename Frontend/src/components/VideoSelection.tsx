@@ -320,7 +320,7 @@ export const VideoSelection: React.FC = () => {
                 📚 Vocabulary Library
               </NavLink>
             </NavLinks>
-            <UserSection>
+            <UserSection data-testid="user-menu">
               <UserName>Welcome, {user?.username}</UserName>
               <ProfileButton onClick={() => navigate('/profile')} data-testid="profile-button">
                 Profile

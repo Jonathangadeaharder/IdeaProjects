@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import styled from 'styled-components'
 import { toast } from 'react-hot-toast'
 import { useAuthStore } from '@/store/useAuthStore'
@@ -200,7 +200,7 @@ export const LoginForm: React.FC = () => {
         </form>
 
         <SignUpText>
-          New to LangPlug? <a href="/register">Sign up now</a>.
+          New to LangPlug? <Link to="/register" data-testid="register-link">Sign up now</Link>.
         </SignUpText>
       </LoginCard>
     </LoginContainer>

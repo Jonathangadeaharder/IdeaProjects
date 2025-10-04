@@ -24,8 +24,8 @@ class AuthenticationService:
     def __init__(self, user_repository: UserRepositoryInterface):
         self.user_repository = user_repository
 
-    async def register_user(self, db: Session, user_data: UserCreate) -> UserResponse:
-        """Register a new user"""
+    async def register_user(self, db: Session, user_data: UserCreate) -> TokenResponse:
+        """Register a new user and return authentication token"""
         existing_user = await self.user_repository.get_by_email(db, user_data.email)
         if existing_user:
             raise ValidationError("Email already registered")
@@ -45,7 +45,15 @@ class AuthenticationService:
             is_verified=False,
         )
 
-        return UserResponse.from_orm(user)
+        await self.user_repository.update_last_login(db, user.id)
+
+        access_token = self._create_access_token({"sub": str(user.id)})
+
+        return TokenResponse(
+            access_token=access_token,
+            expires_in=settings.access_token_expire_minutes * 60,
+            user=UserResponse.from_orm(user),
+        )
 
     async def login_user(self, db: Session, login_data: UserLogin) -> TokenResponse:
         """Authenticate user and return token"""

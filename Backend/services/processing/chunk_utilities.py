@@ -47,10 +47,12 @@ class ChunkUtilities(IChunkUtilities):
         Returns:
             Absolute Path to video file
         """
-        if video_path.startswith("/"):
-            return Path(video_path)
+        # Normalize Windows backslashes to forward slashes for WSL compatibility
+        normalized_path = video_path.replace("\\", "/")
+        if normalized_path.startswith("/"):
+            return Path(normalized_path)
         else:
-            return settings.get_videos_path() / video_path
+            return settings.get_videos_path() / normalized_path
 
     async def get_authenticated_user(self, user_identifier: Any, session_token: str | None) -> User:
         """

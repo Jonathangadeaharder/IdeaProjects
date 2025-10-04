@@ -88,8 +88,21 @@ class VocabularyFilterService:
         """
         vocabulary = []
 
-        if filter_result and "blocking_words" in filter_result:
-            vocabulary = [self._create_vocabulary_word_dict(word) for word in filter_result.get("blocking_words", [])]
+        if not filter_result:
+            return vocabulary
+
+        # Extract vocabulary from blocking_words (single unknown words per subtitle)
+        if "blocking_words" in filter_result:
+            for word in filter_result.get("blocking_words", []):
+                vocabulary.append(self._create_vocabulary_word_dict(word))
+
+        # ALSO extract vocabulary from learning_subtitles (subtitles with 2+ unknown words)
+        if "learning_subtitles" in filter_result:
+            for subtitle in filter_result.get("learning_subtitles", []):
+                # Extract active words from the subtitle
+                active_words = subtitle.active_words if hasattr(subtitle, 'active_words') else []
+                for word in active_words:
+                    vocabulary.append(self._create_vocabulary_word_dict(word))
 
         return vocabulary
 

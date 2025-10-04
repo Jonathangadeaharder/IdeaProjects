@@ -14,7 +14,7 @@ import {
   LanguageIcon,
   EyeSlashIcon
 } from '@heroicons/react/24/solid'
-import axios from 'axios'
+import { apiClient } from '@/services/api-client'
 import { buildVideoStreamUrl } from '@/services/api'
 import { logger } from '@/services/logger'
 import { useSubtitlePreferences, type SubtitleMode } from '@/hooks/useSubtitlePreferences'
@@ -670,19 +670,16 @@ export const ChunkedLearningPlayer: React.FC<ChunkedLearningPlayerProps> = ({
     }
   }, [targetLanguage, nativeLanguage])
 
-  // Debug language preferences
-  console.log('[ChunkedLearningPlayer] Language props:', {
-    targetLanguage,
-    nativeLanguage,
-  })
-
   const targetLanguageName = targetLanguage?.name || 'German'
   const nativeLanguageName = nativeLanguage?.name || 'Spanish'
 
-  console.log('[ChunkedLearningPlayer] Language names:', {
-    targetLanguageName,
-    nativeLanguageName,
-  })
+  // Debug language preferences (only log when languages change)
+  useEffect(() => {
+    logger.debug('ChunkedLearningPlayer', 'Language configuration', {
+      targetLanguage: targetLanguageName,
+      nativeLanguage: nativeLanguageName
+    })
+  }, [targetLanguageName, nativeLanguageName])
   const subtitleModeLabels: Record<SubtitleMode, string> = {
     off: 'Off',
     original: `${targetLanguageName} Only`,
@@ -893,8 +890,6 @@ export const ChunkedLearningPlayer: React.FC<ChunkedLearningPlayerProps> = ({
       endTime
     })
 
-    const token = localStorage.getItem('authToken')
-
     const normalizeEntries = (entries: SubtitleEntry[]): SubtitleEntry[] => {
       const duration = endTime - startTime
 
@@ -917,16 +912,7 @@ export const ChunkedLearningPlayer: React.FC<ChunkedLearningPlayerProps> = ({
     if (subtitlePath) {
       const fullSubtitleUrl = buildSubtitleUrl(subtitlePath)
 
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json'
-      }
-
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`
-      }
-
-      axios.get(fullSubtitleUrl, {
-        headers,
+      apiClient.get(fullSubtitleUrl, {
         params: { _ts: Date.now() }
       })
         .then(response => {
@@ -946,16 +932,7 @@ export const ChunkedLearningPlayer: React.FC<ChunkedLearningPlayerProps> = ({
     if (translationPath) {
       const fullTranslationUrl = buildSubtitleUrl(translationPath)
 
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json'
-      }
-
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`
-      }
-
-      axios.get(fullTranslationUrl, {
-        headers,
+      apiClient.get(fullTranslationUrl, {
         params: { _ts: Date.now() }
       })
         .then(response => {

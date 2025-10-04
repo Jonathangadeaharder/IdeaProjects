@@ -49,7 +49,9 @@ async def run_subtitle_filtering(
         )
 
         # Get subtitle file path
-        video_file = Path(video_path) if video_path.startswith("/") else settings.get_videos_path() / video_path
+        # Normalize Windows backslashes to forward slashes for WSL compatibility
+        normalized_path = video_path.replace("\\", "/")
+        video_file = Path(normalized_path) if normalized_path.startswith("/") else settings.get_videos_path() / normalized_path
         srt_file = video_file.with_suffix(".srt")
 
         if not srt_file.exists():
@@ -171,10 +173,12 @@ async def filter_subtitles(
     """
     try:
         # Validate subtitle file exists before starting background task
+        # Normalize Windows backslashes to forward slashes for WSL compatibility
+        normalized_path = request.video_path.replace("\\", "/")
         video_file = (
-            Path(request.video_path)
-            if request.video_path.startswith("/")
-            else settings.get_videos_path() / request.video_path
+            Path(normalized_path)
+            if normalized_path.startswith("/")
+            else settings.get_videos_path() / normalized_path
         )
         srt_file = video_file.with_suffix(".srt")
 

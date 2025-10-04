@@ -331,7 +331,7 @@ test.describe('Vocabulary Learning Workflow @smoke', () => {
         )
       );
 
-      await expect(vocabularyItems).toHaveCount({ min: 1 });
+      await expect(vocabularyItems.first()).toBeVisible();
 
       // Check that visible items contain intermediate word
       const visibleText = await page.textContent('body');
