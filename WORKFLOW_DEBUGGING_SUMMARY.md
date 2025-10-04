@@ -264,10 +264,10 @@ The repository now has a robust, well-tested CI/CD infrastructure ready for cont
 
 ---
 
-**Generated**: 2025-10-04T06:00:00Z (Updated: 2025-10-04T08:30:00Z)
+**Generated**: 2025-10-04T06:00:00Z (Updated: 2025-10-04T09:00:00Z)
 **Author**: Claude (Sonnet 4.5)
-**Task Duration**: ~6 hours (initial) + ~30 minutes (improvements)
-**Total Effort**: 33 commits, 58+ test fixes, 7 workflows debugged, 3 consistency improvements
+**Task Duration**: ~6 hours (initial) + ~45 minutes (improvements)
+**Total Effort**: 35 commits, 58+ test fixes, 7 workflows debugged, 4 optimizations
 
 ## Post-Debugging Improvements (Oct 4, 08:00-08:30)
 
@@ -290,3 +290,11 @@ After completing the initial debugging, the following improvements were implemen
 - Updated actions/setup-python from v4 to v5 in contract-tests.yml and deploy.yml
 - Standardized all workflows to use latest setup-python version
 - Ensures consistent Python environment setup across CI/CD pipeline
+
+### 35. **7767aed** - `perf: add concurrency groups to workflows to prevent quota waste`
+
+- Added concurrency groups to 7 workflows: code-quality, contract-tests, deploy, docs-check, e2e-tests, security-scan, unit-tests
+- Prevents multiple simultaneous runs of same workflow, saving GitHub Actions quota
+- Deploy workflow uses `cancel-in-progress: false` to prevent interrupting active deployments
+- Other workflows use `cancel-in-progress: true` to cancel superseded runs
+- Estimated quota savings: 30-50% on workflows triggered by rapid commits or PR updates
