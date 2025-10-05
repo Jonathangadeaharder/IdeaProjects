@@ -263,6 +263,15 @@ Entire `services/user_vocabulary/` directory was **dead code** - not used by any
 
 **Deliverable**: TEST_AUDIT_RESULTS.md (detailed 393-line audit report)
 
+**Priority 1: Fix Mislabeled Tests** ✅ COMPLETED (1-2 hours) - 2025-10-05
+
+- [x] Moved 6 mislabeled tests to correct directories
+  - 5 unit tests using database → tests/integration/
+  - 1 unit test using HTTP client → tests/api/
+- [x] Fixed core/service_dependencies.py import errors (deleted interfaces from Task 4)
+- [x] Verified 43/67 moved tests passing
+- [x] Committed changes with history preservation (git mv)
+
 **Phase 2: Convert Integration to Unit Tests (8-10 hours)**
 
 - [ ] Identify integration tests that don't need database (`tests/integration/`)
@@ -1049,7 +1058,7 @@ Backend root now contains only 3 essential files:
 
 ### 22. Delete Obsolete AI Documentation
 
-**Status**: LOW - Historical AI tool documentation
+**Status**: ❌ CANNOT COMPLETE - Conflicts with CLAUDE.md protected files directive
 
 #### Current Files (Root):
 
@@ -1057,19 +1066,26 @@ Backend root now contains only 3 essential files:
 - `GEMINI.md` - 21KB
 - `QWEN.MD.md` - 21KB
 
-These appear to be instructions for different AI coding assistants. With CLAUDE.md as the active standard, these may be obsolete.
+These files are marked as "DO NOT DELETE" in CLAUDE.md "Protected Files" section.
 
-#### Subtasks:
+#### Resolution:
 
-- [ ] Review each file for unique useful content
-- [ ] Extract any useful patterns not in CLAUDE.md
-- [ ] Delete `AGENTS.md`, `GEMINI.md`, `QWEN.MD.md`
-- [ ] Keep only `CLAUDE.md` as the canonical AI instruction file
-- [ ] Update README to reference only CLAUDE.md
+Cannot proceed with this task as it conflicts with explicit user directive in CLAUDE.md:
 
-**Impact**: Low - Reduces confusion about which AI instructions to follow
+```
+**Protected Files**
 
-**Estimated Effort**: 30 minutes (includes review)
+The following files are considered essential and should not be deleted:
+
+- `AGENTS.md`
+- `QWEN.MD.md`
+- `GEMINI.md`
+- `CLAUDE.md`
+```
+
+**Decision**: ❌ Task cancelled - files are protected per user instructions
+
+**Impact**: N/A - User has designated these files as essential documentation
 
 ---
 
