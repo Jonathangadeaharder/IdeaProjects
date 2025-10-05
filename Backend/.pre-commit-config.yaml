@@ -88,7 +88,7 @@ repos:
       - id: debug-statements
       - id: name-tests-test
         args: [--pytest-test-first]
-        exclude: ^(Backend/)?tests/(conftest|base|helpers|fixtures|monitoring|utils|assertion_helpers|auth_helpers|mock_standards|fixture_validation|run_backend_tests|optimize_test_suite)\.py$|^(Backend/)?tests/(helpers|fixtures)/.*\.py$|^(Backend/)?tests/e2e_.*\.py$|^(Backend/)?tests/unit/conftest\.py$
+        exclude: ^(Backend/)?tests/(conftest|base|helpers|fixtures|monitoring|utils|assertion_helpers|auth_helpers|mock_standards|fixture_validation|run_backend_tests|optimize_test_suite)\.py$|^(Backend/)?tests/(helpers|fixtures)/.*\.py$|^(Backend/)?tests/e2e_.*\.py$|^(Backend/)?tests/unit/conftest\.py$|^(Backend/)?tests/manual/.*\.py$
       - id: requirements-txt-fixer
         files: ^requirements.*\.txt$
 
