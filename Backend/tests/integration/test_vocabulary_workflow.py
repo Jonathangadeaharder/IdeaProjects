@@ -15,18 +15,18 @@ class TestCompleteVocabularyLearningWorkflow:
     """Test end-to-end vocabulary learning workflows"""
 
     @pytest.fixture
-    async def authenticated_user(self, async_client):
+    async def authenticated_user(self, async_client, url_builder):
         """Create and authenticate a user for vocabulary testing"""
         user = UserBuilder().build()
 
         # Register user
         register_data = {"username": user.username, "email": user.email, "password": user.password}
-        register_response = await async_client.post("/api/auth/register", json=register_data)
+        register_response = await async_client.post(url_builder.url_for("register:register"), json=register_data)
         assert register_response.status_code == 201
 
         # Login user
         login_data = {"username": user.email, "password": user.password}
-        login_response = await async_client.post("/api/auth/login", data=login_data)
+        login_response = await async_client.post(url_builder.url_for("auth:jwt.login"), data=login_data)
         assert login_response.status_code == 200
 
         token = login_response.json()["access_token"]
@@ -34,13 +34,13 @@ class TestCompleteVocabularyLearningWorkflow:
 
     @pytest.mark.asyncio
     async def test_WhenCompleteVocabularyProgressionWorkflow_ThenAllStepsSucceed(
-        self, async_client, authenticated_user
+        self, async_client, url_builder, authenticated_user
     ):
         """Test complete vocabulary learning progression workflow"""
         headers = authenticated_user["headers"]
 
         # Step 1: Get supported languages (may be empty in test environment)
-        languages_response = await async_client.get("/api/vocabulary/languages", headers=headers)
+        languages_response = await async_client.get(url_builder.url_for("get_supported_languages"), headers=headers)
         assert languages_response.status_code == 200
         languages = languages_response.json()
         assert "languages" in languages
@@ -49,7 +49,9 @@ class TestCompleteVocabularyLearningWorkflow:
 
         # Step 2: Get initial vocabulary statistics
         initial_stats_response = await async_client.get(
-            "/api/vocabulary/stats", params={"target_language": "de", "translation_language": "es"}, headers=headers
+            url_builder.url_for("get_vocabulary_stats"),
+            params={"target_language": "de", "translation_language": "es"},
+            headers=headers,
         )
         assert initial_stats_response.status_code == 200
         initial_stats = initial_stats_response.json()
@@ -61,7 +63,7 @@ class TestCompleteVocabularyLearningWorkflow:
 
         # Step 3: Get vocabulary words from A1 level
         a1_words_response = await async_client.get(
-            "/api/vocabulary/library/A1",
+            url_builder.url_for("get_vocabulary_level", level="A1"),
             params={"target_language": "de", "translation_language": "es", "limit": 5},
             headers=headers,
         )
@@ -79,7 +81,9 @@ class TestCompleteVocabularyLearningWorkflow:
         words_marked = 0
         for word in a1_words["words"][:3]:  # Mark first 3 words as known
             mark_response = await async_client.post(
-                "/api/vocabulary/mark-known", json={"concept_id": word["concept_id"], "known": True}, headers=headers
+                url_builder.url_for("mark_word_known"),
+                json={"concept_id": word["concept_id"], "known": True},
+                headers=headers,
             )
             assert mark_response.status_code == 200
             mark_data = mark_response.json()
@@ -89,7 +93,9 @@ class TestCompleteVocabularyLearningWorkflow:
 
         # Step 5: Verify statistics updated correctly
         updated_stats_response = await async_client.get(
-            "/api/vocabulary/stats", params={"target_language": "de", "translation_language": "es"}, headers=headers
+            url_builder.url_for("get_vocabulary_stats"),
+            params={"target_language": "de", "translation_language": "es"},
+            headers=headers,
         )
         assert updated_stats_response.status_code == 200
         updated_stats = updated_stats_response.json()
@@ -99,7 +105,7 @@ class TestCompleteVocabularyLearningWorkflow:
 
         # Step 6: Verify A1 level reflects changes
         updated_a1_response = await async_client.get(
-            "/api/vocabulary/library/A1",
+            url_builder.url_for("get_vocabulary_level", level="A1"),
             params={"target_language": "de", "translation_language": "es", "limit": 5},
             headers=headers,
         )
@@ -117,13 +123,13 @@ class TestCompleteVocabularyLearningWorkflow:
 
     @pytest.mark.asyncio
     async def test_WhenMultiLevelVocabularyProgression_ThenProgressTracksAcrossLevels(
-        self, async_client, authenticated_user
+        self, async_client, url_builder, authenticated_user
     ):
         """Test vocabulary progression across multiple CEFR levels"""
         headers = authenticated_user["headers"]
 
         # Get initial stats
-        initial_stats_response = await async_client.get("/api/vocabulary/stats", headers=headers)
+        initial_stats_response = await async_client.get(url_builder.url_for("get_vocabulary_stats"), headers=headers)
         assert initial_stats_response.status_code == 200
         initial_stats = initial_stats_response.json()
 
@@ -134,7 +140,7 @@ class TestCompleteVocabularyLearningWorkflow:
         for level in levels_to_test:
             # Get words for level
             level_response = await async_client.get(
-                f"/api/vocabulary/library/{level}", params={"limit": 2}, headers=headers
+                url_builder.url_for("get_vocabulary_level", level=level), params={"limit": 2}, headers=headers
             )
             assert level_response.status_code == 200
             level_data = level_response.json()
@@ -144,7 +150,7 @@ class TestCompleteVocabularyLearningWorkflow:
             # Mark some words as known
             for word in level_data["words"][:2]:  # Mark first 2 words per level
                 mark_response = await async_client.post(
-                    "/api/vocabulary/mark-known",
+                    url_builder.url_for("mark_word_known"),
                     json={"concept_id": word["concept_id"], "known": True},
                     headers=headers,
                 )
@@ -152,7 +158,7 @@ class TestCompleteVocabularyLearningWorkflow:
                     words_marked_per_level[level] += 1
 
         # Verify final statistics
-        final_stats_response = await async_client.get("/api/vocabulary/stats", headers=headers)
+        final_stats_response = await async_client.get(url_builder.url_for("get_vocabulary_stats"), headers=headers)
         assert final_stats_response.status_code == 200
         final_stats = final_stats_response.json()
 
@@ -170,19 +176,21 @@ class TestCompleteVocabularyLearningWorkflow:
 
     @pytest.mark.asyncio
     async def test_WhenBulkVocabularyOperations_ThenConsistentWithIndividualOperations(
-        self, async_client, authenticated_user
+        self, async_client, url_builder, authenticated_user
     ):
         """Test bulk vocabulary operations maintain consistency"""
         headers = authenticated_user["headers"]
 
         # Get A1 words to compare bulk vs individual operations
-        a1_response = await async_client.get("/api/vocabulary/library/A1", params={"limit": 100}, headers=headers)
+        a1_response = await async_client.get(
+            url_builder.url_for("get_vocabulary_level", level="A1"), params={"limit": 100}, headers=headers
+        )
         assert a1_response.status_code == 200
         a1_response.json()
 
         # Perform bulk mark operation
         bulk_response = await async_client.post(
-            "/api/vocabulary/library/bulk-mark",
+            url_builder.url_for("bulk_mark_level"),
             json={"level": "A1", "target_language": "de", "known": True},
             headers=headers,
         )
@@ -196,7 +204,7 @@ class TestCompleteVocabularyLearningWorkflow:
 
         # Verify all A1 words are now marked as known
         updated_a1_response = await async_client.get(
-            "/api/vocabulary/library/A1", params={"limit": 100}, headers=headers
+            url_builder.url_for("get_vocabulary_level", level="A1"), params={"limit": 100}, headers=headers
         )
         assert updated_a1_response.status_code == 200
         updated_a1_data = updated_a1_response.json()
@@ -209,7 +217,7 @@ class TestCompleteVocabularyLearningWorkflow:
         assert updated_a1_data["known_count"] == updated_a1_data["total_count"]
 
         # Statistics should reflect bulk change
-        stats_response = await async_client.get("/api/vocabulary/stats", headers=headers)
+        stats_response = await async_client.get(url_builder.url_for("get_vocabulary_stats"), headers=headers)
         assert stats_response.status_code == 200
         stats = stats_response.json()
 
@@ -217,20 +225,26 @@ class TestCompleteVocabularyLearningWorkflow:
         assert stats["levels"]["A1"]["user_known"] == stats["levels"]["A1"]["total_words"]
 
     @pytest.mark.asyncio
-    async def test_WhenSwitchingLanguageCombinations_ThenDataRemainsConsistent(self, async_client, authenticated_user):
+    async def test_WhenSwitchingLanguageCombinations_ThenDataRemainsConsistent(
+        self, async_client, url_builder, authenticated_user
+    ):
         """Test switching between different language combinations maintains data consistency"""
         headers = authenticated_user["headers"]
 
         # Test with German-Spanish combination
         de_es_stats_response = await async_client.get(
-            "/api/vocabulary/stats", params={"target_language": "de", "translation_language": "es"}, headers=headers
+            url_builder.url_for("get_vocabulary_stats"),
+            params={"target_language": "de", "translation_language": "es"},
+            headers=headers,
         )
         assert de_es_stats_response.status_code == 200
         de_es_stats = de_es_stats_response.json()
 
         # Test with German-English combination
         de_en_stats_response = await async_client.get(
-            "/api/vocabulary/stats", params={"target_language": "de", "translation_language": "en"}, headers=headers
+            url_builder.url_for("get_vocabulary_stats"),
+            params={"target_language": "de", "translation_language": "en"},
+            headers=headers,
         )
         assert de_en_stats_response.status_code == 200
         de_en_stats = de_en_stats_response.json()
@@ -251,17 +265,19 @@ class TestCompleteVocabularyLearningWorkflow:
 
     @pytest.mark.asyncio
     async def test_WhenVocabularyProgressionWithUnmarkingWords_ThenStatisticsAdjustCorrectly(
-        self, async_client, authenticated_user
+        self, async_client, url_builder, authenticated_user
     ):
         """Test complete workflow including unmarking words"""
         headers = authenticated_user["headers"]
 
         # Get initial state
-        initial_stats = await async_client.get("/api/vocabulary/stats", headers=headers)
+        initial_stats = await async_client.get(url_builder.url_for("get_vocabulary_stats"), headers=headers)
         initial_known = initial_stats.json()["total_known"]
 
         # Get some words to work with
-        words_response = await async_client.get("/api/vocabulary/library/A1", params={"limit": 3}, headers=headers)
+        words_response = await async_client.get(
+            url_builder.url_for("get_vocabulary_level", level="A1"), params={"limit": 3}, headers=headers
+        )
         assert words_response.status_code == 200
         words_data = words_response.json()
 
@@ -273,12 +289,14 @@ class TestCompleteVocabularyLearningWorkflow:
         # Mark words as known
         for word in test_words:
             mark_response = await async_client.post(
-                "/api/vocabulary/mark-known", json={"concept_id": word["concept_id"], "known": True}, headers=headers
+                url_builder.url_for("mark_word_known"),
+                json={"concept_id": word["concept_id"], "known": True},
+                headers=headers,
             )
             assert mark_response.status_code == 200
 
         # Verify increase in known count
-        mid_stats = await async_client.get("/api/vocabulary/stats", headers=headers)
+        mid_stats = await async_client.get(url_builder.url_for("get_vocabulary_stats"), headers=headers)
         mid_known = mid_stats.json()["total_known"]
         assert mid_known >= initial_known + len(test_words)
 
@@ -286,7 +304,9 @@ class TestCompleteVocabularyLearningWorkflow:
         words_to_unmark = test_words[:2]  # Unmark first 2
         for word in words_to_unmark:
             unmark_response = await async_client.post(
-                "/api/vocabulary/mark-known", json={"concept_id": word["concept_id"], "known": False}, headers=headers
+                url_builder.url_for("mark_word_known"),
+                json={"concept_id": word["concept_id"], "known": False},
+                headers=headers,
             )
             assert unmark_response.status_code == 200
             unmark_data = unmark_response.json()
@@ -294,7 +314,7 @@ class TestCompleteVocabularyLearningWorkflow:
             assert unmark_data["known"] is False
 
         # Verify final statistics
-        final_stats = await async_client.get("/api/vocabulary/stats", headers=headers)
+        final_stats = await async_client.get(url_builder.url_for("get_vocabulary_stats"), headers=headers)
         final_known = final_stats.json()["total_known"]
 
         # Should have only 1 word marked as known now (3 marked, 2 unmarked)
@@ -303,7 +323,7 @@ class TestCompleteVocabularyLearningWorkflow:
 
         # Verify individual word status
         final_words_response = await async_client.get(
-            "/api/vocabulary/library/A1", params={"limit": 10}, headers=headers
+            url_builder.url_for("get_vocabulary_level", level="A1"), params={"limit": 10}, headers=headers
         )
         final_words_data = final_words_response.json()
 
@@ -321,7 +341,7 @@ class TestMultiUserVocabularyIsolation:
     """Test vocabulary progress isolation between different users"""
 
     @pytest.mark.asyncio
-    async def test_WhenMultipleUsersMarkSameWords_ThenProgressIsolatedPerUser(self, async_client):
+    async def test_WhenMultipleUsersMarkSameWords_ThenProgressIsolatedPerUser(self, async_client, url_builder):
         """Test vocabulary progress is properly isolated between users"""
         # Create and authenticate two different users using consistent patterns
         user1_flow = await AuthTestHelperAsync.register_and_login_async(async_client)
@@ -331,7 +351,9 @@ class TestMultiUserVocabularyIsolation:
 
         # Get same vocabulary words for both users
         words_response = await async_client.get(
-            "/api/vocabulary/library/A1", params={"limit": 3}, headers=user_tokens["user1"]["headers"]
+            url_builder.url_for("get_vocabulary_level", level="A1"),
+            params={"limit": 3},
+            headers=user_tokens["user1"]["headers"],
         )
         assert words_response.status_code == 200
         words_data = words_response.json()
@@ -344,7 +366,7 @@ class TestMultiUserVocabularyIsolation:
         # User 1 marks words as known
         for word in test_words:
             mark_response = await async_client.post(
-                "/api/vocabulary/mark-known",
+                url_builder.url_for("mark_word_known"),
                 json={"concept_id": word["concept_id"], "known": True},
                 headers=user_tokens["user1"]["headers"],
             )
@@ -353,12 +375,16 @@ class TestMultiUserVocabularyIsolation:
         # User 2 keeps words as unknown (doesn't mark them)
 
         # Check User 1's progress
-        user1_stats = await async_client.get("/api/vocabulary/stats", headers=user_tokens["user1"]["headers"])
+        user1_stats = await async_client.get(
+            url_builder.url_for("get_vocabulary_stats"), headers=user_tokens["user1"]["headers"]
+        )
         assert user1_stats.status_code == 200
         user1_known = user1_stats.json()["total_known"]
 
         # Check User 2's progress
-        user2_stats = await async_client.get("/api/vocabulary/stats", headers=user_tokens["user2"]["headers"])
+        user2_stats = await async_client.get(
+            url_builder.url_for("get_vocabulary_stats"), headers=user_tokens["user2"]["headers"]
+        )
         assert user2_stats.status_code == 200
         user2_known = user2_stats.json()["total_known"]
 
@@ -367,10 +393,14 @@ class TestMultiUserVocabularyIsolation:
 
         # Verify individual word status for each user
         user1_words = await async_client.get(
-            "/api/vocabulary/library/A1", params={"limit": 10}, headers=user_tokens["user1"]["headers"]
+            url_builder.url_for("get_vocabulary_level", level="A1"),
+            params={"limit": 10},
+            headers=user_tokens["user1"]["headers"],
         )
         user2_words = await async_client.get(
-            "/api/vocabulary/library/A1", params={"limit": 10}, headers=user_tokens["user2"]["headers"]
+            url_builder.url_for("get_vocabulary_level", level="A1"),
+            params={"limit": 10},
+            headers=user_tokens["user2"]["headers"],
         )
 
         marked_word_ids = {w["concept_id"] for w in test_words}

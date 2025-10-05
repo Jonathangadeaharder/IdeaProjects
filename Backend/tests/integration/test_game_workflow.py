@@ -17,18 +17,18 @@ class TestCompleteGameWorkflow:
     """Test end-to-end game session workflows"""
 
     @pytest.fixture
-    async def authenticated_user(self, async_client):
+    async def authenticated_user(self, async_client, url_builder):
         """Create and authenticate a user for game testing"""
         user = UserBuilder().build()
 
         # Register user
         register_data = {"username": user.username, "email": user.email, "password": user.password}
-        register_response = await async_client.post("/api/auth/register", json=register_data)
+        register_response = await async_client.post(url_builder.url_for("register:register"), json=register_data)
         assert register_response.status_code == 201
 
         # Login user
         login_data = {"username": user.email, "password": user.password}
-        login_response = await async_client.post("/api/auth/login", data=login_data)
+        login_response = await async_client.post(url_builder.url_for("auth:jwt.login"), data=login_data)
         assert login_response.status_code == 200
 
         token = login_response.json()["access_token"]
@@ -36,7 +36,7 @@ class TestCompleteGameWorkflow:
 
     @pytest.mark.asyncio
     async def test_WhenCompleteVocabularyGameWorkflow_ThenSucceedsWithCorrectScoring(
-        self, async_client, authenticated_user
+        self, async_client, url_builder, authenticated_user
     ):
         """Test complete vocabulary game workflow from start to finish"""
         headers = authenticated_user["headers"]
@@ -44,7 +44,9 @@ class TestCompleteGameWorkflow:
         # Step 1: Start vocabulary game session
         start_request = {"game_type": "vocabulary", "difficulty": "intermediate", "total_questions": 3}
 
-        start_response = await async_client.post("/api/game/start", json=start_request, headers=headers)
+        start_response = await async_client.post(
+            url_builder.url_for("game_start_session"), json=start_request, headers=headers
+        )
         assert start_response.status_code == 200
 
         session_data = start_response.json()
@@ -67,7 +69,9 @@ class TestCompleteGameWorkflow:
             "points": 10,
         }
 
-        answer1_response = await async_client.post("/api/game/answer", json=answer1_request, headers=headers)
+        answer1_response = await async_client.post(
+            url_builder.url_for("game_submit_answer"), json=answer1_request, headers=headers
+        )
         assert answer1_response.status_code == 200
 
         answer1_data = answer1_response.json()
@@ -75,7 +79,9 @@ class TestCompleteGameWorkflow:
         assert answer1_data["points_earned"] == 10
 
         # Step 3: Get session after first answer
-        session1_response = await async_client.get(f"/api/game/session/{session_id}", headers=headers)
+        session1_response = await async_client.get(
+            url_builder.url_for("game_get_session", session_id=session_id), headers=headers
+        )
         assert session1_response.status_code == 200
 
         session1_data = session1_response.json()
@@ -95,7 +101,9 @@ class TestCompleteGameWorkflow:
             "points": 10,
         }
 
-        answer2_response = await async_client.post("/api/game/answer", json=answer2_request, headers=headers)
+        answer2_response = await async_client.post(
+            url_builder.url_for("game_submit_answer"), json=answer2_request, headers=headers
+        )
         assert answer2_response.status_code == 200
 
         answer2_data = answer2_response.json()
@@ -113,7 +121,9 @@ class TestCompleteGameWorkflow:
             "points": 10,  # Fixed: Use correct default points value
         }
 
-        answer3_response = await async_client.post("/api/game/answer", json=answer3_request, headers=headers)
+        answer3_response = await async_client.post(
+            url_builder.url_for("game_submit_answer"), json=answer3_request, headers=headers
+        )
         assert answer3_response.status_code == 200
 
         answer3_data = answer3_response.json()
@@ -121,7 +131,9 @@ class TestCompleteGameWorkflow:
         assert answer3_data["points_earned"] == 10  # Fixed: Use correct default points value
 
         # Step 6: Get final session state
-        final_session_response = await async_client.get(f"/api/game/session/{session_id}", headers=headers)
+        final_session_response = await async_client.get(
+            url_builder.url_for("game_get_session", session_id=session_id), headers=headers
+        )
         assert final_session_response.status_code == 200
 
         final_session_data = final_session_response.json()
@@ -134,7 +146,7 @@ class TestCompleteGameWorkflow:
         assert final_session_data["completed_at"] is not None  # Fixed: Use correct field name
 
         # Step 7: Verify session appears in user's session list
-        sessions_response = await async_client.get("/api/game/sessions", headers=headers)
+        sessions_response = await async_client.get(url_builder.url_for("game_get_user_sessions"), headers=headers)
         assert sessions_response.status_code == 200
 
         user_sessions = sessions_response.json()
@@ -143,7 +155,9 @@ class TestCompleteGameWorkflow:
         assert user_sessions[0]["status"] == "completed"
 
     @pytest.mark.asyncio
-    async def test_WhenMultipleGameSessions_ThenEachSessionIsIndependent(self, async_client, authenticated_user):
+    async def test_WhenMultipleGameSessions_ThenEachSessionIsIndependent(
+        self, async_client, url_builder, authenticated_user
+    ):
         """Test multiple concurrent game sessions remain independent"""
         headers = authenticated_user["headers"]
 
@@ -158,8 +172,12 @@ class TestCompleteGameWorkflow:
         }
 
         # Start both sessions
-        vocab_response = await async_client.post("/api/game/start", json=vocab_session_request, headers=headers)
-        listening_response = await async_client.post("/api/game/start", json=listening_session_request, headers=headers)
+        vocab_response = await async_client.post(
+            url_builder.url_for("game_start_session"), json=vocab_session_request, headers=headers
+        )
+        listening_response = await async_client.post(
+            url_builder.url_for("game_start_session"), json=listening_session_request, headers=headers
+        )
 
         assert vocab_response.status_code == 200
         assert listening_response.status_code == 200
@@ -183,7 +201,9 @@ class TestCompleteGameWorkflow:
             "points": 10,  # Fixed: Use default points value
         }
 
-        vocab_answer_response = await async_client.post("/api/game/answer", json=vocab_answer, headers=headers)
+        vocab_answer_response = await async_client.post(
+            url_builder.url_for("game_submit_answer"), json=vocab_answer, headers=headers
+        )
         assert vocab_answer_response.status_code == 200
 
         # Answer question in listening session
@@ -197,13 +217,17 @@ class TestCompleteGameWorkflow:
             "points": 10,  # Fixed: Use default points value
         }
 
-        listening_answer_response = await async_client.post("/api/game/answer", json=listening_answer, headers=headers)
+        listening_answer_response = await async_client.post(
+            url_builder.url_for("game_submit_answer"), json=listening_answer, headers=headers
+        )
         assert listening_answer_response.status_code == 200
 
         # Verify independent scoring
-        vocab_final = await async_client.get(f"/api/game/session/{vocab_session['session_id']}", headers=headers)
+        vocab_final = await async_client.get(
+            url_builder.url_for("game_get_session", session_id=vocab_session["session_id"]), headers=headers
+        )
         listening_final = await async_client.get(
-            f"/api/game/session/{listening_session['session_id']}", headers=headers
+            url_builder.url_for("game_get_session", session_id=listening_session["session_id"]), headers=headers
         )
 
         vocab_data = vocab_final.json()
@@ -222,12 +246,12 @@ class TestCompleteGameWorkflow:
         assert listening_data["status"] == "active"
 
         # User should have 2 sessions
-        sessions_response = await async_client.get("/api/game/sessions", headers=headers)
+        sessions_response = await async_client.get(url_builder.url_for("game_get_user_sessions"), headers=headers)
         sessions = sessions_response.json()
         assert len(sessions) == 2
 
     @pytest.mark.asyncio
-    async def test_WhenVideoGameWorkflow_ThenIncludesVideoContext(self, async_client, authenticated_user):
+    async def test_WhenVideoGameWorkflow_ThenIncludesVideoContext(self, async_client, url_builder, authenticated_user):
         """Test video-based game workflow includes video context"""
         headers = authenticated_user["headers"]
         video_id = str(uuid4())
@@ -240,7 +264,9 @@ class TestCompleteGameWorkflow:
             "total_questions": 2,
         }
 
-        start_response = await async_client.post("/api/game/start", json=start_request, headers=headers)
+        start_response = await async_client.post(
+            url_builder.url_for("game_start_session"), json=start_request, headers=headers
+        )
         assert start_response.status_code == 200
 
         session_data = start_response.json()
@@ -260,11 +286,15 @@ class TestCompleteGameWorkflow:
             "points": 10,  # Fixed: Use default points value
         }
 
-        answer_response = await async_client.post("/api/game/answer", json=answer_request, headers=headers)
+        answer_response = await async_client.post(
+            url_builder.url_for("game_submit_answer"), json=answer_request, headers=headers
+        )
         assert answer_response.status_code == 200
 
         # Verify session retains video context after answer
-        session_response = await async_client.get(f"/api/game/session/{session_id}", headers=headers)
+        session_response = await async_client.get(
+            url_builder.url_for("game_get_session", session_id=session_id), headers=headers
+        )
         session_current = session_response.json()
 
         assert session_current["video_id"] == video_id
@@ -272,14 +302,18 @@ class TestCompleteGameWorkflow:
         assert session_current["status"] == "active"  # Not complete yet (2 questions total)
 
     @pytest.mark.asyncio
-    async def test_WhenGameSessionErrorRecovery_ThenHandlesGracefully(self, async_client, authenticated_user):
+    async def test_WhenGameSessionErrorRecovery_ThenHandlesGracefully(
+        self, async_client, url_builder, authenticated_user
+    ):
         """Test error scenarios and recovery in game workflow"""
         headers = authenticated_user["headers"]
 
         # Start valid session
         start_request = {"game_type": "vocabulary", "difficulty": "intermediate", "total_questions": 2}
 
-        start_response = await async_client.post("/api/game/start", json=start_request, headers=headers)
+        start_response = await async_client.post(
+            url_builder.url_for("game_start_session"), json=start_request, headers=headers
+        )
         assert start_response.status_code == 200
 
         session_data = start_response.json()
@@ -294,11 +328,15 @@ class TestCompleteGameWorkflow:
             "correct_answer": "hermoso",
         }
 
-        invalid_response = await async_client.post("/api/game/answer", json=invalid_answer, headers=headers)
+        invalid_response = await async_client.post(
+            url_builder.url_for("game_submit_answer"), json=invalid_answer, headers=headers
+        )
         assert invalid_response.status_code == 404
 
         # Verify original session is unaffected
-        session_response = await async_client.get(f"/api/game/session/{session_id}", headers=headers)
+        session_response = await async_client.get(
+            url_builder.url_for("game_get_session", session_id=session_id), headers=headers
+        )
         assert session_response.status_code == 200
 
         session_current = session_response.json()
@@ -315,18 +353,22 @@ class TestCompleteGameWorkflow:
             "points": 10,
         }
 
-        valid_response = await async_client.post("/api/game/answer", json=valid_answer, headers=headers)
+        valid_response = await async_client.post(
+            url_builder.url_for("game_submit_answer"), json=valid_answer, headers=headers
+        )
         assert valid_response.status_code == 200
 
         # Verify session updated correctly
-        final_session_response = await async_client.get(f"/api/game/session/{session_id}", headers=headers)
+        final_session_response = await async_client.get(
+            url_builder.url_for("game_get_session", session_id=session_id), headers=headers
+        )
         final_session = final_session_response.json()
 
         assert final_session["questions_answered"] == 1
         assert final_session["score"] == 10
 
     @pytest.mark.asyncio
-    async def test_WhenMultiUserGameSessions_ThenSessionsIsolated(self, async_client):
+    async def test_WhenMultiUserGameSessions_ThenSessionsIsolated(self, async_client, url_builder):
         """Test game sessions are properly isolated between different users"""
         # Create and authenticate two different users using consistent patterns
         user1_flow = await AuthTestHelperAsync.register_and_login_async(async_client)
@@ -338,10 +380,10 @@ class TestCompleteGameWorkflow:
         start_request = {"game_type": "vocabulary", "difficulty": "intermediate", "total_questions": 1}
 
         user1_session_response = await async_client.post(
-            "/api/game/start", json=start_request, headers=user_tokens["user1"]["headers"]
+            url_builder.url_for("game_start_session"), json=start_request, headers=user_tokens["user1"]["headers"]
         )
         user2_session_response = await async_client.post(
-            "/api/game/start", json=start_request, headers=user_tokens["user2"]["headers"]
+            url_builder.url_for("game_start_session"), json=start_request, headers=user_tokens["user2"]["headers"]
         )
 
         assert user1_session_response.status_code == 200
@@ -355,19 +397,25 @@ class TestCompleteGameWorkflow:
 
         # User 1 cannot access User 2's session
         user1_accessing_user2 = await async_client.get(
-            f"/api/game/session/{user2_session['session_id']}", headers=user_tokens["user1"]["headers"]
+            url_builder.url_for("game_get_session", session_id=user2_session["session_id"]),
+            headers=user_tokens["user1"]["headers"],
         )
         assert user1_accessing_user2.status_code == 404  # Should not find other user's session
 
         # User 2 cannot access User 1's session
         user2_accessing_user1 = await async_client.get(
-            f"/api/game/session/{user1_session['session_id']}", headers=user_tokens["user2"]["headers"]
+            url_builder.url_for("game_get_session", session_id=user1_session["session_id"]),
+            headers=user_tokens["user2"]["headers"],
         )
         assert user2_accessing_user1.status_code == 404
 
         # Each user can only see their own sessions
-        user1_sessions = await async_client.get("/api/game/sessions", headers=user_tokens["user1"]["headers"])
-        user2_sessions = await async_client.get("/api/game/sessions", headers=user_tokens["user2"]["headers"])
+        user1_sessions = await async_client.get(
+            url_builder.url_for("game_get_user_sessions"), headers=user_tokens["user1"]["headers"]
+        )
+        user2_sessions = await async_client.get(
+            url_builder.url_for("game_get_user_sessions"), headers=user_tokens["user2"]["headers"]
+        )
 
         user1_sessions_data = user1_sessions.json()
         user2_sessions_data = user2_sessions.json()
