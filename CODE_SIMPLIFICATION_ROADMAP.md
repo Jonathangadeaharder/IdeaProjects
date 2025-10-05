@@ -388,46 +388,58 @@ def test_user_can_mark_word_as_known():
 
 ### 9. Fix or Delete 42 Skipped/Failing Tests
 
-**Status**: HIGH - Skipped tests hide real problems
+**Status**: IN PROGRESS - Phase 1 ✅ COMPLETE, Phase 2 Pending
 
 #### Current State:
 
 42 tests with `@pytest.mark.skip`, `@pytest.mark.xfail`, or `pytest.skip()`:
 
-- `tests/performance/` - 6 skipped
-- `tests/api/` - 3 skipped
-- `tests/integration/` - 23 skipped
-- `tests/unit/` - 10 skipped
+- Integration tests: 25 (60%)
+- Performance tests: 6 (14%)
+- Services tests: 5 (12%)
+- API tests: 3 (7%)
+- Unit tests: 3 (7%)
 
 **Per CLAUDE.md**: "Never introduce skip/xfail/ignore markers to bypass a failing path. Surface the failure and coordinate with the user."
 
 #### Subtasks:
 
-**Phase 1: Audit All Skipped Tests (2 hours)**
+**Phase 1: Audit All Skipped Tests (2 hours)** ✅ COMPLETED - 2025-10-05
 
-- [ ] List all skipped tests with reasons: `grep -r "@pytest.mark.skip\|xfail" tests/`
-- [ ] Categorize by reason:
-  - Broken due to refactoring (fix)
-  - Flaky/timing issues (fix or delete)
-  - Missing dependencies (document or fix)
-  - Never worked (delete)
-  - Performance tests (move to manual/)
+- [x] Listed all 42 skipped tests with reasons
+- [x] Categorized into 8 categories:
+  - Missing AI/ML Dependencies (16 tests, 38%)
+  - Architecture Refactoring (5 tests, 12%)
+  - Performance/Manual Tests (6 tests, 14%)
+  - Data Dependency Issues (4 tests, 10%)
+  - Implementation Gaps (4 tests, 10%)
+  - Mock/Test Infrastructure (4 tests, 10%)
+  - Design Conflicts (3 tests, 7%)
+  - Authentication Workflow (1 test, 2%)
+- [x] Created comprehensive audit report: `Backend/docs/SKIPPED_TESTS_AUDIT.md`
+- [x] Identified specific actions for each category (FIX, DELETE, MOVE, DOCUMENT)
+- [x] Prioritized fixes by effort and impact
 
-**Phase 2: Fix or Delete Each Test (8-10 hours)**
+**Deliverable**: `Backend/docs/SKIPPED_TESTS_AUDIT.md` (comprehensive 335-line audit)
 
-- [ ] Performance tests → Move to `tests/manual/` with clear instructions
-- [ ] AI service tests → Fix or mark as requiring external models
-- [ ] Broken tests → Fix or delete if no longer relevant
-- [ ] Flaky tests → Fix root cause or delete
-- [ ] Document any remaining skips with user approval
+**Phase 2: Fix or Delete Each Test (7-9 hours)** 📋 PENDING
 
-**Phase 3: Prevent Future Skips (1 hour)**
+Priority levels from audit:
+
+- [ ] Priority 1: Quick Wins (2 hours) - Delete 5 obsolete tests, move 6 performance tests, fix 1 mock issue
+- [ ] Priority 2: Data Fixtures (2 hours) - Fix 4 vocabulary workflow tests with proper fixtures
+- [ ] Priority 3: Documentation (1 hour) - Document AI/ML dependencies, CORS strategy
+- [ ] Priority 4: Implementation Decisions (2-4 hours) - Fix or delete 8 tests requiring user decisions
+
+**Phase 3: Prevent Future Skips (1 hour)** 📋 PENDING
 
 - [ ] Add pre-commit hook rejecting `@pytest.mark.skip` without approval
 - [ ] Update test standards document
 - [ ] Add CI check failing on new skip markers
 
-**Estimated Effort**: 11-13 hours
+**Total Estimated Effort**: 11-13 hours
+**Phase 1 Completed**: 2 hours ✅
+**Remaining Effort**: 9-11 hours
 
 ---
 
