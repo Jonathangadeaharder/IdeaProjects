@@ -4,21 +4,22 @@ from __future__ import annotations
 
 import pytest
 
-from tests.helpers import AuthTestHelperAsync
+from tests.helpers import AsyncAuthHelper
 
 
 @pytest.mark.asyncio
 @pytest.mark.timeout(30)
 async def test_Whenget_profileCalled_ThenReturnsauthenticated_user(async_http_client, url_builder):
     """Happy path: /profile returns the authenticated user's public profile."""
-    flow = await AuthTestHelperAsync.register_and_login_async(async_http_client)
+    helper = AsyncAuthHelper(async_http_client)
+    user, _token, headers = await helper.create_authenticated_user()
     profile_url = url_builder.url_for("profile_get")
 
-    response = await async_http_client.get(profile_url, headers=flow["headers"])
+    response = await async_http_client.get(profile_url, headers=headers)
 
     assert response.status_code == 200
     data = response.json()
-    assert data["username"] == flow["user_data"]["username"]
+    assert data["username"] == user.username
     assert "id" in data
     assert data["language_runtime"]["native"] == "es"
     assert data["language_runtime"]["target"] == "de"
@@ -40,13 +41,14 @@ async def test_Whenget_profileWithoutauthentication_ThenReturnsError(async_http_
 @pytest.mark.timeout(30)
 async def test_WhenUpdateLanguagesAcceptsValidPayload_ThenSucceeds(async_http_client, url_builder):
     """Happy path: language update persists preferred codes."""
-    flow = await AuthTestHelperAsync.register_and_login_async(async_http_client)
+    helper = AsyncAuthHelper(async_http_client)
+    _user, _token, headers = await helper.create_authenticated_user()
     languages_url = url_builder.url_for("profile_update_languages")
 
     response = await async_http_client.put(
         languages_url,
         json={"native_language": "es", "target_language": "de"},
-        headers=flow["headers"],
+        headers=headers,
     )
 
     assert response.status_code == 200
@@ -63,13 +65,14 @@ async def test_WhenUpdateLanguagesAcceptsValidPayload_ThenSucceeds(async_http_cl
 @pytest.mark.timeout(30)
 async def test_Whenupdate_languagesWithduplicate_codes_ThenRejects(async_http_client, url_builder):
     """Boundary: native and target languages must differ."""
-    flow = await AuthTestHelperAsync.register_and_login_async(async_http_client)
+    helper = AsyncAuthHelper(async_http_client)
+    _user, _token, headers = await helper.create_authenticated_user()
     languages_url = url_builder.url_for("profile_update_languages")
 
     response = await async_http_client.put(
         languages_url,
         json={"native_language": "es", "target_language": "es"},
-        headers=flow["headers"],
+        headers=headers,
     )
 
     assert response.status_code == 422

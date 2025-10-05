@@ -6,19 +6,21 @@ from uuid import uuid4
 
 import pytest
 
-from tests.helpers import AuthTestHelperAsync
+from tests.helpers import AsyncAuthHelper
 
 
 @pytest.mark.anyio
 @pytest.mark.timeout(30)
 async def test_Whenmark_known_endpointCalled_ThenSucceeds(async_client, url_builder):
-    flow = await AuthTestHelperAsync.register_and_login_async(async_client)
+    helper = AsyncAuthHelper(async_client)
+
+    user, token, headers = await helper.create_authenticated_user()
     concept_id = str(uuid4())
 
     response = await async_client.post(
         url_builder.url_for("mark_word_known"),
         json={"concept_id": concept_id, "known": True},
-        headers=flow["headers"],
+        headers=headers,
     )
 
     assert response.status_code == 200
@@ -27,11 +29,11 @@ async def test_Whenmark_known_endpointCalled_ThenSucceeds(async_client, url_buil
 @pytest.mark.anyio
 @pytest.mark.timeout(30)
 async def test_Whenlibrary_levelWithoutvalid_code_ThenReturnsError(async_client):
-    flow = await AuthTestHelperAsync.register_and_login_async(async_client)
+    helper = AsyncAuthHelper(async_client)
 
-    response = await async_client.get(
-        "/api/vocabulary/library/Z9", params={"target_language": "de"}, headers=flow["headers"]
-    )
+    user, token, headers = await helper.create_authenticated_user()
+
+    response = await async_client.get("/api/vocabulary/library/Z9", params={"target_language": "de"}, headers=headers)
 
     # Invalid level parameter should return 422 (validation error)
     assert (
@@ -43,12 +45,14 @@ async def test_Whenlibrary_levelWithoutvalid_code_ThenReturnsError(async_client)
 @pytest.mark.timeout(30)
 async def test_Whenvocabulary_stats_endpointCalled_ThenReturnsMultilingualStats(async_client, url_builder):
     """Integration test for multilingual vocabulary stats endpoint."""
-    flow = await AuthTestHelperAsync.register_and_login_async(async_client)
+    helper = AsyncAuthHelper(async_client)
+
+    user, token, headers = await helper.create_authenticated_user()
 
     response = await async_client.get(
         url_builder.url_for("get_vocabulary_stats"),
         params={"target_language": "de", "translation_language": "es"},
-        headers=flow["headers"],
+        headers=headers,
     )
 
     assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.text}"
@@ -62,11 +66,13 @@ async def test_Whenvocabulary_stats_endpointCalled_ThenReturnsMultilingualStats(
 @pytest.mark.timeout(30)
 async def test_Whenlanguages_endpointCalled_ThenReturnsLanguageList(async_client):
     """Integration test for supported languages endpoint."""
-    flow = await AuthTestHelperAsync.register_and_login_async(async_client)
+    helper = AsyncAuthHelper(async_client)
+
+    user, token, headers = await helper.create_authenticated_user()
 
     response = await async_client.get(
         "/api/vocabulary/languages",
-        headers=flow["headers"],
+        headers=headers,
     )
 
     assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.text}"
@@ -79,12 +85,14 @@ async def test_Whenlanguages_endpointCalled_ThenReturnsLanguageList(async_client
 @pytest.mark.timeout(30)
 async def test_Whenbulk_mark_endpointCalled_ThenSucceedsWithLanguage(async_client):
     """Integration test for multilingual bulk mark endpoint."""
-    flow = await AuthTestHelperAsync.register_and_login_async(async_client)
+    helper = AsyncAuthHelper(async_client)
+
+    user, token, headers = await helper.create_authenticated_user()
 
     response = await async_client.post(
         "/api/vocabulary/library/bulk-mark",
         json={"level": "A1", "target_language": "de", "known": True},
-        headers=flow["headers"],
+        headers=headers,
     )
 
     assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.text}"

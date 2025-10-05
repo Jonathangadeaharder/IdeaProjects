@@ -8,7 +8,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from httpx import AsyncClient
 
-from tests.helpers import AuthTestHelperAsync
+from tests.helpers import AsyncAuthHelper
 
 
 class TestVideoServiceEndpoint:
@@ -19,8 +19,8 @@ class TestVideoServiceEndpoint:
         """Test processChunk endpoint returns task ID on successful request"""
 
         # Arrange: Authenticate user
-        auth_flow = await AuthTestHelperAsync.register_and_login_async(async_client)
-        headers = auth_flow["headers"]
+        helper = AsyncAuthHelper(async_client)
+        _user, _token, headers = await helper.create_authenticated_user()
 
         # Arrange: Prepare valid test request
         test_request = {"video_path": "test_video.mp4", "start_time": 0, "end_time": 300}
@@ -72,8 +72,8 @@ class TestVideoServiceEndpoint:
         """Test processChunk endpoint validates required fields"""
 
         # Arrange: Authenticate user
-        auth_flow = await AuthTestHelperAsync.register_and_login_async(async_client)
-        headers = auth_flow["headers"]
+        helper = AsyncAuthHelper(async_client)
+        _user, _token, headers = await helper.create_authenticated_user()
 
         # Arrange: Prepare invalid test request (missing required fields)
         invalid_request = {
@@ -97,8 +97,9 @@ class TestVideoServiceEndpoint:
         """Test processChunk endpoint handles service errors gracefully"""
 
         # Arrange: Authenticate user
-        auth_flow = await AuthTestHelperAsync.register_and_login_async(async_client)
-        headers = auth_flow["headers"]
+        helper = AsyncAuthHelper(async_client)
+
+        _user, _token, headers = await helper.create_authenticated_user()
 
         # Arrange: Prepare valid test request
         test_request = {"video_path": "test_video.mp4", "start_time": 0, "end_time": 300}

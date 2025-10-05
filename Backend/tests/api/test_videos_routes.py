@@ -4,12 +4,13 @@ from __future__ import annotations
 
 import pytest
 
-from tests.helpers import AuthTestHelperAsync
+from tests.helpers import AsyncAuthHelper
 
 
 async def _auth(async_client):
-    flow = await AuthTestHelperAsync.register_and_login_async(async_client)
-    return flow["headers"]
+    helper = AsyncAuthHelper(async_client)
+    _user, _token, headers = await helper.create_authenticated_user()
+    return headers
 
 
 @pytest.mark.anyio

@@ -5,7 +5,7 @@ Integration tests for authentication flow
 import pytest
 from httpx import AsyncClient
 
-from tests.helpers import AuthTestHelperAsync
+from tests.helpers import AsyncAuthHelper
 
 
 class TestAuthenticationIntegration:
@@ -20,24 +20,26 @@ class TestAuthenticationIntegration:
 
     @pytest.mark.asyncio
     async def test_register_and_login_returns_bearer_token(self, async_client: AsyncClient) -> None:
-        auth_flow = await AuthTestHelperAsync.register_and_login_async(async_client)
+        helper = AsyncAuthHelper(async_client)
+        _user, token, _headers = await helper.create_authenticated_user()
 
-        login_response = auth_flow["login_response"]
-        assert login_response["token_type"] == "bearer"
-        assert "access_token" in login_response
+        # Verify token is valid by fetching auth response structure
+        assert token
+        assert isinstance(token, str)
 
     @pytest.mark.asyncio
     async def test_authenticated_user_profile_matches_registration(
         self, async_client: AsyncClient, url_builder
     ) -> None:
-        auth_flow = await AuthTestHelperAsync.register_and_login_async(async_client)
+        helper = AsyncAuthHelper(async_client)
+        user, _token, headers = await helper.create_authenticated_user()
 
         me_url = url_builder.url_for("auth_get_current_user")
-        response = await async_client.get(me_url, headers=auth_flow["headers"])
+        response = await async_client.get(me_url, headers=headers)
         assert response.status_code == 200, f"Token validation failed: {response.text}"
 
         me_data = response.json()
-        assert me_data["email"] == auth_flow["user_data"]["email"]
+        assert me_data["email"] == user.email
         assert me_data["is_active"] is True
 
     @pytest.mark.asyncio

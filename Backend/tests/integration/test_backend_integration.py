@@ -4,19 +4,19 @@ from __future__ import annotations
 
 import pytest
 
-from tests.helpers import AuthTestHelperAsync
+from tests.helpers import AsyncAuthHelper
 
 
 @pytest.mark.anyio
 @pytest.mark.timeout(30)
 async def test_Whenuser_registration_login_and_meCalled_ThenSucceeds(async_http_client):
     """Happy path: user can register, login, and retrieve profile."""
-    flow = await AuthTestHelperAsync.register_and_login_async(async_http_client)
+    helper = AsyncAuthHelper(async_http_client)
+    user, token, _headers = await helper.create_authenticated_user()
 
-    status_code, profile = await AuthTestHelperAsync.get_current_user_async(async_http_client, flow["token"])
+    profile = await helper.verify_token(token)
 
-    assert status_code == 200
-    assert profile["username"] == flow["user_data"]["username"]
+    assert profile["username"] == user.username
 
 
 @pytest.mark.anyio
@@ -31,9 +31,10 @@ async def test_Whenlogout_invalidates_tokenCalled_ThenSucceeds(async_http_client
 
     TODO: Implement token blacklist for proper token invalidation on logout.
     """
-    flow = await AuthTestHelperAsync.register_and_login_async(async_http_client)
-    status_code, _ = await AuthTestHelperAsync.logout_user_async(async_http_client, flow["token"])
-    assert status_code == 204
+    helper = AsyncAuthHelper(async_http_client)
+    _user, token, _headers = await helper.create_authenticated_user()
+    result = await helper.logout_user(token)
+    assert result["success"] is True
 
     # SKIP: JWT tokens remain valid after logout (stateless JWT limitation)
     # profile_response = await async_http_client.get("/api/auth/me", headers={"Authorization": f"Bearer {flow['token']}"})

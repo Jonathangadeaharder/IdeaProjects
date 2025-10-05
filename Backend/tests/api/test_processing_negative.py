@@ -8,19 +8,20 @@ from unittest.mock import patch
 import pytest
 
 from core.config import settings
-from tests.helpers import AuthTestHelperAsync
+from tests.helpers import AsyncAuthHelper
 
 
 @pytest.mark.anyio
 @pytest.mark.timeout(30)
 async def test_WhenFullPipelineMissingFields_ThenReturns422(async_client, url_builder):
     """Invalid input: omitting required fields yields validation errors."""
-    auth = await AuthTestHelperAsync.register_and_login_async(async_client)
+    helper = AsyncAuthHelper(async_client)
+    _user, _token, headers = await helper.create_authenticated_user()
 
     response = await async_client.post(
         url_builder.url_for("full_pipeline"),
         json={"source_lang": "en"},
-        headers=auth["headers"],
+        headers=headers,
     )
 
     assert response.status_code == 422
@@ -30,7 +31,9 @@ async def test_WhenFullPipelineMissingFields_ThenReturns422(async_client, url_bu
 @pytest.mark.timeout(30)
 async def test_WhentranscribeWithnon_video_extension_ThenRejects(async_client, url_builder):
     """Boundary: non-video file extension is rejected even when the file exists."""
-    auth = await AuthTestHelperAsync.register_and_login_async(async_client)
+    helper = AsyncAuthHelper(async_client)
+
+    _user, _token, headers = await helper.create_authenticated_user()
 
     with (
         patch("pathlib.Path.exists", return_value=True),
@@ -39,7 +42,7 @@ async def test_WhentranscribeWithnon_video_extension_ThenRejects(async_client, u
         response = await async_client.post(
             url_builder.url_for("transcribe_video"),
             json={"video_path": "notes.txt"},
-            headers=auth["headers"],
+            headers=headers,
         )
 
     assert response.status_code == 422
@@ -49,7 +52,9 @@ async def test_WhentranscribeWithnon_video_extension_ThenRejects(async_client, u
 @pytest.mark.timeout(30)
 async def test_WhenFilterSubtitlesMissingFile_ThenReturns422(async_client, url_builder):
     """Invalid input: filtering without an existing subtitle file returns 422."""
-    auth = await AuthTestHelperAsync.register_and_login_async(async_client)
+    helper = AsyncAuthHelper(async_client)
+
+    _user, _token, headers = await helper.create_authenticated_user()
 
     def mock_exists_func(self):
         return str(self).endswith(".mp4")
@@ -58,7 +63,7 @@ async def test_WhenFilterSubtitlesMissingFile_ThenReturns422(async_client, url_b
         response = await async_client.post(
             url_builder.url_for("filter_subtitles"),
             json={"video_path": "series/video.mp4"},
-            headers=auth["headers"],
+            headers=headers,
         )
 
     assert response.status_code == 422

@@ -7,7 +7,7 @@ from uuid import uuid4
 
 import pytest
 
-from tests.helpers import AuthTestHelperAsync
+from tests.helpers import AsyncAuthHelper
 
 # Force asyncio-only to prevent trio backend interference in full test suite
 pytestmark = pytest.mark.anyio(backends=["asyncio"])
@@ -19,11 +19,13 @@ class TestVocabularyRoutesCore:
     @pytest.mark.anyio
     async def test_get_supported_languages_success(self, async_client, url_builder):
         """Test getting supported languages endpoint"""
-        flow = await AuthTestHelperAsync.register_and_login_async(async_client)
+        helper = AsyncAuthHelper(async_client)
+
+        user, token, headers = await helper.create_authenticated_user()
 
         # Since the actual endpoint works, let's test the real functionality
         # This will test the actual database integration
-        response = await async_client.get(url_builder.url_for("get_supported_languages"), headers=flow["headers"])
+        response = await async_client.get(url_builder.url_for("get_supported_languages"), headers=headers)
 
         # The endpoint should work correctly with expected success
         assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.text}"
@@ -36,7 +38,9 @@ class TestVocabularyRoutesCore:
     @pytest.mark.anyio
     async def test_get_supported_languages_error(self, async_client, app, url_builder):
         """Test error handling in supported languages endpoint"""
-        flow = await AuthTestHelperAsync.register_and_login_async(async_client)
+        helper = AsyncAuthHelper(async_client)
+
+        user, token, headers = await helper.create_authenticated_user()
 
         # Create mock session that raises database error
         async def mock_get_async_session():
@@ -50,7 +54,7 @@ class TestVocabularyRoutesCore:
         app.dependency_overrides[get_async_session] = mock_get_async_session
 
         try:
-            response = await async_client.get(url_builder.url_for("get_supported_languages"), headers=flow["headers"])
+            response = await async_client.get(url_builder.url_for("get_supported_languages"), headers=headers)
 
             assert response.status_code == 500
             assert "Error retrieving languages" in response.json()["detail"]
@@ -61,12 +65,14 @@ class TestVocabularyRoutesCore:
     @pytest.mark.anyio
     async def test_get_vocabulary_stats_success(self, async_client):
         """Test vocabulary stats endpoint success"""
-        flow = await AuthTestHelperAsync.register_and_login_async(async_client)
+        helper = AsyncAuthHelper(async_client)
+
+        user, token, headers = await helper.create_authenticated_user()
 
         response = await async_client.get(
             "/api/vocabulary/stats",
             params={"target_language": "de", "translation_language": "es"},
-            headers=flow["headers"],
+            headers=headers,
         )
 
         # Should work correctly with expected success
@@ -89,13 +95,15 @@ class TestVocabularyRoutesCore:
     @pytest.mark.anyio
     async def test_get_vocabulary_level_success(self, async_client):
         """Test vocabulary level endpoint success"""
-        flow = await AuthTestHelperAsync.register_and_login_async(async_client)
+        helper = AsyncAuthHelper(async_client)
+
+        user, token, headers = await helper.create_authenticated_user()
 
         # Test real endpoint - should work regardless of database state
         response = await async_client.get(
             "/api/vocabulary/library/A1",
             params={"target_language": "de", "translation_language": "es", "limit": 50},
-            headers=flow["headers"],
+            headers=headers,
         )
 
         # Should succeed with proper response structure
@@ -111,10 +119,12 @@ class TestVocabularyRoutesCore:
     @pytest.mark.anyio
     async def test_get_vocabulary_level_invalid_level(self, async_client):
         """Test vocabulary level endpoint with invalid level"""
-        flow = await AuthTestHelperAsync.register_and_login_async(async_client)
+        helper = AsyncAuthHelper(async_client)
+
+        user, token, headers = await helper.create_authenticated_user()
 
         response = await async_client.get(
-            "/api/vocabulary/library/Z9", params={"target_language": "de"}, headers=flow["headers"]
+            "/api/vocabulary/library/Z9", params={"target_language": "de"}, headers=headers
         )
 
         assert response.status_code == 422
@@ -123,7 +133,9 @@ class TestVocabularyRoutesCore:
     @pytest.mark.anyio
     async def test_mark_word_as_known_success(self, async_client):
         """Test marking word as known endpoint success"""
-        flow = await AuthTestHelperAsync.register_and_login_async(async_client)
+        helper = AsyncAuthHelper(async_client)
+
+        user, token, headers = await helper.create_authenticated_user()
 
         # Use actual word instead of UUID
         word = "haus"
@@ -143,7 +155,7 @@ class TestVocabularyRoutesCore:
             response = await async_client.post(
                 "/api/vocabulary/mark-known",
                 json={"word": word, "language": "de", "known": True},
-                headers=flow["headers"],
+                headers=headers,
             )
 
             assert response.status_code == 200
@@ -161,7 +173,9 @@ class TestVocabularyRoutesCore:
     @pytest.mark.anyio
     async def test_mark_word_unknown_success(self, async_client):
         """Test marking word as unknown endpoint success"""
-        flow = await AuthTestHelperAsync.register_and_login_async(async_client)
+        helper = AsyncAuthHelper(async_client)
+
+        user, token, headers = await helper.create_authenticated_user()
 
         # Use actual word instead of UUID
         word = "welt"
@@ -181,7 +195,7 @@ class TestVocabularyRoutesCore:
             response = await async_client.post(
                 "/api/vocabulary/mark-known",
                 json={"word": word, "language": "de", "known": False},
-                headers=flow["headers"],
+                headers=headers,
             )
 
             assert response.status_code == 200
@@ -200,13 +214,15 @@ class TestVocabularyRoutesCore:
     @pytest.mark.anyio
     async def test_bulk_mark_level_known_success(self, async_client):
         """Test bulk marking level as known endpoint success"""
-        flow = await AuthTestHelperAsync.register_and_login_async(async_client)
+        helper = AsyncAuthHelper(async_client)
+
+        user, token, headers = await helper.create_authenticated_user()
 
         # Test real endpoint behavior - should work regardless of database state
         response = await async_client.post(
             "/api/vocabulary/library/bulk-mark",
             json={"level": "A1", "target_language": "de", "known": True},
-            headers=flow["headers"],
+            headers=headers,
         )
 
         assert response.status_code == 200
@@ -221,12 +237,14 @@ class TestVocabularyRoutesCore:
     @pytest.mark.anyio
     async def test_bulk_mark_level_invalid_level(self, async_client):
         """Test bulk marking with invalid level"""
-        flow = await AuthTestHelperAsync.register_and_login_async(async_client)
+        helper = AsyncAuthHelper(async_client)
+
+        user, token, headers = await helper.create_authenticated_user()
 
         response = await async_client.post(
             "/api/vocabulary/library/bulk-mark",
             json={"level": "Z9", "target_language": "de", "known": True},
-            headers=flow["headers"],
+            headers=headers,
         )
 
         assert response.status_code == 422
@@ -241,10 +259,12 @@ class TestVocabularyRoutesCore:
     @pytest.mark.anyio
     async def test_get_test_data_success(self, async_client, url_builder):
         """Test test data endpoint success"""
-        flow = await AuthTestHelperAsync.register_and_login_async(async_client)
+        helper = AsyncAuthHelper(async_client)
+
+        user, token, headers = await helper.create_authenticated_user()
 
         # Test real endpoint - should work regardless of database state
-        response = await async_client.get(url_builder.url_for("get_test_data"), headers=flow["headers"])
+        response = await async_client.get(url_builder.url_for("get_test_data"), headers=headers)
 
         assert response.status_code == 200
         data = response.json()
@@ -259,7 +279,9 @@ class TestVocabularyRoutesCore:
     @pytest.mark.anyio
     async def test_get_blocking_words_missing_srt(self, async_client):
         """Test blocking words endpoint with missing SRT file"""
-        flow = await AuthTestHelperAsync.register_and_login_async(async_client)
+        helper = AsyncAuthHelper(async_client)
+
+        user, token, headers = await helper.create_authenticated_user()
 
         with patch("api.routes.vocabulary.settings") as mock_settings:
             from pathlib import Path
@@ -270,7 +292,7 @@ class TestVocabularyRoutesCore:
             # Mock non-existent SRT file
             with patch.object(Path, "exists", return_value=False):
                 response = await async_client.get(
-                    "/api/vocabulary/blocking-words", params={"video_path": "test.mp4"}, headers=flow["headers"]
+                    "/api/vocabulary/blocking-words", params={"video_path": "test.mp4"}, headers=headers
                 )
 
                 assert response.status_code == 404
@@ -279,7 +301,9 @@ class TestVocabularyRoutesCore:
     @pytest.mark.anyio
     async def test_get_blocking_words_success(self, async_client):
         """Test blocking words endpoint success"""
-        flow = await AuthTestHelperAsync.register_and_login_async(async_client)
+        helper = AsyncAuthHelper(async_client)
+
+        user, token, headers = await helper.create_authenticated_user()
 
         with patch("api.routes.vocabulary.settings") as mock_settings:
             from pathlib import Path
@@ -290,7 +314,7 @@ class TestVocabularyRoutesCore:
             # Mock existing SRT file
             with patch.object(Path, "exists", return_value=True):
                 response = await async_client.get(
-                    "/api/vocabulary/blocking-words", params={"video_path": "test.mp4"}, headers=flow["headers"]
+                    "/api/vocabulary/blocking-words", params={"video_path": "test.mp4"}, headers=headers
                 )
 
                 assert response.status_code == 200
@@ -306,13 +330,15 @@ class TestVocabularyRoutesErrorHandling:
     @pytest.mark.anyio
     async def test_vocabulary_stats_database_error(self, async_client):
         """Test vocabulary stats with realistic error scenarios"""
-        flow = await AuthTestHelperAsync.register_and_login_async(async_client)
+        helper = AsyncAuthHelper(async_client)
+
+        user, token, headers = await helper.create_authenticated_user()
 
         # Test with invalid but properly formatted language code
         response = await async_client.get(
             "/api/vocabulary/stats",
             params={"target_language": "xx"},  # Valid format but non-existent language
-            headers=flow["headers"],
+            headers=headers,
         )
 
         # Should succeed but return empty stats (real system behavior)
@@ -328,14 +354,16 @@ class TestVocabularyRoutesErrorHandling:
     @pytest.mark.anyio
     async def test_mark_known_database_error(self, async_client):
         """Test mark known with realistic error scenarios"""
-        flow = await AuthTestHelperAsync.register_and_login_async(async_client)
+        helper = AsyncAuthHelper(async_client)
+
+        user, token, headers = await helper.create_authenticated_user()
 
         # Test with valid UUID - implementation returns success=False when word not found
         # This tests fail-fast behavior for missing vocabulary words
         response = await async_client.post(
             "/api/vocabulary/mark-known",
             json={"concept_id": str(uuid4()), "language": "de", "known": True},
-            headers=flow["headers"],
+            headers=headers,
         )
 
         # Current implementation: returns success=False for non-existent words (fail-fast)
@@ -347,13 +375,15 @@ class TestVocabularyRoutesErrorHandling:
     @pytest.mark.anyio
     async def test_vocabulary_level_database_error(self, async_client):
         """Test vocabulary level with realistic error scenarios"""
-        flow = await AuthTestHelperAsync.register_and_login_async(async_client)
+        helper = AsyncAuthHelper(async_client)
+
+        user, token, headers = await helper.create_authenticated_user()
 
         # Test with invalid language - should return empty results gracefully
         response = await async_client.get(
             "/api/vocabulary/library/A1",
             params={"target_language": "xx"},  # Valid format but non-existent language
-            headers=flow["headers"],
+            headers=headers,
         )
 
         # Should succeed but return empty word list
@@ -371,10 +401,12 @@ class TestVocabularyRoutesValidation:
     @pytest.mark.anyio
     async def test_mark_known_invalid_uuid(self, async_client):
         """Test mark known with invalid UUID"""
-        flow = await AuthTestHelperAsync.register_and_login_async(async_client)
+        helper = AsyncAuthHelper(async_client)
+
+        user, token, headers = await helper.create_authenticated_user()
 
         response = await async_client.post(
-            "/api/vocabulary/mark-known", json={"concept_id": "not-a-uuid", "known": True}, headers=flow["headers"]
+            "/api/vocabulary/mark-known", json={"concept_id": "not-a-uuid", "known": True}, headers=headers
         )
 
         assert response.status_code == 422
@@ -382,12 +414,14 @@ class TestVocabularyRoutesValidation:
     @pytest.mark.anyio
     async def test_bulk_mark_missing_fields(self, async_client):
         """Test bulk mark with missing required fields"""
-        flow = await AuthTestHelperAsync.register_and_login_async(async_client)
+        helper = AsyncAuthHelper(async_client)
+
+        user, token, headers = await helper.create_authenticated_user()
 
         response = await async_client.post(
             "/api/vocabulary/library/bulk-mark",
             json={"level": "A1"},  # Missing target_language and known
-            headers=flow["headers"],
+            headers=headers,
         )
 
         assert response.status_code == 422
@@ -395,7 +429,9 @@ class TestVocabularyRoutesValidation:
     @pytest.mark.anyio
     async def test_vocabulary_level_query_params(self, async_client):
         """Test vocabulary level with various query parameters"""
-        flow = await AuthTestHelperAsync.register_and_login_async(async_client)
+        helper = AsyncAuthHelper(async_client)
+
+        user, token, headers = await helper.create_authenticated_user()
 
         with patch("api.routes.vocabulary.get_async_session") as mock_get_session:
             mock_session = AsyncMock()
@@ -409,7 +445,7 @@ class TestVocabularyRoutesValidation:
             response = await async_client.get(
                 "/api/vocabulary/library/B2",
                 params={"target_language": "es", "translation_language": "en", "limit": 100},
-                headers=flow["headers"],
+                headers=headers,
             )
 
             assert response.status_code == 200

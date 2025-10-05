@@ -25,8 +25,6 @@ from .assertions import (
 from .auth_helpers import (
     AsyncAuthHelper,
     AuthHelper,
-    AuthTestHelper,  # For backward compatibility
-    AuthTestHelperAsync,  # For backward compatibility
     AuthTestScenarios,
     create_auth_fixtures,
 )
@@ -46,8 +44,6 @@ __all__ = [
     "AsyncAuthHelper",
     # Authentication helpers
     "AuthHelper",
-    "AuthTestHelper",
-    "AuthTestHelperAsync",
     "AuthTestScenarios",
     "CEFRLevel",
     "TestDataSets",

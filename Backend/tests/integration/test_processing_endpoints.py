@@ -7,13 +7,15 @@ from unittest.mock import Mock, patch
 import pytest
 
 from core.config import settings
-from tests.helpers import AuthTestHelperAsync
+from tests.helpers import AsyncAuthHelper
 
 
 @pytest.mark.anyio
 @pytest.mark.timeout(30)
 async def test_Whentranscribe_endpointCalled_ThenReturnstask(async_http_client, url_builder, monkeypatch, tmp_path):
-    flow = await AuthTestHelperAsync.register_and_login_async(async_http_client)
+    helper = AsyncAuthHelper(async_http_client)
+
+    user, token, headers = await helper.create_authenticated_user()
 
     with patch.object(type(settings), "get_videos_path", return_value=tmp_path):
         video = tmp_path / "episode.mp4"
@@ -29,7 +31,7 @@ async def test_Whentranscribe_endpointCalled_ThenReturnstask(async_http_client, 
         response = await async_http_client.post(
             url_builder.url_for("transcribe_video"),
             json={"video_path": "episode.mp4"},
-            headers=flow["headers"],
+            headers=headers,
         )
 
         # Async processing should return 200 (OK with task started)
@@ -42,12 +44,14 @@ async def test_Whentranscribe_endpointCalled_ThenReturnstask(async_http_client, 
 @pytest.mark.anyio
 @pytest.mark.timeout(30)
 async def test_Whenprepare_episodeWithoutexisting_video_ThenReturnsError(async_http_client):
-    flow = await AuthTestHelperAsync.register_and_login_async(async_http_client)
+    helper = AsyncAuthHelper(async_http_client)
+
+    user, token, headers = await helper.create_authenticated_user()
 
     response = await async_http_client.post(
         "/api/process/prepare-episode",
         json={"video_path": "missing.mp4"},
-        headers=flow["headers"],
+        headers=headers,
     )
 
     # Invalid video path should return 404 (not found)

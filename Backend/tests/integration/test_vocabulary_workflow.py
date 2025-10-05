@@ -7,7 +7,7 @@ multilingual support, and statistical consistency across the application.
 
 import pytest
 
-from tests.helpers import AuthTestHelperAsync
+from tests.helpers import AsyncAuthHelper
 from tests.helpers.data_builders import UserBuilder
 
 
@@ -346,10 +346,13 @@ class TestMultiUserVocabularyIsolation:
     ):
         """Test vocabulary progress is properly isolated between users"""
         # Create and authenticate two different users using consistent patterns
-        user1_flow = await AuthTestHelperAsync.register_and_login_async(async_client)
-        user2_flow = await AuthTestHelperAsync.register_and_login_async(async_client)
+        helper1 = AsyncAuthHelper(async_client)
+        user1, _token1, user1_headers = await helper1.create_authenticated_user()
 
-        user_tokens = {"user1": {"headers": user1_flow["headers"]}, "user2": {"headers": user2_flow["headers"]}}
+        helper2 = AsyncAuthHelper(async_client)
+        user2, _token2, user2_headers = await helper2.create_authenticated_user()
+
+        user_tokens = {"user1": {"headers": user1_headers}, "user2": {"headers": user2_headers}}
 
         # Get same vocabulary words for both users
         words_response = await async_client.get(

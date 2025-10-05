@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from tests.helpers import AuthResponseStructures, AuthTestHelper, validate_auth_response
+from tests.helpers import AsyncAuthHelper
 
 
 def _route(url_builder, name: str, fallback: str) -> str:
@@ -20,12 +20,15 @@ def _route(url_builder, name: str, fallback: str) -> str:
 async def test_WhenRegisterRouteViaContractName_ThenSucceeds(async_http_client, url_builder):
     """Happy path: registering through the named route yields a contract-compliant payload."""
     register_url = _route(url_builder, "register:register", "/api/auth/register")
-    user_data = AuthTestHelper.generate_unique_user_data()
+    helper = AsyncAuthHelper(async_http_client)
+    user = helper.create_test_user()
 
-    response = await async_http_client.post(register_url, json=user_data)
+    response = await async_http_client.post(register_url, json=user.to_dict())
 
     assert response.status_code == 201
-    validate_auth_response(response.json(), AuthResponseStructures.REGISTRATION_SUCCESS)
+    data = response.json()
+    assert data["email"] == user.email
+    assert data["username"] == user.username
 
 
 @pytest.mark.anyio
@@ -33,14 +36,14 @@ async def test_WhenRegisterRouteViaContractName_ThenSucceeds(async_http_client, 
 async def test_Whenlogin_routeWithoutform_encoding_ThenReturnsError(async_http_client, url_builder):
     """Invalid input: JSON payload fails because contract requires form-urlencoded data."""
     login_url = _route(url_builder, "auth:jwt.login", "/api/auth/login")
-    user_data = AuthTestHelper.generate_unique_user_data()
-    await AuthTestHelper.register_user_async(async_http_client, user_data)
+    helper = AsyncAuthHelper(async_http_client)
+    user, _data = await helper.register_user()
 
     response = await async_http_client.post(
         login_url,
         json={
-            "username": user_data["email"],
-            "password": user_data["password"],
+            "username": user.email,
+            "password": user.password,
         },
     )
 
@@ -54,16 +57,14 @@ async def test_Whenlogin_routeWithoutform_encoding_ThenReturnsError(async_http_c
 async def test_WhenLoginroute_ThenReturnsbearer_contract(async_http_client, url_builder):
     """Happy path login using named route returns the documented bearer fields."""
     _route(url_builder, "auth:jwt.login", "/api/auth/login")
-    user_data = AuthTestHelper.generate_unique_user_data()
-    await AuthTestHelper.register_user_async(async_http_client, user_data)
+    helper = AsyncAuthHelper(async_http_client)
+    user, _data = await helper.register_user()
 
-    status_code, payload = await AuthTestHelper.login_user_async(
-        async_http_client, user_data["email"], user_data["password"]
-    )
+    token, login_data = await helper.login_user(user)
 
-    assert status_code == 200
-    assert payload["token_type"].lower() == "bearer"
-    assert payload["access_token"]
+    assert token
+    assert login_data["token_type"].lower() == "bearer"
+    assert login_data["access_token"]
 
 
 @pytest.mark.anyio
@@ -74,4 +75,4 @@ async def test_Whenlogout_routeWithouttoken_ThenReturnsError(async_http_client, 
 
     response = await async_http_client.post(logout_url)
 
-    assert response.status_code == AuthResponseStructures.UNAUTHORIZED["status_code"]
+    assert response.status_code == 401

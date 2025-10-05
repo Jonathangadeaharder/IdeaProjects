@@ -10,7 +10,7 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 
 from core.app import create_app
-from tests.helpers import AuthTestHelperAsync
+from tests.helpers import AsyncAuthHelper
 
 HEALTH_BUDGET_SECONDS = 0.25
 AUTH_BUDGET_SECONDS = 1.25
@@ -48,13 +48,15 @@ async def test_Whenhealth_endpoint_stays_snappyCalled_ThenSucceeds(async_client_
 @pytest.mark.timeout(30)
 async def test_Whenmultilingual_vocab_stats_within_latency_budgetCalled_ThenSucceeds(async_client) -> None:
     """Multilingual vocabulary stats request remains inside the agreed latency budget."""
-    flow = await AuthTestHelperAsync.register_and_login_async(async_client)
+    helper = AsyncAuthHelper(async_client)
+
+    user, token, headers = await helper.create_authenticated_user()
 
     started = time.perf_counter()
     response = await async_client.get(
         "/api/vocabulary/stats",
         params={"target_language": "de", "translation_language": "es"},
-        headers=flow["headers"],
+        headers=headers,
     )
     elapsed = time.perf_counter() - started
 
@@ -71,13 +73,15 @@ async def test_Whenmultilingual_vocab_stats_within_latency_budgetCalled_ThenSucc
 @pytest.mark.timeout(30)
 async def test_Whenvocab_level_query_within_budgetCalled_ThenSucceeds(async_client) -> None:
     """Vocabulary level query with multilingual parameters stays performant."""
-    flow = await AuthTestHelperAsync.register_and_login_async(async_client)
+    helper = AsyncAuthHelper(async_client)
+
+    user, token, headers = await helper.create_authenticated_user()
 
     started = time.perf_counter()
     response = await async_client.get(
         "/api/vocabulary/library/A1",
         params={"target_language": "de", "translation_language": "es", "limit": 50},
-        headers=flow["headers"],
+        headers=headers,
     )
     elapsed = time.perf_counter() - started
 

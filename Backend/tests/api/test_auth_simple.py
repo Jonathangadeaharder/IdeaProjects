@@ -5,17 +5,18 @@ from __future__ import annotations
 import pytest
 
 from tests.assertion_helpers import assert_json_error_response, assert_json_response
-from tests.helpers import AuthTestHelper
+from tests.helpers import AsyncAuthHelper
 
 
 @pytest.mark.anyio
 @pytest.mark.timeout(30)
 async def test_WhenRegisterCalled_ThenReturnsJsonResponse(async_http_client, url_builder):
     """Happy path: register responds with JSON payload and 201 status."""
-    user_data = AuthTestHelper.generate_unique_user_data()
+    helper = AsyncAuthHelper(async_http_client)
+    user = helper.create_test_user()
     register_url = url_builder.url_for("register:register")
 
-    response = await async_http_client.post(register_url, json=user_data)
+    response = await async_http_client.post(register_url, json=user.to_dict())
 
     assert response.status_code == 201
     assert_json_response(response)
@@ -25,9 +26,9 @@ async def test_WhenRegisterCalled_ThenReturnsJsonResponse(async_http_client, url
 @pytest.mark.timeout(30)
 async def test_WhenLoginWithWrongPassword_ThenReturnsJsonError(async_http_client, url_builder):
     """Invalid input: wrong password yields JSON error structure."""
-    user_data = AuthTestHelper.generate_unique_user_data()
-    await AuthTestHelper.register_user_async(async_http_client, user_data)
-    login_data = {"username": user_data["email"], "password": "WrongPass123!"}
+    helper = AsyncAuthHelper(async_http_client)
+    user, _data = await helper.register_user()
+    login_data = {"username": user.email, "password": "WrongPass123!"}
     login_url = url_builder.url_for("auth:jwt.login")
 
     response = await async_http_client.post(
@@ -46,7 +47,8 @@ async def test_WhenMeEndpointCalled_ThenReturnsJsonForBothAuthStates(async_http_
     unauth_response = await async_http_client.get(me_url)
     assert_json_error_response(unauth_response, 401)
 
-    flow = await AuthTestHelper.register_and_login_async(async_http_client)
-    auth_response = await async_http_client.get(me_url, headers={"Authorization": f"Bearer {flow['token']}"})
+    helper = AsyncAuthHelper(async_http_client)
+    _user, token, headers = await helper.create_authenticated_user()
+    auth_response = await async_http_client.get(me_url, headers=headers)
     assert auth_response.status_code == 200
     assert_json_response(auth_response)

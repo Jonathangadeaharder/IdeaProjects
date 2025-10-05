@@ -6,7 +6,7 @@ import os
 
 import pytest
 
-from tests.helpers import AuthTestHelperAsync
+from tests.helpers import AsyncAuthHelper
 
 # Skip this module in constrained environments where the async DB fixture hangs
 pytestmark = pytest.mark.skipif(
@@ -43,13 +43,15 @@ async def test_invalid_BearerToken_is_rejected(async_client, url_builder) -> Non
 @pytest.mark.timeout(30)
 async def test_Whensql_injection_in_concept_lookupCalled_ThenReturnssafe_response(async_client) -> None:
     """SQL injection payloads in concept-based queries should not compromise the database."""
-    flow = await AuthTestHelperAsync.register_and_login_async(async_client)
+    helper = AsyncAuthHelper(async_client)
+
+    user, token, headers = await helper.create_authenticated_user()
     malicious_uuid = "'; DROP TABLE vocabulary_concept; --"
 
     response = await async_client.post(
         "/api/vocabulary/mark-known",
         json={"concept_id": malicious_uuid, "known": True},
-        headers=flow["headers"],
+        headers=headers,
     )
 
     # Validation should catch invalid UUID and return 422
@@ -69,13 +71,15 @@ async def test_Whensql_injection_in_concept_lookupCalled_ThenReturnssafe_respons
 @pytest.mark.timeout(30)
 async def test_Whenxss_payload_in_language_parameterCalled_ThenSucceeds(async_client) -> None:
     """XSS payloads in language parameters must be properly validated."""
-    flow = await AuthTestHelperAsync.register_and_login_async(async_client)
+    helper = AsyncAuthHelper(async_client)
+
+    user, token, headers = await helper.create_authenticated_user()
     xss_payload = "<script>alert('xss')</script>"
 
     response = await async_client.get(
         "/api/vocabulary/stats",
         params={"target_language": xss_payload, "translation_language": "es"},
-        headers=flow["headers"],
+        headers=headers,
     )
 
     # Validation should reject XSS payload in language parameter
@@ -102,13 +106,14 @@ async def test_WhenLogoutCalled_ThenRevokesaccess(async_client, url_builder) -> 
 
     This test verifies logout succeeds but skips token invalidation check.
     """
-    flow = await AuthTestHelperAsync.register_and_login_async(async_client, url_builder)
+    helper = AsyncAuthHelper(async_client)
+    _user, token, headers = await helper.create_authenticated_user()
 
-    logout = await async_client.post(url_builder.url_for("auth_logout"), headers=flow["headers"])
+    logout = await async_client.post(url_builder.url_for("auth_logout"), headers=headers)
     assert (
         logout.status_code == 204
     ), f"Expected 204 (no content - successful logout), got {logout.status_code}: {logout.text}"
 
     # SKIP: JWT tokens remain valid after logout (stateless JWT limitation)
-    # me_response = await async_client.get(url_builder.url_for("auth_me"), headers=flow["headers"])
+    # me_response = await async_client.get(url_builder.url_for("auth_me"), headers=headers)
     # assert me_response.status_code == 401, "Token should be revoked after logout"

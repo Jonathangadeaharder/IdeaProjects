@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from tests.helpers import AuthTestHelperAsync
+from tests.helpers import AsyncAuthHelper
 
 
 @pytest.mark.anyio
@@ -21,6 +21,8 @@ async def test_Whenvocabulary_statsWithoutauth_ThenReturnsError(async_http_clien
     response = await async_http_client.get(url_builder.url_for("get_vocabulary_stats"))
     assert response.status_code == 401
 
-    flow = await AuthTestHelperAsync.register_and_login_async(async_http_client)
-    authed = await async_http_client.get(url_builder.url_for("get_vocabulary_stats"), headers=flow["headers"])
+    helper = AsyncAuthHelper(async_http_client)
+
+    user, token, headers = await helper.create_authenticated_user()
+    authed = await async_http_client.get(url_builder.url_for("get_vocabulary_stats"), headers=headers)
     assert authed.status_code == 200, f"Expected 200, got {authed.status_code}: {authed.text}"

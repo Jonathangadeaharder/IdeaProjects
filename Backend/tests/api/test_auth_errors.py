@@ -5,20 +5,20 @@ from __future__ import annotations
 import pytest
 
 from tests.assertion_helpers import assert_validation_error_response
-from tests.helpers import AuthTestHelper
+from tests.helpers import AsyncAuthHelper
 
 
 @pytest.mark.anyio
 @pytest.mark.timeout(30)
 async def test_WhenLoginWithjson_payload_ThenRejects(async_http_client, url_builder):
     """Boundary: sending JSON instead of form data yields a 422 validation error."""
-    user_data = AuthTestHelper.generate_unique_user_data()
-    await AuthTestHelper.register_user_async(async_http_client, user_data)
+    helper = AsyncAuthHelper(async_http_client)
+    user, _data = await helper.register_user()
     login_url = url_builder.url_for("auth:jwt.login")
 
     response = await async_http_client.post(
         login_url,
-        json={"username": user_data["email"], "password": user_data["password"]},
+        json={"username": user.email, "password": user.password},
     )
 
     assert response.status_code == 422
@@ -28,13 +28,13 @@ async def test_WhenLoginWithjson_payload_ThenRejects(async_http_client, url_buil
 @pytest.mark.timeout(30)
 async def test_WhenloginWithoutpassword_ThenReturnsError(async_http_client, url_builder):
     """Invalid input: missing password triggers field-level validation failures."""
-    user_data = AuthTestHelper.generate_unique_user_data()
-    await AuthTestHelper.register_user_async(async_http_client, user_data)
+    helper = AsyncAuthHelper(async_http_client)
+    user, _data = await helper.register_user()
     login_url = url_builder.url_for("auth:jwt.login")
 
     response = await async_http_client.post(
         login_url,
-        data={"username": user_data["email"]},
+        data={"username": user.email},
         headers={"Content-Type": "application/x-www-form-urlencoded"},
     )
 

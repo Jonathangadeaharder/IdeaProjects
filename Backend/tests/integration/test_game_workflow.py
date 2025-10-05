@@ -9,7 +9,7 @@ from uuid import uuid4
 
 import pytest
 
-from tests.helpers import AuthTestHelperAsync
+from tests.helpers import AsyncAuthHelper
 from tests.helpers.data_builders import UserBuilder
 
 
@@ -371,10 +371,13 @@ class TestCompleteGameWorkflow:
     async def test_WhenMultiUserGameSessions_ThenSessionsIsolated(self, async_client, url_builder):
         """Test game sessions are properly isolated between different users"""
         # Create and authenticate two different users using consistent patterns
-        user1_flow = await AuthTestHelperAsync.register_and_login_async(async_client)
-        user2_flow = await AuthTestHelperAsync.register_and_login_async(async_client)
+        helper1 = AsyncAuthHelper(async_client)
+        user1, _token1, user1_headers = await helper1.create_authenticated_user()
 
-        user_tokens = {"user1": {"headers": user1_flow["headers"]}, "user2": {"headers": user2_flow["headers"]}}
+        helper2 = AsyncAuthHelper(async_client)
+        user2, _token2, user2_headers = await helper2.create_authenticated_user()
+
+        user_tokens = {"user1": {"headers": user1_headers}, "user2": {"headers": user2_headers}}
 
         # Each user starts a game session
         start_request = {"game_type": "vocabulary", "difficulty": "intermediate", "total_questions": 1}

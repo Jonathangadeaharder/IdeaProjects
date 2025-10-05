@@ -4,23 +4,24 @@ from __future__ import annotations
 
 import pytest
 
-from tests.helpers import AuthTestHelperAsync
+from tests.helpers import AsyncAuthHelper
 
 
 async def _auth(async_client):
-    return await AuthTestHelperAsync.register_and_login_async(async_client)
+    helper = AsyncAuthHelper(async_client)
+    return await helper.create_authenticated_user()
 
 
 @pytest.mark.anyio
 @pytest.mark.timeout(30)
 async def test_Whenmark_known_can_unmarkCalled_ThenSucceeds(async_client, url_builder):
     """Happy path: toggling known flag to False returns consistent structure."""
-    flow = await _auth(async_client)
+    _user, _token, headers = await _auth(async_client)
 
     response = await async_client.post(
         url_builder.url_for("mark_word_known"),
         json={"word": "sein", "known": False},
-        headers=flow["headers"],
+        headers=headers,
     )
 
     assert response.status_code == 200
@@ -40,13 +41,13 @@ async def test_Whenbulk_markCalled_ThenReturnscounts(async_client, url_builder):
     # Mock the progress_service.bulk_mark_level method
     mock_bulk_mark = AsyncMock(return_value={"updated_count": 7})
 
-    flow = await _auth(async_client)
+    _user, _token, headers = await _auth(async_client)
 
     with patch.object(vocabulary_service.progress_service, "bulk_mark_level", mock_bulk_mark):
         response = await async_client.post(
             url_builder.url_for("bulk_mark_level"),
             json={"level": "A1", "known": True, "target_language": "de"},
-            headers=flow["headers"],
+            headers=headers,
         )
 
     assert response.status_code == 200

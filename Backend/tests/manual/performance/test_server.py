@@ -8,7 +8,7 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 
 from core.app import create_app
-from tests.helpers import AuthTestHelper
+from tests.helpers import AuthHelper
 
 
 @pytest.fixture
@@ -57,15 +57,13 @@ async def test_WhenloginWithoutform_encoding_ThenReturnsError(async_client_no_db
 )
 def test_Whenregister_and_login_via_sync_clientCalled_ThenSucceeds(client) -> None:
     """The synchronous test client should handle an end-to-end auth flow."""
-    user_data = AuthTestHelper.generate_unique_user_data()
+    helper = AuthHelper(client)
+    user = helper.create_test_user()
 
-    reg_status, _ = AuthTestHelper.register_user(client, user_data)
-    login_status, login_payload = AuthTestHelper.login_user(
-        client,
-        email=user_data["email"],
-        password=user_data["password"],
-    )
+    _reg_user, reg_data = helper.register_user(user)
+    token, login_payload = helper.login_user(user)
 
-    assert reg_status == 201
-    assert login_status == 200
+    assert reg_data is not None  # Registration succeeded (201)
+    assert login_payload["token_type"].lower() == "bearer"  # Login succeeded (200)
+    assert token is not None
     assert login_payload["token_type"].lower() == "bearer"

@@ -4,17 +4,18 @@ from __future__ import annotations
 
 import pytest
 
-from tests.helpers import AuthTestHelperAsync
+from tests.helpers import AsyncAuthHelper
 
 
 @pytest.mark.anyio
 @pytest.mark.timeout(30)
 async def test_Whenvocabulary_statsCalled_ThenReturnslevels(async_client, url_builder, seeded_vocabulary):
-    flow = await AuthTestHelperAsync.register_and_login_async(async_client)
+    helper = AsyncAuthHelper(async_client)
+    _user, _token, headers = await helper.create_authenticated_user()
 
     # seeded_vocabulary fixture ensures we have test data available
     response = await async_client.get(
-        url_builder.url_for("get_vocabulary_stats"), params={"target_language": "de"}, headers=flow["headers"]
+        url_builder.url_for("get_vocabulary_stats"), params={"target_language": "de"}, headers=headers
     )
 
     # Integration test should verify actual behavior, not accept any outcome
@@ -36,13 +37,14 @@ async def test_Whenvocabulary_statsCalled_ThenReturnslevels(async_client, url_bu
 @pytest.mark.anyio
 @pytest.mark.timeout(30)
 async def test_Whenbulk_mark_level_uses_serviceCalled_ThenSucceeds(async_client, url_builder, seeded_vocabulary):
-    flow = await AuthTestHelperAsync.register_and_login_async(async_client)
+    helper = AsyncAuthHelper(async_client)
+    _user, _token, headers = await helper.create_authenticated_user()
 
     # seeded_vocabulary fixture ensures we have A1 level words to mark
     response = await async_client.post(
         url_builder.url_for("bulk_mark_level"),
         json={"level": "A1", "target_language": "de", "known": True},
-        headers=flow["headers"],
+        headers=headers,
     )
 
     # Test that the endpoint works correctly with expected success
