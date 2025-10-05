@@ -59,7 +59,7 @@ class TestAuthenticationEndpoints:
         user, _token, headers = await auth_helper.create_authenticated_user()
 
         # Act
-        response = await async_client.get("/api/auth/me", headers=headers)
+        response = await async_client.get(url_builder.url_for("auth_get_current_user"), headers=headers)
 
         # Assert
         profile = assert_json_response(response, 200)
@@ -68,11 +68,11 @@ class TestAuthenticationEndpoints:
 
     @pytest.mark.anyio
     async def test_When_unauthenticated_user_accesses_protected_endpoint_Then_authentication_required(
-        self, async_client
+        self, async_client, url_builder
     ):
         """Unauthenticated access to protected endpoint should require authentication."""
         # Act
-        response = await async_client.get("/api/auth/me")
+        response = await async_client.get(url_builder.url_for("auth_get_current_user"))
 
         # Assert
         assert_authentication_error(response)
@@ -92,7 +92,7 @@ class TestAuthenticationEndpoints:
         _user, token, headers = await auth_helper.create_authenticated_user()
 
         # Verify token works initially
-        response = await async_client.get("/api/auth/me", headers=headers)
+        response = await async_client.get(url_builder.url_for("auth_get_current_user"), headers=headers)
         assert_status_code(response, 200)
 
         # Act
@@ -102,7 +102,7 @@ class TestAuthenticationEndpoints:
         assert "success" in logout_data or "message" in logout_data
 
         # SKIP: JWT tokens remain valid after logout (stateless JWT limitation)
-        # response = await async_client.get("/api/auth/me", headers=headers)
+        # response = await async_client.get(url_builder.url_for("auth_get_current_user"), headers=headers)
         # assert response.status_code in [401, 403], "Token should be invalid after logout"
 
 
@@ -154,7 +154,7 @@ class TestVocabularyEndpoints:
 
         # Act
         response = await async_client.get(
-            "/api/vocabulary/library/A1",
+            url_builder.url_for("get_vocabulary_level", level="A1"),
             params={"target_language": "de", "limit": 10},
             headers=headers,
         )
@@ -311,7 +311,7 @@ class TestEndpointSecurity:
         malformed_headers = {"Authorization": "Malformed token123"}
 
         # Act
-        response = await async_client.get("/api/auth/me", headers=malformed_headers)
+        response = await async_client.get(url_builder.url_for("auth_get_current_user"), headers=malformed_headers)
 
         # Assert
         assert_authentication_error(response)
@@ -323,7 +323,7 @@ class TestEndpointSecurity:
         expired_headers = {"Authorization": "Bearer expired_token_that_should_fail"}
 
         # Act
-        response = await async_client.get("/api/auth/me", headers=expired_headers)
+        response = await async_client.get(url_builder.url_for("auth_get_current_user"), headers=expired_headers)
 
         # Assert
         assert_authentication_error(response)
@@ -338,8 +338,8 @@ class TestEndpointSecurity:
         user2, _token2, headers2 = await auth_helper.create_authenticated_user()
 
         # Act
-        response1 = await async_client.get("/api/auth/me", headers=headers1)
-        response2 = await async_client.get("/api/auth/me", headers=headers2)
+        response1 = await async_client.get(url_builder.url_for("auth_get_current_user"), headers=headers1)
+        response2 = await async_client.get(url_builder.url_for("auth_get_current_user"), headers=headers2)
 
         # Assert
         data1 = assert_json_response(response1, 200)
@@ -381,7 +381,7 @@ class TestEndpointPerformance:
         # Create multiple users concurrently
         async def create_user():
             _user, _token, headers = await auth_helper.create_authenticated_user()
-            response = await async_client.get("/api/auth/me", headers=headers)
+            response = await async_client.get(url_builder.url_for("auth_get_current_user"), headers=headers)
             return assert_json_response(response, 200)
 
         # Act

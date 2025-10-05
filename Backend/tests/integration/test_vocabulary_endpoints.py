@@ -11,12 +11,12 @@ from tests.helpers import AuthTestHelperAsync
 
 @pytest.mark.anyio
 @pytest.mark.timeout(30)
-async def test_Whenmark_known_endpointCalled_ThenSucceeds(async_client):
+async def test_Whenmark_known_endpointCalled_ThenSucceeds(async_client, url_builder):
     flow = await AuthTestHelperAsync.register_and_login_async(async_client)
     concept_id = str(uuid4())
 
     response = await async_client.post(
-        "/api/vocabulary/mark-known",
+        url_builder.url_for("mark_word_known"),
         json={"concept_id": concept_id, "known": True},
         headers=flow["headers"],
     )
@@ -41,12 +41,12 @@ async def test_Whenlibrary_levelWithoutvalid_code_ThenReturnsError(async_client)
 
 @pytest.mark.anyio
 @pytest.mark.timeout(30)
-async def test_Whenvocabulary_stats_endpointCalled_ThenReturnsMultilingualStats(async_client):
+async def test_Whenvocabulary_stats_endpointCalled_ThenReturnsMultilingualStats(async_client, url_builder):
     """Integration test for multilingual vocabulary stats endpoint."""
     flow = await AuthTestHelperAsync.register_and_login_async(async_client)
 
     response = await async_client.get(
-        "/api/vocabulary/stats",
+        url_builder.url_for("get_vocabulary_stats"),
         params={"target_language": "de", "translation_language": "es"},
         headers=flow["headers"],
     )

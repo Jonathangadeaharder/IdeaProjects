@@ -77,12 +77,14 @@ class TestAPIHTTPProtocol:
             assert response.status_code == 200
 
     @pytest.mark.asyncio
-    async def test_json_content_type_required(self):
+    async def test_json_content_type_required(self, url_builder):
         """Test that POST endpoints validate content"""
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             # Try to POST with bytes content (non-JSON serializable)
             response = await client.post(
-                "/api/auth/register", content=b"not json bytes", headers={"Content-Type": "application/json"}
+                url_builder.url_for("register:register"),
+                content=b"not json bytes",
+                headers={"Content-Type": "application/json"},
             )
 
             # Should handle non-JSON gracefully
@@ -98,22 +100,26 @@ class TestPydanticValidation:
     """
 
     @pytest.mark.asyncio
-    async def test_malformed_json_returns_422(self):
+    async def test_malformed_json_returns_422(self, url_builder):
         """Test that malformed JSON returns 422"""
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.post(
-                "/api/auth/register", content="{not valid json", headers={"Content-Type": "application/json"}
+                url_builder.url_for("register:register"),
+                content="{not valid json",
+                headers={"Content-Type": "application/json"},
             )
 
             # Layer 6: Test Pydantic validation error response
             assert response.status_code in [400, 422]
 
     @pytest.mark.asyncio
-    async def test_missing_required_fields_returns_422(self):
+    async def test_missing_required_fields_returns_422(self, url_builder):
         """Test that missing required fields returns 422"""
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             # Send empty object when fields are required
-            response = await client.post("/api/auth/register", json={}, headers={"Content-Type": "application/json"})
+            response = await client.post(
+                url_builder.url_for("register:register"), json={}, headers={"Content-Type": "application/json"}
+            )
 
             # Layer 6: Test Pydantic validation catches missing fields
             assert response.status_code == 422

@@ -176,7 +176,7 @@ class TestAuthenticationWorkflow:
         await auth_helper.logout_user(token)
 
         # SKIP: JWT tokens remain valid after logout (stateless JWT limitation)
-        # response = await async_client.get("/api/auth/me", headers=headers)
+        # response = await async_client.get(url_builder.url_for("auth_get_current_user"), headers=headers)
         # assert response.status_code in [401, 403], "Token should be invalid after logout"
 
 
