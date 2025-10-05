@@ -13,7 +13,7 @@ from core.auth import UserCreate
 class TestVideoStreamingAuthentication:
     """Test video streaming authentication via query token"""
 
-    async def test_video_endpoint_with_query_token(self, async_client: AsyncClient):
+    async def test_video_endpoint_with_query_token(self, async_client: AsyncClient, url_builder):
         """Test that video endpoint accepts authentication via query parameter"""
         # Create a test user
         user_data = UserCreate(username="testvideouser", email="videotest@example.com", password="TestPass1234!")
@@ -34,7 +34,8 @@ class TestVideoStreamingAuthentication:
 
         # Test video endpoint with token as query parameter
         # Note: This will fail if video doesn't exist, but should NOT fail with 401
-        response = await async_client.get(f"/api/videos/test_series/test_episode?token={token}")
+        video_url = url_builder.url_for("stream_video", series="test_series", episode="test_episode")
+        response = await async_client.get(f"{video_url}?token={token}")
 
         # Should NOT be 401 Unauthorized
         # Can be 404 (video not found), 200 (full video), or 206 (partial content/range request)
@@ -52,7 +53,7 @@ class TestVideoStreamingAuthentication:
             # Video streaming is working!
             pass
 
-    async def test_video_endpoint_with_bearer_header(self, async_client: AsyncClient):
+    async def test_video_endpoint_with_bearer_header(self, async_client: AsyncClient, url_builder):
         """Test that video endpoint accepts Bearer token in Authorization header"""
         # Create a test user
         user_data = UserCreate(username="testvideouser2", email="videotest2@example.com", password="TestPass1234!")
@@ -73,7 +74,8 @@ class TestVideoStreamingAuthentication:
 
         # Test video endpoint with Bearer token in header
         response = await async_client.get(
-            "/api/videos/test_series/test_episode", headers={"Authorization": f"Bearer {token}"}
+            url_builder.url_for("stream_video", series="test_series", episode="test_episode"),
+            headers={"Authorization": f"Bearer {token}"},
         )
 
         # Should NOT be 401 Unauthorized
@@ -84,17 +86,20 @@ class TestVideoStreamingAuthentication:
             404,
         ], f"Expected 200/206/404, got {response.status_code}: {response.text}"
 
-    async def test_video_endpoint_without_token_fails(self, async_client: AsyncClient):
+    async def test_video_endpoint_without_token_fails(self, async_client: AsyncClient, url_builder):
         """Test that video endpoint requires authentication"""
-        response = await async_client.get("/api/videos/test_series/test_episode")
+        response = await async_client.get(
+            url_builder.url_for("stream_video", series="test_series", episode="test_episode")
+        )
 
         # Should be 401 Unauthorized
         assert response.status_code == 401
         assert "authentication" in response.json().get("detail", "").lower()
 
-    async def test_video_endpoint_with_invalid_token_fails(self, async_client: AsyncClient):
+    async def test_video_endpoint_with_invalid_token_fails(self, async_client: AsyncClient, url_builder):
         """Test that video endpoint rejects invalid tokens"""
-        response = await async_client.get("/api/videos/test_series/test_episode?token=invalid_token_here")
+        video_url = url_builder.url_for("stream_video", series="test_series", episode="test_episode")
+        response = await async_client.get(f"{video_url}?token=invalid_token_here")
 
         # Should be 401 Unauthorized
         assert response.status_code == 401

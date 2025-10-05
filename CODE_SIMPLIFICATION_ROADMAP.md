@@ -755,7 +755,7 @@ Priority levels from audit:
 
 ### 9. Standardize Path Definitions (From Existing Roadmap)
 
-**Status**: IN PROGRESS - Frontend Complete ✅, Backend Phases 1-3 Complete ✅, Phases 4-8 Pending 📋
+**Status**: IN PROGRESS - Frontend Complete ✅, Backend Phases 1-4 Complete ✅, Phases 5-8 Pending 📋
 
 #### Frontend: COMPLETED ✅ (1 hour)
 
@@ -823,14 +823,36 @@ Priority levels from audit:
 - Fixed parametrize decorator issue in test_validation_errors.py (moved url_builder resolution to function body)
 - Fixed incorrect route name usage in test_vocabulary_auth_required_inprocess.py
 
-#### Backend Phases 4-8: PLANNED 📋 (8-14 hours remaining)
+#### Backend Phase 4: COMPLETED ✅ (1.5 hours) - 2025-10-05
+
+**Video Tests Standardized**:
+
+- [x] Updated `tests/api/test_video_contract_improved.py` (4 hardcoded paths → route names)
+- [x] Updated `tests/api/test_videos_errors.py` (4 hardcoded paths → route names)
+- [x] Updated `tests/api/test_videos_routes.py` (3 hardcoded paths → route names)
+- [x] Updated `tests/api/test_videos_routes_windows_path.py` (1 hardcoded path → route name)
+- [x] Updated `tests/integration/test_file_uploads.py` (2 hardcoded paths → route names)
+- [x] Updated `tests/integration/test_video_processing.py` (2 hardcoded paths → route names)
+- [x] Updated `tests/integration/test_video_streaming_auth.py` (4 hardcoded paths → route names)
+- [x] Total: 20 hardcoded video paths standardized across 7 files
+
+**Key Changes**:
+
+- Replaced `"/api/videos"` with `url_builder.url_for("get_videos")`
+- Replaced `"/api/videos/{series}/{episode}"` with `url_builder.url_for("stream_video", series="...", episode="...")`
+- Replaced `"/api/videos/subtitles/{path}"` with `url_builder.url_for("get_subtitles", subtitle_path="...")`
+- Replaced `"/api/videos/subtitle/upload"` with `url_builder.url_for("upload_subtitle")`
+- Replaced `"/api/videos/upload/{series}"` with `url_builder.url_for("upload_video_to_series", series="...")`
+- Handled query parameters in streaming auth tests (e.g., `f"{video_url}?token={token}"`)
+
+#### Backend Phases 5-8: PLANNED 📋 (6-12 hours remaining)
 
 **Implementation Plan** (detailed in `docs/PATH_STANDARDIZATION_PLAN.md`):
 
 - [x] Phase 1: Document all route names (1 hour) ✅ COMPLETE
 - [x] Phase 2: Update Auth tests ~3 files (2 hours) ✅ COMPLETE
 - [x] Phase 3: Update Vocabulary tests ~8 files (2-3 hours) ✅ COMPLETE - 2025-10-05
-- [ ] Phase 4: Update Video tests ~6 files (1-2 hours)
+- [x] Phase 4: Update Video tests ~7 files (1-2 hours) ✅ COMPLETE - 2025-10-05
 - [ ] Phase 5: Update Processing tests ~4 files (2-3 hours)
 - [ ] Phase 6: Update Integration tests ~20 files (3-4 hours)
 - [ ] Phase 7: Update Game/User tests (1-2 hours)
