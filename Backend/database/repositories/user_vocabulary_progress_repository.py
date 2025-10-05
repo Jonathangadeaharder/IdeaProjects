@@ -7,11 +7,12 @@ from datetime import datetime
 from sqlalchemy import and_, func, select, update
 from sqlalchemy.orm import Session
 
+from core.enums import ConfidenceLevel
+from database.models import UserVocabularyProgress, VocabularyWord
 from database.models import UserVocabularyProgress as ProgressModel
 from database.models import VocabularyWord as VocabularyWordModel
 from database.repositories.base_repository_sync import BaseSyncRepository
 from database.repositories.interfaces import UserVocabularyProgressRepositoryInterface
-from domains.vocabulary.entities import ConfidenceLevel, UserVocabularyProgress, VocabularyWord
 
 
 class UserVocabularyProgressRepository(

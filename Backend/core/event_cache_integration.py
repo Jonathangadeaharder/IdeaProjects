@@ -7,7 +7,7 @@ import logging
 from collections.abc import Callable
 from datetime import datetime
 
-from domains.vocabulary.events import (
+from services.vocabulary.events import (
     DomainEvent,
     EventType,
     get_event_bus,

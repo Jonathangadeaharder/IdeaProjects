@@ -5,9 +5,10 @@ from typing import Any
 from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from database.models import UnknownWord, UserVocabularyProgress
+from core.enums import CEFRLevel as DifficultyLevel
+from core.enums import WordType
+from database.models import UnknownWord, UserVocabularyProgress, VocabularyWord
 from database.models import VocabularyWord as VocabularyWordModel
-from domains.vocabulary.entities import DifficultyLevel, VocabularyWord, WordType
 
 from .base_repository import BaseRepository
 from .interfaces import VocabularyRepositoryInterface
