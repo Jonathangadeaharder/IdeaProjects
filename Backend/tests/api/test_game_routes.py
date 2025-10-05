@@ -16,31 +16,33 @@ class TestGameSessionManagement:
     """Test game session lifecycle management"""
 
     @pytest.fixture
-    async def auth_user(self, async_client):
+    async def auth_user(self, async_client, url_builder):
         """Create authenticated user for game tests"""
         user = UserBuilder().build()
 
         # Register and login user
         register_data = {"username": user.username, "email": user.email, "password": user.password}
 
-        register_response = await async_client.post("/api/auth/register", json=register_data)
+        register_response = await async_client.post(url_builder.url_for("register:register"), json=register_data)
         assert register_response.status_code == 201
 
         login_data = {"username": user.email, "password": user.password}
-        login_response = await async_client.post("/api/auth/login", data=login_data)
+        login_response = await async_client.post(url_builder.url_for("auth:jwt.login"), data=login_data)
         assert login_response.status_code == 200
 
         token = login_response.json()["access_token"]
         return {"user": user, "token": token}
 
     @pytest.mark.asyncio
-    async def test_WhenStartVocabularyGame_ThenReturnsActiveSession(self, async_client, auth_user):
+    async def test_WhenStartVocabularyGame_ThenReturnsActiveSession(self, async_client, url_builder, auth_user):
         """Test starting a vocabulary game session returns active session"""
         headers = {"Authorization": f"Bearer {auth_user['token']}"}
 
         game_request = {"game_type": "vocabulary", "difficulty": "intermediate", "total_questions": 10}
 
-        response = await async_client.post("/api/game/start", json=game_request, headers=headers)
+        response = await async_client.post(
+            url_builder.url_for("game_start_session"), json=game_request, headers=headers
+        )
 
         assert response.status_code == 200
         data = response.json()
@@ -61,14 +63,16 @@ class TestGameSessionManagement:
         assert data["completed_at"] is None
 
     @pytest.mark.asyncio
-    async def test_WhenStartGameWithVideo_ThenIncludesVideoId(self, async_client, auth_user):
+    async def test_WhenStartGameWithVideo_ThenIncludesVideoId(self, async_client, url_builder, auth_user):
         """Test starting game with video context includes video ID"""
         headers = {"Authorization": f"Bearer {auth_user['token']}"}
 
         video_id = str(uuid4())
         game_request = {"game_type": "listening", "difficulty": "beginner", "video_id": video_id, "total_questions": 5}
 
-        response = await async_client.post("/api/game/start", json=game_request, headers=headers)
+        response = await async_client.post(
+            url_builder.url_for("game_start_session"), json=game_request, headers=headers
+        )
 
         assert response.status_code == 200
         data = response.json()
@@ -77,22 +81,24 @@ class TestGameSessionManagement:
         assert data["game_type"] == "listening"
 
     @pytest.mark.asyncio
-    async def test_WhenStartGameWithInvalidType_ThenReturns422(self, async_client, auth_user):
+    async def test_WhenStartGameWithInvalidType_ThenReturns422(self, async_client, url_builder, auth_user):
         """Test starting game with invalid game type returns validation error"""
         headers = {"Authorization": f"Bearer {auth_user['token']}"}
 
         game_request = {"game_type": "invalid_type", "difficulty": "intermediate"}
 
-        response = await async_client.post("/api/game/start", json=game_request, headers=headers)
+        response = await async_client.post(
+            url_builder.url_for("game_start_session"), json=game_request, headers=headers
+        )
 
         assert response.status_code == 422
 
     @pytest.mark.asyncio
-    async def test_WhenStartGameWithoutAuth_ThenReturns401(self, async_client):
+    async def test_WhenStartGameWithoutAuth_ThenReturns401(self, async_client, url_builder):
         """Test starting game without authentication returns unauthorized"""
         game_request = {"game_type": "vocabulary", "difficulty": "intermediate"}
 
-        response = await async_client.post("/api/game/start", json=game_request)
+        response = await async_client.post(url_builder.url_for("game_start_session"), json=game_request)
 
         assert response.status_code == 401
 
@@ -101,41 +107,45 @@ class TestGameSessionRetrieval:
     """Test retrieving game session information"""
 
     @pytest.fixture
-    async def auth_user(self, async_client):
+    async def auth_user(self, async_client, url_builder):
         """Create authenticated user for game tests"""
         user = UserBuilder().build()
 
         # Register and login user
         register_data = {"username": user.username, "email": user.email, "password": user.password}
 
-        register_response = await async_client.post("/api/auth/register", json=register_data)
+        register_response = await async_client.post(url_builder.url_for("register:register"), json=register_data)
         assert register_response.status_code == 201
 
         login_data = {"username": user.email, "password": user.password}
-        login_response = await async_client.post("/api/auth/login", data=login_data)
+        login_response = await async_client.post(url_builder.url_for("auth:jwt.login"), data=login_data)
         assert login_response.status_code == 200
 
         token = login_response.json()["access_token"]
         return {"user": user, "token": token}
 
     @pytest.fixture
-    async def game_session(self, async_client, auth_user):
+    async def game_session(self, async_client, url_builder, auth_user):
         """Create a game session for testing"""
         headers = {"Authorization": f"Bearer {auth_user['token']}"}
 
         game_request = {"game_type": "vocabulary", "difficulty": "intermediate", "total_questions": 10}
 
-        response = await async_client.post("/api/game/start", json=game_request, headers=headers)
+        response = await async_client.post(
+            url_builder.url_for("game_start_session"), json=game_request, headers=headers
+        )
         assert response.status_code == 200
         return response.json()
 
     @pytest.mark.asyncio
-    async def test_WhenGetValidSession_ThenReturnsSessionData(self, async_client, auth_user, game_session):
+    async def test_WhenGetValidSession_ThenReturnsSessionData(self, async_client, url_builder, auth_user, game_session):
         """Test retrieving valid game session returns complete data"""
         headers = {"Authorization": f"Bearer {auth_user['token']}"}
         session_id = game_session["session_id"]
 
-        response = await async_client.get(f"/api/game/session/{session_id}", headers=headers)
+        response = await async_client.get(
+            url_builder.url_for("game_get_session", session_id=session_id), headers=headers
+        )
 
         assert response.status_code == 200
         data = response.json()
@@ -145,21 +155,23 @@ class TestGameSessionRetrieval:
         assert data["status"] == "active"
 
     @pytest.mark.asyncio
-    async def test_WhenGetNonexistentSession_ThenReturns404(self, async_client, auth_user):
+    async def test_WhenGetNonexistentSession_ThenReturns404(self, async_client, url_builder, auth_user):
         """Test retrieving nonexistent session returns not found"""
         headers = {"Authorization": f"Bearer {auth_user['token']}"}
         fake_session_id = str(uuid4())
 
-        response = await async_client.get(f"/api/game/session/{fake_session_id}", headers=headers)
+        response = await async_client.get(
+            url_builder.url_for("game_get_session", session_id=fake_session_id), headers=headers
+        )
 
         assert response.status_code == 404
 
     @pytest.mark.asyncio
-    async def test_WhenGetSessionWithoutAuth_ThenReturns401(self, async_client, game_session):
+    async def test_WhenGetSessionWithoutAuth_ThenReturns401(self, async_client, url_builder, game_session):
         """Test retrieving session without auth returns unauthorized"""
         session_id = game_session["session_id"]
 
-        response = await async_client.get(f"/api/game/session/{session_id}")
+        response = await async_client.get(url_builder.url_for("game_get_session", session_id=session_id))
 
         assert response.status_code == 401
 
@@ -168,36 +180,40 @@ class TestGameAnswerSubmission:
     """Test game answer submission and scoring logic"""
 
     @pytest.fixture
-    async def auth_user(self, async_client):
+    async def auth_user(self, async_client, url_builder):
         """Create authenticated user for game tests"""
         user = UserBuilder().build()
 
         # Register and login user
         register_data = {"username": user.username, "email": user.email, "password": user.password}
 
-        register_response = await async_client.post("/api/auth/register", json=register_data)
+        register_response = await async_client.post(url_builder.url_for("register:register"), json=register_data)
         assert register_response.status_code == 201
 
         login_data = {"username": user.email, "password": user.password}
-        login_response = await async_client.post("/api/auth/login", data=login_data)
+        login_response = await async_client.post(url_builder.url_for("auth:jwt.login"), data=login_data)
         assert login_response.status_code == 200
 
         token = login_response.json()["access_token"]
         return {"user": user, "token": token}
 
     @pytest.fixture
-    async def active_session(self, async_client, auth_user):
+    async def active_session(self, async_client, url_builder, auth_user):
         """Create active game session for answer testing"""
         headers = {"Authorization": f"Bearer {auth_user['token']}"}
 
         game_request = {"game_type": "vocabulary", "difficulty": "intermediate", "total_questions": 3}
 
-        response = await async_client.post("/api/game/start", json=game_request, headers=headers)
+        response = await async_client.post(
+            url_builder.url_for("game_start_session"), json=game_request, headers=headers
+        )
         assert response.status_code == 200
         return response.json()
 
     @pytest.mark.asyncio
-    async def test_WhenSubmitCorrectAnswer_ThenUpdatesScoredAndProgress(self, async_client, auth_user, active_session):
+    async def test_WhenSubmitCorrectAnswer_ThenUpdatesScoredAndProgress(
+        self, async_client, url_builder, auth_user, active_session
+    ):
         """Test submitting correct answer updates score and progress"""
         headers = {"Authorization": f"Bearer {auth_user['token']}"}
 
@@ -213,7 +229,9 @@ class TestGameAnswerSubmission:
             "points": first_question["points"],
         }
 
-        response = await async_client.post("/api/game/answer", json=answer_request, headers=headers)
+        response = await async_client.post(
+            url_builder.url_for("game_submit_answer"), json=answer_request, headers=headers
+        )
 
         assert response.status_code == 200
         data = response.json()
@@ -223,7 +241,9 @@ class TestGameAnswerSubmission:
         assert "points_earned" in data
 
         # Verify session progress (get updated session)
-        session_response = await async_client.get(f"/api/game/session/{active_session['session_id']}", headers=headers)
+        session_response = await async_client.get(
+            url_builder.url_for("game_get_session", session_id=active_session["session_id"]), headers=headers
+        )
         session_data = session_response.json()
 
         assert session_data["questions_answered"] == 1
@@ -233,7 +253,7 @@ class TestGameAnswerSubmission:
 
     @pytest.mark.asyncio
     async def test_WhenSubmitIncorrectAnswer_ThenUpdatesProgressButNotScore(
-        self, async_client, auth_user, active_session
+        self, async_client, url_builder, auth_user, active_session
     ):
         """Test submitting incorrect answer updates progress but not score"""
         headers = {"Authorization": f"Bearer {auth_user['token']}"}
@@ -250,7 +270,9 @@ class TestGameAnswerSubmission:
             "points": first_question["points"],
         }
 
-        response = await async_client.post("/api/game/answer", json=answer_request, headers=headers)
+        response = await async_client.post(
+            url_builder.url_for("game_submit_answer"), json=answer_request, headers=headers
+        )
 
         assert response.status_code == 200
         data = response.json()
@@ -259,7 +281,9 @@ class TestGameAnswerSubmission:
         assert data["points_earned"] == 0
 
         # Verify session progress
-        session_response = await async_client.get(f"/api/game/session/{active_session['session_id']}", headers=headers)
+        session_response = await async_client.get(
+            url_builder.url_for("game_get_session", session_id=active_session["session_id"]), headers=headers
+        )
         session_data = session_response.json()
 
         assert session_data["questions_answered"] == 1
@@ -267,7 +291,7 @@ class TestGameAnswerSubmission:
         assert session_data["score"] == 0
 
     @pytest.mark.asyncio
-    async def test_WhenSubmitAnswerForInvalidSession_ThenReturns404(self, async_client, auth_user):
+    async def test_WhenSubmitAnswerForInvalidSession_ThenReturns404(self, async_client, url_builder, auth_user):
         """Test submitting answer for invalid session returns not found"""
         headers = {"Authorization": f"Bearer {auth_user['token']}"}
 
@@ -278,12 +302,16 @@ class TestGameAnswerSubmission:
             "correct_answer": "correct_answer",
         }
 
-        response = await async_client.post("/api/game/answer", json=answer_request, headers=headers)
+        response = await async_client.post(
+            url_builder.url_for("game_submit_answer"), json=answer_request, headers=headers
+        )
 
         assert response.status_code == 404
 
     @pytest.mark.asyncio
-    async def test_WhenCompleteAllQuestions_ThenSessionBecomesCompleted(self, async_client, auth_user, active_session):
+    async def test_WhenCompleteAllQuestions_ThenSessionBecomesCompleted(
+        self, async_client, url_builder, auth_user, active_session
+    ):
         """Test completing all questions marks session as completed"""
         headers = {"Authorization": f"Bearer {auth_user['token']}"}
         session_id = active_session["session_id"]
@@ -301,11 +329,15 @@ class TestGameAnswerSubmission:
                 "points": question["points"],
             }
 
-            response = await async_client.post("/api/game/answer", json=answer_request, headers=headers)
+            response = await async_client.post(
+                url_builder.url_for("game_submit_answer"), json=answer_request, headers=headers
+            )
             assert response.status_code == 200
 
         # Check final session state
-        session_response = await async_client.get(f"/api/game/session/{session_id}", headers=headers)
+        session_response = await async_client.get(
+            url_builder.url_for("game_get_session", session_id=session_id), headers=headers
+        )
         session_data = session_response.json()
 
         assert session_data["questions_answered"] == 3
@@ -318,25 +350,25 @@ class TestUserGameSessions:
     """Test listing user's game sessions"""
 
     @pytest.fixture
-    async def auth_user(self, async_client):
+    async def auth_user(self, async_client, url_builder):
         """Create authenticated user for game tests"""
         user = UserBuilder().build()
 
         # Register and login user
         register_data = {"username": user.username, "email": user.email, "password": user.password}
 
-        register_response = await async_client.post("/api/auth/register", json=register_data)
+        register_response = await async_client.post(url_builder.url_for("register:register"), json=register_data)
         assert register_response.status_code == 201
 
         login_data = {"username": user.email, "password": user.password}
-        login_response = await async_client.post("/api/auth/login", data=login_data)
+        login_response = await async_client.post(url_builder.url_for("auth:jwt.login"), data=login_data)
         assert login_response.status_code == 200
 
         token = login_response.json()["access_token"]
         return {"user": user, "token": token}
 
     @pytest.fixture
-    async def multiple_sessions(self, async_client, auth_user):
+    async def multiple_sessions(self, async_client, url_builder, auth_user):
         """Create multiple game sessions for testing"""
         headers = {"Authorization": f"Bearer {auth_user['token']}"}
         sessions = []
@@ -347,18 +379,22 @@ class TestUserGameSessions:
         for game_type in game_types:
             game_request = {"game_type": game_type, "difficulty": "intermediate", "total_questions": 5}
 
-            response = await async_client.post("/api/game/start", json=game_request, headers=headers)
+            response = await async_client.post(
+                url_builder.url_for("game_start_session"), json=game_request, headers=headers
+            )
             assert response.status_code == 200
             sessions.append(response.json())
 
         return sessions
 
     @pytest.mark.asyncio
-    async def test_WhenGetUserSessions_ThenReturnsAllUserSessions(self, async_client, auth_user, multiple_sessions):
+    async def test_WhenGetUserSessions_ThenReturnsAllUserSessions(
+        self, async_client, url_builder, auth_user, multiple_sessions
+    ):
         """Test retrieving user sessions returns all sessions for user"""
         headers = {"Authorization": f"Bearer {auth_user['token']}"}
 
-        response = await async_client.get("/api/game/sessions", headers=headers)
+        response = await async_client.get(url_builder.url_for("game_get_user_sessions"), headers=headers)
 
         assert response.status_code == 200
         sessions = response.json()
@@ -377,18 +413,18 @@ class TestUserGameSessions:
             assert session["status"] == "active"
 
     @pytest.mark.asyncio
-    async def test_WhenGetSessionsWithoutAuth_ThenReturns401(self, async_client):
+    async def test_WhenGetSessionsWithoutAuth_ThenReturns401(self, async_client, url_builder):
         """Test getting sessions without authentication returns unauthorized"""
-        response = await async_client.get("/api/game/sessions")
+        response = await async_client.get(url_builder.url_for("game_get_user_sessions"))
 
         assert response.status_code == 401
 
     @pytest.mark.asyncio
-    async def test_WhenUserHasNoSessions_ThenReturnsEmptyList(self, async_client, auth_user):
+    async def test_WhenUserHasNoSessions_ThenReturnsEmptyList(self, async_client, url_builder, auth_user):
         """Test user with no sessions gets empty list"""
         headers = {"Authorization": f"Bearer {auth_user['token']}"}
 
-        response = await async_client.get("/api/game/sessions", headers=headers)
+        response = await async_client.get(url_builder.url_for("game_get_user_sessions"), headers=headers)
 
         assert response.status_code == 200
         assert response.json() == []
