@@ -1422,32 +1422,103 @@ services/processing/
 
 ### 26. Evaluate Domain-Driven Design Structure
 
-**Status**: ANALYSIS REQUIRED
+**Status**: ✅ ANALYSIS COMPLETE - 2025-10-05 (Recommends Removal)
 
-#### Current State:
+#### Analysis Results:
 
-Mixed architecture - some DDD, mostly service-based:
+**The `domains/` directory (192KB, ~2000 LOC) is 90% DEAD CODE**
 
-- `domains/auth/` - Has routes.py, services.py
-- `domains/vocabulary/` - Has routes.py, services.py, events.py
-- But most code is in `services/` and `api/routes/`
+**Current Architecture**:
 
-#### Questions:
+- **Production (Working)**: `api/routes/` (16 files) + `services/` (62 files) - All active and registered
+- **DDD (Unused)**: `domains/` (4 subdirectories, 15 files) - Routes not registered, services unused
 
-- Commit to DDD or remove domain directories?
-- If keeping DDD, migrate more code to domains
-- If removing, move to standard service/route structure
+#### Key Findings:
 
-#### Subtasks:
+**Dead Code Identified**:
 
-- [ ] Decide on architectural direction
-- [ ] If removing DDD: Migrate `domains/` → `services/` and `api/routes/`
-- [ ] If keeping DDD: Plan migration of remaining code
-- [ ] Document architectural decision
+- ❌ **domains/auth/** - Routes NOT registered, superseded by FastAPI-Users
+  - models.py (65 LOC), routes.py (84 LOC), services.py (124 LOC)
+  - Import errors: `domains/auth/routes.py` fails to import
+- ❌ **domains/vocabulary/** - Routes NOT registered, services unused (1,623 LOC)
+  - 7 files with full DDD structure (entities, value_objects, domain_services, repositories, events, models, routes)
+  - Duplicates working `services/vocabulary/` and `api/routes/vocabulary.py`
+- ❌ **domains/learning/** - Empty directory (only `__init__.py`)
+- ❌ **domains/processing/** - Empty directory (only `__init__.py`)
 
-**Impact**: Medium - Architectural clarity
+**Only 1 Component Used**:
 
-**Estimated Effort**: 2-3 hours decision, 6-8 hours implementation
+- ✅ **Event system** (`domains/vocabulary/events.py`) - Used for cache invalidation
+  - Imported by: `core/event_cache_integration.py`
+  - Contains: `VocabularyWordAdded`, `VocabularyWordUpdated`, `UserProgressUpdated` events
+
+**Duplication Analysis**:
+
+- `domains/auth/` duplicates FastAPI-Users auth (working)
+- `domains/vocabulary/` duplicates `services/vocabulary/` (working)
+- No domain routes registered in `core/app.py` - all routes from `api/routes/`
+- Only 6 total imports from `domains/` across entire codebase
+
+#### Architectural Decision:
+
+**RECOMMENDATION: Remove `domains/` directory**
+
+**Rationale**:
+
+1. **90% dead code** - Routes not registered, services unused
+2. **Duplication** - Replicates working functionality in `services/` and `api/routes/`
+3. **Confusion** - Two parallel auth systems, two vocabulary systems
+4. **Scale mismatch** - DDD is overkill for current codebase size
+5. **Maintenance burden** - Unused code creates confusion for developers
+
+**What to Preserve**:
+
+- ✅ Event system → Move to `services/vocabulary/events/`
+- ✅ Domain algorithms (if any) → Move to `services/vocabulary/domain_logic.py`
+
+#### Cleanup Plan:
+
+**Phase 1: Extract Event System** (1 hour)
+
+- [x] Analysis complete
+- [ ] MOVE: `domains/vocabulary/events.py` → `services/vocabulary/events/`
+- [ ] UPDATE: `core/event_cache_integration.py` imports
+- [ ] UPDATE: Repository imports (2 files use vocabulary entities)
+
+**Phase 2: Remove DDD Structure** (1 hour)
+
+- [x] Analysis complete
+- [ ] DELETE: `domains/auth/` (273 LOC - dead code)
+- [ ] DELETE: `domains/vocabulary/` (1,623 LOC - duplicates services/)
+- [ ] DELETE: `domains/learning/` (empty - 3 LOC)
+- [ ] DELETE: `domains/processing/` (empty - 3 LOC)
+- [ ] DELETE: `domains/__init__.py` (3 LOC)
+
+**Phase 3: Verify & Test** (30 min)
+
+- [x] Analysis complete
+- [ ] Run all tests (ensure event system still works)
+- [ ] Verify no broken imports
+- [ ] Update documentation
+
+#### Benefits of Removal:
+
+- ✅ **Eliminate 1,900+ LOC of dead code**
+- ✅ **Single architecture** - No confusion between domains/ and services/
+- ✅ **Clear structure** - All routes in api/routes/, all logic in services/
+- ✅ **Easier maintenance** - One place to look for features
+- ✅ **Faster onboarding** - No need to understand unused DDD layer
+
+#### Documentation Created:
+
+- ✅ `Backend/DDD_ARCHITECTURE_ANALYSIS.md` - Comprehensive analysis
+- ✅ `Backend/DDD_COMPARISON.md` - Visual architecture comparison
+- ✅ `Backend/DDD_CLEANUP_PLAN.md` - Step-by-step cleanup plan
+
+**Completed**: 2025-10-05 (Analysis only)
+**Actual Effort**: 1.5 hours (analysis)
+**Estimated Cleanup**: 2-3 hours
+**Impact**: Medium-High - Removes 1,900+ LOC dead code, eliminates architectural confusion
 
 ---
 
