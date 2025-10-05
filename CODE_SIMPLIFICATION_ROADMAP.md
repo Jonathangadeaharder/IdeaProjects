@@ -670,22 +670,45 @@ def test_user_can_mark_word_as_known():
 
 ### 9. Standardize Path Definitions (From Existing Roadmap)
 
-**Status**: LOW - Quality of life improvement
+**Status**: PARTIAL - Frontend Complete ✅, Backend Planned 📋
 
-See `REFACTORING_ROADMAP.md` for full details.
+#### Frontend: COMPLETED ✅ (1 hour)
 
-#### Backend Tests:
+- [x] Created centralized API endpoints configuration (`config/api-endpoints.ts`)
+- [x] Updated `srtApi.ts` to use `SRT_ENDPOINTS.BASE` instead of hardcoded `'/api/srt'`
+- [x] Organized all endpoints by feature (AUTH, SRT, VIDEO, PROCESSING, VOCABULARY, GAME, USER)
+- [x] Added TypeScript `as const` for type safety
 
-- [ ] Use `app.url_path_for()` instead of hardcoded paths
-- [ ] Update ~50-70 test files
+#### Backend Tests: PLANNED 📋 (13-20 hours remaining)
 
-#### Frontend:
+**Analysis Complete**:
 
-- [ ] Fix hardcoded `/api/srt` path in `srtApi.ts`
+- **410 hardcoded API paths** found in test files
+- **URLBuilder fixture** already exists in `tests/conftest.py`
+- Only ~10-15 files currently use `url_builder`, rest use hardcoded paths
 
-**Impact**: Low-Medium - Better maintainability
+**Implementation Plan** (detailed in `docs/PATH_STANDARDIZATION_PLAN.md`):
 
-**Estimated Effort**: 4-6 hours
+- [ ] Phase 1: Document all route names (1-2 hours)
+- [ ] Phase 2: Update Auth tests ~8 files (2-3 hours)
+- [ ] Phase 3: Update Vocabulary tests ~5 files (2-3 hours)
+- [ ] Phase 4: Update Video tests ~6 files (1-2 hours)
+- [ ] Phase 5: Update Processing tests ~4 files (2-3 hours)
+- [ ] Phase 6: Update Integration tests ~20 files (3-4 hours)
+- [ ] Phase 7: Update Game/User tests (1-2 hours)
+- [ ] Phase 8: Create migration helper & pre-commit hook (1 hour)
+
+**Deliverables**:
+
+- ✅ `Frontend/src/config/api-endpoints.ts` - Centralized endpoint configuration
+- ✅ `docs/PATH_STANDARDIZATION_PLAN.md` - Complete migration plan
+- 📋 `docs/ROUTE_NAMES.md` - Route name mapping (pending)
+
+**Impact**: Low-Medium - Better maintainability, type-safe URL generation
+
+**Actual Effort (Frontend)**: 1 hour ✅
+**Estimated Effort (Backend)**: 13-20 hours 📋
+**Original Estimate**: 4-6 hours (significantly underestimated - 410 occurrences vs expected 50-70)
 
 ---
 

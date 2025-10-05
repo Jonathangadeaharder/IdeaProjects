@@ -6,6 +6,8 @@
  * backend is the single source of truth for SRT processing.
  */
 
+import { SRT_ENDPOINTS } from '../config/api-endpoints'
+
 export interface SRTSegment {
   index: number
   start_time: number
@@ -34,7 +36,7 @@ export interface ValidationResult {
 export class SRTApiClient {
   private baseUrl: string
 
-  constructor(baseUrl = '/api/srt') {
+  constructor(baseUrl = SRT_ENDPOINTS.BASE) {
     this.baseUrl = baseUrl
   }
 
