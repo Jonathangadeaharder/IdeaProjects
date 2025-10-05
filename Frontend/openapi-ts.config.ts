@@ -2,6 +2,6 @@ import { defineConfig } from '@hey-api/openapi-ts';
 
 export default defineConfig({
   client: 'axios',
-  input: '../openapi_spec.json',  // Use canonical root-level OpenAPI spec
+  input: '../Backend/openapi.json',  // OpenAPI spec generated from Backend
   output: './src/client',
 });

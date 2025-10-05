@@ -6,9 +6,9 @@ import json
 import sys
 from pathlib import Path
 
-# Add project root to path
-project_root = Path(__file__).parent
-sys.path.insert(0, str(project_root))
+# Get Backend directory (2 levels up from scripts/utils/)
+backend_dir = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(backend_dir))
 
 from core.app import create_app
 
@@ -19,7 +19,7 @@ def export_openapi():
     openapi_spec = app.openapi()
 
     # Write to Backend directory
-    output_path = project_root / "openapi.json"
+    output_path = backend_dir / "openapi.json"
 
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(openapi_spec, f, indent=2, ensure_ascii=False)

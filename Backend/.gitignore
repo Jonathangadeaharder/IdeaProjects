@@ -73,3 +73,6 @@ desktop.ini
 data/videos/*.srt
 data/videos/*.mp4
 test_output/
+
+# Generated OpenAPI specs
+openapi*.json
