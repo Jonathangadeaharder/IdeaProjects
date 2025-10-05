@@ -760,28 +760,52 @@ Production code is clean of commented-out code blocks:
 
 ### 13. Consolidate Test Utilities
 
-**Status**: LOW - Test organization
+**Status**: REQUIRES ANALYSIS - Complex active usage
 
-#### Current State:
+#### Current State Analysis:
 
-Test helpers scattered across:
+**Active Files**:
 
-- `tests/auth_helpers.py`
-- `tests/helpers/auth_helpers.py`
-- `tests/helpers/assertions.py`
-- `tests/base.py`
-- `tests/conftest.py`
+- `tests/auth_helpers.py` (470 lines) - Legacy HTTP auth helpers
+  - AuthTestHelper, AuthTestHelperAsync (uses AsyncHTTPAuthHelper)
+  - Imported by 30+ test files (api/, security/)
+- `tests/helpers/auth_helpers.py` (259 lines) - Modern structured helpers
+  - AsyncAuthHelper, AuthHelper, AuthTestHelperAsync (adapter pattern)
+  - Used by integration tests via tests.helpers imports
+- `tests/helpers/assertions.py` (10KB) - ACTIVE assertion helpers
+  - Used by integration/unit tests via tests.helpers
+- `tests/helpers/data_builders.py` (7KB) - ACTIVE test data builders
+  - UserBuilder, VocabularyWordBuilder
+  - Used by multiple test files
+- `tests/base.py` - ACTIVE test base classes
+  - DatabaseTestBase, ServiceTestBase
+  - Used by conftest.py and test_video_service.py
 
-#### Subtasks:
+**Key Finding**: Both auth_helpers files are ACTIVELY used but serve different purposes:
 
-- [ ] Consolidate auth helpers to single location
-- [ ] Move assertion helpers to conftest or dedicated module
-- [ ] Delete duplicate helper files
-- [ ] Update test imports
+- Root level: Legacy direct HTTP testing (AuthTestHelper)
+- helpers/: Modern structured testing (AsyncAuthHelper with data builders)
+- Both have AuthTestHelperAsync but DIFFERENT implementations (legacy adapter vs direct)
 
-**Impact**: Low - Better test organization
+#### Recommended Approach:
 
-**Estimated Effort**: 2-3 hours
+**Phase 1** (Not started):
+
+- [ ] Analyze all 30+ usages of tests.auth_helpers imports
+- [ ] Determine if legacy helpers can be migrated to modern helpers
+- [ ] Create migration plan for AuthTestHelperAsync duplication
+- [ ] Test plan for validating no regressions
+
+**Phase 2** (Pending Phase 1):
+
+- [ ] Migrate tests from legacy to modern helpers incrementally
+- [ ] Update imports file by file with test validation
+- [ ] Remove root level auth_helpers.py when all tests migrated
+- [ ] Document modern helper patterns
+
+**Impact**: Low - Better test organization (but HIGH risk if rushed)
+
+**Estimated Effort**: 4-6 hours (increased from 2-3 due to complexity)
 
 ---
 
