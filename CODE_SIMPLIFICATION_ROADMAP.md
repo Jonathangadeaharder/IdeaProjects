@@ -219,43 +219,49 @@ Entire `services/user_vocabulary/` directory was **dead code** - not used by any
 
 ### 7. Fix Inverted Test Pyramid (39 Unit vs 39 Integration)
 
-**Status**: CRITICAL - Violates testing best practices
+**Status**: IN PROGRESS - Phase 1 ✅ COMPLETE
 
-#### Current State (Backend):
+#### Audit Results (Phase 1 - COMPLETED 2025-10-05):
 
-- **Unit tests**: 39 files
-- **Integration tests**: 39 files (should be much fewer!)
-- **E2E tests**: 0 files (missing entirely)
-- **Mock usage**: 719 occurrences across 47 files
-- **Mock assertions**: 116 occurrences (testing implementation, not behavior)
-- **Skipped tests**: 42 tests with skip/xfail
+**Actual Test Count**: 117 files (not 123)
 
-**Frontend**:
+**Current Distribution**:
 
-- Component tests: 22 files
-- E2E tests: Only 1 file (`vocabulary-game.spec.ts`)
+- Unit tests directory: 34 files
+- Integration tests directory: 38 files
+- API tests directory: 23 files
+- Security tests: 1 file
+- Performance tests: 4 files
+- Other: 17 files
 
-**Problem**: Test pyramid is inverted. Should be:
+**Key Audit Findings**:
 
-- Many unit tests (70-80%)
-- Fewer integration tests (15-20%)
-- Minimal E2E tests (5-10%)
+1. ✅ **6 mislabeled tests identified** - "unit" tests using database/HTTP
+2. ✅ **Only ~19 TRUE unit tests** - rest are misplaced integration/API tests
+3. ✅ **9 files with mock call assertions** - testing implementation, not behavior
+4. ✅ **test_video_service.py is 54KB** - likely over-tested
+5. ✅ **No true E2E tests** - files named "e2e" are just integration tests
+
+**Problem Confirmed**: Test pyramid is inverted. Current 29% unit vs 33% integration (should be 70/20/10)
 
 #### Target Distribution:
 
-- **Unit tests**: 100+ files (70%)
-- **Integration tests**: 20-30 files (20%)
-- **E2E tests**: 10-15 critical flows (10%)
+- **Unit tests**: 80-90 files (70-75%)
+- **Integration tests**: 20-25 files (15-20%)
+- **API/E2E tests**: 10-15 files (10-12%)
+- **Performance/Security**: 5 files (skip by default)
 
-#### Subtasks:
+#### Completed Subtasks:
 
-**Phase 1: Audit Current Tests (2-3 hours)**
+**Phase 1: Audit Current Tests** ✅ COMPLETED (3 hours)
 
-- [ ] Categorize all 123 test files by true type (unit vs integration vs E2E)
-- [ ] Identify tests that are mislabeled (unit tests that are actually integration)
-- [ ] List tests that are actually testing implementation (mocks, private methods)
-- [ ] Document which integration tests can be split into multiple unit tests
-- [ ] Create test refactoring plan with priorities
+- [x] Categorized all 117 test files by true type (unit vs integration vs E2E)
+- [x] Identified 6 mislabeled tests (unit tests that are actually integration/API)
+- [x] Listed 9 files testing implementation (mocks, private methods)
+- [x] Documented integration tests that can be split into unit tests
+- [x] Created comprehensive refactoring plan with priorities in TEST_AUDIT_RESULTS.md
+
+**Deliverable**: TEST_AUDIT_RESULTS.md (detailed 393-line audit report)
 
 **Phase 2: Convert Integration to Unit Tests (8-10 hours)**
 
@@ -273,7 +279,9 @@ Entire `services/user_vocabulary/` directory was **dead code** - not used by any
 - [ ] Replace `assert mock.called_with(X)` with result validation
 - [ ] Remove tests that only verify internal method calls
 
-**Estimated Effort**: 20-25 hours
+**Total Estimated Effort**: 20-25 hours
+**Phase 1 Completed**: 3 hours (Audit) ✅
+**Remaining Effort**: 17-22 hours (Phases 2-3)
 
 ---
 
