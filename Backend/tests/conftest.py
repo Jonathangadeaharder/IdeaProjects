@@ -156,12 +156,6 @@ def url_builder(app) -> URLBuilder:
     return URLBuilder(app)
 
 
-@pytest.fixture
-def http_url_builder(url_builder: URLBuilder) -> URLBuilder:
-    """Alias fixture for backward compatibility."""
-    return url_builder
-
-
 # --- Application + DB override ---------------------------------------------
 @pytest.fixture(scope="function")
 def app(tmp_path: Path) -> Generator[FastAPI, None, None]:

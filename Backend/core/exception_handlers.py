@@ -138,7 +138,3 @@ def setup_exception_handlers(app: FastAPI):
             status_code=500,
             content={"error": {"type": "internal_error", "message": "An internal server error occurred"}},
         )
-
-
-# Backward compatibility alias
-setup_middleware = setup_exception_handlers

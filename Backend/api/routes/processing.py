@@ -49,14 +49,4 @@ async def _get_user_language_level(user_id: str) -> str | None:
     return None
 
 
-# Export commonly used functions for backward compatibility
-from .episode_processing_routes import run_chunk_processing
-from .filtering_routes import run_subtitle_filtering
-from .transcription_routes import run_transcription
-
-__all__ = [
-    "router",
-    "run_chunk_processing",
-    "run_subtitle_filtering",
-    "run_transcription",
-]
+__all__ = ["router"]

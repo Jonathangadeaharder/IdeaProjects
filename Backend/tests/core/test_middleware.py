@@ -11,7 +11,7 @@ import pytest
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 
-from core.exception_handlers import setup_middleware
+from core.exception_handlers import setup_exception_handlers
 from core.exceptions import LangPlugException
 
 
@@ -26,7 +26,7 @@ async def test_Whencors_and_exception_handlerCalled_ThenSucceeds():
 
     app.router.lifespan_context = no_lifespan
 
-    # Add CORS middleware explicitly for this test since setup_middleware no longer includes it
+    # Add CORS middleware explicitly for this test since setup_exception_handlers no longer includes it
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["http://localhost:3000"],
@@ -35,7 +35,7 @@ async def test_Whencors_and_exception_handlerCalled_ThenSucceeds():
         allow_headers=["*"],
     )
 
-    setup_middleware(app)
+    setup_exception_handlers(app)
 
     @app.get("/boom")
     async def boom():
