@@ -104,7 +104,7 @@ def fast_user_data():
 
 
 @pytest.fixture
-async def fast_authenticated_user(async_client, fast_user_data):
+async def fast_authenticated_user(async_client, fast_user_data, url_builder):
     """Create and authenticate user quickly"""
     # Register user
     register_data = {
@@ -113,13 +113,13 @@ async def fast_authenticated_user(async_client, fast_user_data):
         "password": fast_user_data["password"],
     }
 
-    register_response = await async_client.post("/api/auth/register", json=register_data)
+    register_response = await async_client.post(url_builder.url_for("register:register"), json=register_data)
     assert register_response.status_code == 201
 
     # Login user
     login_data = {"username": fast_user_data["email"], "password": fast_user_data["password"]}
 
-    login_response = await async_client.post("/api/auth/login", data=login_data)
+    login_response = await async_client.post(url_builder.url_for("auth:jwt.login"), data=login_data)
     assert login_response.status_code == 200
 
     token = login_response.json()["access_token"]

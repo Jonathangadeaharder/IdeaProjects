@@ -19,6 +19,14 @@ repos:
         files: ^tests/
         pass_filenames: true
 
+      - id: check-hardcoded-paths
+        name: Check for hardcoded API paths in tests
+        entry: python .pre-commit-hooks/check-hardcoded-paths.py
+        language: system
+        types: [python]
+        files: ^tests/
+        pass_filenames: true
+
   # Ruff - Fast Python linter and formatter (replaces flake8, isort, black)
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.7.4 # Use latest stable version

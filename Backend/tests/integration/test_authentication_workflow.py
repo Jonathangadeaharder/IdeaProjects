@@ -261,14 +261,14 @@ class TestAuthenticationIntegration:
     """Integration tests for authentication with other system components."""
 
     @pytest.mark.anyio
-    async def test_When_authenticated_user_accesses_protected_resource_Then_succeeds(self, async_client):
+    async def test_When_authenticated_user_accesses_protected_resource_Then_succeeds(self, async_client, url_builder):
         """Authenticated user should be able to access protected resources."""
         # Arrange
         auth_helper = AsyncAuthHelper(async_client)
         _user, _token, headers = await auth_helper.create_authenticated_user()
 
         # Act - try to access a protected endpoint (example: vocabulary stats)
-        response = await async_client.get("/api/vocabulary/stats", headers=headers)
+        response = await async_client.get(url_builder.url_for("get_vocabulary_stats"), headers=headers)
 
         # Assert - should either succeed or fail with expected error (not auth error)
         assert response.status_code != 401, "Authentication should not be the issue"

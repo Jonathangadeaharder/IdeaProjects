@@ -17,13 +17,13 @@ class TestVocabularyRoutesCore:
     """Test core vocabulary route functionality"""
 
     @pytest.mark.anyio
-    async def test_get_supported_languages_success(self, async_client):
+    async def test_get_supported_languages_success(self, async_client, url_builder):
         """Test getting supported languages endpoint"""
         flow = await AuthTestHelperAsync.register_and_login_async(async_client)
 
         # Since the actual endpoint works, let's test the real functionality
         # This will test the actual database integration
-        response = await async_client.get("/api/vocabulary/languages", headers=flow["headers"])
+        response = await async_client.get(url_builder.url_for("get_supported_languages"), headers=flow["headers"])
 
         # The endpoint should work correctly with expected success
         assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.text}"
@@ -34,7 +34,7 @@ class TestVocabularyRoutesCore:
         assert isinstance(data["languages"], list)
 
     @pytest.mark.anyio
-    async def test_get_supported_languages_error(self, async_client, app):
+    async def test_get_supported_languages_error(self, async_client, app, url_builder):
         """Test error handling in supported languages endpoint"""
         flow = await AuthTestHelperAsync.register_and_login_async(async_client)
 
@@ -50,7 +50,7 @@ class TestVocabularyRoutesCore:
         app.dependency_overrides[get_async_session] = mock_get_async_session
 
         try:
-            response = await async_client.get("/api/vocabulary/languages", headers=flow["headers"])
+            response = await async_client.get(url_builder.url_for("get_supported_languages"), headers=flow["headers"])
 
             assert response.status_code == 500
             assert "Error retrieving languages" in response.json()["detail"]
@@ -239,12 +239,12 @@ class TestVocabularyRoutesCore:
         assert any("pattern" in str(error).lower() for error in error_details)
 
     @pytest.mark.anyio
-    async def test_get_test_data_success(self, async_client):
+    async def test_get_test_data_success(self, async_client, url_builder):
         """Test test data endpoint success"""
         flow = await AuthTestHelperAsync.register_and_login_async(async_client)
 
         # Test real endpoint - should work regardless of database state
-        response = await async_client.get("/api/vocabulary/test-data", headers=flow["headers"])
+        response = await async_client.get(url_builder.url_for("get_test_data"), headers=flow["headers"])
 
         assert response.status_code == 200
         data = response.json()
