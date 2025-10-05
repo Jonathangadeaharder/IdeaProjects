@@ -422,7 +422,7 @@ def test_user_can_mark_word_as_known():
 
 **Deliverable**: `Backend/docs/SKIPPED_TESTS_AUDIT.md` (comprehensive 335-line audit)
 
-**Phase 2: Fix or Delete Each Test (7-9 hours)** IN PROGRESS - Priority 1 ✅ COMPLETE
+**Phase 2: Fix or Delete Each Test (7-9 hours)** IN PROGRESS - Priority 1 ✅ COMPLETE, Priority 3 NEXT
 
 Priority levels from audit:
 
@@ -433,8 +433,11 @@ Priority levels from audit:
   - Fixed Mock object Pydantic validation in test_vocabulary_serialization_integration.py (1 test)
   - Fixed obsolete interface imports in chunk_processor.py and chunk_utilities.py
   - **Result**: 11 tests resolved (26% reduction from 42 to 31)
-- [ ] Priority 2: Data Fixtures (2 hours) - Fix 4 vocabulary workflow tests with proper fixtures
-- [ ] Priority 3: Documentation (1 hour) - Document AI/ML dependencies, CORS strategy
+- [ ] **Priority 2: Data Fixtures (2 hours)** ⚠️ BLOCKED - Requires test architecture refactoring
+  - Issue: Database session isolation prevents fixture data from being visible to API endpoints
+  - Needs: Refactor test database session sharing or use different data seeding approach
+  - Deferred: 4 vocabulary workflow tests still skip (same root cause)
+- [ ] **Priority 3: Documentation (1 hour)** 📋 NEXT - Document AI/ML dependencies, CORS strategy
 - [ ] Priority 4: Implementation Decisions (2-4 hours) - Fix or delete 8 tests requiring user decisions
 
 **Phase 3: Prevent Future Skips (1 hour)** 📋 PENDING
