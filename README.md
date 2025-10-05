@@ -151,6 +151,46 @@ videos/
 - Your vocabulary knowledge is tracked across episodes
 - System adapts to show only relevant new words
 
+## 📁 Project Structure
+
+### Root Directory Files
+
+**Configuration Files:**
+
+- `.gitignore` - Git ignore patterns for build artifacts, caches, and user data
+- `Makefile` - Convenient shortcuts for common tasks (e.g., `make test-postgres`, `make clean-logs`)
+- `docker-compose.yml` - Docker services for local development
+- `docker-compose.production.yml` - Production Docker configuration
+
+**AI Assistant Instructions:**
+
+- `CLAUDE.md` - Development standards and instructions for Claude AI assistant
+- `AGENTS.md` - AI agent configuration and workflows
+- `GEMINI.md` - Instructions for Gemini AI assistant
+- `QWEN.MD.md` - Instructions for Qwen AI assistant
+
+**Development Documentation:**
+
+- `CODE_SIMPLIFICATION_ROADMAP.md` - Active roadmap for code cleanup and refactoring
+- `REFACTORING_ROADMAP.md` - Completed refactoring tasks and validation unification
+- `ROADMAP_INDEX.md` - Index of all project roadmaps and documentation
+- `CODE_QUALITY_STANDARDS.md` - Code quality guidelines and standards
+- `CODE_QUALITY_IMPROVEMENTS_REPORT.md` - Historical quality improvements
+- `CLEANUP_QUICK_REFERENCE.md` - Quick reference for cleanup tasks
+- `TEST_IMPROVEMENT_SUMMARY.md` - Test architecture improvements
+- `WORKFLOW_DEBUGGING_SUMMARY.md` - GitHub Actions debugging guide
+- `Frontend-Architecture-Analysis.md` - Frontend architecture documentation
+- `CONTRIBUTING.md` - Contributor guidelines
+
+**Project Directories:**
+
+- `Backend/` - FastAPI backend server (see `Backend/README.md`)
+- `Frontend/` - React + TypeScript frontend (see `Frontend/README.md`)
+- `videos/` - Video storage directory (symlinked, not in git)
+- `tests/` - Unified test suite (E2E tests, Puppeteer)
+- `scripts/` - Project-wide utility scripts
+- `archived_legacy_projects/` - Legacy code archive
+
 ## 🔧 Tech Stack
 
 ### Backend

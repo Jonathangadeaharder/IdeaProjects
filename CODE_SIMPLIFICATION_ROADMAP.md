@@ -1464,7 +1464,7 @@ The following files are considered essential and should not be deleted:
 - [x] Deleted `.qwenignore` - Qwen AI tool no longer used
 - [x] Deleted root `package.json` and `package-lock.json` - Playwright dependency already in Frontend/package.json
 - [x] Kept root `Makefile` - Provides convenient test shortcuts, documented in README
-- [ ] Document purpose of remaining config files in README - Deferred (low priority)
+- [x] Document purpose of remaining config files in README - COMPLETED (2025-10-05)
 
 #### Result:
 
