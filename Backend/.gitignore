@@ -17,8 +17,11 @@ build/
 .coverage
 coverage*.json
 *_report.json
+*_snapshot_*.json
 htmlcov/
 test_reports/
+test-results/
+playwright-report/
 *.log
 .benchmarks/
 
@@ -63,6 +66,7 @@ tmp/
 *.tmp
 *.bak
 *.backup
+*.old
 
 # OS
 .DS_Store
@@ -73,6 +77,9 @@ desktop.ini
 data/videos/*.srt
 data/videos/*.mp4
 test_output/
+test_*.srt
+test_output.txt
+server_state.json
 
 # Generated OpenAPI specs
 openapi*.json
