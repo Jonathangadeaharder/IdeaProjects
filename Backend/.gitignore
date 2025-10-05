@@ -15,6 +15,8 @@ build/
 # Testing
 .pytest_cache/
 .coverage
+coverage*.json
+*_report.json
 htmlcov/
 test_reports/
 *.log
