@@ -1,3 +1,0 @@
-"""
-Logging service package
-"""

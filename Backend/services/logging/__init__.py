@@ -8,6 +8,7 @@ from .log_config_manager import LogConfigManagerService
 from .log_formatter import LogFormatterService, StructuredLogFormatter, log_formatter_service
 from .log_handlers import LogHandlerService, log_handler_service
 from .log_manager import LogManagerService
+from .types import LogConfig, LogContext, LogFormat, LogLevel, LogRecord
 
 __all__ = [
     "DomainLoggerService",
@@ -18,4 +19,9 @@ __all__ = [
     "StructuredLogFormatter",
     "log_formatter_service",
     "log_handler_service",
+    "LogConfig",
+    "LogContext",
+    "LogFormat",
+    "LogLevel",
+    "LogRecord",
 ]

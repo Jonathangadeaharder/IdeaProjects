@@ -30,7 +30,7 @@ class LogManagerService:
 
     def log(self, message: str, level):
         """Log a message at the specified level"""
-        from ..loggingservice.logging_service import LogLevel
+        from .types import LogLevel
 
         self._stats["total_logs"] += 1
         if level == LogLevel.ERROR:
@@ -59,7 +59,7 @@ class LogManagerService:
 
     def log_error(self, message: str, exception=None):
         """Log an error message with optional exception"""
-        from ..loggingservice.logging_service import LogLevel
+        from .types import LogLevel
 
         error_msg = f"{message}: {exception!s}" if exception else message
         with contextlib.suppress(Exception):
@@ -87,7 +87,7 @@ class LogManagerService:
         if metadata:
             message += f" - {metadata}"
 
-        from ..loggingservice.logging_service import LogLevel
+        from .types import LogLevel
 
         self.log(message, LogLevel.INFO)
 
@@ -96,13 +96,13 @@ class LogManagerService:
         formatted_data = json.dumps(data, indent=2)
         full_message = f"{message}\n{formatted_data}"
 
-        from ..loggingservice.logging_service import LogLevel
+        from .types import LogLevel
 
         self.log(full_message, LogLevel.INFO)
 
     def log_batch(self, messages: list):
         """Log multiple messages in batch"""
-        from ..loggingservice.logging_service import LogLevel
+        from .types import LogLevel
 
         for message in messages:
             self.log(message, LogLevel.INFO)
@@ -135,7 +135,7 @@ class LogManagerService:
 
     def _create_log_record(self, level, message: str, context=None, extra_data: dict | None = None):
         """Create a log record structure"""
-        from ..loggingservice.logging_service import LogRecord
+        from .types import LogRecord
 
         return LogRecord(
             timestamp=datetime.now(), level=level.name, message=message, context=context, extra_data=extra_data or {}
@@ -143,7 +143,7 @@ class LogManagerService:
 
     def _format_log_record(self, record) -> str:
         """Format a log record based on configuration"""
-        from ..loggingservice.logging_service import LogFormat
+        from .types import LogFormat
 
         if self.config.format_type == LogFormat.JSON:
             return json.dumps(

@@ -70,7 +70,7 @@ class LogFormatterService:
 
     def create_formatter(self, format_type, include_extra_fields=True):
         """Create formatter based on format type"""
-        from ..loggingservice.logging_service import LogFormat
+        from .types import LogFormat
 
         if format_type == LogFormat.SIMPLE:
             return logging.Formatter("%(levelname)s - %(name)s - %(message)s")
