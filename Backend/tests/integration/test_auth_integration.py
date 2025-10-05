@@ -27,10 +27,13 @@ class TestAuthenticationIntegration:
         assert "access_token" in login_response
 
     @pytest.mark.asyncio
-    async def test_authenticated_user_profile_matches_registration(self, async_client: AsyncClient) -> None:
+    async def test_authenticated_user_profile_matches_registration(
+        self, async_client: AsyncClient, url_builder
+    ) -> None:
         auth_flow = await AuthTestHelperAsync.register_and_login_async(async_client)
 
-        response = await async_client.get("/api/auth/me", headers=auth_flow["headers"])
+        me_url = url_builder.url_for("auth_get_current_user")
+        response = await async_client.get(me_url, headers=auth_flow["headers"])
         assert response.status_code == 200, f"Token validation failed: {response.text}"
 
         me_data = response.json()
@@ -38,9 +41,10 @@ class TestAuthenticationIntegration:
         assert me_data["is_active"] is True
 
     @pytest.mark.asyncio
-    async def test_login_rejects_username_credentials(self, async_client: AsyncClient) -> None:
+    async def test_login_rejects_username_credentials(self, async_client: AsyncClient, url_builder) -> None:
+        login_url = url_builder.url_for("auth:jwt.login")
         response = await async_client.post(
-            "/api/auth/login",
+            login_url,
             data={"username": "admin", "password": "admin"},
             headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
@@ -48,9 +52,10 @@ class TestAuthenticationIntegration:
         assert response.status_code == 400, f"Expected 400 for invalid credentials, got {response.status_code}"
 
     @pytest.mark.asyncio
-    async def test_login_rejects_invalid_password(self, async_client: AsyncClient) -> None:
+    async def test_login_rejects_invalid_password(self, async_client: AsyncClient, url_builder) -> None:
+        login_url = url_builder.url_for("auth:jwt.login")
         response = await async_client.post(
-            "/api/auth/login",
+            login_url,
             data={"username": "admin@langplug.com", "password": "wrong_password"},
             headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
@@ -58,9 +63,10 @@ class TestAuthenticationIntegration:
         assert response.status_code == 400, f"Expected 400 for bad credentials, got {response.status_code}"
 
     @pytest.mark.asyncio
-    async def test_auth_me_requires_valid_token(self, async_client: AsyncClient) -> None:
-        response = await async_client.get("/api/auth/me")
+    async def test_auth_me_requires_valid_token(self, async_client: AsyncClient, url_builder) -> None:
+        me_url = url_builder.url_for("auth_get_current_user")
+        response = await async_client.get(me_url)
         assert response.status_code == 401
 
-        response = await async_client.get("/api/auth/me", headers={"Authorization": "Bearer invalid_token"})
+        response = await async_client.get(me_url, headers={"Authorization": "Bearer invalid_token"})
         assert response.status_code == 401

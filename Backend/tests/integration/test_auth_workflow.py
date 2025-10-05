@@ -27,11 +27,12 @@ class TestAuthenticationWorkflow:
             "password": "SecurePassword123!",
         }
 
-    def test_complete_registration_login_flow(self, client, unique_user_data):
+    def test_complete_registration_login_flow(self, client, url_builder, unique_user_data):
         """Test complete registration and login workflow"""
 
         # Step 1: Register new user
-        register_response = client.post("/api/auth/register", json=unique_user_data)
+        register_url = url_builder.url_for("register:register")
+        register_response = client.post(register_url, json=unique_user_data)
         assert register_response.status_code == 201
         user_data = register_response.json()
         assert "id" in user_data
@@ -40,8 +41,9 @@ class TestAuthenticationWorkflow:
         assert "hashed_password" not in user_data
 
         # Step 2: Login with credentials
+        login_url = url_builder.url_for("auth:jwt.login")
         login_response = client.post(
-            "/api/auth/login",
+            login_url,
             data={
                 "username": unique_user_data["email"],  # FastAPI-Users uses email as username
                 "password": unique_user_data["password"],
@@ -56,14 +58,16 @@ class TestAuthenticationWorkflow:
         access_token = login_data["access_token"]
 
         # Step 3: Access protected endpoint with token
-        me_response = client.get("/api/auth/me", headers={"Authorization": f"Bearer {access_token}"})
+        me_url = url_builder.url_for("auth_get_current_user")
+        me_response = client.get(me_url, headers={"Authorization": f"Bearer {access_token}"})
         assert me_response.status_code == 200
         me_data = me_response.json()
         assert me_data["email"] == unique_user_data["email"]
         assert me_data["is_active"] is True
 
         # Step 4: Logout
-        logout_response = client.post("/api/auth/logout", headers={"Authorization": f"Bearer {access_token}"})
+        logout_url = url_builder.url_for("auth:jwt.logout")
+        logout_response = client.post(logout_url, headers={"Authorization": f"Bearer {access_token}"})
         assert logout_response.status_code in [200, 204]
 
         # Step 5: Verify token is invalidated (optional based on implementation)
@@ -71,49 +75,55 @@ class TestAuthenticationWorkflow:
         # This depends on your logout implementation
 
     @pytest.mark.asyncio
-    async def test_registration_validation_errors(self, async_client: httpx.AsyncClient):
+    async def test_registration_validation_errors(self, async_client: httpx.AsyncClient, url_builder):
         """Test registration with various validation errors"""
+
+        register_url = url_builder.url_for("register:register")
 
         # Test invalid email
         response = await async_client.post(
-            "/api/auth/register",
+            register_url,
             json={"username": "testuser1", "email": "invalid-email", "password": "SecurePassword123!"},
         )
         assert response.status_code == 422
 
         # Test weak password (empty password)
         response = await async_client.post(
-            "/api/auth/register", json={"username": "testuser2", "email": "test2@example.com", "password": ""}
+            register_url, json={"username": "testuser2", "email": "test2@example.com", "password": ""}
         )
         assert response.status_code == 422
 
         # Test missing required fields
-        response = await async_client.post("/api/auth/register", json={"email": "test3@example.com"})
+        response = await async_client.post(register_url, json={"email": "test3@example.com"})
         assert response.status_code == 422
 
     @pytest.mark.asyncio
-    async def test_duplicate_registration(self, async_client: httpx.AsyncClient, unique_user_data):
+    async def test_duplicate_registration(self, async_client: httpx.AsyncClient, url_builder, unique_user_data):
         """Test registration with duplicate email/username"""
 
+        register_url = url_builder.url_for("register:register")
+
         # First registration should succeed
-        response1 = await async_client.post("/api/auth/register", json=unique_user_data)
+        response1 = await async_client.post(register_url, json=unique_user_data)
         assert response1.status_code == 201
 
         # Second registration with same email should fail
-        response2 = await async_client.post("/api/auth/register", json=unique_user_data)
+        response2 = await async_client.post(register_url, json=unique_user_data)
         assert response2.status_code == 400
         assert "already_exists" in response2.json()["detail"].lower()
 
     @pytest.mark.asyncio
-    async def test_login_with_invalid_credentials(self, async_client: httpx.AsyncClient, unique_user_data):
+    async def test_login_with_invalid_credentials(self, async_client: httpx.AsyncClient, url_builder, unique_user_data):
         """Test login with various invalid credentials"""
 
         # Register user first
-        await async_client.post("/api/auth/register", json=unique_user_data)
+        register_url = url_builder.url_for("register:register")
+        await async_client.post(register_url, json=unique_user_data)
 
         # Test wrong password
+        login_url = url_builder.url_for("auth:jwt.login")
         response = await async_client.post(
-            "/api/auth/login",
+            login_url,
             data={"username": unique_user_data["email"], "password": "WrongPassword123!"},
             headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
@@ -122,31 +132,35 @@ class TestAuthenticationWorkflow:
 
         # Test non-existent user
         response = await async_client.post(
-            "/api/auth/login",
+            login_url,
             data={"username": "nonexistent@example.com", "password": "SomePassword123!"},
             headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
         assert response.status_code == 400
 
     @pytest.mark.asyncio
-    async def test_protected_endpoints_without_auth(self, async_client: httpx.AsyncClient):
+    async def test_protected_endpoints_without_auth(self, async_client: httpx.AsyncClient, url_builder):
         """Test accessing protected endpoints without authentication"""
 
+        me_url = url_builder.url_for("auth_get_current_user")
+
         # Test /api/auth/me without token
-        response = await async_client.get("/api/auth/me")
+        response = await async_client.get(me_url)
         assert response.status_code == 401
 
         # Test with invalid token
-        response = await async_client.get("/api/auth/me", headers={"Authorization": "Bearer invalid_token"})
+        response = await async_client.get(me_url, headers={"Authorization": "Bearer invalid_token"})
         assert response.status_code == 401
 
         # Test with wrong token type
-        response = await async_client.get("/api/auth/me", headers={"Authorization": "Basic sometoken"})
+        response = await async_client.get(me_url, headers={"Authorization": "Basic sometoken"})
         assert response.status_code == 401
 
     @pytest.mark.asyncio
-    async def test_concurrent_registrations(self, async_client: httpx.AsyncClient):
+    async def test_concurrent_registrations(self, async_client: httpx.AsyncClient, url_builder):
         """Test handling of concurrent registration attempts"""
+
+        register_url = url_builder.url_for("register:register")
 
         # Create multiple registration tasks with same email
         email = f"concurrent_{uuid4().hex[:8]}@example.com"
@@ -157,7 +171,7 @@ class TestAuthenticationWorkflow:
         for i in range(5):
             data = user_data.copy()
             data["username"] = f"user_{i}_{uuid4().hex[:8]}"
-            tasks.append(async_client.post("/api/auth/register", json=data))
+            tasks.append(async_client.post(register_url, json=data))
 
         # Execute concurrently
         responses = await asyncio.gather(*tasks, return_exceptions=True)
@@ -179,13 +193,16 @@ class TestAuthenticationWorkflow:
         assert failed_count >= 4  # At least 4 should fail
 
     @pytest.mark.asyncio
-    async def test_token_expiration(self, async_client: httpx.AsyncClient, unique_user_data):
+    async def test_token_expiration(self, async_client: httpx.AsyncClient, url_builder, unique_user_data):
         """Test token expiration handling"""
 
         # Register and login
-        await async_client.post("/api/auth/register", json=unique_user_data)
+        register_url = url_builder.url_for("register:register")
+        await async_client.post(register_url, json=unique_user_data)
+
+        login_url = url_builder.url_for("auth:jwt.login")
         login_response = await async_client.post(
-            "/api/auth/login",
+            login_url,
             data={"username": unique_user_data["email"], "password": unique_user_data["password"]},
             headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
@@ -193,7 +210,8 @@ class TestAuthenticationWorkflow:
         access_token = login_response.json()["access_token"]
 
         # Token should work immediately
-        response = await async_client.get("/api/auth/me", headers={"Authorization": f"Bearer {access_token}"})
+        me_url = url_builder.url_for("auth_get_current_user")
+        response = await async_client.get(me_url, headers={"Authorization": f"Bearer {access_token}"})
         assert response.status_code == 200
 
         # Note: Testing actual expiration would require waiting or mocking time
@@ -203,13 +221,15 @@ class TestAuthenticationWorkflow:
         # 3. Or use freezegun library
 
     @pytest.mark.asyncio
-    async def test_password_reset_flow(self, async_client: httpx.AsyncClient, unique_user_data):
+    async def test_password_reset_flow(self, async_client: httpx.AsyncClient, url_builder, unique_user_data):
         """Test password reset workflow"""
 
         # Register user
-        await async_client.post("/api/auth/register", json=unique_user_data)
+        register_url = url_builder.url_for("register:register")
+        await async_client.post(register_url, json=unique_user_data)
 
         # Request password reset (endpoint not implemented yet)
+        # Note: This endpoint is not yet defined in route names, using hardcoded path
         reset_response = await async_client.post("/api/auth/forgot-password", json={"email": unique_user_data["email"]})
         # Endpoint not implemented, expecting 404
         assert reset_response.status_code == 404
@@ -220,13 +240,16 @@ class TestAuthenticationWorkflow:
         # 3. Verify login with new password
 
     @pytest.mark.asyncio
-    async def test_user_profile_update(self, async_client: httpx.AsyncClient, unique_user_data):
+    async def test_user_profile_update(self, async_client: httpx.AsyncClient, url_builder, unique_user_data):
         """Test user profile update workflow"""
 
         # Register and login
-        await async_client.post("/api/auth/register", json=unique_user_data)
+        register_url = url_builder.url_for("register:register")
+        await async_client.post(register_url, json=unique_user_data)
+
+        login_url = url_builder.url_for("auth:jwt.login")
         login_response = await async_client.post(
-            "/api/auth/login",
+            login_url,
             data={"username": unique_user_data["email"], "password": unique_user_data["password"]},
             headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
@@ -237,7 +260,8 @@ class TestAuthenticationWorkflow:
         # Update profile
         update_data = {"first_name": "Updated", "last_name": "Name"}
 
-        update_response = await async_client.patch("/api/auth/me", json=update_data, headers=headers)
+        me_url = url_builder.url_for("auth_get_current_user")
+        update_response = await async_client.patch(me_url, json=update_data, headers=headers)
 
         if update_response.status_code == 200:
             updated_data = update_response.json()
@@ -245,17 +269,19 @@ class TestAuthenticationWorkflow:
             assert updated_data.get("last_name") == "Name"
 
     @pytest.mark.asyncio
-    async def test_rate_limiting(self, async_client: httpx.AsyncClient):
+    async def test_rate_limiting(self, async_client: httpx.AsyncClient, url_builder):
         """Test rate limiting on authentication endpoints"""
 
         # Attempt multiple rapid login attempts
         email = f"ratelimit_{uuid4().hex[:8]}@example.com"
 
+        login_url = url_builder.url_for("auth:jwt.login")
+
         # Make many rapid requests
         responses = []
         for _i in range(10):
             response = await async_client.post(
-                "/api/auth/login",
+                login_url,
                 data={"username": email, "password": "WrongPassword"},
                 headers={"Content-Type": "application/x-www-form-urlencoded"},
             )
@@ -266,35 +292,41 @@ class TestAuthenticationWorkflow:
         # You might see 429 (Too Many Requests) status codes
 
     @pytest.mark.asyncio
-    async def test_session_management(self, async_client: httpx.AsyncClient, unique_user_data):
+    async def test_session_management(self, async_client: httpx.AsyncClient, url_builder, unique_user_data):
         """Test session management and multiple login sessions"""
 
         # Register user
-        await async_client.post("/api/auth/register", json=unique_user_data)
+        register_url = url_builder.url_for("register:register")
+        await async_client.post(register_url, json=unique_user_data)
 
         # Login from multiple "devices" (different sessions)
+        login_url = url_builder.url_for("auth:jwt.login")
         tokens = []
         for _i in range(3):
             login_response = await async_client.post(
-                "/api/auth/login",
+                login_url,
                 data={"username": unique_user_data["email"], "password": unique_user_data["password"]},
                 headers={"Content-Type": "application/x-www-form-urlencoded"},
             )
             tokens.append(login_response.json()["access_token"])
 
         # All tokens should work
+        me_url = url_builder.url_for("auth_get_current_user")
         for token in tokens:
-            response = await async_client.get("/api/auth/me", headers={"Authorization": f"Bearer {token}"})
+            response = await async_client.get(me_url, headers={"Authorization": f"Bearer {token}"})
             assert response.status_code == 200
 
     @pytest.mark.asyncio
-    async def test_account_deactivation(self, async_client: httpx.AsyncClient, unique_user_data):
+    async def test_account_deactivation(self, async_client: httpx.AsyncClient, url_builder, unique_user_data):
         """Test account deactivation workflow"""
 
         # Register and login
-        await async_client.post("/api/auth/register", json=unique_user_data)
+        register_url = url_builder.url_for("register:register")
+        await async_client.post(register_url, json=unique_user_data)
+
+        login_url = url_builder.url_for("auth:jwt.login")
         login_response = await async_client.post(
-            "/api/auth/login",
+            login_url,
             data={"username": unique_user_data["email"], "password": unique_user_data["password"]},
             headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
@@ -302,14 +334,13 @@ class TestAuthenticationWorkflow:
         access_token = login_response.json()["access_token"]
 
         # Deactivate account (if endpoint exists)
-        deactivate_response = await async_client.delete(
-            "/api/auth/me", headers={"Authorization": f"Bearer {access_token}"}
-        )
+        me_url = url_builder.url_for("auth_get_current_user")
+        deactivate_response = await async_client.delete(me_url, headers={"Authorization": f"Bearer {access_token}"})
 
         if deactivate_response.status_code in [200, 204]:
             # Try to login again - should fail
             login_response = await async_client.post(
-                "/api/auth/login",
+                login_url,
                 data={"username": unique_user_data["email"], "password": unique_user_data["password"]},
                 headers={"Content-Type": "application/x-www-form-urlencoded"},
             )

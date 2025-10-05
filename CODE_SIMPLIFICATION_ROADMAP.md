@@ -755,7 +755,7 @@ Priority levels from audit:
 
 ### 9. Standardize Path Definitions (From Existing Roadmap)
 
-**Status**: IN PROGRESS - Frontend Complete ✅, Backend Phase 1 Complete ✅, Phases 2-8 Pending 📋
+**Status**: IN PROGRESS - Frontend Complete ✅, Backend Phases 1-2 Complete ✅, Phases 3-8 Pending 📋
 
 #### Frontend: COMPLETED ✅ (1 hour)
 
@@ -781,12 +781,30 @@ Priority levels from audit:
 - **URLBuilder fixture** already exists in `tests/conftest.py`
 - Only ~10-15 files currently use `url_builder`, rest use hardcoded paths
 
-#### Backend Phases 2-8: PLANNED 📋 (12-19 hours remaining)
+#### Backend Phase 2: COMPLETED ✅ (2 hours) - 2025-10-05
+
+**Auth Tests Standardized**:
+
+- [x] Updated `tests/integration/test_auth_integration.py` (5 hardcoded paths → route names)
+- [x] Updated `tests/integration/test_auth_workflow.py` (32 hardcoded paths → route names)
+- [x] Updated `tests/integration/test_authentication_workflow.py` (15 hardcoded paths → route names)
+- [x] Fixed import issues in `tests/utils/__init__.py` (removed non-existent imports)
+- [x] Verified all 52 auth integration tests pass (6 + 12 + 34 tests)
+
+**Key Changes**:
+
+- Replaced hardcoded paths like `"/api/auth/login"` with `url_builder.url_for("auth:jwt.login")`
+- Replaced `"/api/auth/me"` with `url_builder.url_for("auth_get_current_user")`
+- Replaced `"/api/auth/register"` with `url_builder.url_for("register:register")`
+- Replaced `"/api/auth/logout"` with `url_builder.url_for("auth:jwt.logout")`
+- Note: Kept `/api/auth/forgot-password` hardcoded (endpoint not yet in route names)
+
+#### Backend Phases 3-8: PLANNED 📋 (10-17 hours remaining)
 
 **Implementation Plan** (detailed in `docs/PATH_STANDARDIZATION_PLAN.md`):
 
 - [x] Phase 1: Document all route names (1 hour) ✅ COMPLETE
-- [ ] Phase 2: Update Auth tests ~8 files (2-3 hours)
+- [x] Phase 2: Update Auth tests ~3 files (2 hours) ✅ COMPLETE
 - [ ] Phase 3: Update Vocabulary tests ~5 files (2-3 hours)
 - [ ] Phase 4: Update Video tests ~6 files (1-2 hours)
 - [ ] Phase 5: Update Processing tests ~4 files (2-3 hours)
@@ -802,9 +820,9 @@ Priority levels from audit:
 
 **Impact**: Low-Medium - Better maintainability, type-safe URL generation, easier refactoring
 
-**Progress**: 2/14-21 hours complete (14%)
-**Completed**: Frontend (1 hour) + Backend Phase 1 (1 hour)
-**Remaining**: Backend Phases 2-8 (12-19 hours)
+**Progress**: 4/14-21 hours complete (24%)
+**Completed**: Frontend (1 hour) + Backend Phases 1-2 (3 hours total)
+**Remaining**: Backend Phases 3-8 (10-17 hours)
 **Original Estimate**: 4-6 hours (significantly underestimated - 410 occurrences vs expected 50-70)
 
 ---

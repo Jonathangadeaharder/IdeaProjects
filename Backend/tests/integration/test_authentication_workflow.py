@@ -73,7 +73,7 @@ class TestAuthenticationWorkflow:
         assert login_data["token_type"] == "bearer"
 
     @pytest.mark.anyio
-    async def test_When_username_used_instead_of_email_Then_login_fails(self, async_client):
+    async def test_When_username_used_instead_of_email_Then_login_fails(self, async_client, url_builder):
         """Login with username instead of email should fail."""
         # Arrange
         auth_helper = AsyncAuthHelper(async_client)
@@ -84,30 +84,33 @@ class TestAuthenticationWorkflow:
             "username": user.username,  # Using username instead of email
             "password": user.password,
         }
-        response = await async_client.post("/api/auth/login", data=login_data)
+        login_url = url_builder.url_for("auth:jwt.login")
+        response = await async_client.post(login_url, data=login_data)
 
         # Assert
         assert response.status_code in [400, 401], "Login should fail when using username instead of email"
 
     @pytest.mark.anyio
-    async def test_When_invalid_credentials_used_Then_login_fails(self, async_client):
+    async def test_When_invalid_credentials_used_Then_login_fails(self, async_client, url_builder):
         """Login with invalid credentials should return authentication error."""
         # Act
+        login_url = url_builder.url_for("auth:jwt.login")
         login_data = {"username": "nonexistent@example.com", "password": "wrongpassword"}
-        response = await async_client.post("/api/auth/login", data=login_data)
+        response = await async_client.post(login_url, data=login_data)
 
         # Assert
         assert response.status_code in [400, 401], "Login should fail with invalid credentials"
 
     @pytest.mark.anyio
-    async def test_When_valid_token_used_Then_user_info_returned(self, async_client):
+    async def test_When_valid_token_used_Then_user_info_returned(self, async_client, url_builder):
         """Valid token should allow access to user info."""
         # Arrange
         auth_helper = AsyncAuthHelper(async_client)
         user, _token, headers = await auth_helper.create_authenticated_user()
 
         # Act
-        response = await async_client.get("/api/auth/me", headers=headers)
+        me_url = url_builder.url_for("auth_get_current_user")
+        response = await async_client.get(me_url, headers=headers)
 
         # Assert
         data = assert_json_response(response, 200)
@@ -115,40 +118,43 @@ class TestAuthenticationWorkflow:
         assert data["username"] == user.username
 
     @pytest.mark.anyio
-    async def test_When_no_token_provided_Then_authentication_required(self, async_client):
+    async def test_When_no_token_provided_Then_authentication_required(self, async_client, url_builder):
         """Access to protected endpoint without token should require authentication."""
         # Act
-        response = await async_client.get("/api/auth/me")
+        me_url = url_builder.url_for("auth_get_current_user")
+        response = await async_client.get(me_url)
 
         # Assert
         assert_authentication_error(response)
 
     @pytest.mark.anyio
-    async def test_When_invalid_token_provided_Then_authentication_fails(self, async_client):
+    async def test_When_invalid_token_provided_Then_authentication_fails(self, async_client, url_builder):
         """Invalid token should result in authentication error."""
         # Arrange
         invalid_headers = {"Authorization": "Bearer invalid_token_123"}
 
         # Act
-        response = await async_client.get("/api/auth/me", headers=invalid_headers)
+        me_url = url_builder.url_for("auth_get_current_user")
+        response = await async_client.get(me_url, headers=invalid_headers)
 
         # Assert
         assert_authentication_error(response)
 
     @pytest.mark.anyio
-    async def test_When_malformed_token_provided_Then_authentication_fails(self, async_client):
+    async def test_When_malformed_token_provided_Then_authentication_fails(self, async_client, url_builder):
         """Malformed authorization header should result in authentication error."""
         # Arrange
         malformed_headers = {"Authorization": "InvalidFormat token123"}
 
         # Act
-        response = await async_client.get("/api/auth/me", headers=malformed_headers)
+        me_url = url_builder.url_for("auth_get_current_user")
+        response = await async_client.get(me_url, headers=malformed_headers)
 
         # Assert
         assert_authentication_error(response)
 
     @pytest.mark.anyio
-    async def test_When_user_logs_out_Then_token_becomes_invalid(self, async_client):
+    async def test_When_user_logs_out_Then_token_becomes_invalid(self, async_client, url_builder):
         """
         Logout endpoint returns 204 success.
 
@@ -162,7 +168,8 @@ class TestAuthenticationWorkflow:
         _user, token, headers = await auth_helper.create_authenticated_user()
 
         # Verify token works initially
-        response = await async_client.get("/api/auth/me", headers=headers)
+        me_url = url_builder.url_for("auth_get_current_user")
+        response = await async_client.get(me_url, headers=headers)
         assert_status_code(response, 200)
 
         # Act - logout
@@ -177,10 +184,11 @@ class TestCORSConfiguration:
     """Test CORS configuration for frontend integration."""
 
     @pytest.mark.anyio
-    async def test_When_options_request_sent_Then_cors_headers_present(self, async_client):
+    async def test_When_options_request_sent_Then_cors_headers_present(self, async_client, url_builder):
         """OPTIONS request should return appropriate CORS headers."""
         # Act
-        response = await async_client.options("/api/auth/login", headers={"Origin": "http://localhost:3000"})
+        login_url = url_builder.url_for("auth:jwt.login")
+        response = await async_client.options(login_url, headers={"Origin": "http://localhost:3000"})
 
         # Assert
         # Accept various status codes as different servers handle OPTIONS differently
@@ -201,42 +209,48 @@ class TestAuthenticationSecurity:
     """Test authentication security aspects."""
 
     @pytest.mark.anyio
-    async def test_When_registration_data_missing_required_fields_Then_validation_error(self, async_client):
+    async def test_When_registration_data_missing_required_fields_Then_validation_error(
+        self, async_client, url_builder
+    ):
         """Registration without required fields should return validation error."""
         # Act
-        response = await async_client.post("/api/auth/register", json={})
+        register_url = url_builder.url_for("register:register")
+        response = await async_client.post(register_url, json={})
 
         # Assert
         assert_status_code(response, 422)
 
     @pytest.mark.anyio
-    async def test_When_weak_password_provided_Then_validation_error(self, async_client):
+    async def test_When_weak_password_provided_Then_validation_error(self, async_client, url_builder):
         """Weak password should be rejected during registration."""
         # Act
+        register_url = url_builder.url_for("register:register")
         registration_data = {"username": "testuser", "email": "test@example.com", "password": "weak"}
-        response = await async_client.post("/api/auth/register", json=registration_data)
+        response = await async_client.post(register_url, json=registration_data)
 
         # Assert
         assert response.status_code in [400, 422], "Weak password should be rejected"
 
     @pytest.mark.anyio
-    async def test_When_duplicate_user_registered_Then_conflict_error(self, async_client):
+    async def test_When_duplicate_user_registered_Then_conflict_error(self, async_client, url_builder):
         """Registering duplicate user should return conflict error."""
         # Arrange
         auth_helper = AsyncAuthHelper(async_client)
         user, _ = await auth_helper.register_user()
 
         # Act - try to register same user again
-        response = await async_client.post("/api/auth/register", json=user.to_dict())
+        register_url = url_builder.url_for("register:register")
+        response = await async_client.post(register_url, json=user.to_dict())
 
         # Assert
         assert response.status_code in [400, 409], "Duplicate registration should be rejected"
 
     @pytest.mark.anyio
-    async def test_When_empty_credentials_provided_Then_validation_error(self, async_client):
+    async def test_When_empty_credentials_provided_Then_validation_error(self, async_client, url_builder):
         """Empty credentials should return validation error."""
         # Act
-        response = await async_client.post("/api/auth/login", data={})
+        login_url = url_builder.url_for("auth:jwt.login")
+        response = await async_client.post(login_url, data={})
 
         # Assert
         assert response.status_code in [400, 422], "Empty credentials should be rejected"
@@ -261,7 +275,7 @@ class TestAuthenticationIntegration:
         # Actual functionality tested in vocabulary-specific tests
 
     @pytest.mark.anyio
-    async def test_When_multiple_users_created_Then_each_has_unique_session(self, async_client):
+    async def test_When_multiple_users_created_Then_each_has_unique_session(self, async_client, url_builder):
         """Multiple users should have independent authentication sessions."""
         # Arrange
         auth_helper = AsyncAuthHelper(async_client)
@@ -275,8 +289,9 @@ class TestAuthenticationIntegration:
         assert token1 != token2
 
         # Verify each token works for its respective user
-        response1 = await async_client.get("/api/auth/me", headers=headers1)
-        response2 = await async_client.get("/api/auth/me", headers=headers2)
+        me_url = url_builder.url_for("auth_get_current_user")
+        response1 = await async_client.get(me_url, headers=headers1)
+        response2 = await async_client.get(me_url, headers=headers2)
 
         data1 = assert_json_response(response1, 200)
         data2 = assert_json_response(response2, 200)
