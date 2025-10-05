@@ -957,71 +957,57 @@ Test helpers scattered across:
 
 ### 20. Reorganize Utility Scripts to scripts/
 
-**Status**: MEDIUM - Backend root has 22 Python scripts
+**Status**: ✅ COMPLETED
 
-#### Current State:
+#### Completed Subtasks:
 
-Backend root directory has many utility scripts that should be in `scripts/`:
+- [x] Moved analysis scripts to `scripts/analysis/`:
+  - analyze_coverage.py
+  - metrics_report.py
+  - run_architecture_tests.py
+- [x] Moved database scripts to `scripts/database/`:
+  - apply_schema.py
+  - apply_search_indexes.py
+- [x] Moved setup scripts to `scripts/setup/`:
+  - download_parakeet_model.py
+  - install_spacy_models.py
+  - auto_venv.py
+  - venv_activator.py
+- [x] Moved utility scripts to `scripts/utils/`:
+  - cleanup_port.py
+  - export_openapi.py
+  - capture_test_error.py
+  - start_backend_with_models.py
+- [x] Moved verification scripts to `scripts/debug/`:
+  - check_users.py
+  - verify_admin_login.py
+  - verify_password_hash.py
+- [x] Moved testing script to `scripts/testing/`:
+  - run_fast_tests.py
+- [x] Verified no import path updates needed (no external references found)
+- [x] Verified no Makefile/documentation updates needed
+- [x] Updated pyproject.toml to allow print statements in scripts/ directory
 
-- `analyze_coverage.py`
-- `apply_schema.py`
-- `apply_search_indexes.py`
-- `auto_venv.py`
-- `capture_test_error.py`
-- `check_users.py`
-- `cleanup_port.py`
-- `download_parakeet_model.py`
-- `export_openapi.py`
-- `install_spacy_models.py`
-- `metrics_report.py`
-- `run_architecture_tests.py`
-- `run_backend.py` (keep - main entry point)
-- `run_fast_tests.py`
-- `setup.py` (keep - standard Python file)
-- `start_backend_with_models.py`
-- `venv_activator.py`
-- `verify_admin_login.py`
-- `verify_password_hash.py`
+#### Result:
 
-**Keep in Backend root**:
+Backend root now contains only 3 essential files:
 
-- `main.py` - FastAPI entry point
-- `run_backend.py` - Main launcher
-- `setup.py` - Standard Python package file
+- main.py (FastAPI entry point)
+- run_backend.py (main launcher)
+- setup.py (standard Python package file)
 
-**Move to scripts/**:
+17 Python scripts successfully organized into 5 subdirectories:
 
-- All other utility scripts
+- scripts/analysis/ (3 files)
+- scripts/database/ (2 files)
+- scripts/debug/ (3 files)
+- scripts/setup/ (4 files)
+- scripts/testing/ (1 file)
+- scripts/utils/ (4 files)
 
-#### Subtasks:
-
-- [ ] Move analysis scripts to `scripts/analysis/`:
-  - `analyze_coverage.py`
-  - `metrics_report.py`
-  - `run_architecture_tests.py`
-- [ ] Move database scripts to `scripts/database/`:
-  - `apply_schema.py`
-  - `apply_search_indexes.py`
-- [ ] Move setup scripts to `scripts/setup/`:
-  - `download_parakeet_model.py`
-  - `install_spacy_models.py`
-  - `auto_venv.py`
-  - `venv_activator.py`
-- [ ] Move utility scripts to `scripts/utils/`:
-  - `cleanup_port.py`
-  - `export_openapi.py`
-  - `capture_test_error.py`
-- [ ] Move verification scripts to `scripts/debug/`:
-  - `check_users.py`
-  - `verify_admin_login.py`
-  - `verify_password_hash.py`
-- [ ] Evaluate if `run_fast_tests.py` and `start_backend_with_models.py` still needed
-- [ ] Update any import paths or documentation referencing moved scripts
-- [ ] Update Makefile/run scripts if they reference these
-
-**Impact**: Medium - Much cleaner Backend root
-
-**Estimated Effort**: 1-2 hours
+**Completed**: 2025-10-05
+**Actual Effort**: 30 minutes
+**Impact**: Much cleaner Backend root directory, improved script organization
 
 ---
 
