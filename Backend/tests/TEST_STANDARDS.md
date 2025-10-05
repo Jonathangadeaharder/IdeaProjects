@@ -142,6 +142,51 @@ headers = {"Authorization": "Bearer eyJhbGciOiJIUzI1Ni..."}
 headers = make_auth_headers(test_user)
 ```
 
+### ❌ Unauthorized Skip Markers
+
+**Policy**: Per CLAUDE.md: "Never introduce skip/xfail/ignore markers to bypass a failing path. Surface the failure and coordinate with the user."
+
+```python
+# BAD: Hiding broken functionality
+@pytest.mark.skip(reason="Test fails, need to fix later")
+def test_authentication_flow():
+    ...
+
+# BAD: Skip without proper justification
+@pytest.mark.skip
+def test_payment_processing():
+    ...
+
+# ACCEPTABLE: Optional AI/ML dependency
+@pytest.mark.skip(reason="Requires PyTorch (pip install torch)")
+def test_translation_model():
+    ...
+
+# ACCEPTABLE: Environment-controlled
+@pytest.mark.skipif(
+    os.environ.get("SKIP_HEAVY_AI_TESTS") == "1",
+    reason="Skipping AI model tests"
+)
+def test_whisper_transcription():
+    ...
+```
+
+**Approved Skip Reasons** (pre-commit hook enforced):
+
+- **AI/ML Dependencies**: `"Requires openai-whisper"`, `"Requires PyTorch"`, `"Requires spaCy"`
+- **Installation Instructions**: Must include `"pip install ..."`
+- **Environment Variables**: `"SKIP_HEAVY_AI_TESTS"`, performance test flags
+- **Manual/Performance Tests**: Tests in `tests/manual/` directory
+
+**What to do instead**:
+
+1. **Fix the test** - Most common solution
+2. **Delete the test** - If obsolete or testing wrong behavior
+3. **Add approved reason** - Only for optional dependencies
+4. **Coordinate with user** - Get approval for exceptions
+
+**Pre-commit Hook**: A pre-commit hook automatically checks for unauthorized skip markers and blocks commits with unapproved skips.
+
 ## Required Patterns
 
 ### ✅ Arrange-Act-Assert Structure

@@ -47,6 +47,12 @@ jobs:
           echo "Checking Python code formatting with black..."
           black --check . || echo "Code formatting issues found, but continuing..."
 
+      - name: Check for unauthorized pytest skip markers
+        working-directory: ./Backend
+        run: |
+          echo "Checking for unauthorized @pytest.mark.skip markers..."
+          python .pre-commit-hooks/check-pytest-skip.py $(find tests -name "*.py" -type f)
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
