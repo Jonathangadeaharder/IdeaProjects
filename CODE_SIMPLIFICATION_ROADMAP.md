@@ -897,7 +897,25 @@ Priority levels from audit:
 - Vocabulary: `"/api/vocabulary/library/{level}"` → `url_builder.url_for("get_vocabulary_level", level=level)`
 - Vocabulary: `"/api/vocabulary/mark-known"` → `url_builder.url_for("mark_word_known")`
 
-#### Backend Phases 7-8: PLANNED 📋 (2-3 hours remaining)
+#### Backend Phase 7: COMPLETED ✅ (1 hour) - 2025-10-05
+
+**Game/User Tests Standardized**:
+
+- [x] Updated `tests/api/test_game_routes.py` (28 hardcoded paths → route names)
+- [x] Verified `tests/api/test_user_profile_routes.py` (0 paths - already clean)
+- [x] Total: 28 hardcoded game test paths standardized across 1 file
+- [x] All 14 game route tests passing
+
+**Key Route Name Mappings**:
+
+- Game: `"/api/game/start"` → `url_builder.url_for("game_start_session")`
+- Game: `"/api/game/session/{session_id}"` → `url_builder.url_for("game_get_session", session_id=session_id)`
+- Game: `"/api/game/answer"` → `url_builder.url_for("game_submit_answer")`
+- Game: `"/api/game/sessions"` → `url_builder.url_for("game_get_user_sessions")`
+- Auth: `"/api/auth/register"` → `url_builder.url_for("register:register")`
+- Auth: `"/api/auth/login"` → `url_builder.url_for("auth:jwt.login")`
+
+#### Backend Phase 8: PLANNED 📋 (1 hour remaining)
 
 **Implementation Plan** (detailed in `docs/PATH_STANDARDIZATION_PLAN.md`):
 
@@ -907,7 +925,7 @@ Priority levels from audit:
 - [x] Phase 4: Update Video tests ~7 files (1-2 hours) ✅ COMPLETE - 2025-10-05
 - [x] Phase 5: Update Processing tests ~7 files (2 hours) ✅ COMPLETE - 2025-10-05
 - [x] Phase 6: Update Integration tests ~13 files (3 hours) ✅ COMPLETE - 2025-10-05
-- [ ] Phase 7: Update Game/User tests (1-2 hours)
+- [x] Phase 7: Update Game/User tests (1 hour) ✅ COMPLETE - 2025-10-05
 - [ ] Phase 8: Create migration helper & pre-commit hook (1 hour)
 
 **Deliverables**:
