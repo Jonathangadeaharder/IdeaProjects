@@ -16,12 +16,13 @@ async def _auth(async_client):
 
 @pytest.mark.anyio
 @pytest.mark.timeout(30)
-async def test_When_languages_endpoint_called_Then_returns_supported_languages(async_client):
+async def test_When_languages_endpoint_called_Then_returns_supported_languages(async_client, url_builder):
     """Happy path: languages endpoint returns list of supported languages."""
     headers = await _auth(async_client)
 
+    languages_url = url_builder.url_for("get_supported_languages")
     response = await async_client.get(
-        "/api/vocabulary/languages",
+        languages_url,
         headers=headers,
     )
 
@@ -33,12 +34,12 @@ async def test_When_languages_endpoint_called_Then_returns_supported_languages(a
 
 @pytest.mark.anyio
 @pytest.mark.timeout(30)
-async def test_When_stats_called_with_language_params_Then_returns_multilingual_stats(async_client):
+async def test_When_stats_called_with_language_params_Then_returns_multilingual_stats(async_client, url_builder):
     """Happy path: stats endpoint supports multilingual parameters."""
     headers = await _auth(async_client)
 
     response = await async_client.get(
-        "/api/vocabulary/stats",
+        url_builder.url_for("get_vocabulary_stats"),
         params={"target_language": "de", "translation_language": "es"},
         headers=headers,
     )
@@ -53,12 +54,14 @@ async def test_When_stats_called_with_language_params_Then_returns_multilingual_
 
 @pytest.mark.anyio
 @pytest.mark.timeout(30)
-async def test_When_library_level_called_with_language_params_Then_returns_multilingual_words(async_client):
+async def test_When_library_level_called_with_language_params_Then_returns_multilingual_words(
+    async_client, url_builder
+):
     """Happy path: library level endpoint supports multilingual parameters."""
     headers = await _auth(async_client)
 
     response = await async_client.get(
-        "/api/vocabulary/library/A1",
+        url_builder.url_for("get_vocabulary_level", level="A1"),
         params={"target_language": "de", "translation_language": "es", "limit": 10},
         headers=headers,
     )
@@ -82,13 +85,13 @@ async def test_When_library_level_called_with_language_params_Then_returns_multi
 
 @pytest.mark.anyio
 @pytest.mark.timeout(30)
-async def test_When_mark_known_called_with_concept_id_Then_succeeds(async_client):
+async def test_When_mark_known_called_with_concept_id_Then_succeeds(async_client, url_builder):
     """Happy path: mark known endpoint uses concept_id instead of word."""
     headers = await _auth(async_client)
     concept_id = str(uuid4())
 
     response = await async_client.post(
-        "/api/vocabulary/mark-known",
+        url_builder.url_for("mark_word_known"),
         json={"concept_id": concept_id, "known": True},
         headers=headers,
     )
@@ -102,12 +105,12 @@ async def test_When_mark_known_called_with_concept_id_Then_succeeds(async_client
 
 @pytest.mark.anyio
 @pytest.mark.timeout(30)
-async def test_When_mark_known_called_without_concept_id_Then_returns_validation_error(async_client):
+async def test_When_mark_known_called_without_concept_id_Then_returns_validation_error(async_client, url_builder):
     """Invalid input: mark known without concept_id causes internal error (TODO: should validate)."""
     headers = await _auth(async_client)
 
     response = await async_client.post(
-        "/api/vocabulary/mark-known",
+        url_builder.url_for("mark_word_known"),
         json={"known": True},  # Missing concept_id
         headers=headers,
     )
@@ -117,12 +120,12 @@ async def test_When_mark_known_called_without_concept_id_Then_returns_validation
 
 @pytest.mark.anyio
 @pytest.mark.timeout(30)
-async def test_When_mark_known_called_with_invalid_uuid_Then_returns_validation_error(async_client):
+async def test_When_mark_known_called_with_invalid_uuid_Then_returns_validation_error(async_client, url_builder):
     """Invalid input: mark known with invalid UUID returns validation error."""
     headers = await _auth(async_client)
 
     response = await async_client.post(
-        "/api/vocabulary/mark-known",
+        url_builder.url_for("mark_word_known"),
         json={"concept_id": "not-a-uuid", "known": True},
         headers=headers,
     )
@@ -132,12 +135,12 @@ async def test_When_mark_known_called_with_invalid_uuid_Then_returns_validation_
 
 @pytest.mark.anyio
 @pytest.mark.timeout(30)
-async def test_When_bulk_mark_called_with_target_language_Then_succeeds(async_client):
+async def test_When_bulk_mark_called_with_target_language_Then_succeeds(async_client, url_builder):
     """Happy path: bulk mark endpoint supports target language parameter."""
     headers = await _auth(async_client)
 
     response = await async_client.post(
-        "/api/vocabulary/library/bulk-mark",
+        url_builder.url_for("bulk_mark_level"),
         json={"level": "A1", "target_language": "de", "known": True},
         headers=headers,
     )
@@ -152,12 +155,12 @@ async def test_When_bulk_mark_called_with_target_language_Then_succeeds(async_cl
 
 @pytest.mark.anyio
 @pytest.mark.timeout(30)
-async def test_When_bulk_mark_called_without_valid_level_Then_returns_error(async_client):
+async def test_When_bulk_mark_called_without_valid_level_Then_returns_error(async_client, url_builder):
     """Invalid input: unknown CEFR level returns validation error."""
     headers = await _auth(async_client)
 
     response = await async_client.post(
-        "/api/vocabulary/library/bulk-mark",
+        url_builder.url_for("bulk_mark_level"),
         json={"level": "Z9", "target_language": "de", "known": True},
         headers=headers,
     )
@@ -167,12 +170,12 @@ async def test_When_bulk_mark_called_without_valid_level_Then_returns_error(asyn
 
 @pytest.mark.anyio
 @pytest.mark.timeout(30)
-async def test_When_bulk_mark_called_with_invalid_language_code_Then_returns_error(async_client):
+async def test_When_bulk_mark_called_with_invalid_language_code_Then_returns_error(async_client, url_builder):
     """Invalid input: invalid language code accepted without validation (TODO: should reject)."""
     headers = await _auth(async_client)
 
     response = await async_client.post(
-        "/api/vocabulary/library/bulk-mark",
+        url_builder.url_for("bulk_mark_level"),
         json={"level": "A1", "target_language": "X", "known": True},  # Invalid language code
         headers=headers,
     )
@@ -182,12 +185,12 @@ async def test_When_bulk_mark_called_with_invalid_language_code_Then_returns_err
 
 @pytest.mark.anyio
 @pytest.mark.timeout(30)
-async def test_When_library_level_called_with_invalid_level_Then_returns_error(async_client):
+async def test_When_library_level_called_with_invalid_level_Then_returns_error(async_client, url_builder):
     """Invalid input: unknown CEFR level returns validation error."""
     headers = await _auth(async_client)
 
     response = await async_client.get(
-        "/api/vocabulary/library/Z9",
+        url_builder.url_for("get_vocabulary_level", level="Z9"),
         params={"target_language": "de"},
         headers=headers,
     )
@@ -197,12 +200,12 @@ async def test_When_library_level_called_with_invalid_level_Then_returns_error(a
 
 @pytest.mark.anyio
 @pytest.mark.timeout(30)
-async def test_When_test_data_endpoint_called_Then_returns_database_info(async_client):
+async def test_When_test_data_endpoint_called_Then_returns_database_info(async_client, url_builder):
     """Happy path: test-data endpoint returns database statistics."""
     headers = await _auth(async_client)
 
     response = await async_client.get(
-        "/api/vocabulary/test-data",
+        url_builder.url_for("get_test_data"),
         headers=headers,
     )
 
@@ -215,7 +218,7 @@ async def test_When_test_data_endpoint_called_Then_returns_database_info(async_c
 
 @pytest.mark.anyio
 @pytest.mark.timeout(30)
-async def test_When_blocking_words_called_Then_returns_structure(async_client, monkeypatch, tmp_path):
+async def test_When_blocking_words_called_Then_returns_structure(async_client, url_builder, monkeypatch, tmp_path):
     """Happy path: blocking words returns expected keys when SRT exists."""
     headers = await _auth(async_client)
     from api.routes import vocabulary as vocab
@@ -228,7 +231,7 @@ async def test_When_blocking_words_called_Then_returns_structure(async_client, m
     )
 
     response = await async_client.get(
-        "/api/vocabulary/blocking-words",
+        url_builder.url_for("get_blocking_words"),
         params={"video_path": "video.mp4"},
         headers=headers,
     )
@@ -240,28 +243,30 @@ async def test_When_blocking_words_called_Then_returns_structure(async_client, m
 
 @pytest.mark.anyio
 @pytest.mark.timeout(30)
-async def test_When_stats_called_without_auth_Then_returns_unauthorized(async_client):
+async def test_When_stats_called_without_auth_Then_returns_unauthorized(async_client, url_builder):
     """Security: stats endpoint requires authentication."""
-    response = await async_client.get("/api/vocabulary/stats")
+    response = await async_client.get(url_builder.url_for("get_vocabulary_stats"))
     assert response.status_code == 401, f"Expected 401 (not authenticated), got {response.status_code}: {response.text}"
 
 
 @pytest.mark.anyio
 @pytest.mark.timeout(30)
-async def test_When_mark_known_called_without_auth_Then_returns_unauthorized(async_client):
+async def test_When_mark_known_called_without_auth_Then_returns_unauthorized(async_client, url_builder):
     """Security: mark-known endpoint requires authentication."""
-    response = await async_client.post("/api/vocabulary/mark-known", json={"concept_id": str(uuid4()), "known": True})
+    response = await async_client.post(
+        url_builder.url_for("mark_word_known"), json={"concept_id": str(uuid4()), "known": True}
+    )
     assert response.status_code == 401, f"Expected 401 (not authenticated), got {response.status_code}: {response.text}"
 
 
 @pytest.mark.anyio
 @pytest.mark.timeout(30)
-async def test_When_library_level_called_with_large_limit_Then_succeeds(async_client):
+async def test_When_library_level_called_with_large_limit_Then_succeeds(async_client, url_builder):
     """Boundary: library level endpoint handles large limit values."""
     headers = await _auth(async_client)
 
     response = await async_client.get(
-        "/api/vocabulary/library/A1",
+        url_builder.url_for("get_vocabulary_level", level="A1"),
         params={"target_language": "de", "limit": 1000},
         headers=headers,
     )
@@ -278,12 +283,12 @@ async def test_When_library_level_called_with_large_limit_Then_succeeds(async_cl
 
 @pytest.mark.anyio
 @pytest.mark.timeout(30)
-async def test_When_stats_called_with_unsupported_language_Then_handles_gracefully(async_client):
+async def test_When_stats_called_with_unsupported_language_Then_handles_gracefully(async_client, url_builder):
     """Boundary: stats endpoint handles unsupported language codes gracefully."""
     headers = await _auth(async_client)
 
     response = await async_client.get(
-        "/api/vocabulary/stats",
+        url_builder.url_for("get_vocabulary_stats"),
         params={"target_language": "xx", "translation_language": "yy"},
         headers=headers,
     )
@@ -297,12 +302,12 @@ async def test_When_stats_called_with_unsupported_language_Then_handles_graceful
 
 @pytest.mark.anyio
 @pytest.mark.timeout(30)
-async def test_When_library_level_called_without_language_params_Then_uses_defaults(async_client):
+async def test_When_library_level_called_without_language_params_Then_uses_defaults(async_client, url_builder):
     """Default behavior: library level endpoint works without explicit language parameters."""
     headers = await _auth(async_client)
 
     response = await async_client.get(
-        "/api/vocabulary/library/A1",
+        url_builder.url_for("get_vocabulary_level", level="A1"),
         headers=headers,
     )
 

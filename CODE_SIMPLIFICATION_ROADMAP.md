@@ -755,7 +755,7 @@ Priority levels from audit:
 
 ### 9. Standardize Path Definitions (From Existing Roadmap)
 
-**Status**: IN PROGRESS - Frontend Complete ✅, Backend Phases 1-2 Complete ✅, Phases 3-8 Pending 📋
+**Status**: IN PROGRESS - Frontend Complete ✅, Backend Phases 1-3 Complete ✅, Phases 4-8 Pending 📋
 
 #### Frontend: COMPLETED ✅ (1 hour)
 
@@ -799,13 +799,37 @@ Priority levels from audit:
 - Replaced `"/api/auth/logout"` with `url_builder.url_for("auth:jwt.logout")`
 - Note: Kept `/api/auth/forgot-password` hardcoded (endpoint not yet in route names)
 
-#### Backend Phases 3-8: PLANNED 📋 (10-17 hours remaining)
+#### Backend Phase 3: COMPLETED ✅ (2 hours) - 2025-10-05
+
+**Vocabulary Tests Standardized**:
+
+- [x] Updated `tests/api/test_vocabulary_routes.py` (17 hardcoded paths → route names)
+- [x] Updated `tests/integration/test_api_endpoints_in_process.py` (11 hardcoded paths → route names)
+- [x] Updated `tests/api/test_vocabulary_contract.py` (8 hardcoded paths → route names)
+- [x] Updated `tests/api/test_vocabulary_auth_required_inprocess.py` (3 hardcoded paths → route names)
+- [x] Updated `tests/api/test_vocabulary_routes_details.py` (2 hardcoded paths → route names)
+- [x] Updated `tests/integration/test_inprocess_vocabulary.py` (2 hardcoded paths → route names)
+- [x] Updated `tests/api/test_validation_errors.py` (2 hardcoded paths → route names)
+- [x] Updated `tests/integration/test_inprocess_api.py` (2 hardcoded paths → route names)
+- [x] Total: 47 hardcoded vocabulary paths standardized across 8 files
+
+**Key Changes**:
+
+- Replaced `"/api/vocabulary/stats"` with `url_builder.url_for("get_vocabulary_stats")`
+- Replaced `"/api/vocabulary/languages"` with `url_builder.url_for("get_supported_languages")`
+- Replaced `"/api/vocabulary/mark-known"` with `url_builder.url_for("mark_word_known")`
+- Replaced `"/api/vocabulary/library/{level}"` with `url_builder.url_for("get_vocabulary_level", level="...")`
+- Replaced `"/api/vocabulary/library/bulk-mark"` with `url_builder.url_for("bulk_mark_level")`
+- Fixed parametrize decorator issue in test_validation_errors.py (moved url_builder resolution to function body)
+- Fixed incorrect route name usage in test_vocabulary_auth_required_inprocess.py
+
+#### Backend Phases 4-8: PLANNED 📋 (8-14 hours remaining)
 
 **Implementation Plan** (detailed in `docs/PATH_STANDARDIZATION_PLAN.md`):
 
 - [x] Phase 1: Document all route names (1 hour) ✅ COMPLETE
 - [x] Phase 2: Update Auth tests ~3 files (2 hours) ✅ COMPLETE
-- [ ] Phase 3: Update Vocabulary tests ~5 files (2-3 hours)
+- [x] Phase 3: Update Vocabulary tests ~8 files (2-3 hours) ✅ COMPLETE - 2025-10-05
 - [ ] Phase 4: Update Video tests ~6 files (1-2 hours)
 - [ ] Phase 5: Update Processing tests ~4 files (2-3 hours)
 - [ ] Phase 6: Update Integration tests ~20 files (3-4 hours)

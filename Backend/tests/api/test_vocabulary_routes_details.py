@@ -13,12 +13,12 @@ async def _auth(async_client):
 
 @pytest.mark.anyio
 @pytest.mark.timeout(30)
-async def test_Whenmark_known_can_unmarkCalled_ThenSucceeds(async_client):
+async def test_Whenmark_known_can_unmarkCalled_ThenSucceeds(async_client, url_builder):
     """Happy path: toggling known flag to False returns consistent structure."""
     flow = await _auth(async_client)
 
     response = await async_client.post(
-        "/api/vocabulary/mark-known",
+        url_builder.url_for("mark_word_known"),
         json={"word": "sein", "known": False},
         headers=flow["headers"],
     )
@@ -31,7 +31,7 @@ async def test_Whenmark_known_can_unmarkCalled_ThenSucceeds(async_client):
 
 @pytest.mark.anyio
 @pytest.mark.timeout(30)
-async def test_Whenbulk_markCalled_ThenReturnscounts(async_client):
+async def test_Whenbulk_markCalled_ThenReturnscounts(async_client, url_builder):
     """Happy path: bulk mark returns the number of affected words."""
     from unittest.mock import AsyncMock, patch
 
@@ -44,7 +44,7 @@ async def test_Whenbulk_markCalled_ThenReturnscounts(async_client):
 
     with patch.object(vocabulary_service.progress_service, "bulk_mark_level", mock_bulk_mark):
         response = await async_client.post(
-            "/api/vocabulary/library/bulk-mark",
+            url_builder.url_for("bulk_mark_level"),
             json={"level": "A1", "known": True, "target_language": "de"},
             headers=flow["headers"],
         )

@@ -10,18 +10,20 @@ from tests.helpers import AuthTestHelperAsync
 @pytest.mark.anyio
 @pytest.mark.timeout(30)
 @pytest.mark.parametrize(
-    "endpoint, payload",
+    "route_or_path",
     [
-        ("/api/vocabulary/mark-known", {}),
-        ("/api/vocabulary/library/bulk-mark", {}),
-        # ("/api/process/translate-subtitles", {}),  # Removed: deprecated during refactoring
-        ("/api/process/filter-subtitles", {}),
+        "mark_word_known",
+        "bulk_mark_level",
+        "/api/process/filter-subtitles",
     ],
 )
-async def test_WhenEndpointsRequireMandatoryFields_ThenValidates(async_http_client, endpoint: str, payload: dict):
+async def test_WhenEndpointsRequireMandatoryFields_ThenValidates(async_http_client, url_builder, route_or_path: str):
     """Invalid input: missing mandatory fields results in 422 validation errors."""
     auth = await AuthTestHelperAsync.register_and_login_async(async_http_client)
 
-    response = await async_http_client.post(endpoint, json=payload, headers=auth["headers"])
+    # Determine endpoint - use url_builder for route names, hardcoded path otherwise
+    endpoint = url_builder.url_for(route_or_path) if not route_or_path.startswith("/") else route_or_path
+
+    response = await async_http_client.post(endpoint, json={}, headers=auth["headers"])
 
     assert response.status_code == 422

@@ -9,7 +9,7 @@ from tests.helpers import AuthTestHelperAsync
 
 @pytest.mark.anyio
 @pytest.mark.timeout(30)
-async def test_Whenvocabulary_statsCalled_ThenReturnslevels(async_client):
+async def test_Whenvocabulary_statsCalled_ThenReturnslevels(async_client, url_builder):
     flow = await AuthTestHelperAsync.register_and_login_async(async_client)
 
     # Mock the direct vocabulary route implementation rather than dependency override
@@ -17,7 +17,7 @@ async def test_Whenvocabulary_statsCalled_ThenReturnslevels(async_client):
 
     try:
         response = await async_client.get(
-            "/api/vocabulary/stats", params={"target_language": "de"}, headers=flow["headers"]
+            url_builder.url_for("get_vocabulary_stats"), params={"target_language": "de"}, headers=flow["headers"]
         )
 
         # Integration test should verify actual behavior, not accept any outcome
@@ -40,13 +40,13 @@ async def test_Whenvocabulary_statsCalled_ThenReturnslevels(async_client):
 
 @pytest.mark.anyio
 @pytest.mark.timeout(30)
-async def test_Whenbulk_mark_level_uses_serviceCalled_ThenSucceeds(async_client):
+async def test_Whenbulk_mark_level_uses_serviceCalled_ThenSucceeds(async_client, url_builder):
     flow = await AuthTestHelperAsync.register_and_login_async(async_client)
 
     # Test the actual bulk mark endpoint
     try:
         response = await async_client.post(
-            "/api/vocabulary/library/bulk-mark",
+            url_builder.url_for("bulk_mark_level"),
             json={"level": "A1", "target_language": "de", "known": True},
             headers=flow["headers"],
         )

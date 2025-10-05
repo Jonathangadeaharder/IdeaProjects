@@ -20,7 +20,9 @@ class TestAuthenticationEndpoints:
     """Integration tests for authentication endpoints using in-process client."""
 
     @pytest.mark.anyio
-    async def test_When_user_registration_flow_completed_Then_user_created_successfully(self, async_client):
+    async def test_When_user_registration_flow_completed_Then_user_created_successfully(
+        self, async_client, url_builder
+    ):
         """Complete user registration flow should create user successfully."""
         # Arrange
         auth_helper = AsyncAuthHelper(async_client)
@@ -35,7 +37,7 @@ class TestAuthenticationEndpoints:
         assert registration_data["is_superuser"] is False
 
     @pytest.mark.anyio
-    async def test_When_user_registered_and_logs_in_Then_receives_valid_token(self, async_client):
+    async def test_When_user_registered_and_logs_in_Then_receives_valid_token(self, async_client, url_builder):
         """User should be able to login after registration and receive valid token."""
         # Arrange
         auth_helper = AsyncAuthHelper(async_client)
@@ -50,7 +52,7 @@ class TestAuthenticationEndpoints:
         assert login_data["token_type"] == "bearer"
 
     @pytest.mark.anyio
-    async def test_When_authenticated_user_accesses_profile_Then_profile_returned(self, async_client):
+    async def test_When_authenticated_user_accesses_profile_Then_profile_returned(self, async_client, url_builder):
         """Authenticated user should be able to access their profile."""
         # Arrange
         auth_helper = AsyncAuthHelper(async_client)
@@ -76,7 +78,7 @@ class TestAuthenticationEndpoints:
         assert_authentication_error(response)
 
     @pytest.mark.anyio
-    async def test_When_user_logs_out_Then_token_invalidated(self, async_client):
+    async def test_When_user_logs_out_Then_token_invalidated(self, async_client, url_builder):
         """
         User logout endpoint should return success.
 
@@ -109,14 +111,14 @@ class TestVocabularyEndpoints:
     """Integration tests for vocabulary management endpoints."""
 
     @pytest.mark.anyio
-    async def test_When_authenticated_user_gets_vocabulary_stats_Then_stats_returned(self, async_client):
+    async def test_When_authenticated_user_gets_vocabulary_stats_Then_stats_returned(self, async_client, url_builder):
         """Authenticated user should be able to get vocabulary statistics."""
         # Arrange
         auth_helper = AsyncAuthHelper(async_client)
         _user, _token, headers = await auth_helper.create_authenticated_user()
 
         # Act
-        response = await async_client.get("/api/vocabulary/stats", headers=headers)
+        response = await async_client.get(url_builder.url_for("get_vocabulary_stats"), headers=headers)
 
         # Assert
         data = assert_json_response(response, 200)
@@ -127,14 +129,16 @@ class TestVocabularyEndpoints:
             assert field in data, f"Missing required field: {field}"
 
     @pytest.mark.anyio
-    async def test_When_authenticated_user_gets_supported_languages_Then_languages_returned(self, async_client):
+    async def test_When_authenticated_user_gets_supported_languages_Then_languages_returned(
+        self, async_client, url_builder
+    ):
         """Authenticated user should be able to get supported languages."""
         # Arrange
         auth_helper = AsyncAuthHelper(async_client)
         _user, _token, headers = await auth_helper.create_authenticated_user()
 
         # Act
-        response = await async_client.get("/api/vocabulary/languages", headers=headers)
+        response = await async_client.get(url_builder.url_for("get_supported_languages"), headers=headers)
 
         # Assert
         data = assert_json_response(response, 200)
@@ -142,7 +146,7 @@ class TestVocabularyEndpoints:
         assert isinstance(data["languages"], list)
 
     @pytest.mark.anyio
-    async def test_When_authenticated_user_gets_vocabulary_level_Then_words_returned(self, async_client):
+    async def test_When_authenticated_user_gets_vocabulary_level_Then_words_returned(self, async_client, url_builder):
         """Authenticated user should be able to get vocabulary for a specific level."""
         # Arrange
         auth_helper = AsyncAuthHelper(async_client)
@@ -160,7 +164,7 @@ class TestVocabularyEndpoints:
         assert_vocabulary_response_structure(data)
 
     @pytest.mark.anyio
-    async def test_When_authenticated_user_marks_word_known_Then_success_returned(self, async_client):
+    async def test_When_authenticated_user_marks_word_known_Then_success_returned(self, async_client, url_builder):
         """Authenticated user should be able to mark a word as known."""
         # Arrange
         auth_helper = AsyncAuthHelper(async_client)
@@ -172,7 +176,7 @@ class TestVocabularyEndpoints:
 
         # Act
         response = await async_client.post(
-            "/api/vocabulary/mark-known",
+            url_builder.url_for("mark_word_known"),
             json={"concept_id": concept_id, "known": True},
             headers=headers,
         )
@@ -184,13 +188,15 @@ class TestVocabularyEndpoints:
         assert "known" in data
 
     @pytest.mark.anyio
-    async def test_When_unauthenticated_user_accesses_vocabulary_Then_authentication_required(self, async_client):
+    async def test_When_unauthenticated_user_accesses_vocabulary_Then_authentication_required(
+        self, async_client, url_builder
+    ):
         """Unauthenticated access to vocabulary endpoints should require authentication."""
         # Act
         # Note: /api/vocabulary/languages is intentionally public (returns language list)
         endpoints = [
-            "/api/vocabulary/stats",
-            "/api/vocabulary/library/A1",
+            url_builder.url_for("get_vocabulary_stats"),
+            url_builder.url_for("get_vocabulary_level", level="A1"),
         ]
 
         for endpoint in endpoints:
@@ -200,7 +206,7 @@ class TestVocabularyEndpoints:
             assert response.status_code in [401, 403], f"Endpoint {endpoint} should require authentication"
 
     @pytest.mark.anyio
-    async def test_When_bulk_mark_operation_performed_Then_batch_update_succeeds(self, async_client):
+    async def test_When_bulk_mark_operation_performed_Then_batch_update_succeeds(self, async_client, url_builder):
         """Authenticated user should be able to perform bulk mark operations."""
         # Arrange
         auth_helper = AsyncAuthHelper(async_client)
@@ -208,7 +214,7 @@ class TestVocabularyEndpoints:
 
         # Act
         response = await async_client.post(
-            "/api/vocabulary/library/bulk-mark",
+            url_builder.url_for("bulk_mark_level"),
             json={"level": "A1", "target_language": "de", "known": True},
             headers=headers,
         )
@@ -225,20 +231,24 @@ class TestEndpointValidation:
     """Integration tests for endpoint validation and error handling."""
 
     @pytest.mark.anyio
-    async def test_When_invalid_vocabulary_level_requested_Then_validation_error_returned(self, async_client):
+    async def test_When_invalid_vocabulary_level_requested_Then_validation_error_returned(
+        self, async_client, url_builder
+    ):
         """Request for invalid vocabulary level should return validation error."""
         # Arrange
         auth_helper = AsyncAuthHelper(async_client)
         _user, _token, headers = await auth_helper.create_authenticated_user()
 
         # Act
-        response = await async_client.get("/api/vocabulary/library/INVALID_LEVEL", headers=headers)
+        response = await async_client.get(
+            url_builder.url_for("get_vocabulary_level", level="INVALID_LEVEL"), headers=headers
+        )
 
         # Assert
         assert response.status_code == 422, "Invalid level should return validation error"
 
     @pytest.mark.anyio
-    async def test_When_mark_known_without_concept_id_Then_validation_error_returned(self, async_client):
+    async def test_When_mark_known_without_concept_id_Then_validation_error_returned(self, async_client, url_builder):
         """Mark known request without concept_id should return validation error."""
         # Arrange
         auth_helper = AsyncAuthHelper(async_client)
@@ -246,7 +256,7 @@ class TestEndpointValidation:
 
         # Act
         response = await async_client.post(
-            "/api/vocabulary/mark-known",
+            url_builder.url_for("mark_word_known"),
             json={"known": True},  # Missing concept_id
             headers=headers,
         )
@@ -256,7 +266,7 @@ class TestEndpointValidation:
         assert response.status_code in [422, 500], f"Missing concept_id should return error, got {response.status_code}"
 
     @pytest.mark.anyio
-    async def test_When_mark_known_with_invalid_uuid_Then_validation_error_returned(self, async_client):
+    async def test_When_mark_known_with_invalid_uuid_Then_validation_error_returned(self, async_client, url_builder):
         """Mark known request with invalid UUID should return validation error."""
         # Arrange
         auth_helper = AsyncAuthHelper(async_client)
@@ -264,7 +274,7 @@ class TestEndpointValidation:
 
         # Act
         response = await async_client.post(
-            "/api/vocabulary/mark-known",
+            url_builder.url_for("mark_word_known"),
             json={"concept_id": "not-a-uuid", "known": True},
             headers=headers,
         )
@@ -273,7 +283,7 @@ class TestEndpointValidation:
         assert response.status_code == 422, "Invalid UUID should return validation error"
 
     @pytest.mark.anyio
-    async def test_When_bulk_mark_with_invalid_level_Then_validation_error_returned(self, async_client):
+    async def test_When_bulk_mark_with_invalid_level_Then_validation_error_returned(self, async_client, url_builder):
         """Bulk mark with invalid level should return validation error."""
         # Arrange
         auth_helper = AsyncAuthHelper(async_client)
@@ -281,7 +291,7 @@ class TestEndpointValidation:
 
         # Act
         response = await async_client.post(
-            "/api/vocabulary/library/bulk-mark",
+            url_builder.url_for("bulk_mark_level"),
             json={"level": "INVALID", "target_language": "de", "known": True},
             headers=headers,
         )
@@ -295,7 +305,7 @@ class TestEndpointSecurity:
     """Integration tests for endpoint security and authorization."""
 
     @pytest.mark.anyio
-    async def test_When_malformed_token_used_Then_authentication_fails(self, async_client):
+    async def test_When_malformed_token_used_Then_authentication_fails(self, async_client, url_builder):
         """Malformed authorization token should fail authentication."""
         # Arrange
         malformed_headers = {"Authorization": "Malformed token123"}
@@ -307,7 +317,7 @@ class TestEndpointSecurity:
         assert_authentication_error(response)
 
     @pytest.mark.anyio
-    async def test_When_expired_token_used_Then_authentication_fails(self, async_client):
+    async def test_When_expired_token_used_Then_authentication_fails(self, async_client, url_builder):
         """Expired token should fail authentication."""
         # Arrange
         expired_headers = {"Authorization": "Bearer expired_token_that_should_fail"}
@@ -319,7 +329,7 @@ class TestEndpointSecurity:
         assert_authentication_error(response)
 
     @pytest.mark.anyio
-    async def test_When_multiple_users_access_own_data_Then_data_isolated(self, async_client):
+    async def test_When_multiple_users_access_own_data_Then_data_isolated(self, async_client, url_builder):
         """Multiple users should only access their own data."""
         # Arrange
         auth_helper = AsyncAuthHelper(async_client)
@@ -346,7 +356,7 @@ class TestEndpointPerformance:
     """Integration tests for endpoint performance characteristics."""
 
     @pytest.mark.anyio
-    async def test_When_health_endpoint_called_Then_responds_quickly(self, async_client):
+    async def test_When_health_endpoint_called_Then_responds_quickly(self, async_client, url_builder):
         """Health endpoint should respond quickly."""
         import time
 
@@ -361,7 +371,7 @@ class TestEndpointPerformance:
         assert elapsed < 1.0, f"Health endpoint took {elapsed:.3f}s, should be < 1.0s"
 
     @pytest.mark.anyio
-    async def test_When_concurrent_auth_requests_made_Then_all_succeed(self, async_client):
+    async def test_When_concurrent_auth_requests_made_Then_all_succeed(self, async_client, url_builder):
         """Concurrent authentication requests should all succeed."""
         import asyncio
 
