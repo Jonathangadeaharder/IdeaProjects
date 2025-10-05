@@ -11,8 +11,8 @@ import pytest
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 
+from core.exception_handlers import setup_middleware
 from core.exceptions import LangPlugException
-from core.middleware import setup_middleware
 
 
 @pytest.mark.anyio

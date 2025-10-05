@@ -1587,7 +1587,7 @@ services/processing/
 
 ### 27. Simplify Middleware Stack
 
-**Status**: ✅ COMPLETED (Phase 1)
+**Status**: ✅ COMPLETED - 2025-10-05
 
 #### Analysis Results:
 
@@ -1624,17 +1624,19 @@ services/processing/
 - [x] Removed unused imports from middleware.py (HTTPException, status, auth service exceptions)
 - [x] Verified no references to deleted files in documentation
 
-**Total Removed**: 568 lines of dead code
+**Total Removed (Phase 1)**: 568 lines of dead code
 
-**Phase 2 - Optional Consolidation** (Deferred):
+**Phase 2 - Consolidation** ✅ COMPLETED:
 
-- [ ] Move LoggingMiddleware from middleware.py to security_middleware.py (where it's registered)
-- [ ] Rename middleware.py to exception_handlers.py (more accurate)
-- [ ] Consider: auth_dependencies.py might be better named (it's FastAPI dependencies, not middleware)
+- [x] Moved LoggingMiddleware from middleware.py to security_middleware.py (where it's registered)
+- [x] Deleted middleware.py (merged LangPlugException handler into exception_handlers.py)
+- [x] Updated all imports (core/app.py, tests/core/test_middleware.py, tests/core/test_logging_middleware.py)
+- [x] Added backward compatibility alias (setup_middleware = setup_exception_handlers)
+- [x] Consolidated all exception handlers into single file (exception_handlers.py)
 
 **Completed**: 2025-10-05
-**Actual Effort**: 30 minutes
-**Impact**: Removed 568 lines of unused middleware code, clarified middleware structure
+**Actual Effort**: 45 minutes total (30 min Phase 1 + 15 min Phase 2)
+**Impact**: Removed 568 lines of unused middleware, moved 69 lines LoggingMiddleware, consolidated exception handling into single file
 
 ---
 

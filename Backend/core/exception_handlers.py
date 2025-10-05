@@ -1,5 +1,7 @@
 """Exception handlers for FastAPI application"""
 
+from datetime import datetime
+
 import structlog
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
@@ -7,6 +9,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.exc import SQLAlchemyError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from core.exceptions import LangPlugException
 from core.sentry_config import capture_exception, set_context
 
 logger = structlog.get_logger(__name__)
@@ -14,6 +17,22 @@ logger = structlog.get_logger(__name__)
 
 def setup_exception_handlers(app: FastAPI):
     """Setup exception handlers for the FastAPI application"""
+
+    @app.exception_handler(LangPlugException)
+    async def langplug_exception_handler(request: Request, exc: LangPlugException):
+        """Handle custom LangPlug exceptions"""
+        logger.warning(
+            "LangPlug exception",
+            status_code=exc.status_code,
+            message=exc.message,
+            path=request.url.path,
+            method=request.method,
+        )
+
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={"detail": exc.message, "type": exc.__class__.__name__, "timestamp": datetime.utcnow().isoformat()},
+        )
 
     @app.exception_handler(HTTPException)
     async def http_exception_handler(request: Request, exc: HTTPException):
@@ -119,3 +138,7 @@ def setup_exception_handlers(app: FastAPI):
             status_code=500,
             content={"error": {"type": "internal_error", "message": "An internal server error occurred"}},
         )
+
+
+# Backward compatibility alias
+setup_middleware = setup_exception_handlers

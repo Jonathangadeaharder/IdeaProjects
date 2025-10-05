@@ -11,7 +11,7 @@ import pytest
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 
-from core.middleware import LoggingMiddleware
+from core.security_middleware import LoggingMiddleware
 
 
 @pytest.mark.anyio

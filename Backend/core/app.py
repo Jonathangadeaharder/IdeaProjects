@@ -31,7 +31,6 @@ from .contract_middleware import setup_contract_validation
 from .dependencies import cleanup_services, init_services
 from .exception_handlers import setup_exception_handlers
 from .logging_config import configure_logging, get_logger
-from .middleware import setup_middleware
 from .security_middleware import setup_security_middleware
 from .sentry_config import configure_sentry
 
@@ -100,10 +99,7 @@ def create_app() -> FastAPI:
         debug=settings.debug,
     )
 
-    # Set up middleware (CORS, logging, error handling)
-    setup_middleware(app)
-
-    # Set up security middleware
+    # Set up security middleware (CORS, logging, validation)
     setup_security_middleware(app, settings)
 
     # Set up contract validation (only in debug mode for development)
