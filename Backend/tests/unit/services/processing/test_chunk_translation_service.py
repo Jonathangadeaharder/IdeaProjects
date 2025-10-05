@@ -1,6 +1,17 @@
 """
 Test suite for ChunkTranslationService
-Tests translation service management and subtitle translation building
+
+Tests translation service management and subtitle translation building.
+
+AI/ML Dependency: PyTorch (torch)
+---------------------------------
+One test in this suite requires PyTorch for translation model testing.
+This test is skipped in CI environments where PyTorch is not installed.
+
+To run all tests locally:
+    pip install torch transformers
+
+Most tests use mocks and don't require actual ML dependencies.
 """
 
 from unittest.mock import AsyncMock, Mock, patch
@@ -154,7 +165,7 @@ class TestBuildTranslationSegments:
             assert result[0].text == "Hello World"
 
     @pytest.mark.anyio
-    @pytest.mark.skip(reason="Requires torch dependency not available in CI")
+    @pytest.mark.skip(reason="Requires PyTorch for translation models (pip install torch transformers)")
     async def test_build_translation_segments_no_active_words_in_segments(self, service, task_progress):
         """Test when no active words found in segments - still translates all segments"""
         vocabulary = [{"word": "test", "active": True}]

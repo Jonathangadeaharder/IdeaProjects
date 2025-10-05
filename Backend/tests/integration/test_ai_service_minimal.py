@@ -1,6 +1,30 @@
 """
 Minimal functional tests for AI services using real models.
+
 Each test should complete in under 10 seconds using smallest models.
+These are "hello world" tests that verify basic AI service functionality.
+
+AI/ML Dependencies
+------------------
+These tests require actual AI/ML models and their dependencies:
+- OpenAI Whisper (whisper-tiny): pip install openai-whisper torch transformers
+- Helsinki OPUS MT (opus-de-es): pip install transformers torch sentencepiece
+- NLLB Distilled (nllb-distilled-600m): pip install transformers torch sentencepiece
+- NVIDIA NeMo (parakeet-ctc-0.6b): pip install nemo_toolkit (optional)
+
+Environment Variable Control
+----------------------------
+Set SKIP_HEAVY_AI_TESTS=1 to skip these tests in CI or resource-constrained environments.
+Set SKIP_HEAVY_AI_TESTS=0 to run all AI model tests (requires model downloads).
+
+NeMo Tests: Gracefully skip if nemo_toolkit is not installed (optional dependency).
+
+Best Practices
+--------------
+Per CLAUDE.md LangPlug Testing Standards:
+- Minimal functional tests should be < 10 lines, < 10 seconds
+- Use smallest available models (whisper-tiny, opus-de-es)
+- Graceful dependency skipping for optional packages
 """
 
 import os

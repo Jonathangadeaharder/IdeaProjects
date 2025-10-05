@@ -1,6 +1,23 @@
 """
 Integration tests for AI services using smallest/fastest models.
+
 These tests actually load and test real AI models to ensure proper integration.
+Tests are conditionally skipped based on the SKIP_HEAVY_AI_TESTS environment variable.
+
+AI/ML Dependencies
+------------------
+These tests require actual AI/ML models and their dependencies:
+- OpenAI Whisper (whisper-tiny): pip install openai-whisper torch transformers
+- Helsinki OPUS MT (opus-de-es): pip install transformers torch sentencepiece
+- NLLB Distilled (nllb-distilled-600m): pip install transformers torch sentencepiece
+
+Environment Variable Control
+----------------------------
+Set SKIP_HEAVY_AI_TESTS=1 to skip these tests in CI or resource-constrained environments.
+Set SKIP_HEAVY_AI_TESTS=0 to run all AI model tests (requires model downloads).
+
+Note: These tests download models on first run, which may take several minutes and require
+significant disk space (whisper-tiny: ~150MB, opus-de-es: ~300MB, nllb-distilled: ~2.4GB).
 """
 
 import os

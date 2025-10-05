@@ -1,4 +1,16 @@
-"""Tests for WhisperTranscriptionService behavior."""
+"""Tests for WhisperTranscriptionService behavior.
+
+AI/ML Dependency: OpenAI Whisper
+--------------------------------
+These tests require the 'openai-whisper' package for WhisperTranscriptionService.
+If the dependency is not available, all tests in this module are skipped automatically.
+
+To run these tests locally:
+    pip install openai-whisper torch transformers
+
+The tests use mocked whisper models to avoid downloading large model files during testing.
+For actual transcription tests with real models, see tests/integration/test_ai_service_integration.py
+"""
 
 from __future__ import annotations
 
@@ -9,7 +21,7 @@ import pytest
 try:
     from services.transcriptionservice.whisper_implementation import WhisperTranscriptionService
 except ModuleNotFoundError:
-    pytest.skip("whisper dependency not installed", allow_module_level=True)
+    pytest.skip("openai-whisper dependency not installed (pip install openai-whisper)", allow_module_level=True)
 
 
 @pytest.fixture
