@@ -28,6 +28,7 @@ except ImportError as e:
 
 try:
     from .e2e_config import (
+        BACKEND_URL,
         FRONTEND_URL,
         SCREENSHOT_DIR,
         TEST_EMAIL,
@@ -40,11 +41,31 @@ except ImportError:
     from pathlib import Path
 
     sys.path.insert(0, str(Path(__file__).parent))
-    from e2e_config import FRONTEND_URL, SCREENSHOT_DIR, TEST_EMAIL, TEST_PASSWORD, start_servers_if_needed
+    from e2e_config import BACKEND_URL, FRONTEND_URL, SCREENSHOT_DIR, TEST_EMAIL, TEST_PASSWORD, start_servers_if_needed
 
 
 # Mark as manual smoke test
 pytestmark = pytest.mark.manual
+
+
+def register_test_user_if_needed():
+    """Register test user via API if not already registered."""
+    import requests
+
+    try:
+        response = requests.post(
+            f"{BACKEND_URL}/api/auth/register",
+            json={"username": "e2etest", "email": TEST_EMAIL, "password": TEST_PASSWORD},
+            timeout=10,
+        )
+        if response.status_code == 201:
+            print(f"[E2E] Created test user: {TEST_EMAIL}")
+        elif response.status_code == 400 and "already exists" in response.text.lower():
+            print(f"[E2E] Test user already exists: {TEST_EMAIL}")
+        else:
+            raise AssertionError(f"User registration failed: {response.status_code} - {response.text[:200]}")
+    except requests.exceptions.RequestException as e:
+        raise AssertionError(f"Cannot connect to backend for user registration: {e}") from e
 
 
 @pytest.mark.asyncio
@@ -68,6 +89,9 @@ async def test_e2e_subtitle_display_workflow():
     # Start servers if needed (acceptable for manual tests)
     start_servers_if_needed()
 
+    # Register test user
+    register_test_user_if_needed()
+
     async with async_playwright() as p:
         # Launch browser
         browser = await p.chromium.launch(headless=bool(os.getenv("E2E_HEADLESS")), slow_mo=500)
@@ -78,6 +102,7 @@ async def test_e2e_subtitle_display_workflow():
             # Step 1: Navigate to frontend
             await page.goto(FRONTEND_URL, timeout=15000)
             await page.wait_for_load_state("networkidle")
+            await page.screenshot(path=str(SCREENSHOT_DIR / "00_homepage.png"))
 
             # Step 2: Login
             email_input = page.locator('input[type="email"]').first
@@ -86,6 +111,7 @@ async def test_e2e_subtitle_display_workflow():
 
             await email_input.fill(TEST_EMAIL)
             await password_input.fill(TEST_PASSWORD)
+            await page.screenshot(path=str(SCREENSHOT_DIR / "01_login_filled.png"))
             await submit_button.click()
 
             # Wait for navigation after login
@@ -93,7 +119,15 @@ async def test_e2e_subtitle_display_workflow():
             await page.wait_for_load_state("networkidle")
 
             # Save debug screenshot
-            await page.screenshot(path=str(SCREENSHOT_DIR / "01_after_login.png"))
+            await page.screenshot(path=str(SCREENSHOT_DIR / "02_after_login.png"))
+
+            # Debug: Save page HTML
+            page_html = await page.content()
+            (SCREENSHOT_DIR / "02_after_login.html").write_text(page_html, encoding="utf-8")
+
+            # Check if we're actually logged in or still on login page
+            current_url = page.url
+            print(f"[DEBUG] Current URL after login: {current_url}")
 
             # Step 3: Navigate to Superstore
             superstore_card = page.locator('[data-testid="series-card-superstore"]')
