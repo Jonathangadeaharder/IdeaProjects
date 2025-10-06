@@ -99,9 +99,9 @@ def start_servers_if_needed() -> None:
     subprocess.Popen([str(start_script)], shell=True, cwd=str(REPO_ROOT))
 
     # Wait for servers to become healthy
-    print("[E2E] Waiting for servers to start (max 60 seconds)...")
-    max_wait = 60
-    check_interval = 3
+    print("[E2E] Waiting for servers to start (max 120 seconds)...")
+    max_wait = 120
+    check_interval = 5
 
     for elapsed in range(0, max_wait, check_interval):
         time.sleep(check_interval)
