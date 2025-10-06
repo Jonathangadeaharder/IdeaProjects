@@ -44,7 +44,7 @@ echo.
 echo [BACKEND] Starting Backend on port %BACKEND_PORT%...
 
 REM Start Backend in new window with AI models (using small models for quick startup)
-start "LangPlug Backend" cmd /k "cd /d "%REPO_ROOT%\Backend" && api_venv\Scripts\activate && set LANGPLUG_PORT=%BACKEND_PORT% && echo [INFO] Starting Backend with AI models on port %BACKEND_PORT%... && python start_backend_with_models.py"
+start "LangPlug Backend" cmd /k "cd /d "%REPO_ROOT%\Backend" && api_venv\Scripts\activate && set LANGPLUG_PORT=%BACKEND_PORT% && echo [INFO] Starting Backend with AI models on port %BACKEND_PORT%... && python run_backend.py"
 echo Started Backend with AI models (using small models)
 echo Waiting for Backend to initialize...
 timeout /t 10 /nobreak >nul
