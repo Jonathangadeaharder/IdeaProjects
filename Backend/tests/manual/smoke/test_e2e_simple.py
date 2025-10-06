@@ -27,14 +27,20 @@ except ImportError as e:
     ) from e
 
 try:
-    from .e2e_config import BACKEND_URL, FRONTEND_URL, SCREENSHOT_DIR, TEST_EMAIL, TEST_PASSWORD
+    from .e2e_config import (
+        FRONTEND_URL,
+        SCREENSHOT_DIR,
+        TEST_EMAIL,
+        TEST_PASSWORD,
+        start_servers_if_needed,
+    )
 except ImportError:
     # Allow running as standalone script
     import sys
     from pathlib import Path
 
     sys.path.insert(0, str(Path(__file__).parent))
-    from e2e_config import BACKEND_URL, FRONTEND_URL, SCREENSHOT_DIR, TEST_EMAIL, TEST_PASSWORD
+    from e2e_config import FRONTEND_URL, SCREENSHOT_DIR, TEST_EMAIL, TEST_PASSWORD, start_servers_if_needed
 
 
 # Mark as manual smoke test
@@ -51,18 +57,16 @@ async def test_e2e_subtitle_display_workflow():
     - E2E_TEST_PASSWORD must be set
 
     Test flow:
-    1. Navigate to frontend
-    2. Login with test credentials
-    3. Select Superstore series
-    4. Play Episode 1
-    5. Skip vocabulary games
-    6. Verify video player loads with subtitles
+    1. Start servers if not running
+    2. Navigate to frontend
+    3. Login with test credentials
+    4. Select Superstore series
+    5. Play Episode 1
+    6. Skip vocabulary games
+    7. Verify video player loads with subtitles
     """
-    # Check servers before starting
-    import requests
-
-    response = requests.get(f"{BACKEND_URL}/health", timeout=5)
-    assert response.status_code == 200, "Backend server must be running and healthy"
+    # Start servers if needed (acceptable for manual tests)
+    start_servers_if_needed()
 
     async with async_playwright() as p:
         # Launch browser

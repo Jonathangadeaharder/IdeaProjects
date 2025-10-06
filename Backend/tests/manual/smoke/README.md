@@ -11,9 +11,19 @@ pip install playwright
 python -m playwright install chromium
 ```
 
-### 2. Start Servers
+### 2. Server Startup (Automatic)
 
-Backend and frontend servers must be running before executing E2E tests:
+**Tests automatically start servers if not running!**
+
+The E2E tests will:
+
+1. Check if backend (http://localhost:8000/health) is healthy
+2. Check if frontend (http://localhost:3000) is accessible
+3. If either is down, automatically run `scripts/start-all.bat` (or `.sh`)
+4. Wait up to 60 seconds for servers to become healthy
+5. Fail with clear error if servers don't start
+
+**Manual startup** (optional):
 
 ```bash
 # From repository root
