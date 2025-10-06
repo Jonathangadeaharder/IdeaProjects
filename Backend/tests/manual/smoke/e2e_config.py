@@ -33,22 +33,25 @@ SCREENSHOT_DIR = REPO_ROOT / "tests" / "manual" / "smoke" / "screenshots"
 SCREENSHOT_DIR.mkdir(parents=True, exist_ok=True)
 
 
-def check_server_health(url: str, timeout: int = 5) -> bool:
-    """
-    Check if a server is running and healthy.
-
-    Args:
-        url: Base URL of the server
-        timeout: Request timeout in seconds
-
-    Returns:
-        True if server is healthy, False otherwise
-    """
+def check_backend_health(timeout: int = 5) -> bool:
+    """Check if backend server is running and healthy."""
     import requests
 
     try:
-        response = requests.get(f"{url}/health", timeout=timeout)
+        response = requests.get(f"{BACKEND_URL}/health", timeout=timeout)
         return response.status_code == 200
+    except requests.exceptions.RequestException:
+        return False
+
+
+def check_frontend_health(timeout: int = 5) -> bool:
+    """Check if frontend server is accessible."""
+    import requests
+
+    try:
+        response = requests.get(FRONTEND_URL, timeout=timeout)
+        # Frontend should return HTML (200) or redirect to login
+        return response.status_code in {200, 301, 302, 304}
     except requests.exceptions.RequestException:
         return False
 
@@ -70,8 +73,8 @@ def start_servers_if_needed() -> None:
 
     print("[E2E] Checking if servers are running...")
 
-    backend_healthy = check_server_health(BACKEND_URL)
-    frontend_accessible = check_server_health(FRONTEND_URL.replace(":3000", ":3000"))
+    backend_healthy = check_backend_health()
+    frontend_accessible = check_frontend_health()
 
     if backend_healthy and frontend_accessible:
         print(f"[E2E] ✓ Backend healthy at {BACKEND_URL}")
@@ -103,14 +106,20 @@ def start_servers_if_needed() -> None:
     for elapsed in range(0, max_wait, check_interval):
         time.sleep(check_interval)
 
-        backend_healthy = check_server_health(BACKEND_URL)
-        if backend_healthy:
-            print(f"[E2E] ✓ Backend healthy at {BACKEND_URL} (after {elapsed + check_interval}s)")
-            # Give frontend a bit more time
-            time.sleep(5)
+        backend_healthy = check_backend_health()
+        frontend_healthy = check_frontend_health()
+
+        if backend_healthy and frontend_healthy:
+            print(f"[E2E] ✓ Servers healthy (after {elapsed + check_interval}s)")
             return
 
-        print(f"[E2E] Waiting... ({elapsed + check_interval}s)")
+        status = []
+        if backend_healthy:
+            status.append("backend OK")
+        if frontend_healthy:
+            status.append("frontend OK")
+        status_msg = ", ".join(status) if status else "both down"
+        print(f"[E2E] Waiting... ({elapsed + check_interval}s, {status_msg})")
 
     raise RuntimeError(
         f"Servers did not become healthy within {max_wait} seconds. " f"Check that {start_script} works correctly."
