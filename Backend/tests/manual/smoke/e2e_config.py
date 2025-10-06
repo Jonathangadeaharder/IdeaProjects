@@ -77,8 +77,8 @@ def start_servers_if_needed() -> None:
     frontend_accessible = check_frontend_health()
 
     if backend_healthy and frontend_accessible:
-        print(f"[E2E] ✓ Backend healthy at {BACKEND_URL}")
-        print(f"[E2E] ✓ Frontend accessible at {FRONTEND_URL}")
+        print(f"[E2E] [OK] Backend healthy at {BACKEND_URL}")
+        print(f"[E2E] [OK] Frontend accessible at {FRONTEND_URL}")
         return
 
     print("[E2E] Servers not running, starting them...")
@@ -110,7 +110,7 @@ def start_servers_if_needed() -> None:
         frontend_healthy = check_frontend_health()
 
         if backend_healthy and frontend_healthy:
-            print(f"[E2E] ✓ Servers healthy (after {elapsed + check_interval}s)")
+            print(f"[E2E] [OK] Servers healthy (after {elapsed + check_interval}s)")
             return
 
         status = []
