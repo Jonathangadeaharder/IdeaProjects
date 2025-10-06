@@ -32,7 +32,13 @@ from tests.fixtures.fast_auth import *
 from tests.fixtures.mock_services import *
 
 # Force test mode and asyncio backend only in tests
-os.environ["TESTING"] = "1"
+# EXCEPT for manual E2E tests which need real servers
+if "-m" in sys.argv and "manual" in sys.argv:
+    # Manual tests use real servers, not mocks
+    os.environ["TESTING"] = "0"
+else:
+    # Unit/integration tests use mocks
+    os.environ["TESTING"] = "1"
 os.environ["ANYIO_BACKEND"] = "asyncio"
 
 

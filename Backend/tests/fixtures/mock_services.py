@@ -8,8 +8,13 @@ import pytest
 
 
 @pytest.fixture(autouse=True)
-def mock_heavy_services():
+def mock_heavy_services(request):
     """Automatically mock heavy services to prevent slow initialization"""
+
+    # Skip mocking for manual E2E tests that need real services
+    if hasattr(request.node, "get_closest_marker") and request.node.get_closest_marker("manual"):
+        yield {}
+        return
 
     # Mock transcription services (prevents 10+ second Whisper loading)
     mock_transcription = AsyncMock()
@@ -52,8 +57,13 @@ def mock_file_operations():
 
 
 @pytest.fixture(autouse=True)
-def disable_external_connections():
+def disable_external_connections(request):
     """Prevent any external network connections during tests"""
+
+    # Skip mocking for manual E2E tests that need real HTTP requests
+    if hasattr(request.node, "get_closest_marker") and request.node.get_closest_marker("manual"):
+        yield
+        return
 
     # Only patch requests module for external connections
     # Let httpx work normally for TestClient internal communications
