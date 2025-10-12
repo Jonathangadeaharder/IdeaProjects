@@ -58,9 +58,6 @@ jobs:
     needs: detect-changes
     if: needs.detect-changes.outputs.backend == 'true'
     timeout-minutes: 10
-    defaults:
-      run:
-        working-directory: src/backend
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -74,6 +71,7 @@ jobs:
           cache-key: fast-tests
 
       - name: Run fast unit tests
+        working-directory: src/backend
         run: |
           # Run only unit tests, skip integration and e2e
           pytest -q tests/ -m "not integration and not e2e" \
@@ -85,6 +83,7 @@ jobs:
           LANGPLUG_SECRET_KEY: test-secret-key-for-ci-only-not-for-production-use
 
       - name: Lint with ruff (if available)
+        working-directory: src/backend
         run: |
           if command -v ruff >/dev/null 2>&1; then
             ruff check . --select=E,W,F --ignore=E501,E402 --exclude=data,docs,scripts,tests,run_backend.py
@@ -98,9 +97,6 @@ jobs:
     needs: detect-changes
     if: needs.detect-changes.outputs.frontend == 'true'
     timeout-minutes: 10
-    defaults:
-      run:
-        working-directory: src/frontend
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -113,6 +109,7 @@ jobs:
           cache-key: fast-tests
 
       - name: Type check
+        working-directory: src/frontend
         run: |
           if command -v tsc >/dev/null 2>&1; then
             npx tsc --noEmit --skipLibCheck
@@ -121,11 +118,13 @@ jobs:
           fi
 
       - name: Run fast unit tests
+        working-directory: src/frontend
         run: |
           # Run tests without coverage for speed
           yarn test --run --reporter=basic --bail=5
 
       - name: Lint
+        working-directory: src/frontend
         run: |
           yarn lint --max-warnings=10 || echo "Linting failed but continuing..."
 

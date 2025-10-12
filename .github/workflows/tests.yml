@@ -27,9 +27,6 @@ jobs:
       fail-fast: false
       matrix:
         test-group: [api, core, services, management, integration]
-    defaults:
-      run:
-        working-directory: src/backend
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -46,6 +43,7 @@ jobs:
           cache-key: ${{ matrix.test-group }}
 
       - name: Run pytest (${{ matrix.test-group }})
+        working-directory: src/backend
         run: |
           case "${{ matrix.test-group }}" in
             api)
@@ -94,9 +92,6 @@ jobs:
       fail-fast: false
       matrix:
         shard: [1, 2]
-    defaults:
-      run:
-        working-directory: src/frontend
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -109,6 +104,7 @@ jobs:
           cache-key: ${{ matrix.shard }}
 
       - name: Run Vitest (shard ${{ matrix.shard }})
+        working-directory: src/frontend
         run: yarn test --coverage --shard=${{ matrix.shard }}/2 --coverage.thresholds.lines=0 --coverage.thresholds.functions=0 --coverage.thresholds.branches=0 --coverage.thresholds.statements=0
 
       - name: Upload coverage
