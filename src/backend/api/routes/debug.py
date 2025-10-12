@@ -19,11 +19,11 @@ class FrontendLogEntry(BaseModel):
     category: str
     message: str
     data: Any = None
-    error: str = None
-    stack: str = None
-    url: str = None
-    userAgent: str = None
-    userId: str = None
+    error: str | None = None
+    stack: str | None = None
+    url: str | None = None
+    userAgent: str | None = None
+    userId: str | None = None
 
 
 class FrontendLogBatch(BaseModel):

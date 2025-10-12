@@ -23,6 +23,6 @@ async def test_Whenvocabulary_statsWithoutauth_ThenReturnsError(async_http_clien
 
     helper = AsyncAuthHelper(async_http_client)
 
-    user, token, headers = await helper.create_authenticated_user()
+    _user, _token, headers = await helper.create_authenticated_user()
     authed = await async_http_client.get(url_builder.url_for("get_vocabulary_stats"), headers=headers)
     assert authed.status_code == 200, f"Expected 200, got {authed.status_code}: {authed.text}"

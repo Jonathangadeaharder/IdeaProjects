@@ -19,7 +19,7 @@ export interface AuthResponse {
 export type VideoInfo = ApiVideoInfo
 
 export type VocabularyWord = ApiVocabularyWord & {
-  definition?: string | null
+  definition?: string
   known: boolean
 }
 

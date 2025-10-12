@@ -16,7 +16,7 @@ async def test_WhenFilterSubtitlesWithoutexisting_file_ThenRejected(async_client
     """Invalid input: filter-subtitles fails when subtitle file absent."""
     helper = AsyncAuthHelper(async_client)
 
-    user, token, headers = await helper.create_authenticated_user()
+    _user, _token, headers = await helper.create_authenticated_user()
 
     with patch.object(type(settings), "get_videos_path", return_value=tmp_path):
         response = await async_client.post(

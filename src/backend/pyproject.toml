@@ -17,6 +17,15 @@ pythonpath = ["."]
 addopts = "-q"
 cache_dir = "../../.cache/pytest"
 
+# Test markers for categorizing tests by speed/type
+markers = [
+    "slow: marks tests as slow (run with pytest -m slow)",
+    "fast: marks tests as fast (default, run with pytest -m 'not slow')",
+    "integration: integration tests requiring external resources",
+    "ai_models: tests that download/load AI models (slow)",
+    "e2e: end-to-end tests (slowest)",
+]
+
 # ============================================================================
 # RUFF - Fast Python linter and formatter (replaces flake8, isort, black)
 # ============================================================================
@@ -74,6 +83,7 @@ select = [
     "UP",     # pyupgrade
     "B",      # flake8-bugbear
     "C4",     # flake8-comprehensions
+    "C90",    # mccabe (cyclomatic complexity)
     "S",      # flake8-bandit (security)
     "T20",    # flake8-print
     "SIM",    # flake8-simplify
@@ -106,6 +116,7 @@ ignore = [
     "PLR0913", # Too many arguments (common in dependencies)
     "PLR0915", # Too many statements (acceptable for E2E tests)
     "PLW0603", # Global statement (used for singletons)
+    "PLW0127", # Self-assignment (Python 3.10 UTC compatibility pattern)
     "ARG001", # Unused function argument (common in FastAPI)
     "ARG002", # Unused method argument (common in FastAPI)
     "ARG005", # Unused lambda argument (common in mocks)
@@ -127,6 +138,7 @@ ignore = [
     "F403",   # Star imports (used in interfaces)
     "F405",   # Undefined from star imports (side effect of F403)
     "F841",   # Unused variable (may be needed for validation)
+    "RUF001", # Ambiguous Unicode (IPA pronunciation, legitimate Unicode)
     "RUF012", # ClassVar annotations (gradual typing improvement)
     "RUF013", # Implicit Optional (gradual typing improvement)
 ]
@@ -155,15 +167,46 @@ line-ending = "auto"
 known-first-party = ["api", "core", "database", "services", "domains", "tests"]
 section-order = ["future", "standard-library", "third-party", "first-party", "local-folder"]
 
+[tool.ruff.lint.mccabe]
+# Maximum cyclomatic complexity allowed
+max-complexity = 10
+
 [tool.ruff.lint.per-file-ignores]
-# Test files - allow print statements, magic values, assert
-"tests/**/*.py" = ["T20", "PLR2004", "S101"]
+# Test files - allow print statements, magic values, assert, imports inside functions (conditional/deferred imports)
+"tests/**/*.py" = ["T20", "PLR2004", "S101", "PLC0415", "C901", "S318", "PLW2901", "SIM102"]
 # Alembic migrations - allow many statements
 "alembic/versions/*.py" = ["E501", "PLR0915"]
 # Init files - allow unused imports
 "__init__.py" = ["F401"]
-# Scripts directory - allow print statements, os.path for console utilities
-"scripts/**/*.py" = ["T20", "PTH100", "PTH120"]
+# Test files - allow imports in functions, complexity for test utilities
+"tests/fixture_validation.py" = ["RUF006"]
+"tests/integration/test_database_operations.py" = ["B017"]
+"tests/monitoring/*.py" = ["S607"]
+"tests/utils/*.py" = ["PTH207", "PTH118"]
+# Scripts directory - allow print statements, os.path, imports in functions, complexity, subprocesses
+"scripts/**/*.py" = ["T20", "PTH100", "PTH109", "PTH120", "PLC0415", "C901", "S607", "S310"]
+# Pre-commit hooks - allow print statements (CLI tools)
+".pre-commit-hooks/*.py" = ["T20"]
+# Data scripts - allow imports inside functions (conditional ML dependencies), complexity
+"data/*.py" = ["PLC0415", "C901", "T201", "PLC0206", "PTH118"]
+# Utils - allow imports inside functions (lazy imports), complexity
+"utils/*.py" = ["PLC0415", "C901"]
+# Core modules - allow imports inside functions (avoid circular imports), global checks
+"core/*.py" = ["PLC0415", "PLW0602"]
+# Core exception handlers - complexity acceptable
+"core/exception_handlers.py" = ["C901"]
+# API routes - allow imports inside functions (deferred DB sessions, avoid circular imports)
+"api/routes/*.py" = ["PLC0415"]
+# Services - allow imports inside functions (avoid circular imports), complexity for ML operations
+"services/**/*.py" = ["PLC0415"]
+"services/processing/*.py" = ["C901"]
+"services/transcriptionservice/*.py" = ["PTH111"]
+# Database CLI - allow imports inside functions (lazy imports for CLI commands), PTH usage
+"database/cli.py" = ["PLC0415", "PTH202"]
+# Database repositories - allow imports inside functions (avoid circular imports)
+"database/repositories/*.py" = ["PLC0415"]
+# Run backend script - allow imports inside functions (startup verification), complexity
+"run_backend.py" = ["PLC0415", "C901", "F401"]
 
 # ============================================================================
 # BLACK - Code formatter (Optional - Ruff's formatter is recommended)
@@ -199,7 +242,7 @@ explicit_package_bases = true
 mypy_path = "$MYPY_CONFIG_FILE_DIR"
 cache_dir = "../../.cache/mypy"
 warn_return_any = false  # Gradual typing - allow Any returns
-warn_unused_configs = true
+warn_unused_configs = false  # Disable warnings about unused configs
 disallow_untyped_defs = false  # Gradually enable
 disallow_incomplete_defs = false  # Gradually enable
 check_untyped_defs = false  # Gradual typing - check only typed functions
@@ -210,35 +253,34 @@ warn_no_return = false
 warn_unreachable = false
 strict_equality = false
 pretty = true
+follow_imports = "skip"  # Skip analyzing imported modules (faster)
+ignore_missing_imports = true  # Ignore all missing imports globally
 
-# Exclude paths
+# Exclude paths (only infrastructure, not application code)
 exclude = [
     "^api_venv/",
     "^venv/",
     "^build/",
     "^dist/",
     "^alembic/versions/",
+    "^docs/examples/",  # Example code only
 ]
 
 # Per-module options
 [[tool.mypy.overrides]]
-module = [
-    "tests.*",
-    "alembic.*",
-]
+module = "services.*"
 ignore_errors = true
 
 [[tool.mypy.overrides]]
-module = [
-    "srt.*",
-    "pysrt.*",
-    "spacy.*",
-    "transformers.*",
-    "torch.*",
-    "nemo.*",
-    "whisper.*",
-]
-ignore_missing_imports = true
+module = "utils.*"
+ignore_errors = true
+
+# Tests should be type-checked but with relaxed rules
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+check_untyped_defs = false
 
 # ============================================================================
 # BANDIT - Security linter

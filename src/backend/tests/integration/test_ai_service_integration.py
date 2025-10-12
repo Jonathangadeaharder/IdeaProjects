@@ -30,6 +30,7 @@ from services.translationservice.factory import TranslationServiceFactory
 
 @pytest.mark.integration
 @pytest.mark.slow
+@pytest.mark.ai_models
 class TestTranscriptionServiceIntegration:
     """Integration tests for transcription services with actual models"""
 
@@ -83,6 +84,7 @@ class TestTranscriptionServiceIntegration:
 
 @pytest.mark.integration
 @pytest.mark.slow
+@pytest.mark.ai_models
 class TestTranslationServiceIntegration:
     """Integration tests for translation services with actual models"""
 

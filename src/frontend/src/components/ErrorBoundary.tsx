@@ -1,5 +1,5 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react';
-import styled from 'styled-components';
+import React, { Component, ErrorInfo, ReactNode } from 'react'
+import styled from 'styled-components'
 
 const ErrorContainer = styled.div`
   display: flex;
@@ -11,24 +11,24 @@ const ErrorContainer = styled.div`
   color: white;
   padding: 2rem;
   text-align: center;
-`;
+`
 
 const ErrorTitle = styled.h1`
   font-size: 3rem;
   margin-bottom: 1rem;
   font-weight: bold;
-`;
+`
 
 const ErrorMessage = styled.p`
   font-size: 1.25rem;
   margin-bottom: 2rem;
   max-width: 600px;
   opacity: 0.9;
-`;
+`
 
 const ErrorButton = styled.button`
-  background: rgba(255, 255, 255, 0.2);
-  border: 2px solid rgba(255, 255, 255, 0.3);
+  background: rgb(255 255 255 / 20%);
+  border: 2px solid rgb(255 255 255 / 30%);
   color: white;
   padding: 1rem 2rem;
   border-radius: 50px;
@@ -39,38 +39,38 @@ const ErrorButton = styled.button`
   transition: all 0.3s ease;
 
   &:hover {
-    background: rgba(255, 255, 255, 0.3);
-    border-color: rgba(255, 255, 255, 0.5);
+    background: rgb(255 255 255 / 30%);
+    border-color: rgb(255 255 255 / 50%);
     transform: translateY(-2px);
   }
 
   &:active {
     transform: translateY(0);
   }
-`;
+`
 
 interface State {
-  hasError: boolean;
-  error?: Error;
+  hasError: boolean
+  error?: Error
 }
 
 interface Props {
-  children: ReactNode;
-  sectionName?: string;
+  children: ReactNode
+  sectionName?: string
 }
 
 class ErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
-    super(props);
-    this.state = { hasError: false };
+    super(props)
+    this.state = { hasError: false }
   }
 
   static getDerivedStateFromError(error: Error): State {
-    return { hasError: true, error };
+    return { hasError: true, error }
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('ErrorBoundary caught an error:', error, errorInfo);
+    console.error('ErrorBoundary caught an error:', error, errorInfo)
   }
 
   render() {
@@ -80,34 +80,30 @@ class ErrorBoundary extends Component<Props, State> {
           <ErrorTitle>😵</ErrorTitle>
           <ErrorTitle>Oops!</ErrorTitle>
           <ErrorMessage>
-            {this.props.sectionName || 'Something'} encountered an unexpected error.
-            Don't worry, it happens to the best of us!
+            {this.props.sectionName || 'Something'} encountered an unexpected error. Don't worry, it
+            happens to the best of us!
           </ErrorMessage>
-          <ErrorButton
-            onClick={() => window.location.reload()}
-          >
-            🔄 Refresh Page
-          </ErrorButton>
+          <ErrorButton onClick={() => window.location.reload()}>🔄 Refresh Page</ErrorButton>
         </ErrorContainer>
-      );
+      )
     }
 
-    return this.props.children;
+    return this.props.children
   }
 }
 
-export { ErrorBoundary };
+export { ErrorBoundary }
 
 // Hook for imperatively throwing errors to the nearest error boundary
 // eslint-disable-next-line react-refresh/only-export-components
 export function useErrorHandler() {
-  const [error, setError] = React.useState<Error | null>(null);
+  const [error, setError] = React.useState<Error | null>(null)
 
   React.useEffect(() => {
     if (error) {
-      throw error;
+      throw error
     }
-  }, [error]);
+  }, [error])
 
-  return setError;
+  return setError
 }

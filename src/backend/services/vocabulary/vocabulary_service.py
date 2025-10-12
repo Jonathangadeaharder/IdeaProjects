@@ -100,8 +100,8 @@ class VocabularyService:
 
     def __init__(self):
         # Get fresh instances via factory functions to avoid global state
-        from .vocabulary_query_service import get_vocabulary_query_service
         from .vocabulary_progress_service import get_vocabulary_progress_service
+        from .vocabulary_query_service import get_vocabulary_query_service
         from .vocabulary_stats_service import get_vocabulary_stats_service
 
         self.query_service = get_vocabulary_query_service()
@@ -227,12 +227,12 @@ class VocabularyService:
                 word.lower() for word in german_words
                 if len(word) > 3 and word.lower() not in {
                     'und', 'oder', 'der', 'die', 'das', 'ein', 'eine', 'einer', 'eines',
-                    'den', 'dem', 'des', 'sie', 'wir', 'ihr', 'sie', 'ich', 'du', 'er',
-                    'sie', 'es', 'ist', 'sind', 'war', 'waren', 'hat', 'haben', 'habe',
+                    'den', 'dem', 'des', 'sie', 'wir', 'ihr', 'ich', 'du', 'er',
+                    'es', 'ist', 'sind', 'war', 'waren', 'hat', 'haben', 'habe',
                     'mit', 'auf', 'aus', 'von', 'zu', 'für', 'durch', 'über', 'unter',
                     'vor', 'nach', 'bei', 'als', 'wie', 'was', 'wer', 'wo', 'wann',
-                    'warum', 'wie', 'viel', 'viele', 'viel', 'wenig', 'wenige', 'mehr',
-                    'weniger', 'am', 'im', 'um', 'an', 'in', 'auf', 'aus', 'zu', 'ab',
+                    'warum', 'viel', 'viele', 'wenig', 'wenige', 'mehr',
+                    'weniger', 'am', 'im', 'um', 'an', 'in', 'ab',
                     'dann', 'also', 'aber', 'sondern', 'denn', 'doch', 'jedoch', 'nur',
                     'auch', 'noch', 'schon', 'bereits', 'immer', 'nie', 'oft', 'selten',
                     'manchmal', 'vielleicht', 'wahrscheinlich', 'sicher', 'bestimmt'
@@ -293,8 +293,9 @@ class VocabularyService:
         Raises:
             ValueError: If word already exists for this user
         """
-        from database.models import VocabularyWord
         from sqlalchemy import select
+
+        from database.models import VocabularyWord
 
         async with AsyncSessionLocal() as db:
             try:
@@ -364,8 +365,9 @@ class VocabularyService:
             ValueError: If word not found
             PermissionError: If word doesn't belong to user or is system vocabulary
         """
-        from database.models import VocabularyWord
         from sqlalchemy import select
+
+        from database.models import VocabularyWord
 
         async with AsyncSessionLocal() as db:
             try:

@@ -52,40 +52,46 @@ class Logger {
     this.info('Frontend Logger', 'Logger initialized', {
       logLevel: LogLevel[this.logLevel],
       apiEnabled: this.apiEnabled,
-      maxLogs: this.maxLogs
+      maxLogs: this.maxLogs,
     })
   }
 
   private setupGlobalErrorHandler() {
-    window.addEventListener('error', (event) => {
+    window.addEventListener('error', event => {
       this.error('Global Error', 'Uncaught error', {
         message: event.message,
         filename: event.filename,
         lineno: event.lineno,
         colno: event.colno,
         error: event.error?.toString(),
-        stack: event.error?.stack
+        stack: event.error?.stack,
       })
     })
   }
 
   private setupUnhandledRejectionHandler() {
-    window.addEventListener('unhandledrejection', (event) => {
+    window.addEventListener('unhandledrejection', event => {
       this.error('Unhandled Promise', 'Promise rejection', {
         reason: event.reason?.toString(),
-        stack: event.reason?.stack
+        stack: event.reason?.stack,
       })
     })
   }
 
-  private createLogEntry(level: LogLevel, category: string, message: string, data?: Record<string, unknown>, error?: Error): LogEntry {
+  private createLogEntry(
+    level: LogLevel,
+    category: string,
+    message: string,
+    data?: Record<string, unknown>,
+    error?: Error
+  ): LogEntry {
     const entry: LogEntry = {
       timestamp: new Date().toISOString(),
       level: LogLevel[level],
       category,
       message,
       url: window.location.href,
-      userAgent: navigator.userAgent
+      userAgent: navigator.userAgent,
     }
 
     if (data !== undefined) {
@@ -191,7 +197,8 @@ class Logger {
   }
 
   private async sendBatchToBackend(batch: LogEntry[]) {
-    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:8000'
+    const API_BASE_URL =
+      import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 5000)
@@ -202,12 +209,11 @@ class Logger {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ logs: batch }),
-      signal: controller.signal
+      signal: controller.signal,
     })
 
     clearTimeout(timeoutId)
   }
-
 
   debug(category: string, message: string, data?: Record<string, unknown>) {
     if (!this.shouldLog(LogLevel.DEBUG)) return
@@ -231,19 +237,29 @@ class Logger {
     this.addLogEntry(entry)
   }
 
-  warn(category: string, message: string, data?: Record<string, unknown>) {
+  warn(category: string, message: string, data?: Record<string, unknown> | unknown) {
     if (!this.shouldLog(LogLevel.WARN)) return
 
-    const entry = this.createLogEntry(LogLevel.WARN, category, message, data)
-    console.warn(`[${category}] ${message}`, data || '')
+    // Convert unknown data to Record<string, unknown> for safe logging
+    const safeData = data !== undefined && data !== null && typeof data === 'object'
+      ? (data as Record<string, unknown>)
+      : data !== undefined ? { value: data } : undefined
+
+    const entry = this.createLogEntry(LogLevel.WARN, category, message, safeData)
+    console.warn(`[${category}] ${message}`, safeData || '')
     this.addLogEntry(entry)
   }
 
-  error(category: string, message: string, data?: Record<string, unknown>, error?: Error) {
+  error(category: string, message: string, data?: Record<string, unknown> | unknown, error?: Error) {
     if (!this.shouldLog(LogLevel.ERROR)) return
 
-    const entry = this.createLogEntry(LogLevel.ERROR, category, message, data, error)
-    console.error(`[${category}] ${message}`, data || '', error || '')
+    // Convert unknown data to Record<string, unknown> for safe logging
+    const safeData = data !== undefined && data !== null && typeof data === 'object'
+      ? (data as Record<string, unknown>)
+      : data !== undefined ? { value: data } : undefined
+
+    const entry = this.createLogEntry(LogLevel.ERROR, category, message, safeData, error)
+    console.error(`[${category}] ${message}`, safeData || '', error || '')
     this.addLogEntry(entry)
   }
 
@@ -252,14 +268,20 @@ class Logger {
     this.debug('API', `Request: ${method} ${url}`, { method, url, data })
   }
 
-  apiResponse(method: string, url: string, status: number, data?: Record<string, unknown>, duration?: number) {
+  apiResponse(
+    method: string,
+    url: string,
+    status: number,
+    data?: Record<string, unknown>,
+    duration?: number
+  ) {
     const level = status >= 400 ? LogLevel.ERROR : LogLevel.DEBUG
     const entry = this.createLogEntry(level, 'API', `Response: ${status} ${method} ${url}`, {
       method,
       url,
       status,
       data,
-      duration
+      duration,
     })
 
     if (import.meta.env.DEV) {
@@ -307,5 +329,8 @@ export const logger = new Logger()
 
 // Add to window for debugging
 if (typeof window !== 'undefined') {
-  (window as Window & { logger: Logger }).logger = logger
+  interface WindowWithLogger extends Window {
+    logger: Logger
+  }
+  ;(window as unknown as WindowWithLogger).logger = logger
 }

@@ -33,22 +33,22 @@ from .translation_interface import IChunkTranslationService, ISelectiveTranslati
 __all__ = [
     # Base interfaces
     "IAsyncService",
-    "IRepositoryService",
-    "IService",
-    "NotFoundError",
-    "PermissionError",
-    "ServiceError",
-    "ValidationError",
     # Handler interfaces
     "IChunkHandler",
-    "IFilteringHandler",
-    "IPipelineHandler",
-    "IProcessingHandler",
-    "ITranscriptionHandler",
-    "ITranslationHandler",
     # Transcription interfaces
     "IChunkTranscriptionService",
     # Translation interfaces
     "IChunkTranslationService",
+    "IFilteringHandler",
+    "IPipelineHandler",
+    "IProcessingHandler",
+    "IRepositoryService",
     "ISelectiveTranslationService",
+    "IService",
+    "ITranscriptionHandler",
+    "ITranslationHandler",
+    "NotFoundError",
+    "PermissionError",
+    "ServiceError",
+    "ValidationError",
 ]

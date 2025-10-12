@@ -74,7 +74,7 @@ def lizard_complexity():
 def mypy_type_coverage():
     """Run MyPy with type coverage report"""
     print_section("Type Coverage (MyPy)")
-    output, code = run_command(
+    output, _code = run_command(
         [
             "mypy",
             ".",
@@ -150,7 +150,7 @@ def security_scan():
 def ruff_lint_stats():
     """Get Ruff linting statistics"""
     print_section("Linting Issues (Ruff)")
-    output, code = run_command(["ruff", "check", ".", "--statistics"])
+    output, _code = run_command(["ruff", "check", ".", "--statistics"])
     print(output)
     return {"success": True, "output": output}
 

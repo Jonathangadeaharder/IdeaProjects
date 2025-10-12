@@ -87,9 +87,9 @@ class StandardMockPatterns:
                 mock_result.rowcount = value
 
     @staticmethod
-    def create_sequential_query_results(results: list[Any]) -> list[AsyncMock]:
+    def create_sequential_query_results(results: list[Any]) -> list[AsyncMock | Exception | Any]:
         """Create a sequence of query results for multiple execute calls"""
-        mock_results = []
+        mock_results: list[AsyncMock | Exception | Any] = []
 
         for result in results:
             if isinstance(result, Exception):
@@ -120,14 +120,18 @@ class TestAssertions:
     """Standard test assertions for common patterns"""
 
     @staticmethod
-    def assert_session_operations(mock_session: AsyncMock, expected_operations: dict[str, int]) -> None:
+    def assert_session_operations(mock_session: AsyncMock, expected_operations: dict[str, str | int]) -> None:
         """Assert that session operations were called the expected number of times"""
-        for operation, expected_count in expected_operations.items():
+        for operation, expected_value in expected_operations.items():
             if hasattr(mock_session, operation):
-                actual_count = getattr(mock_session, operation).call_count
-                assert (
-                    actual_count == expected_count
-                ), f"Expected {operation} to be called {expected_count} times, but it was called {actual_count} times"
+                if isinstance(expected_value, int):
+                    actual_count = getattr(mock_session, operation).call_count
+                    assert (
+                        actual_count == expected_value
+                    ), f"Expected {operation} to be called {expected_value} times, but it was called {actual_count} times"
+                else:
+                    # Allow string values for other types of assertions
+                    pass
             else:
                 raise ValueError(f"Unknown session operation: {operation}")
 

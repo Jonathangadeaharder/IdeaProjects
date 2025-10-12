@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 export type ApiRequestOptions<T = unknown> = {
 	readonly body?: any;
 	readonly cookies?: Record<string, unknown>;

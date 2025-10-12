@@ -109,4 +109,4 @@ def is_proper_name(word: str, language_code: str) -> bool:
     return False
 
 
-__all__ = ["lemmatize_word", "is_proper_name"]
+__all__ = ["is_proper_name", "lemmatize_word"]

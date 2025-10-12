@@ -15,7 +15,7 @@ from tests.helpers import AsyncAuthHelper
 async def test_Whentranscribe_endpointCalled_ThenReturnstask(async_http_client, url_builder, monkeypatch, tmp_path):
     helper = AsyncAuthHelper(async_http_client)
 
-    user, token, headers = await helper.create_authenticated_user()
+    _user, _token, headers = await helper.create_authenticated_user()
 
     with patch.object(type(settings), "get_videos_path", return_value=tmp_path):
         video = tmp_path / "episode.mp4"
@@ -46,7 +46,7 @@ async def test_Whentranscribe_endpointCalled_ThenReturnstask(async_http_client, 
 async def test_Whenprepare_episodeWithoutexisting_video_ThenReturnsError(async_http_client):
     helper = AsyncAuthHelper(async_http_client)
 
-    user, token, headers = await helper.create_authenticated_user()
+    _user, _token, headers = await helper.create_authenticated_user()
 
     response = await async_http_client.post(
         "/api/process/prepare-episode",

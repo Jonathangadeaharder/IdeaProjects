@@ -5,10 +5,9 @@ import { NetflixButton } from '@/styles/GlobalStyles'
 
 const LandingContainer = styled.div`
   min-height: 100vh;
-  background: linear-gradient(
-    rgba(0, 0, 0, 0.7),
-    rgba(0, 0, 0, 0.7)
-  ), linear-gradient(135deg, #141414 0%, #1a1a1a 100%);
+  background:
+    linear-gradient(rgb(0 0 0 / 70%), rgb(0 0 0 / 70%)),
+    linear-gradient(135deg, #141414 0%, #1a1a1a 100%);
   background-size: cover;
   background-position: center;
   color: white;
@@ -29,7 +28,7 @@ const Logo = styled.h1`
   font-size: 72px;
   margin-bottom: 20px;
   font-weight: bold;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+  text-shadow: 2px 2px 4px rgb(0 0 0 / 50%);
 `
 
 const Tagline = styled.h2`
@@ -71,13 +70,13 @@ const SignInButton = styled(NetflixButton)`
   border-radius: 4px;
 
   &:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgb(255 255 255 / 10%);
     border-color: #e50914;
   }
 `
 
 const FeaturesSection = styled.div`
-  background: rgba(0, 0, 0, 0.6);
+  background: rgb(0 0 0 / 60%);
   padding: 80px 20px;
 `
 
@@ -92,13 +91,13 @@ const FeaturesGrid = styled.div`
 const FeatureCard = styled.div`
   text-align: center;
   padding: 30px;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgb(255 255 255 / 5%);
   border-radius: 8px;
   transition: transform 0.2s;
 
   &:hover {
     transform: translateY(-5px);
-    background: rgba(255, 255, 255, 0.08);
+    background: rgb(255 255 255 / 8%);
   }
 `
 
@@ -135,17 +134,15 @@ export const LandingPage: React.FC = () => {
         <Logo>LangPlug</Logo>
         <Tagline>Learn German Through Your Favorite Shows</Tagline>
         <Description>
-          Master German naturally by watching TV series you love. 
-          Our AI-powered platform extracts vocabulary, creates personalized learning sessions, 
-          and helps you learn in context - just like native speakers do.
+          Master German naturally by watching TV series you love. Our AI-powered platform extracts
+          vocabulary, creates personalized learning sessions, and helps you learn in context - just
+          like native speakers do.
         </Description>
         <CTAContainer>
           <GetStartedButton onClick={() => navigate('/register')}>
             Get Started Free
           </GetStartedButton>
-          <SignInButton onClick={() => navigate('/login')}>
-            Sign In
-          </SignInButton>
+          <SignInButton onClick={() => navigate('/login')}>Sign In</SignInButton>
         </CTAContainer>
       </Hero>
 
@@ -156,8 +153,8 @@ export const LandingPage: React.FC = () => {
             <FeatureIcon>📺</FeatureIcon>
             <FeatureTitle>Watch & Learn</FeatureTitle>
             <FeatureDescription>
-              Upload episodes from your favorite German TV series. 
-              Our AI automatically transcribes and translates the content.
+              Upload episodes from your favorite German TV series. Our AI automatically transcribes
+              and translates the content.
             </FeatureDescription>
           </FeatureCard>
 
@@ -165,8 +162,8 @@ export const LandingPage: React.FC = () => {
             <FeatureIcon>🎯</FeatureIcon>
             <FeatureTitle>Smart Vocabulary</FeatureTitle>
             <FeatureDescription>
-              AI identifies vocabulary at your level - A1 through B2. 
-              Learn words that matter based on your current knowledge.
+              AI identifies vocabulary at your level - A1 through B2. Learn words that matter based
+              on your current knowledge.
             </FeatureDescription>
           </FeatureCard>
 
@@ -174,8 +171,8 @@ export const LandingPage: React.FC = () => {
             <FeatureIcon>🎮</FeatureIcon>
             <FeatureTitle>Interactive Games</FeatureTitle>
             <FeatureDescription>
-              Reinforce learning with engaging vocabulary games. 
-              Practice with real sentences from the shows you watched.
+              Reinforce learning with engaging vocabulary games. Practice with real sentences from
+              the shows you watched.
             </FeatureDescription>
           </FeatureCard>
 
@@ -183,8 +180,8 @@ export const LandingPage: React.FC = () => {
             <FeatureIcon>📊</FeatureIcon>
             <FeatureTitle>Track Progress</FeatureTitle>
             <FeatureDescription>
-              Monitor your vocabulary growth and learning streaks.
-              See exactly how much you're improving over time.
+              Monitor your vocabulary growth and learning streaks. See exactly how much you're
+              improving over time.
             </FeatureDescription>
           </FeatureCard>
 
@@ -192,8 +189,8 @@ export const LandingPage: React.FC = () => {
             <FeatureIcon>🧠</FeatureIcon>
             <FeatureTitle>Context-Based</FeatureTitle>
             <FeatureDescription>
-              Learn vocabulary in the context of real conversations. 
-              Understand how words are actually used by native speakers.
+              Learn vocabulary in the context of real conversations. Understand how words are
+              actually used by native speakers.
             </FeatureDescription>
           </FeatureCard>
 
@@ -201,8 +198,8 @@ export const LandingPage: React.FC = () => {
             <FeatureIcon>⚡</FeatureIcon>
             <FeatureTitle>Chunked Learning</FeatureTitle>
             <FeatureDescription>
-              Break episodes into manageable 5-minute chunks. 
-              Learn at your own pace without feeling overwhelmed.
+              Break episodes into manageable 5-minute chunks. Learn at your own pace without feeling
+              overwhelmed.
             </FeatureDescription>
           </FeatureCard>
         </FeaturesGrid>

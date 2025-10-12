@@ -73,10 +73,13 @@ describe('ChunkedLearningFlow', () => {
       created_at: '2025-01-01T00:00:00Z',
       native_language: { code: 'en', name: 'English' },
       target_language: { code: 'de', name: 'German' },
-      language_runtime: {}
+      language_runtime: {},
     })
 
-    sdkMock.processChunkApiProcessChunkPost.mockResolvedValue({ task_id: 'task-1', status: 'started' })
+    sdkMock.processChunkApiProcessChunkPost.mockResolvedValue({
+      task_id: 'task-1',
+      status: 'started',
+    })
     sdkMock.getTaskProgressApiProcessProgressTaskIdGet.mockResolvedValue({
       status: 'completed',
       progress: 100,
@@ -113,7 +116,7 @@ describe('ChunkedLearningFlow', () => {
       created_at: '2025-01-01T00:00:00Z',
       native_language: { code: 'en', name: 'English' },
       target_language: { code: 'de', name: 'German' },
-      language_runtime: {}
+      language_runtime: {},
     })
 
     sdkMock.processChunkApiProcessChunkPost.mockRejectedValue(error)

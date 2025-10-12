@@ -12,6 +12,7 @@ import os
 import subprocess
 import tempfile
 import time
+from collections.abc import Generator
 from pathlib import Path
 from typing import Any
 
@@ -27,10 +28,10 @@ class BackendAPITester:
 
     def __init__(self, backend_dir: Path):
         self.backend_dir = backend_dir
-        self.process = None
+        self.process: subprocess.Popen[str] | None = None
         self.base_url = "http://127.0.0.1:8001"
-        self.session_token = None
-        self.test_user_id = None
+        self.session_token: str | None = None
+        self.test_user_id: int | None = None
 
     def start_server(self, timeout=30):
         """Start the FastAPI server for integration testing."""
@@ -115,7 +116,9 @@ class BackendAPITester:
             assert response.status_code == 200, f"Login failed: {response.text}"
 
             login_response = response.json()
-            self.session_token = login_response["access_token"]
+            token = login_response["access_token"]
+            assert isinstance(token, str), "Token must be a string"
+            self.session_token = token
             print(f"[GOOD] User logged in, token: {self.session_token[:20]}...")
             return self.session_token
 
@@ -126,7 +129,7 @@ class BackendAPITester:
 
 
 @pytest.fixture(scope="module")
-def api_tester():
+def api_tester() -> Generator[BackendAPITester, None, None]:
     """Fixture providing a backend API tester with running server."""
     backend_dir = Path(__file__).parent.parent.parent
     tester = BackendAPITester(backend_dir)

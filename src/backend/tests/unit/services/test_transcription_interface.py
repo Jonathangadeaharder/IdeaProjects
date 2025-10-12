@@ -4,6 +4,7 @@ Tests focus on interface contract compliance for all implementations
 """
 
 from abc import ABC
+from typing import Any
 
 import pytest
 
@@ -104,7 +105,7 @@ class MockTranscriptionService(ITranscriptionService):
         return self._initialized
 
     @property
-    def model_info(self) -> dict[str, any]:
+    def model_info(self) -> dict[str, Any]:
         """Mock implementation of model_info property"""
         return {"model_name": "MockModel", "version": "1.0.0", "language_support": self.get_supported_languages()}
 

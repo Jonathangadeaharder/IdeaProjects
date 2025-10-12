@@ -159,8 +159,8 @@ export const srtApi = new SRTApiClient()
  */
 export const srtUtils = {
   /**
-    * Format time in seconds to SRT timestamp format (HH:MM:SS,mmm)
-    */
+   * Format time in seconds to SRT timestamp format (HH:MM:SS,mmm)
+   */
   formatTimestamp(seconds: number): string {
     const hours = Math.floor(seconds / 3600)
     const minutes = Math.floor((seconds % 3600) / 60)
@@ -199,8 +199,8 @@ export const srtUtils = {
    * Filter segments by time range
    */
   filterByTimeRange(segments: SRTSegment[], startTime: number, endTime: number): SRTSegment[] {
-    return segments.filter(segment =>
-      segment.start_time >= startTime && segment.end_time <= endTime
+    return segments.filter(
+      segment => segment.start_time >= startTime && segment.end_time <= endTime
     )
   },
 
@@ -208,8 +208,6 @@ export const srtUtils = {
    * Find segment at specific time
    */
   findSegmentAtTime(segments: SRTSegment[], time: number): SRTSegment | undefined {
-    return segments.find(segment =>
-      time >= segment.start_time && time <= segment.end_time
-    )
-  }
+    return segments.find(segment => time >= segment.start_time && time <= segment.end_time)
+  },
 }

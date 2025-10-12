@@ -46,10 +46,10 @@ Performance Notes:
     - No database queries required (stateless)
 """
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 # Python 3.10 compatibility: Use timezone.utc instead of UTC constant
-UTC = timezone.utc
+UTC = UTC
 
 from jose import JWTError, jwt
 

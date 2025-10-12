@@ -10,7 +10,7 @@ export const GlobalStyle = createGlobalStyle`
   body {
     font-family: 'Helvetica Neue', Arial, sans-serif;
     background-color: #141414;
-    color: #ffffff;
+    color: #fff;
     overflow-x: hidden;
   }
 
@@ -68,14 +68,17 @@ export const NetflixButton = styled.button<{ variant?: 'primary' | 'secondary' }
   font-size: 16px;
   transition: all 0.3s ease;
 
-  ${props => props.variant === 'secondary' ? `
+  ${props =>
+    props.variant === 'secondary'
+      ? `
     background-color: rgba(109, 109, 110, 0.7);
     color: white;
 
     &:hover {
       background-color: rgba(109, 109, 110, 0.9);
     }
-  ` : `
+  `
+      : `
     background-color: #e50914;
     color: white;
 
@@ -91,7 +94,7 @@ export const NetflixButton = styled.button<{ variant?: 'primary' | 'secondary' }
 `
 
 export const Card = styled.div`
-  background: rgba(0, 0, 0, 0.8);
+  background: rgb(0 0 0 / 80%);
   border-radius: 8px;
   padding: 24px;
   margin: 16px 0;
@@ -108,11 +111,11 @@ export const Grid = styled.div<{ columns?: number }>`
   gap: 20px;
   padding: 20px 0;
 
-  @media (max-width: 768px) {
+  @media (width <= 768px) {
     grid-template-columns: repeat(2, 1fr);
   }
 
-  @media (max-width: 480px) {
+  @media (width <= 480px) {
     grid-template-columns: 1fr;
   }
 `
@@ -126,7 +129,7 @@ export const FlexCenter = styled.div`
 
 export const ErrorMessage = styled.div`
   color: #e87c03;
-  background-color: rgba(232, 124, 3, 0.1);
+  background-color: rgb(232 124 3 / 10%);
   padding: 12px 16px;
   border-radius: 4px;
   border-left: 4px solid #e87c03;
@@ -135,7 +138,7 @@ export const ErrorMessage = styled.div`
 
 export const SuccessMessage = styled.div`
   color: #46d369;
-  background-color: rgba(70, 211, 105, 0.1);
+  background-color: rgb(70 211 105 / 10%);
   padding: 12px 16px;
   border-radius: 4px;
   border-left: 4px solid #46d369;

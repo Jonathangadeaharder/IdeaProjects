@@ -12,9 +12,15 @@ const TestComponent: React.FC = () => {
     <div>
       <div data-testid="theme-value">{theme.colors.background}</div>
       <div data-testid="mode">{isDarkMode ? 'dark' : 'light'}</div>
-      <button data-testid="toggle" onClick={toggleTheme}>toggle</button>
-      <button data-testid="force-dark" onClick={() => setDarkMode(true)}>force dark</button>
-      <button data-testid="force-light" onClick={() => setDarkMode(false)}>force light</button>
+      <button data-testid="toggle" onClick={toggleTheme}>
+        toggle
+      </button>
+      <button data-testid="force-dark" onClick={() => setDarkMode(true)}>
+        force dark
+      </button>
+      <button data-testid="force-light" onClick={() => setDarkMode(false)}>
+        force light
+      </button>
     </div>
   )
 }
@@ -36,15 +42,15 @@ const installMatchMediaMock = () => {
       listeners.push(listener as Listener)
     },
     removeEventListener: (type: string, listener: EventListenerOrEventListenerObject) => {
-      listeners = listeners.filter((registered) => registered !== listener)
+      listeners = listeners.filter(registered => registered !== listener)
     },
     addListener(handler: Listener) {
       listeners.push(handler)
     },
     removeListener(handler: Listener) {
-      listeners = listeners.filter((registered) => registered !== handler)
+      listeners = listeners.filter(registered => registered !== handler)
     },
-    dispatchEvent: () => true
+    dispatchEvent: () => true,
   }
 
   window.matchMedia = vi.fn(() => mockQuery) as unknown as typeof window.matchMedia
@@ -54,7 +60,7 @@ const triggerSystemThemeChange = (matches: boolean) => {
   systemPrefersDark = matches
   const event = {
     matches,
-    media: '(prefers-color-scheme: dark)'
+    media: '(prefers-color-scheme: dark)',
   } as MediaQueryListEvent
 
   for (const handler of listeners) {
@@ -90,12 +96,14 @@ const renderWithProvider = (ui: React.ReactElement) => render(<ThemeProvider>{ui
 
 describe('ThemeProvider', () => {
   it('uses stored preference when available', async () => {
-    const getItemSpy = vi.spyOn(window.localStorage, 'getItem').mockImplementation((key: string) => {
-      if (key === 'theme') {
-        return 'dark'
-      }
-      return null
-    })
+    const getItemSpy = vi
+      .spyOn(window.localStorage, 'getItem')
+      .mockImplementation((key: string) => {
+        if (key === 'theme') {
+          return 'dark'
+        }
+        return null
+      })
 
     renderWithProvider(<TestComponent />)
 

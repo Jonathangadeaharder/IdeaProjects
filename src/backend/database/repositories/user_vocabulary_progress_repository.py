@@ -207,20 +207,18 @@ class UserVocabularyProgressRepository(
         final_result = db.execute(final_stmt)
         models = final_result.scalars().all()
         return [
-            self._to_domain_entity(model, vocab_words.get(model.vocabulary_id))
+            self._to_domain_entity(model, vocab_words.get(model.vocabulary_id))  # type: ignore[arg-type]
             for model in models
             if vocab_words.get(model.vocabulary_id)
         ]
 
-    def _to_domain_entity(self, model: ProgressModel, vocab_word: VocabularyWordModel = None) -> UserVocabularyProgress:
+    def _to_domain_entity(self, model: ProgressModel, vocab_word: VocabularyWordModel | None = None) -> UserVocabularyProgress:
         """Convert database model to domain entity"""
         # Import vocabulary repository to get vocabulary word if needed
         if not vocab_word and model.vocabulary_id:
-            from .vocabulary_repository import VocabularyRepository
-
-            vocab_repo = VocabularyRepository()
             # This would need proper session handling in real implementation
-            vocab_word = vocab_repo._to_domain_entity(model.vocabulary)
+            # For now, just use None - the caller should provide vocab_word
+            pass
 
         # Convert confidence level
         try:

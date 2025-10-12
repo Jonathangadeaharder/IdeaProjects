@@ -22,35 +22,28 @@ from .vocabulary_dto import (
 )
 
 __all__ = [
-    # Auth DTOs
-    "LoginDTO",
-    "RegisterDTO",
-    "UserDTO",
-    "TokenDTO",
-    "PasswordChangeDTO",
-    "UserUpdateDTO",
-    # Video DTOs
-    "VideoInfoDTO",
-    "ProcessingStatusDTO",
-    # Vocabulary DTOs
-    "VocabularyWordDTO",
-    "VocabularyLibraryDTO",
-    # Progress DTOs
-    "UserProgressDTO",
+    "AnswerResultDTO",
+    "ConvertToSRTRequest",
     "DailyProgressDTO",
-    # User Profile DTOs
-    "UserProfileDTO",
+    "GameSessionDTO",
     "LanguagePreferencesDTO",
-    "UserSettingsDTO",
-    "UpdateProfileRequest",
-    # SRT DTOs
-    "SRTSegmentDTO",
+    "LoginDTO",
     "ParseSRTRequest",
     "ParseSRTResponse",
-    "ConvertToSRTRequest",
-    # Game DTOs
-    "GameSessionDTO",
+    "PasswordChangeDTO",
+    "ProcessingStatusDTO",
+    "RegisterDTO",
+    "SRTSegmentDTO",
     "StartGameRequest",
     "SubmitAnswerRequest",
-    "AnswerResultDTO",
+    "TokenDTO",
+    "UpdateProfileRequest",
+    "UserDTO",
+    "UserProfileDTO",
+    "UserProgressDTO",
+    "UserSettingsDTO",
+    "UserUpdateDTO",
+    "VideoInfoDTO",
+    "VocabularyLibraryDTO",
+    "VocabularyWordDTO",
 ]

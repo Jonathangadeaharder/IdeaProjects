@@ -5,11 +5,7 @@ import { Loading } from '../Loading'
 
 // Helper to render with theme
 const renderWithTheme = (component: React.ReactElement) => {
-  return render(
-    <ThemeProvider theme={(global as any).mockTheme}>
-      {component}
-    </ThemeProvider>
-  )
+  return render(<ThemeProvider theme={(global as any).mockTheme}>{component}</ThemeProvider>)
 }
 
 describe('Loading Component', () => {
@@ -264,7 +260,17 @@ describe('Loading Component', () => {
     })
 
     it('renders with all props', () => {
-      renderWithTheme(<Loading size="large" variant="dots" color="#ff0000" fullScreen overlay text="Loading..." data-testid="loading" />)
+      renderWithTheme(
+        <Loading
+          size="large"
+          variant="dots"
+          color="#ff0000"
+          fullScreen
+          overlay
+          text="Loading..."
+          data-testid="loading"
+        />
+      )
       expect(screen.getByTestId('loading')).toBeInTheDocument()
       expect(screen.getByText('Loading...')).toBeInTheDocument()
     })
@@ -301,26 +307,14 @@ describe('Loading Component', () => {
   describe('Error States', () => {
     it('handles edge cases gracefully', () => {
       // Should not crash with edge case props
-      renderWithTheme(
-        <Loading
-          color={""}
-          text={""}
-          data-testid="loading"
-        />
-      )
+      renderWithTheme(<Loading color={''} text={''} data-testid="loading" />)
 
       const loading = screen.getByTestId('loading')
       expect(loading).toBeInTheDocument()
     })
 
     it('falls back to defaults for undefined values', () => {
-      renderWithTheme(
-        <Loading
-          size={undefined}
-          color={undefined}
-          data-testid="loading"
-        />
-      )
+      renderWithTheme(<Loading size={undefined} color={undefined} data-testid="loading" />)
 
       const loading = screen.getByTestId('loading')
       expect(loading).toBeInTheDocument() // Should use defaults

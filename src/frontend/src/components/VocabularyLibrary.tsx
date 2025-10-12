@@ -38,7 +38,7 @@ const BackButton = styled.button`
     background: #2c3e50;
   }
 
-  &:before {
+  &::before {
     content: '←';
     font-size: 1.2rem;
   }
@@ -99,15 +99,15 @@ const LevelTab = styled.button<{ $active: boolean }>`
   flex: 1;
   padding: 1rem;
   border: none;
-  background: ${props => props.$active ? '#667eea' : 'transparent'};
-  color: ${props => props.$active ? 'white' : '#2c3e50'};
+  background: ${props => (props.$active ? '#667eea' : 'transparent')};
+  color: ${props => (props.$active ? 'white' : '#2c3e50')};
   border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
 
   &:hover {
-    background: ${props => props.$active ? '#667eea' : '#e9ecef'};
+    background: ${props => (props.$active ? '#667eea' : '#e9ecef')};
   }
 `
 
@@ -119,12 +119,12 @@ const LevelHeader = styled.div`
   padding: 1.5rem;
   background: white;
   border-radius: 12px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 10px rgb(0 0 0 / 10%);
 
   .level-info {
     h2 {
       color: #2c3e50;
-      margin: 0 0 0.5rem 0;
+      margin: 0 0 0.5rem;
     }
 
     .progress-bar {
@@ -169,19 +169,19 @@ const Button = styled.button<{ $variant?: 'primary' | 'secondary' | 'danger' }>`
           background: #52c41a;
           color: white;
           &:hover { background: #389e0d; }
-        `;
+        `
       case 'danger':
         return `
           background: #ff4d4f;
           color: white;
           &:hover { background: #d32f2f; }
-        `;
+        `
       default:
         return `
           background: #f0f0f0;
           color: #2c3e50;
           &:hover { background: #e0e0e0; }
-        `;
+        `
     }
   }}
 `
@@ -194,7 +194,7 @@ const WordsGrid = styled.div`
 
 const WordCard = styled.div<{ $known: boolean }>`
   background: white;
-  border: 2px solid ${props => props.$known ? '#52c41a' : '#e9ecef'};
+  border: 2px solid ${props => (props.$known ? '#52c41a' : '#e9ecef')};
   border-radius: 12px;
   padding: 1rem;
   cursor: pointer;
@@ -202,9 +202,9 @@ const WordCard = styled.div<{ $known: boolean }>`
   position: relative;
 
   &:hover {
-    border-color: ${props => props.$known ? '#389e0d' : '#667eea'};
+    border-color: ${props => (props.$known ? '#389e0d' : '#667eea')};
     transform: translateY(-2px);
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 15px rgb(0 0 0 / 10%);
   }
 
   .word-header {
@@ -223,7 +223,7 @@ const WordCard = styled.div<{ $known: boolean }>`
       width: 20px;
       height: 20px;
       border-radius: 50%;
-      background: ${props => props.$known ? '#52c41a' : '#dee2e6'};
+      background: ${props => (props.$known ? '#52c41a' : '#dee2e6')};
       display: flex;
       align-items: center;
       justify-content: center;
@@ -232,7 +232,7 @@ const WordCard = styled.div<{ $known: boolean }>`
         content: '✓';
         color: white;
         font-size: 12px;
-        opacity: ${props => props.$known ? 1 : 0};
+        opacity: ${props => (props.$known ? 1 : 0)};
       }
     }
   }
@@ -272,8 +272,13 @@ const LoadingSpinner = styled.div`
   }
 
   @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+    0% {
+      transform: rotate(0deg);
+    }
+
+    100% {
+      transform: rotate(360deg);
+    }
   }
 `
 
@@ -313,10 +318,10 @@ const PaginationContainer = styled.div`
 const PaginationButton = styled.button<{ $disabled?: boolean }>`
   padding: 0.5rem 1rem;
   border: 2px solid #667eea;
-  background: ${props => props.$disabled ? '#f0f0f0' : 'white'};
-  color: ${props => props.$disabled ? '#a0a0a0' : '#667eea'};
+  background: ${props => (props.$disabled ? '#f0f0f0' : 'white')};
+  color: ${props => (props.$disabled ? '#a0a0a0' : '#667eea')};
   border-radius: 6px;
-  cursor: ${props => props.$disabled ? 'not-allowed' : 'pointer'};
+  cursor: ${props => (props.$disabled ? 'not-allowed' : 'pointer')};
   font-weight: 500;
   transition: all 0.2s;
 
@@ -335,8 +340,8 @@ const LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2']
 const ITEMS_PER_PAGE = 100
 
 // Constants for virtual scrolling
-const CARD_WIDTH = 296  // 280px card + 16px gap
-const CARD_HEIGHT = 140  // Approximate card height
+const CARD_WIDTH = 296 // 280px card + 16px gap
+const CARD_HEIGHT = 140 // Approximate card height
 const MIN_COLUMNS = 1
 const MAX_COLUMNS = 4
 
@@ -371,19 +376,14 @@ interface WordCardItemProps {
 
 const WordCardItem = memo(({ word, onWordClick }: WordCardItemProps) => {
   return (
-    <WordCard
-      $known={word.known}
-      onClick={() => onWordClick(word)}
-    >
+    <WordCard $known={word.known} onClick={() => onWordClick(word)}>
       <div className="word-header">
         <div className="word">{word.word}</div>
         <div className="known-badge" />
       </div>
 
       <div className="word-details">
-        {word.translation && (
-          <div className="definition">{word.translation}</div>
-        )}
+        {word.translation && <div className="definition">{word.translation}</div>}
       </div>
     </WordCard>
   )
@@ -413,19 +413,18 @@ interface LevelTabItemProps {
   onClick: (level: string) => void
 }
 
-const LevelTabItem = memo(({ level, active, userKnown, totalWords, onClick }: LevelTabItemProps) => {
-  return (
-    <LevelTab
-      $active={active}
-      onClick={() => onClick(level)}
-    >
-      {level}
-      <div style={{ fontSize: '0.8rem', opacity: 0.8 }}>
-        {userKnown} / {totalWords}
-      </div>
-    </LevelTab>
-  )
-})
+const LevelTabItem = memo(
+  ({ level, active, userKnown, totalWords, onClick }: LevelTabItemProps) => {
+    return (
+      <LevelTab $active={active} onClick={() => onClick(level)}>
+        {level}
+        <div style={{ fontSize: '0.8rem', opacity: 0.8 }}>
+          {userKnown} / {totalWords}
+        </div>
+      </LevelTab>
+    )
+  }
+)
 LevelTabItem.displayName = 'LevelTabItem'
 
 export const VocabularyLibrary: React.FC = () => {
@@ -483,7 +482,7 @@ export const VocabularyLibrary: React.FC = () => {
         level,
         searchTerm,
         currentPage,
-        offset: searchTerm ? 0 : currentPage * ITEMS_PER_PAGE
+        offset: searchTerm ? 0 : currentPage * ITEMS_PER_PAGE,
       })
 
       const params: {
@@ -504,20 +503,20 @@ export const VocabularyLibrary: React.FC = () => {
         params.offset = currentPage * ITEMS_PER_PAGE
       }
 
-      const data = await getVocabularyLevelApiVocabularyLibraryLevelGet(params) as VocabularyLevel
+      const data = (await getVocabularyLevelApiVocabularyLibraryLevelGet(params)) as VocabularyLevel
 
       logger.info('VocabularyLibrary', 'Level data loaded', {
         level,
         wordCount: data.words?.length || 0,
         totalCount: data.total_count,
-        knownCount: data.known_count
+        knownCount: data.known_count,
       })
 
       const normalizedLevel: VocabularyLevel = {
         ...data,
         words: (data.words ?? []).map((word, index) => ({
           ...word,
-          id: word.id || word.lemma || `temp-${index}-${word.word}`,  // Ensure id is always a string
+          id: word.id || word.lemma || `temp-${index}-${word.word}`, // Ensure id is always a string
           known: Boolean(word.known),
         })) as VocabularyLibraryWord[],
       }
@@ -539,88 +538,37 @@ export const VocabularyLibrary: React.FC = () => {
     }
   }
 
-  const handleWordClick = useCallback(async (word: VocabularyLibraryWord) => {
-    const newStatus = !word.known
-    logger.userAction('word-toggle', 'VocabularyLibrary', {
-      word: word.word,
-      level: activeLevel,
-      fromKnown: word.known,
-      toKnown: newStatus
-    })
-
-    // Optimistically update local state
-    setLevelData((prevLevelData) => {
-      if (!prevLevelData) return null
-
-      const updatedWords = prevLevelData.words.map(w =>
-        w.id === word.id ? { ...w, known: newStatus } : w
-      )
-      const knownCount = updatedWords.filter(w => w.known).length
-
-      return {
-        ...prevLevelData,
-        words: updatedWords,
-        known_count: knownCount
-      }
-    })
-
-    // Update stats optimistically
-    setStats((prevStats) => {
-      if (!prevStats) return null
-
-      const delta = newStatus ? 1 : -1
-      return {
-        ...prevStats,
-        total_known: prevStats.total_known + delta,
-        levels: {
-          ...prevStats.levels,
-          [activeLevel]: {
-            ...prevStats.levels[activeLevel],
-            user_known: prevStats.levels[activeLevel].user_known + delta
-          }
-        }
-      }
-    })
-
-    try {
-      await markWordKnownApiVocabularyMarkKnownPost({
-        requestBody: {
-          concept_id: String(word.concept_id || word.id),
-          known: newStatus,
-        },
+  const handleWordClick = useCallback(
+    async (word: VocabularyLibraryWord) => {
+      const newStatus = !word.known
+      logger.userAction('word-toggle', 'VocabularyLibrary', {
+        word: word.word,
+        level: activeLevel,
+        fromKnown: word.known,
+        toKnown: newStatus,
       })
 
-      logger.info('VocabularyLibrary', 'Word status updated', {
-        word: word.word,
-        newStatus
-      })
+      // Optimistically update local state
+      setLevelData(prevLevelData => {
+        if (!prevLevelData) return null
 
-      toast.success(`${word.word} ${newStatus ? 'known' : 'unknown'}`)
-    } catch (error: unknown) {
-      const errorMessage = formatApiError(error, 'Unknown error')
-      logger.error('VocabularyLibrary', 'Failed to update word status', {
-        word: word.word,
-        error: errorMessage
-      }, error as Error)
+        const updatedWords = prevLevelData.words.map(w =>
+          w.id === word.id ? { ...w, known: newStatus } : w
+        )
+        const knownCount = updatedWords.filter(w => w.known).length
 
-      toast.error('Failed to save. Change reverted.', { duration: 4000 })
-
-      // Revert both levelData and stats on error
-      setLevelData((prev) => {
-        if (!prev) return null
         return {
-          ...prev,
-          words: prev.words.map((w) =>
-            w.id === word.id ? { ...w, known: word.known } : w
-          ),
-          known_count: prev.words.filter(w => w.known).length
+          ...prevLevelData,
+          words: updatedWords,
+          known_count: knownCount,
         }
       })
 
-      setStats((prevStats) => {
+      // Update stats optimistically
+      setStats(prevStats => {
         if (!prevStats) return null
 
-        const delta = newStatus ? -1 : 1  // Reverse the optimistic update
+        const delta = newStatus ? 1 : -1
         return {
           ...prevStats,
           total_known: prevStats.total_known + delta,
@@ -628,13 +576,70 @@ export const VocabularyLibrary: React.FC = () => {
             ...prevStats.levels,
             [activeLevel]: {
               ...prevStats.levels[activeLevel],
-              user_known: prevStats.levels[activeLevel].user_known + delta
-            }
-          }
+              user_known: prevStats.levels[activeLevel].user_known + delta,
+            },
+          },
         }
       })
-    }
-  }, [activeLevel])
+
+      try {
+        await markWordKnownApiVocabularyMarkKnownPost({
+          requestBody: {
+            concept_id: String(word.concept_id || word.id),
+            known: newStatus,
+          },
+        })
+
+        logger.info('VocabularyLibrary', 'Word status updated', {
+          word: word.word,
+          newStatus,
+        })
+
+        toast.success(`${word.word} ${newStatus ? 'known' : 'unknown'}`)
+      } catch (error: unknown) {
+        const errorMessage = formatApiError(error, 'Unknown error')
+        logger.error(
+          'VocabularyLibrary',
+          'Failed to update word status',
+          {
+            word: word.word,
+            error: errorMessage,
+          },
+          error as Error
+        )
+
+        toast.error('Failed to save. Change reverted.', { duration: 4000 })
+
+        // Revert both levelData and stats on error
+        setLevelData(prev => {
+          if (!prev) return null
+          return {
+            ...prev,
+            words: prev.words.map(w => (w.id === word.id ? { ...w, known: word.known } : w)),
+            known_count: prev.words.filter(w => w.known).length,
+          }
+        })
+
+        setStats(prevStats => {
+          if (!prevStats) return null
+
+          const delta = newStatus ? -1 : 1 // Reverse the optimistic update
+          return {
+            ...prevStats,
+            total_known: prevStats.total_known + delta,
+            levels: {
+              ...prevStats.levels,
+              [activeLevel]: {
+                ...prevStats.levels[activeLevel],
+                user_known: prevStats.levels[activeLevel].user_known + delta,
+              },
+            },
+          }
+        })
+      }
+    },
+    [activeLevel]
+  )
 
   const handleBulkMark = async (known: boolean) => {
     if (!levelData) return
@@ -642,18 +647,18 @@ export const VocabularyLibrary: React.FC = () => {
     logger.userAction('bulk-mark', 'VocabularyLibrary', {
       level: activeLevel,
       operation: known ? 'mark-all-known' : 'unmark-all',
-      totalWords: levelData.total_count
+      totalWords: levelData.total_count,
     })
 
     setBulkLoading(true)
     try {
-      const result = await bulkMarkLevelApiVocabularyLibraryBulkMarkPost({
+      const result = (await bulkMarkLevelApiVocabularyLibraryBulkMarkPost({
         requestBody: {
           level: activeLevel,
           known,
           target_language: 'de',
         },
-      }) as { success?: boolean; word_count?: number }
+      })) as { success?: boolean; word_count?: number }
 
       const wordCount = result.word_count || levelData.total_count
 
@@ -661,7 +666,7 @@ export const VocabularyLibrary: React.FC = () => {
       setLevelData({
         ...levelData,
         words: levelData.words.map(w => ({ ...w, known })),
-        known_count: known ? levelData.total_count : 0
+        known_count: known ? levelData.total_count : 0,
       })
 
       // Update stats locally
@@ -677,22 +682,31 @@ export const VocabularyLibrary: React.FC = () => {
             ...stats.levels,
             [activeLevel]: {
               ...stats.levels[activeLevel],
-              user_known: newKnown
-            }
-          }
+              user_known: newKnown,
+            },
+          },
         })
       }
 
       toast.success(`${wordCount} words ${known ? 'marked as known' : 'unmarked'}`)
 
-      logger.info('VocabularyLibrary', 'Bulk mark completed', { level: activeLevel, known, wordCount })
-    } catch (error: unknown) {
-      const errorMessage = formatApiError(error, 'Operation failed')
-      logger.error('VocabularyLibrary', 'Bulk mark operation failed', {
+      logger.info('VocabularyLibrary', 'Bulk mark completed', {
         level: activeLevel,
         known,
-        error: errorMessage
-      }, error as Error)
+        wordCount,
+      })
+    } catch (error: unknown) {
+      const errorMessage = formatApiError(error, 'Operation failed')
+      logger.error(
+        'VocabularyLibrary',
+        'Bulk mark operation failed',
+        {
+          level: activeLevel,
+          known,
+          error: errorMessage,
+        },
+        error as Error
+      )
 
       toast.error(`Failed: ${errorMessage}`, { duration: 4000 })
 
@@ -726,7 +740,7 @@ export const VocabularyLibrary: React.FC = () => {
       columnCount,
       rowCount,
       containerWidth,
-      containerHeight: Math.min(windowSize.height - 500, 800) // Leave space for header/controls
+      containerHeight: Math.min(windowSize.height - 500, 800), // Leave space for header/controls
     }
   }, [windowSize.width, windowSize.height, levelData?.words])
 
@@ -753,14 +767,14 @@ export const VocabularyLibrary: React.FC = () => {
       return {
         words: [],
         columnCount: gridConfig.columnCount,
-        onWordClick: handleWordClick
+        onWordClick: handleWordClick,
       }
     }
 
     return {
       words: levelData.words,
       columnCount: gridConfig.columnCount,
-      onWordClick: handleWordClick
+      onWordClick: handleWordClick,
     }
   }, [levelData?.words, gridConfig.columnCount, handleWordClick])
 
@@ -773,20 +787,15 @@ export const VocabularyLibrary: React.FC = () => {
     const word = words[index]
 
     return (
-      <div style={{...style, padding: '8px'}}>
-        <WordCardItem
-          word={word}
-          onWordClick={onWordClick}
-        />
+      <div style={{ ...style, padding: '8px' }}>
+        <WordCardItem word={word} onWordClick={onWordClick} />
       </div>
     )
   }, [])
 
   return (
     <Container>
-      <BackButton onClick={() => navigate('/')}>
-        Back to Videos
-      </BackButton>
+      <BackButton onClick={() => navigate('/')}>Back to Videos</BackButton>
 
       <Header>
         <h1>📚 Vocabulary Library</h1>
@@ -830,8 +839,8 @@ export const VocabularyLibrary: React.FC = () => {
                 />
               </div>
               <div className="progress-text">
-                {levelData.known_count} of {levelData.total_count} words known
-                ({Math.round(getProgressPercentage(levelData.level))}%)
+                {levelData.known_count} of {levelData.total_count} words known (
+                {Math.round(getProgressPercentage(levelData.level))}%)
               </div>
             </div>
 
@@ -858,11 +867,11 @@ export const VocabularyLibrary: React.FC = () => {
               type="text"
               placeholder={`Search ${levelData.level} vocabulary...`}
               value={searchTerm}
-              onChange={(e) => {
+              onChange={e => {
                 const newSearchTerm = e.target.value
                 logger.userAction('search', 'VocabularyLibrary', {
                   level: levelData.level,
-                  searchTerm: newSearchTerm
+                  searchTerm: newSearchTerm,
                 })
                 setSearchTerm(newSearchTerm)
                 setCurrentPage(0) // Reset to first page when searching
@@ -893,11 +902,7 @@ export const VocabularyLibrary: React.FC = () => {
           ) : (
             <WordsGrid>
               {levelData.words.map(word => (
-                <WordCardItem
-                  key={word.id}
-                  word={word}
-                  onWordClick={handleWordClick}
-                />
+                <WordCardItem key={word.id} word={word} onWordClick={handleWordClick} />
               ))}
             </WordsGrid>
           )}
@@ -911,7 +916,7 @@ export const VocabularyLibrary: React.FC = () => {
                   logger.userAction('pagination', 'VocabularyLibrary', {
                     action: 'previous',
                     fromPage: currentPage,
-                    toPage: newPage
+                    toPage: newPage,
                   })
                   setCurrentPage(newPage)
                 }}
@@ -920,8 +925,9 @@ export const VocabularyLibrary: React.FC = () => {
               </PaginationButton>
 
               <PageInfo>
-                Page {currentPage + 1} of {Math.ceil(levelData.total_count / ITEMS_PER_PAGE)}
-                {' '}({Math.min((currentPage + 1) * ITEMS_PER_PAGE, levelData.total_count)} of {levelData.total_count} words)
+                Page {currentPage + 1} of {Math.ceil(levelData.total_count / ITEMS_PER_PAGE)} (
+                {Math.min((currentPage + 1) * ITEMS_PER_PAGE, levelData.total_count)} of{' '}
+                {levelData.total_count} words)
               </PageInfo>
 
               <PaginationButton
@@ -932,7 +938,7 @@ export const VocabularyLibrary: React.FC = () => {
                     action: 'next',
                     fromPage: currentPage,
                     toPage: newPage,
-                    totalPages: Math.ceil(levelData.total_count / ITEMS_PER_PAGE)
+                    totalPages: Math.ceil(levelData.total_count / ITEMS_PER_PAGE),
                   })
                   setCurrentPage(newPage)
                 }}
@@ -945,7 +951,10 @@ export const VocabularyLibrary: React.FC = () => {
       ) : levelData ? (
         <div style={{ textAlign: 'center', padding: '2rem', color: '#7f8c8d' }}>
           <h3>No words found for {activeLevel} level</h3>
-          <p>This level may not have vocabulary data yet, or all words may be filtered out by your search.</p>
+          <p>
+            This level may not have vocabulary data yet, or all words may be filtered out by your
+            search.
+          </p>
         </div>
       ) : null}
     </Container>

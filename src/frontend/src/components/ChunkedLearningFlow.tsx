@@ -49,7 +49,7 @@ interface ChunkedLearningFlowProps {
 export const ChunkedLearningFlow: React.FC<ChunkedLearningFlowProps> = ({
   videoInfo,
   chunkDurationMinutes = 0.5,
-  onComplete
+  onComplete,
 }) => {
   const navigate = useNavigate()
   const { series, episode: _episode } = useParams<{ series: string; episode: string }>()
@@ -62,7 +62,7 @@ export const ChunkedLearningFlow: React.FC<ChunkedLearningFlowProps> = ({
     status: 'processing',
     progress: 0,
     current_step: 'Initializing',
-    message: 'Starting processing...'
+    message: 'Starting processing...',
   })
   const [_taskId, setTaskId] = useState<string | null>(null)
   const [gameWords, setGameWords] = useState<VocabularyWord[]>([])
@@ -79,7 +79,10 @@ export const ChunkedLearningFlow: React.FC<ChunkedLearningFlowProps> = ({
     const videoDurationMinutes = videoInfo.duration || 25 // Assume 25 minutes if not provided
     const totalChunks = Math.ceil(videoDurationMinutes / chunkDurationMinutes)
 
-    logger.info('ChunkedLearningFlow', `Video duration: ${videoDurationMinutes} min, Chunk size: ${chunkDurationMinutes} min, Total chunks: ${totalChunks}`)
+    logger.info(
+      'ChunkedLearningFlow',
+      `Video duration: ${videoDurationMinutes} min, Chunk size: ${chunkDurationMinutes} min, Total chunks: ${totalChunks}`
+    )
 
     const newChunks: ChunkData[] = []
     for (let i = 0; i < totalChunks; i++) {
@@ -88,7 +91,7 @@ export const ChunkedLearningFlow: React.FC<ChunkedLearningFlowProps> = ({
         startTime: i * chunkDurationMinutes * 60,
         endTime: Math.min((i + 1) * chunkDurationMinutes * 60, videoDurationMinutes * 60),
         vocabulary: [],
-        isProcessed: false  // Always mark as not processed to force reprocessing
+        isProcessed: false, // Always mark as not processed to force reprocessing
       })
     }
     setChunks(newChunks)
@@ -99,7 +102,7 @@ export const ChunkedLearningFlow: React.FC<ChunkedLearningFlowProps> = ({
 
     const loadProfileLanguages = async () => {
       try {
-        const profile = await profileGetApiProfileGet() as unknown as UserProfileResponse
+        const profile = (await profileGetApiProfileGet()) as unknown as UserProfileResponse
         if (!isMounted || !profile) {
           return
         }
@@ -149,7 +152,7 @@ export const ChunkedLearningFlow: React.FC<ChunkedLearningFlowProps> = ({
       chunkNumber: chunk.chunkNumber,
       startTime: chunk.startTime,
       endTime: chunk.endTime,
-      videoPath: videoInfo.path
+      videoPath: videoInfo.path,
     })
 
     setCurrentPhase('processing')
@@ -157,24 +160,24 @@ export const ChunkedLearningFlow: React.FC<ChunkedLearningFlowProps> = ({
       status: 'processing',
       progress: 0,
       current_step: 'Processing chunk',
-      message: `Processing segment ${formatTime(chunk.startTime)} - ${formatTime(chunk.endTime)}`
+      message: `Processing segment ${formatTime(chunk.startTime)} - ${formatTime(chunk.endTime)}`,
     })
 
     try {
-      const response = await processChunkApiProcessChunkPost({
+      const response = (await processChunkApiProcessChunkPost({
         requestBody: {
           video_path: videoInfo.path,
           start_time: chunk.startTime,
           end_time: chunk.endTime,
         },
-      }) as { task_id: string; status?: string }
+      })) as { task_id: string; status?: string }
 
       setTaskId(response.task_id)
 
       logger.info('ChunkedLearningFlow', 'Backend task started', {
         taskId: response.task_id,
         chunkIndex: chunkIndex + 1,
-        status: response.status || 'started'
+        status: response.status || 'started',
       })
 
       // Start polling for progress
@@ -194,12 +197,14 @@ export const ChunkedLearningFlow: React.FC<ChunkedLearningFlowProps> = ({
 
     const poll = async () => {
       try {
-        const progress = await getTaskProgressApiProcessProgressTaskIdGet({ taskId }) as ProcessingStatus
+        const progress = (await getTaskProgressApiProcessProgressTaskIdGet({
+          taskId,
+        })) as ProcessingStatus
         logger.info('ChunkedLearningFlow', 'Progress update', {
           status: progress.status,
           progress: progress.progress,
           step: progress.current_step,
-          vocabularyCount: progress.vocabulary?.length || 0
+          vocabularyCount: progress.vocabulary?.length || 0,
         })
         setProcessingStatus(progress)
 
@@ -208,7 +213,7 @@ export const ChunkedLearningFlow: React.FC<ChunkedLearningFlowProps> = ({
             chunkIndex: chunkIndex + 1,
             vocabularyCount: progress.vocabulary?.length || 0,
             subtitlePath: progress.subtitle_path,
-            translationPath: progress.translation_path
+            translationPath: progress.translation_path,
           })
 
           // Validate vocabulary data - fail fast if missing
@@ -222,7 +227,7 @@ export const ChunkedLearningFlow: React.FC<ChunkedLearningFlowProps> = ({
             }
             return {
               ...word,
-              lemma: word.lemma
+              lemma: word.lemma,
             }
           })
 
@@ -232,12 +237,12 @@ export const ChunkedLearningFlow: React.FC<ChunkedLearningFlowProps> = ({
             vocabulary: vocabularyWithIds,
             subtitlePath: progress.subtitle_path,
             translationPath: progress.translation_path || undefined,
-            isProcessed: true
+            isProcessed: true,
           }
 
           logger.userAction('Entering vocabulary game phase', 'ChunkedLearningFlow', {
             wordsToLearn: progress.vocabulary?.length || 0,
-            chunkIndex: chunkIndex + 1
+            chunkIndex: chunkIndex + 1,
           })
 
           // Set game phase BEFORE updating chunks to prevent useEffect race condition
@@ -306,14 +311,14 @@ export const ChunkedLearningFlow: React.FC<ChunkedLearningFlowProps> = ({
 
     try {
       // Use lemma-based API endpoint
-      const res = await markWordKnownApiVocabularyMarkKnownPost({
+      const res = (await markWordKnownApiVocabularyMarkKnownPost({
         requestBody: {
           lemma: wordData.lemma,
           word: wordData.word,
           language: 'de',
-          known: known
-        }
-      }) as { word?: string; lemma?: string; level?: string }
+          known: known,
+        },
+      })) as { word?: string; lemma?: string; level?: string }
 
       const respWord = res?.word ?? word
       const respLemma = res?.lemma ?? wordData.lemma
@@ -322,7 +327,7 @@ export const ChunkedLearningFlow: React.FC<ChunkedLearningFlowProps> = ({
         word: respWord,
         lemma: respLemma,
         level: respLevel,
-        known
+        known,
       })
 
       // Dismiss loading toast and show success
@@ -343,7 +348,7 @@ export const ChunkedLearningFlow: React.FC<ChunkedLearningFlowProps> = ({
       knownWords: knownWords.length,
       unknownWords: unknownWords.length,
       totalWords: knownWords.length + unknownWords.length,
-      chunkIndex: currentChunk + 1
+      chunkIndex: currentChunk + 1,
     })
 
     setLearnedWords(prev => new Set([...prev, ...knownWords]))
@@ -365,7 +370,7 @@ export const ChunkedLearningFlow: React.FC<ChunkedLearningFlowProps> = ({
 
     logger.userAction('Entering video playback phase', 'ChunkedLearningFlow', {
       chunkIndex: currentChunk + 1,
-      totalLearnedWords: learnedWords.size + knownWords.length
+      totalLearnedWords: learnedWords.size + knownWords.length,
     })
     setCurrentPhase('video')
   }
@@ -378,19 +383,19 @@ export const ChunkedLearningFlow: React.FC<ChunkedLearningFlowProps> = ({
       updatedChunks[currentChunk] = {
         ...updatedChunks[currentChunk],
         subtitlePath: processingStatus.subtitle_path,
-        translationPath: processingStatus.translation_path || undefined
+        translationPath: processingStatus.translation_path || undefined,
       }
       setChunks(updatedChunks)
       logger.info('ChunkedLearningFlow', 'Updated chunk with subtitle paths', {
         chunkIndex: currentChunk + 1,
         subtitlePath: processingStatus.subtitle_path,
-        translationPath: processingStatus.translation_path || undefined
+        translationPath: processingStatus.translation_path || undefined,
       })
     }
 
     logger.userAction('Skipped vocabulary game', 'ChunkedLearningFlow', {
       chunkIndex: currentChunk + 1,
-      vocabularyCount: processingStatus?.vocabulary?.length || 0
+      vocabularyCount: processingStatus?.vocabulary?.length || 0,
     })
     setCurrentPhase('video')
   }
@@ -406,21 +411,19 @@ export const ChunkedLearningFlow: React.FC<ChunkedLearningFlowProps> = ({
           completedChunk: currentChunk + 1,
           nextChunk: currentChunk + 2,
           totalChunks: chunks.length,
-          progressPercent: Math.round(((currentChunk + 1) / chunks.length) * 100)
+          progressPercent: Math.round(((currentChunk + 1) / chunks.length) * 100),
         }
       )
       setCurrentChunk(prev => prev + 1)
       setCurrentPhase('processing')
     } else {
       logger.userAction(
-        reason === 'completed'
-          ? 'Episode completed!'
-          : 'Episode skipped to completion',
+        reason === 'completed' ? 'Episode completed!' : 'Episode skipped to completion',
         'ChunkedLearningFlow',
         {
           totalChunks: chunks.length,
           totalLearnedWords: learnedWords.size,
-          videoTitle: videoInfo?.title
+          videoTitle: videoInfo?.title,
         }
       )
       onComplete?.()
@@ -441,7 +444,7 @@ export const ChunkedLearningFlow: React.FC<ChunkedLearningFlowProps> = ({
     logger.userAction('Returned to episode selection', 'ChunkedLearningFlow', {
       series: targetSeries,
       currentChunk: currentChunk + 1,
-      totalChunks: chunks.length
+      totalChunks: chunks.length,
     })
 
     if (targetSeries) {
@@ -496,7 +499,7 @@ export const ChunkedLearningFlow: React.FC<ChunkedLearningFlowProps> = ({
             chunkInfo={{
               current: currentChunk + 1,
               total: chunks.length,
-              duration: `${formatTime(chunk.startTime)} - ${formatTime(chunk.endTime)}`
+              duration: `${formatTime(chunk.startTime)} - ${formatTime(chunk.endTime)}`,
             }}
           />
         )
@@ -525,7 +528,7 @@ export const ChunkedLearningFlow: React.FC<ChunkedLearningFlowProps> = ({
             chunkInfo={{
               current: currentChunk + 1,
               total: chunks.length,
-              duration: `${formatTime(chunk.startTime)} - ${formatTime(chunk.endTime)}`
+              duration: `${formatTime(chunk.startTime)} - ${formatTime(chunk.endTime)}`,
             }}
             targetLanguage={activeLanguages?.target}
             nativeLanguage={activeLanguages?.native}
@@ -537,9 +540,5 @@ export const ChunkedLearningFlow: React.FC<ChunkedLearningFlowProps> = ({
     }
   }
 
-  return (
-    <>
-      {renderPhase()}
-    </>
-  )
+  return <>{renderPhase()}</>
 }

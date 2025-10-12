@@ -54,6 +54,10 @@ class CacheInvalidationHandler:
     async def handle_cache_invalidation(self, event: DomainEvent):
         """Handle cache invalidation for domain events"""
         try:
+            if event.event_type is None:
+                logger.warning("Event has no event_type, skipping cache invalidation")
+                return
+
             handlers = self.invalidation_rules.get(event.event_type, [])
             for handler in handlers:
                 await handler(event)

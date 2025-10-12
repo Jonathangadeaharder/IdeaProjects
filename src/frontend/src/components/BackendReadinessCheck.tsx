@@ -48,10 +48,13 @@ const Dot = styled.div<{ $delay: number }>`
   animation-delay: ${props => props.$delay}s;
 
   @keyframes pulse {
-    0%, 80%, 100% {
+    0%,
+    80%,
+    100% {
       transform: scale(0);
       opacity: 0.5;
     }
+
     40% {
       transform: scale(1);
       opacity: 1;
@@ -105,7 +108,7 @@ const RetryButton = styled.button`
 `
 
 const ErrorText = styled.p`
-  color: #ff4444;
+  color: #f44;
   font-size: 16px;
   margin: 20px 0;
 `
@@ -175,7 +178,7 @@ export const BackendReadinessCheck: React.FC<BackendReadinessCheckProps> = ({ ch
       setMessage('Waiting for backend server to start...')
       setAttemptCount(prev => prev + 1)
       setProgress(prev => Math.min(prev + 3, 70))
-      
+
       // After 30 attempts (1 minute), show error
       if (attemptCount > 30) {
         setHasError(true)
@@ -247,9 +250,7 @@ export const BackendReadinessCheck: React.FC<BackendReadinessCheckProps> = ({ ch
                   <li>Try refreshing the page or clicking retry below</li>
                 </ul>
               </HelpText>
-              <RetryButton onClick={handleRetry}>
-                Retry Connection
-              </RetryButton>
+              <RetryButton onClick={handleRetry}>Retry Connection</RetryButton>
             </>
           ) : (
             <>
@@ -263,7 +264,8 @@ export const BackendReadinessCheck: React.FC<BackendReadinessCheckProps> = ({ ch
               </ProgressDots>
               <StatusText>
                 {progress > 0 && `${progress}% • `}
-                Attempt {attemptCount} {attemptCount > 10 && '(This is taking longer than usual...)'}
+                Attempt {attemptCount}{' '}
+                {attemptCount > 10 && '(This is taking longer than usual...)'}
               </StatusText>
             </>
           )}

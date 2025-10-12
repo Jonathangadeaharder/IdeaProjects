@@ -1,22 +1,22 @@
-import React from 'react';
-import styled, { css } from 'styled-components';
-import { motion } from 'framer-motion';
+import React from 'react'
+import styled, { css } from 'styled-components'
+import { motion } from 'framer-motion'
 
 // Define clean button props without conflicting event handlers
 interface ButtonProps {
-  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
-  size?: 'small' | 'medium' | 'large';
-  fullWidth?: boolean;
-  loading?: boolean;
-  icon?: React.ReactNode;
-  iconPosition?: 'left' | 'right';
-  children: React.ReactNode;
-  disabled?: boolean;
-  onClick?: (event: React.MouseEvent<HTMLButtonElement>) => void;
-  className?: string;
-  id?: string;
-  type?: 'button' | 'submit' | 'reset';
-  'data-testid'?: string;
+  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger'
+  size?: 'small' | 'medium' | 'large'
+  fullWidth?: boolean
+  loading?: boolean
+  icon?: React.ReactNode
+  iconPosition?: 'left' | 'right'
+  children: React.ReactNode
+  disabled?: boolean
+  onClick?: (event: React.MouseEvent<HTMLButtonElement>) => void
+  className?: string
+  id?: string
+  type?: 'button' | 'submit' | 'reset'
+  'data-testid'?: string
 }
 
 const sizeStyles = {
@@ -35,21 +35,20 @@ const sizeStyles = {
     font-size: 18px;
     border-radius: 12px;
   `,
-};
+}
 
 const variantStyles = {
   primary: css`
-    background: linear-gradient(135deg,
-      #FF6B6B 0%,
-      #EE5A52 100%
-    );
+    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
     color: white;
     border: none;
-    box-shadow: 0 10px 40px -10px rgba(255, 107, 107, 0.35);
+    box-shadow: 0 10px 40px -10px rgb(255 107 107 / 35%);
 
     &:hover:not(:disabled) {
       transform: translateY(-2px);
-      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+      box-shadow:
+        0 20px 25px -5px rgb(0 0 0 / 10%),
+        0 10px 10px -5px rgb(0 0 0 / 4%);
     }
 
     &:active:not(:disabled) {
@@ -57,58 +56,63 @@ const variantStyles = {
     }
   `,
   secondary: css`
-    background: linear-gradient(135deg,
-      #4ECDC4 0%,
-      #38B2AA 100%
-    );
+    background: linear-gradient(135deg, #4ecdc4 0%, #38b2aa 100%);
     color: white;
     border: none;
-    box-shadow: 0 10px 40px -10px rgba(78, 205, 196, 0.35);
+    box-shadow: 0 10px 40px -10px rgb(78 205 196 / 35%);
 
     &:hover:not(:disabled) {
       transform: translateY(-2px);
-      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+      box-shadow:
+        0 20px 25px -5px rgb(0 0 0 / 10%),
+        0 10px 10px -5px rgb(0 0 0 / 4%);
     }
   `,
   outline: css`
     background: transparent;
-    color: #FF6B6B;
-    border: 2px solid #FF6B6B;
+    color: #ff6b6b;
+    border: 2px solid #ff6b6b;
 
     &:hover:not(:disabled) {
-      background: #FF6B6B;
+      background: #ff6b6b;
       color: white;
       transform: translateY(-2px);
     }
   `,
   ghost: css`
     background: transparent;
-    color: #1A1A1A;
+    color: #1a1a1a;
     border: none;
 
     &:hover:not(:disabled) {
-      background: #F8F9FA;
+      background: #f8f9fa;
     }
   `,
   danger: css`
-    background: #F5222D;
+    background: #f5222d;
     color: white;
     border: none;
 
     &:hover:not(:disabled) {
-      background: #F5222D;
+      background: #f5222d;
       filter: brightness(0.9);
       transform: translateY(-2px);
     }
   `,
-};
+}
 
 const StyledButton = styled(motion.button)<ButtonProps>`
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family:
+    Inter,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
   font-weight: 600;
   cursor: pointer;
   position: relative;
@@ -119,9 +123,11 @@ const StyledButton = styled(motion.button)<ButtonProps>`
 
   ${({ size = 'medium' }) => sizeStyles[size]}
   ${({ variant = 'primary' }) => variantStyles[variant]}
-  ${({ fullWidth }) => fullWidth && css`
-    width: 100%;
-  `}
+  ${({ fullWidth }) =>
+    fullWidth &&
+    css`
+      width: 100%;
+    `}
 
   &:disabled {
     opacity: 0.5;
@@ -129,7 +135,7 @@ const StyledButton = styled(motion.button)<ButtonProps>`
   }
 
   &:focus-visible {
-    outline: 2px solid #FF6B6B;
+    outline: 2px solid #ff6b6b;
     outline-offset: 2px;
   }
 
@@ -142,32 +148,34 @@ const StyledButton = styled(motion.button)<ButtonProps>`
     width: 0;
     height: 0;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.5);
+    background: rgb(255 255 255 / 50%);
     transform: translate(-50%, -50%);
-    transition: width 0.6s, height 0.6s;
+    transition:
+      width 0.6s,
+      height 0.6s;
   }
 
   &:active::before {
     width: 300px;
     height: 300px;
   }
-`;
+`
 
 const LoadingSpinner = styled.span`
   display: inline-block;
   width: 14px;
   height: 14px;
-  border: 2px solid currentColor;
+  border: 2px solid currentcolor;
   border-right-color: transparent;
   border-radius: 50%;
   animation: spin 0.6s linear infinite;
-`;
+`
 
 const IconWrapper = styled.span<{ position?: 'left' | 'right' }>`
   display: inline-flex;
   align-items: center;
-  order: ${({ position }) => position === 'right' ? 1 : 0};
-`;
+  order: ${({ position }) => (position === 'right' ? 1 : 0)};
+`
 
 export const Button: React.FC<ButtonProps> = ({
   children,
@@ -179,15 +187,11 @@ export const Button: React.FC<ButtonProps> = ({
 }) => {
   // Only pass necessary motion props, avoid event handler conflicts
   const motionProps = {
-    whileTap: { scale: 0.98 }
+    whileTap: { scale: 0.98 },
   }
 
   return (
-    <StyledButton
-      disabled={disabled || loading}
-      {...motionProps}
-      {...props}
-    >
+    <StyledButton disabled={disabled || loading} {...motionProps} {...props}>
       {loading ? (
         <>
           <LoadingSpinner />
@@ -195,17 +199,13 @@ export const Button: React.FC<ButtonProps> = ({
         </>
       ) : (
         <>
-          {icon && iconPosition === 'left' && (
-            <IconWrapper position="left">{icon}</IconWrapper>
-          )}
+          {icon && iconPosition === 'left' && <IconWrapper position="left">{icon}</IconWrapper>}
           {children}
-          {icon && iconPosition === 'right' && (
-            <IconWrapper position="right">{icon}</IconWrapper>
-          )}
+          {icon && iconPosition === 'right' && <IconWrapper position="right">{icon}</IconWrapper>}
         </>
       )}
     </StyledButton>
-  );
-};
+  )
+}
 
-export default Button;
+export default Button

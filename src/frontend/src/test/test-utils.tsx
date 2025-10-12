@@ -153,7 +153,7 @@ const TestWrapper: React.FC<TestWrapperProps> = ({
 
     if (initialVocabulary) {
       const vocabStore = useVocabularyStore.getState() as any
-      Object.keys(initialVocabulary).forEach((key) => {
+      Object.keys(initialVocabulary).forEach(key => {
         if (typeof vocabStore[key] === 'function') {
           vocabStore[key](initialVocabulary[key])
         }
@@ -162,7 +162,7 @@ const TestWrapper: React.FC<TestWrapperProps> = ({
 
     if (initialApp) {
       const appStore = useAppStore.getState() as any
-      Object.keys(initialApp).forEach((key) => {
+      Object.keys(initialApp).forEach(key => {
         if (typeof appStore[key] === 'function') {
           appStore[key](initialApp[key])
         }
@@ -171,7 +171,7 @@ const TestWrapper: React.FC<TestWrapperProps> = ({
 
     if (initialGame) {
       const gameStore = useGameStore.getState() as any
-      Object.keys(initialGame).forEach((key) => {
+      Object.keys(initialGame).forEach(key => {
         if (typeof gameStore[key] === 'function') {
           gameStore[key](initialGame[key])
         }
@@ -295,7 +295,7 @@ export const waitForApiCall = async (apiMethod: jest.Mock, timeout = 5000) => {
     if (apiMethod.mock.calls.length > 0) {
       return
     }
-    await new Promise((resolve) => setTimeout(resolve, 10))
+    await new Promise(resolve => setTimeout(resolve, 10))
   }
   throw new Error('API call timeout')
 }
@@ -326,9 +326,7 @@ expect.extend({
     const pass = received.isAuthenticated === true && received.user !== null
     return {
       message: () =>
-        pass
-          ? `Expected user not to be authenticated`
-          : `Expected user to be authenticated`,
+        pass ? `Expected user not to be authenticated` : `Expected user to be authenticated`,
       pass,
     }
   },

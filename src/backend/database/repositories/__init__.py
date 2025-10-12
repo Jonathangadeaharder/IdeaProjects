@@ -19,14 +19,14 @@ from .vocabulary_repository import VocabularyRepository
 __all__ = [
     # Interfaces
     "BaseRepositoryInterface",
-    "ProcessingSessionRepositoryInterface",
-    "UserRepositoryInterface",
-    "UserVocabularyProgressRepositoryInterface",
-    "VocabularyRepositoryInterface",
     # Implementations
     "ProcessingRepository",
     "ProcessingSessionRepository",
+    "ProcessingSessionRepositoryInterface",
     "UserRepository",
+    "UserRepositoryInterface",
     "UserVocabularyProgressRepository",
+    "UserVocabularyProgressRepositoryInterface",
     "VocabularyRepository",
+    "VocabularyRepositoryInterface",
 ]

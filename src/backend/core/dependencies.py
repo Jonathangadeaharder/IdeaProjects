@@ -32,8 +32,8 @@ try:
     from .task_dependencies import cleanup_services, get_task_progress_registry, init_services
 except ImportError:
     # Fallback for import issues
-    cleanup_services = None
-    init_services = None
+    cleanup_services = None  # type: ignore[assignment]
+    init_services = None  # type: ignore[assignment]
 
 try:
     from .repository_dependencies import (

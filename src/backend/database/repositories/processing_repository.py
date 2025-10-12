@@ -44,7 +44,7 @@ class ProcessingRepository(BaseRepository[ProcessingSession]):
 
     async def update_status(self, session_id: str, status: str, error_message: str | None = None) -> bool:
         """Update processing session status"""
-        values = {"status": status}
+        values: dict[str, str | datetime] = {"status": status}
         if error_message:
             values["error_message"] = error_message
         if status == "completed":

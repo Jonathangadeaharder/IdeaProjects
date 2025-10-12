@@ -1,9 +1,5 @@
 {
-  "extends": [
-    "stylelint-config-standard",
-    "stylelint-config-styled-components"
-  ],
-  "customSyntax": "postcss-styled-syntax",
+  "extends": ["stylelint-config-standard"],
   "rules": {
     "declaration-empty-line-before": null,
     "value-keyword-case": [
@@ -19,13 +15,26 @@
       {
         "ignoreProperties": ["/^\\$/"]
       }
-    ]
+    ],
+    "selector-pseudo-class-no-unknown": [
+      true,
+      {
+        "ignorePseudoClasses": ["global"]
+      }
+    ],
+    "value-no-vendor-prefix": null,
+    "property-no-vendor-prefix": null,
+    "selector-no-vendor-prefix": null,
+    "media-feature-name-no-vendor-prefix": null,
+    "at-rule-no-vendor-prefix": null
   },
   "ignoreFiles": [
     "dist/**",
     "build/**",
     "node_modules/**",
     "coverage/**",
-    "**/*.gen.ts"
+    "**/*.gen.ts",
+    "**/*.tsx",
+    "**/*.ts"
   ]
 }

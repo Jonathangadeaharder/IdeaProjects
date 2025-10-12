@@ -388,7 +388,8 @@ describe('API Configuration', () => {
 
       logApiConfig()
 
-      expect(console.log).toHaveBeenCalledWith('🔧 API Configuration:',
+      expect(console.log).toHaveBeenCalledWith(
+        '🔧 API Configuration:',
         expect.objectContaining({
           environment: 'staging',
         })

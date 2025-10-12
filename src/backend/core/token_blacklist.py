@@ -1,10 +1,10 @@
 """Token blacklist service for JWT token revocation - In-memory implementation"""
 
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 # Python 3.10 compatibility: Use timezone.utc instead of UTC constant
-UTC = timezone.utc
+UTC = UTC
 
 logger = logging.getLogger(__name__)
 

@@ -20,7 +20,7 @@ class TestPasswordValidation:
         """Password with exactly 12 characters should pass length check"""
         # This will fail other checks, but should pass length
         password = "a" * 12
-        is_valid, error = PasswordValidator.validate(password)
+        _is_valid, error = PasswordValidator.validate(password)
         # Will fail for other reasons, but not length
         assert "12 characters" not in error
 
@@ -111,7 +111,7 @@ class TestCommonPasswordBlocking:
     def test_validate_allows_similar_to_common(self):
         """Passwords similar but not identical to common ones should pass"""
         # password123 is common, but SecurePassword123! is not
-        is_valid, error = PasswordValidator.validate("SecurePassword123!")
+        is_valid, _error = PasswordValidator.validate("SecurePassword123!")
         assert is_valid is True
 
 
@@ -120,25 +120,25 @@ class TestEdgeCases:
 
     def test_validate_exactly_minimum_length_with_all_requirements(self):
         """12-character password with all requirements should pass"""
-        is_valid, error = PasswordValidator.validate("SecurePass1!")  # Exactly 12 chars
+        is_valid, _error = PasswordValidator.validate("SecurePass1!")  # Exactly 12 chars
         assert is_valid is True
 
     def test_validate_very_long_password(self):
         """Very long password should be accepted"""
         long_password = "SecurePassword123!" * 10  # 180 characters
-        is_valid, error = PasswordValidator.validate(long_password)
+        is_valid, _error = PasswordValidator.validate(long_password)
         assert is_valid is True
 
     def test_validate_only_special_characters_with_requirements(self):
         """Password with multiple special characters should pass"""
-        is_valid, error = PasswordValidator.validate("S3cure!@#$%^Pass")
+        is_valid, _error = PasswordValidator.validate("S3cure!@#$%^Pass")
         assert is_valid is True
 
     def test_validate_unicode_characters(self):
         """Password with Unicode characters should be validated"""
         # Contains uppercase, lowercase, digit, special, and Unicode
         password = "SecurePass123!мир"
-        is_valid, error = PasswordValidator.validate(password)
+        is_valid, _error = PasswordValidator.validate(password)
         # Should pass validation (Unicode chars don't break rules)
         assert is_valid is True
 

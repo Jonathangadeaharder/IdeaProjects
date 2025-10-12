@@ -12,7 +12,7 @@ import {
   ArrowLeftIcon,
   ForwardIcon,
   LanguageIcon,
-  EyeSlashIcon
+  EyeSlashIcon,
 } from '@heroicons/react/24/solid'
 import { apiClient } from '@/services/api-client'
 import { buildVideoStreamUrl } from '@/services/api'
@@ -40,10 +40,7 @@ const VideoWrapper = styled.div`
 
   &.fullscreen {
     position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    inset: 0;
     z-index: 9999;
   }
 `
@@ -54,15 +51,17 @@ const ControlsOverlay = styled.div<{ $visible: boolean; $mobile?: boolean }>`
   background: linear-gradient(
     transparent 0%,
     transparent 60%,
-    rgba(0, 0, 0, 0.3) 85%,
-    rgba(0, 0, 0, 0.9) 100%
+    rgb(0 0 0 / 30%) 85%,
+    rgb(0 0 0 / 90%) 100%
   );
-  opacity: ${props => props.$visible ? 1 : 0};
+  opacity: ${props => (props.$visible ? 1 : 0)};
   transition: opacity 0.3s ease;
-  pointer-events: ${props => props.$visible ? 'auto' : 'none'};
+  pointer-events: ${props => (props.$visible ? 'auto' : 'none')};
   z-index: 10;
 
-  ${props => props.$mobile && `
+  ${props =>
+    props.$mobile &&
+    `
     padding: 12px;
     background: rgba(0, 0, 0, 0.7);
   `}
@@ -79,7 +78,7 @@ const TopControls = styled.div`
   align-items: flex-start;
   pointer-events: auto;
 
-  @media (max-width: 768px) {
+  @media (width <= 768px) {
     padding: 16px;
   }
 `
@@ -89,20 +88,20 @@ const TopLeftControls = styled.div`
   align-items: center;
   gap: 16px;
 
-  @media (max-width: 768px) {
+  @media (width <= 768px) {
     gap: 12px;
   }
 `
 
 const ChunkInfo = styled.div`
-  background: rgba(0, 0, 0, 0.8);
+  background: rgb(0 0 0 / 80%);
   border-radius: 8px;
   padding: 12px 20px;
   color: white;
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgb(255 255 255 / 10%);
 
-  @media (max-width: 768px) {
+  @media (width <= 768px) {
     padding: 8px 16px;
     font-size: 14px;
   }
@@ -113,7 +112,7 @@ const ChunkLabel = styled.div`
   color: #b3b3b3;
   margin-bottom: 4px;
 
-  @media (max-width: 768px) {
+  @media (width <= 768px) {
     font-size: 11px;
   }
 `
@@ -122,7 +121,7 @@ const ChunkDetails = styled.div`
   font-size: 16px;
   font-weight: 500;
 
-  @media (max-width: 768px) {
+  @media (width <= 768px) {
     font-size: 14px;
   }
 `
@@ -132,7 +131,7 @@ const PlayerControls = styled.div`
   align-items: center;
   gap: 16px;
 
-  @media (max-width: 768px) {
+  @media (width <= 768px) {
     gap: 12px;
   }
 `
@@ -141,9 +140,9 @@ const StickyBackButton = styled.button`
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: rgba(0, 0, 0, 0.65);
+  background: rgb(0 0 0 / 65%);
   color: white;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgb(255 255 255 / 10%);
   border-radius: 8px;
   padding: 10px 16px;
   font-size: 15px;
@@ -152,7 +151,7 @@ const StickyBackButton = styled.button`
   transition: all 0.2s ease;
 
   &:hover {
-    background: rgba(255, 255, 255, 0.12);
+    background: rgb(255 255 255 / 12%);
     transform: translateY(-1px);
   }
 
@@ -160,7 +159,7 @@ const StickyBackButton = styled.button`
     transform: translateY(0);
   }
 
-  @media (max-width: 768px) {
+  @media (width <= 768px) {
     padding: 8px 12px;
     font-size: 14px;
   }
@@ -172,14 +171,14 @@ const StickyNavContainer = styled.div`
   left: 24px;
   z-index: 30;
 
-  @media (max-width: 768px) {
+  @media (width <= 768px) {
     left: 16px;
     top: 12px;
   }
 `
 
 const LearnedWordsBadge = styled.div`
-  background: rgba(34, 197, 94, 0.2);
+  background: rgb(34 197 94 / 20%);
   border: 1px solid #22c55e;
   color: #22c55e;
   border-radius: 8px;
@@ -189,7 +188,7 @@ const LearnedWordsBadge = styled.div`
   gap: 8px;
   backdrop-filter: blur(10px);
 
-  @media (max-width: 768px) {
+  @media (width <= 768px) {
     padding: 6px 12px;
     font-size: 14px;
   }
@@ -203,7 +202,7 @@ const BottomControls = styled.div`
   padding: 16px 24px 24px;
   pointer-events: auto;
 
-  @media (max-width: 768px) {
+  @media (width <= 768px) {
     padding: 12px 16px 16px;
   }
 `
@@ -215,7 +214,7 @@ const ProgressContainer = styled.div`
 const ProgressBar = styled.div`
   width: 100%;
   height: 6px;
-  background: rgba(255, 255, 255, 0.3);
+  background: rgb(255 255 255 / 30%);
   border-radius: 3px;
   cursor: pointer;
   position: relative;
@@ -225,7 +224,7 @@ const ProgressBar = styled.div`
     height: 8px;
   }
 
-  @media (max-width: 768px) {
+  @media (width <= 768px) {
     height: 8px;
   }
 `
@@ -264,7 +263,7 @@ const ControlsRow = styled.div`
   justify-content: space-between;
   gap: 16px;
 
-  @media (max-width: 768px) {
+  @media (width <= 768px) {
     gap: 8px;
   }
 `
@@ -274,7 +273,7 @@ const LeftControls = styled.div`
   align-items: center;
   gap: 16px;
 
-  @media (max-width: 768px) {
+  @media (width <= 768px) {
     gap: 12px;
   }
 `
@@ -284,7 +283,7 @@ const RightControls = styled.div`
   align-items: center;
   gap: 16px;
 
-  @media (max-width: 768px) {
+  @media (width <= 768px) {
     gap: 12px;
   }
 `
@@ -294,18 +293,18 @@ const ControlButton = styled.button<{ $large?: boolean }>`
   border: none;
   color: white;
   cursor: pointer;
-  padding: ${props => props.$large ? '12px' : '8px'};
+  padding: ${props => (props.$large ? '12px' : '8px')};
   border-radius: 6px;
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  min-width: ${props => props.$large ? '48px' : '40px'};
-  min-height: ${props => props.$large ? '48px' : '40px'};
+  min-width: ${props => (props.$large ? '48px' : '40px')};
+  min-height: ${props => (props.$large ? '48px' : '40px')};
 
   &:hover {
-    background: rgba(255, 255, 255, 0.2);
+    background: rgb(255 255 255 / 20%);
     transform: scale(1.05);
   }
 
@@ -319,10 +318,10 @@ const ControlButton = styled.button<{ $large?: boolean }>`
     transform: none;
   }
 
-  @media (max-width: 768px) {
-    min-width: ${props => props.$large ? '44px' : '36px'};
-    min-height: ${props => props.$large ? '44px' : '36px'};
-    padding: ${props => props.$large ? '10px' : '6px'};
+  @media (width <= 768px) {
+    min-width: ${props => (props.$large ? '44px' : '36px')};
+    min-height: ${props => (props.$large ? '44px' : '36px')};
+    padding: ${props => (props.$large ? '10px' : '6px')};
   }
 `
 
@@ -331,7 +330,7 @@ const VolumeControl = styled.div`
   align-items: center;
   gap: 8px;
 
-  @media (max-width: 768px) {
+  @media (width <= 768px) {
     gap: 6px;
   }
 `
@@ -339,7 +338,7 @@ const VolumeControl = styled.div`
 const VolumeSlider = styled.input`
   width: 80px;
   height: 4px;
-  background: rgba(255, 255, 255, 0.3);
+  background: rgb(255 255 255 / 30%);
   outline: none;
   border-radius: 2px;
   cursor: pointer;
@@ -363,7 +362,7 @@ const VolumeSlider = styled.input`
     border: 2px solid #e50914;
   }
 
-  @media (max-width: 768px) {
+  @media (width <= 768px) {
     width: 60px;
   }
 `
@@ -375,7 +374,7 @@ const TimeDisplay = styled.div`
   min-width: 100px;
   text-align: right;
 
-  @media (max-width: 768px) {
+  @media (width <= 768px) {
     font-size: 12px;
     min-width: 80px;
   }
@@ -391,21 +390,21 @@ const SubtitleDisplay = styled.div`
   pointer-events: none;
   z-index: 5;
 
-  @media (max-width: 768px) {
+  @media (width <= 768px) {
     bottom: 100px;
     max-width: 95%;
   }
 `
 
 const SubtitleText = styled.div`
-  background: rgba(0, 0, 0, 0.9);
+  background: rgb(0 0 0 / 90%);
   padding: 12px 24px;
   border-radius: 8px;
   backdrop-filter: blur(10px);
   display: inline-block;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgb(255 255 255 / 10%);
 
-  @media (max-width: 768px) {
+  @media (width <= 768px) {
     padding: 8px 16px;
   }
 `
@@ -431,22 +430,22 @@ const OriginalSubtitle = styled.div`
   line-height: 1.4;
   font-weight: 600;
   margin-bottom: 8px;
-  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+  text-shadow: 1px 1px 2px rgb(0 0 0 / 80%);
 
-  @media (max-width: 768px) {
+  @media (width <= 768px) {
     font-size: 16px;
     margin-bottom: 6px;
   }
 `
 
 const TranslatedSubtitle = styled.div`
-  color: #ffffff;
+  color: #fff;
   font-size: 16px;
   line-height: 1.3;
   opacity: 0.9;
-  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+  text-shadow: 1px 1px 2px rgb(0 0 0 / 80%);
 
-  @media (max-width: 768px) {
+  @media (width <= 768px) {
     font-size: 14px;
   }
 `
@@ -455,19 +454,19 @@ const SettingsMenu = styled.div<{ $visible: boolean }>`
   position: absolute;
   bottom: 60px;
   right: 24px;
-  background: rgba(0, 0, 0, 0.95);
+  background: rgb(0 0 0 / 95%);
   border-radius: 8px;
   padding: 16px;
   min-width: 200px;
-  opacity: ${props => props.$visible ? 1 : 0};
-  transform: ${props => props.$visible ? 'translateY(0)' : 'translateY(10px)'};
+  opacity: ${props => (props.$visible ? 1 : 0)};
+  transform: ${props => (props.$visible ? 'translateY(0)' : 'translateY(10px)')};
   transition: all 0.2s ease;
-  pointer-events: ${props => props.$visible ? 'auto' : 'none'};
+  pointer-events: ${props => (props.$visible ? 'auto' : 'none')};
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgb(255 255 255 / 10%);
   z-index: 20;
 
-  @media (max-width: 768px) {
+  @media (width <= 768px) {
     right: 16px;
     min-width: 180px;
   }
@@ -491,9 +490,9 @@ const MenuLabel = styled.div`
 
 const MenuButton = styled.button<{ $active?: boolean }>`
   width: 100%;
-  background: ${props => props.$active ? 'rgba(229, 9, 20, 0.2)' : 'transparent'};
+  background: ${props => (props.$active ? 'rgba(229, 9, 20, 0.2)' : 'transparent')};
   border: none;
-  color: ${props => props.$active ? '#e50914' : 'white'};
+  color: ${props => (props.$active ? '#e50914' : 'white')};
   padding: 8px 12px;
   border-radius: 4px;
   cursor: pointer;
@@ -505,14 +504,14 @@ const MenuButton = styled.button<{ $active?: boolean }>`
   gap: 8px;
 
   &:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgb(255 255 255 / 10%);
   }
 `
 
 const CompletionOverlay = styled.div`
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.95);
+  background: rgb(0 0 0 / 95%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -527,7 +526,7 @@ const CompletionContent = styled.div`
   max-width: 500px;
   padding: 20px;
 
-  @media (max-width: 768px) {
+  @media (width <= 768px) {
     padding: 16px;
     max-width: 90%;
   }
@@ -538,7 +537,7 @@ const CompletionTitle = styled.h2`
   font-weight: bold;
   margin-bottom: 16px;
 
-  @media (max-width: 768px) {
+  @media (width <= 768px) {
     font-size: 24px;
   }
 `
@@ -549,7 +548,7 @@ const CompletionMessage = styled.p`
   margin-bottom: 32px;
   line-height: 1.5;
 
-  @media (max-width: 768px) {
+  @media (width <= 768px) {
     font-size: 16px;
     margin-bottom: 24px;
   }
@@ -569,14 +568,14 @@ const ContinueButton = styled.button`
   &:hover {
     background: #f40612;
     transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(229, 9, 20, 0.3);
+    box-shadow: 0 8px 20px rgb(229 9 20 / 30%);
   }
 
   &:active {
     transform: translateY(0);
   }
 
-  @media (max-width: 768px) {
+  @media (width <= 768px) {
     padding: 12px 24px;
     font-size: 15px;
   }
@@ -596,7 +595,7 @@ interface ChunkedLearningPlayerProps {
   episode: string
   subtitlePath?: string
   translationPath?: string
-  translationIndices?: number[]  // Indices of subtitles that still need translation
+  translationIndices?: number[] // Indices of subtitles that still need translation
   startTime: number
   endTime: number
   onComplete: () => void
@@ -653,10 +652,12 @@ export const ChunkedLearningPlayer: React.FC<ChunkedLearningPlayerProps> = ({
 
   // Subtitle state with persistence
   const [subtitleMode, setSubtitleMode] = useSubtitlePreferences('original')
-  const [currentSubtitle, setCurrentSubtitle] = useState<{ original: string; translation: string }>({
-    original: '',
-    translation: ''
-  })
+  const [currentSubtitle, setCurrentSubtitle] = useState<{ original: string; translation: string }>(
+    {
+      original: '',
+      translation: '',
+    }
+  )
   const [subtitles, setSubtitles] = useState<SubtitleEntry[]>([])
   const [translations, setTranslations] = useState<SubtitleEntry[]>([])
 
@@ -677,7 +678,7 @@ export const ChunkedLearningPlayer: React.FC<ChunkedLearningPlayerProps> = ({
   useEffect(() => {
     logger.debug('ChunkedLearningPlayer', 'Language configuration', {
       targetLanguage: targetLanguageName,
-      nativeLanguage: nativeLanguageName
+      nativeLanguage: nativeLanguageName,
     })
   }, [targetLanguageName, nativeLanguageName])
   const subtitleModeLabels: Record<SubtitleMode, string> = {
@@ -714,10 +715,20 @@ export const ChunkedLearningPlayer: React.FC<ChunkedLearningPlayerProps> = ({
     for (const block of blocks) {
       const lines = block.split('\n')
       if (lines.length >= 3) {
-        const timeMatch = lines[1].match(/(\d{2}):(\d{2}):(\d{2}),(\d{3}) --> (\d{2}):(\d{2}):(\d{2}),(\d{3})/)
+        const timeMatch = lines[1].match(
+          /(\d{2}):(\d{2}):(\d{2}),(\d{3}) --> (\d{2}):(\d{2}):(\d{2}),(\d{3})/
+        )
         if (timeMatch) {
-          const start = parseInt(timeMatch[1]) * 3600 + parseInt(timeMatch[2]) * 60 + parseInt(timeMatch[3]) + parseInt(timeMatch[4]) / 1000
-          const end = parseInt(timeMatch[5]) * 3600 + parseInt(timeMatch[6]) * 60 + parseInt(timeMatch[7]) + parseInt(timeMatch[8]) / 1000
+          const start =
+            parseInt(timeMatch[1]) * 3600 +
+            parseInt(timeMatch[2]) * 60 +
+            parseInt(timeMatch[3]) +
+            parseInt(timeMatch[4]) / 1000
+          const end =
+            parseInt(timeMatch[5]) * 3600 +
+            parseInt(timeMatch[6]) * 60 +
+            parseInt(timeMatch[7]) +
+            parseInt(timeMatch[8]) / 1000
 
           const textLines = lines.slice(2)
           let originalText = ''
@@ -740,28 +751,31 @@ export const ChunkedLearningPlayer: React.FC<ChunkedLearningPlayerProps> = ({
   }, [])
 
   // Build subtitle URL
-  const buildSubtitleUrl = useCallback((path: string): string => {
-    let subtitleUrl = ''
-    if (path.includes('\\') || path.includes(':')) {
-      const pathParts = path.replace(/\\/g, '/').split('/')
-      const videosIndex = pathParts.findIndex(p => p.toLowerCase() === 'videos')
-      if (videosIndex !== -1 && videosIndex < pathParts.length - 1) {
-        const relativePath = pathParts.slice(videosIndex + 1).join('/')
-        subtitleUrl = `/api/videos/subtitles/${encodeURIComponent(relativePath)}`
+  const buildSubtitleUrl = useCallback(
+    (path: string): string => {
+      let subtitleUrl = ''
+      if (path.includes('\\') || path.includes(':')) {
+        const pathParts = path.replace(/\\/g, '/').split('/')
+        const videosIndex = pathParts.findIndex(p => p.toLowerCase() === 'videos')
+        if (videosIndex !== -1 && videosIndex < pathParts.length - 1) {
+          const relativePath = pathParts.slice(videosIndex + 1).join('/')
+          subtitleUrl = `/api/videos/subtitles/${encodeURIComponent(relativePath)}`
+        } else {
+          const filename = pathParts[pathParts.length - 1]
+          subtitleUrl = `/api/videos/subtitles/${encodeURIComponent(`${series}/${filename}`)}`
+        }
       } else {
-        const filename = pathParts[pathParts.length - 1]
-        subtitleUrl = `/api/videos/subtitles/${encodeURIComponent(`${series}/${filename}`)}`
+        subtitleUrl = `/api/videos/subtitles/${encodeURIComponent(path)}`
       }
-    } else {
-      subtitleUrl = `/api/videos/subtitles/${encodeURIComponent(path)}`
-    }
 
-    const fullSubtitleUrl = subtitleUrl.startsWith('http')
-      ? subtitleUrl
-      : `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}${subtitleUrl}`
+      const fullSubtitleUrl = subtitleUrl.startsWith('http')
+        ? subtitleUrl
+        : `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}${subtitleUrl}`
 
-    return fullSubtitleUrl
-  }, [series])
+      return fullSubtitleUrl
+    },
+    [series]
+  )
 
   // Auto-hide controls
   const resetControlsTimeout = useCallback(() => {
@@ -778,52 +792,6 @@ export const ChunkedLearningPlayer: React.FC<ChunkedLearningPlayerProps> = ({
     }
   }, [playing, showSettings])
 
-  // Keyboard shortcuts
-  const handleKeyPress = useCallback((e: KeyboardEvent) => {
-    if (e.target instanceof HTMLInputElement) return
-
-    switch (e.code) {
-      case 'Space':
-        e.preventDefault()
-        setPlaying(prev => !prev)
-        break
-      case 'ArrowLeft':
-        e.preventDefault()
-        if (playerRef.current) {
-          const newTime = Math.max(startTime, currentTime - 10)
-          playerRef.current.seekTo(newTime)
-          setCurrentTime(newTime)
-        }
-        break
-      case 'ArrowRight':
-        e.preventDefault()
-        if (playerRef.current) {
-          const newTime = Math.min(endTime, currentTime + 10)
-          playerRef.current.seekTo(newTime)
-          setCurrentTime(newTime)
-        }
-        break
-      case 'KeyF':
-        e.preventDefault()
-        toggleFullscreen()
-        break
-      case 'KeyM':
-        e.preventDefault()
-        setMuted(prev => !prev)
-        break
-      case 'KeyS':
-        e.preventDefault()
-        setSubtitleMode((prev: SubtitleMode) => {
-          const modes: SubtitleMode[] = ['off', 'original', 'translation', 'both']
-          const currentIndex = modes.indexOf(prev)
-          return modes[(currentIndex + 1) % modes.length]
-        })
-        break
-    }
-
-    resetControlsTimeout()
-  }, [currentTime, startTime, endTime, resetControlsTimeout, setSubtitleMode, toggleFullscreen])
-
   // Fullscreen handling
   const toggleFullscreen = useCallback(() => {
     if (!containerRef.current) return
@@ -838,6 +806,55 @@ export const ChunkedLearningPlayer: React.FC<ChunkedLearningPlayerProps> = ({
       }
     }
   }, [isFullscreen])
+
+  // Keyboard shortcuts
+  const handleKeyPress = useCallback(
+    (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement) return
+
+      switch (e.code) {
+        case 'Space':
+          e.preventDefault()
+          setPlaying(prev => !prev)
+          break
+        case 'ArrowLeft':
+          e.preventDefault()
+          if (playerRef.current) {
+            const newTime = Math.max(startTime, currentTime - 10)
+            playerRef.current.seekTo(newTime)
+            setCurrentTime(newTime)
+          }
+          break
+        case 'ArrowRight':
+          e.preventDefault()
+          if (playerRef.current) {
+            const newTime = Math.min(endTime, currentTime + 10)
+            playerRef.current.seekTo(newTime)
+            setCurrentTime(newTime)
+          }
+          break
+        case 'KeyF':
+          e.preventDefault()
+          toggleFullscreen()
+          break
+        case 'KeyM':
+          e.preventDefault()
+          setMuted(prev => !prev)
+          break
+        case 'KeyS':
+          e.preventDefault()
+          setSubtitleMode((prev: SubtitleMode) => {
+            const modes: SubtitleMode[] = ['off', 'original', 'translation', 'both']
+            const currentIndex = modes.indexOf(prev)
+            return modes[(currentIndex + 1) % modes.length]
+          })
+          break
+      }
+
+      resetControlsTimeout()
+    },
+    [currentTime, startTime, endTime, resetControlsTimeout, setSubtitleMode, toggleFullscreen]
+  )
 
   // Handle fullscreen changes
   useEffect(() => {
@@ -886,7 +903,7 @@ export const ChunkedLearningPlayer: React.FC<ChunkedLearningPlayerProps> = ({
       translationPath,
       translationIndices,
       startTime,
-      endTime
+      endTime,
     })
 
     const normalizeEntries = (entries: SubtitleEntry[]): SubtitleEntry[] => {
@@ -911,14 +928,18 @@ export const ChunkedLearningPlayer: React.FC<ChunkedLearningPlayerProps> = ({
     if (subtitlePath) {
       const fullSubtitleUrl = buildSubtitleUrl(subtitlePath)
 
-      apiClient.get(fullSubtitleUrl, {
-        params: { _ts: Date.now() }
-      })
+      apiClient
+        .get(fullSubtitleUrl, {
+          params: { _ts: Date.now() },
+        })
         .then(response => {
           const parsedSubs = parseSRT(response.data as string)
           const normalizedSubs = normalizeEntries(parsedSubs)
           setSubtitles(normalizedSubs)
-          logger.info('ChunkedLearningPlayer', `Loaded ${targetLanguageName} subtitles: ${normalizedSubs.length} entries`)
+          logger.info(
+            'ChunkedLearningPlayer',
+            `Loaded ${targetLanguageName} subtitles: ${normalizedSubs.length} entries`
+          )
         })
         .catch(error => {
           logger.error('ChunkedLearningPlayer', 'Failed to load subtitles', error)
@@ -931,20 +952,35 @@ export const ChunkedLearningPlayer: React.FC<ChunkedLearningPlayerProps> = ({
     if (translationPath) {
       const fullTranslationUrl = buildSubtitleUrl(translationPath)
 
-      apiClient.get(fullTranslationUrl, {
-        params: { _ts: Date.now() }
-      })
+      apiClient
+        .get(fullTranslationUrl, {
+          params: { _ts: Date.now() },
+        })
         .then(response => {
           const parsedTranslations = parseSRT(response.data as string)
           const normalizedTranslations = normalizeEntries(parsedTranslations)
           setTranslations(normalizedTranslations)
-          logger.info('ChunkedLearningPlayer', `Loaded ${nativeLanguageName} translations: ${normalizedTranslations.length} entries`)
+          logger.info(
+            'ChunkedLearningPlayer',
+            `Loaded ${nativeLanguageName} translations: ${normalizedTranslations.length} entries`
+          )
         })
         .catch(error => {
           logger.warn('ChunkedLearningPlayer', 'Failed to load translations', error)
         })
     }
-  }, [subtitlePath, translationPath, translationIndices, series, startTime, endTime, buildSubtitleUrl, parseSRT, nativeLanguageName, targetLanguageName])
+  }, [
+    subtitlePath,
+    translationPath,
+    translationIndices,
+    series,
+    startTime,
+    endTime,
+    buildSubtitleUrl,
+    parseSRT,
+    nativeLanguageName,
+    targetLanguageName,
+  ])
 
   // Handle video ready - seek to startTime and begin playback (only once per chunk)
   const handleVideoReady = useCallback(() => {
@@ -956,7 +992,7 @@ export const ChunkedLearningPlayer: React.FC<ChunkedLearningPlayerProps> = ({
     logger.info('ChunkedLearningPlayer', 'Video ready, seeking to chunk start', {
       startTime,
       endTime,
-      chunkDuration: endTime - startTime
+      chunkDuration: endTime - startTime,
     })
     setVideoReady(true)
 
@@ -976,75 +1012,82 @@ export const ChunkedLearningPlayer: React.FC<ChunkedLearningPlayerProps> = ({
   useEffect(() => {
     logger.info('ChunkedLearningPlayer', 'Chunk changed, resetting player state', {
       startTime,
-      endTime
+      endTime,
     })
     setVideoReady(false)
     setPlaying(false)
   }, [startTime, endTime])
 
   // Handle video progress
-  const handleProgress = useCallback((state: { playedSeconds: number }) => {
-    setCurrentTime(state.playedSeconds)
+  const handleProgress = useCallback(
+    (state: { playedSeconds: number }) => {
+      setCurrentTime(state.playedSeconds)
 
-    const relativeTime = Math.max(0, state.playedSeconds - startTime)
-    const clampedTime = Math.min(relativeTime, chunkDuration)
+      const relativeTime = Math.max(0, state.playedSeconds - startTime)
+      const clampedTime = Math.min(relativeTime, chunkDuration)
 
-    // Update current subtitles
-    const currentSubIndex = subtitles.findIndex(sub =>
-      clampedTime >= sub.start && clampedTime <= sub.end
-    )
-    const currentSub = currentSubIndex >= 0 ? subtitles[currentSubIndex] : null
+      // Update current subtitles
+      const currentSubIndex = subtitles.findIndex(
+        sub => clampedTime >= sub.start && clampedTime <= sub.end
+      )
+      const currentSub = currentSubIndex >= 0 ? subtitles[currentSubIndex] : null
 
-    const currentTranslation = translations.find(trans =>
-      clampedTime >= trans.start && clampedTime <= trans.end
-    )
+      const currentTranslation = translations.find(
+        trans => clampedTime >= trans.start && clampedTime <= trans.end
+      )
 
-    // Check if this subtitle index needs translation
-    // If translationIndices is provided, only show translation for those indices
-    // If not provided, show all translations (backward compatibility)
-    const shouldShowTranslation = translationIndices
-      ? translationIndices.includes(currentSubIndex)
-      : true
+      // Check if this subtitle index needs translation
+      // If translationIndices is provided, only show translation for those indices
+      // If not provided, show all translations (backward compatibility)
+      const shouldShowTranslation = translationIndices
+        ? translationIndices.includes(currentSubIndex)
+        : true
 
-    // Log when translation filtering is applied
-    if (translationIndices && currentSubIndex >= 0) {
-      logger.debug('ChunkedLearningPlayer', 'Translation filtering', {
-        subtitleIndex: currentSubIndex,
-        shouldShowTranslation,
-        translationIndices: translationIndices.slice(0, 5) // Log first 5 for brevity
+      // Log when translation filtering is applied
+      if (translationIndices && currentSubIndex >= 0) {
+        logger.debug('ChunkedLearningPlayer', 'Translation filtering', {
+          subtitleIndex: currentSubIndex,
+          shouldShowTranslation,
+          translationIndices: translationIndices.slice(0, 5), // Log first 5 for brevity
+        })
+      }
+
+      const translationText =
+        shouldShowTranslation && currentTranslation
+          ? currentTranslation.translation && currentTranslation.translation.trim().length > 0
+            ? currentTranslation.translation
+            : currentTranslation.text || ''
+          : ''
+
+      setCurrentSubtitle({
+        original: currentSub?.text || '',
+        translation: translationText,
       })
-    }
 
-    const translationText = shouldShowTranslation && currentTranslation
-      ? (currentTranslation.translation && currentTranslation.translation.trim().length > 0
-        ? currentTranslation.translation
-        : currentTranslation.text || '')
-      : ''
-
-    setCurrentSubtitle({
-      original: currentSub?.text || '',
-      translation: translationText
-    })
-
-    // Check if chunk is complete
-    if (state.playedSeconds >= endTime && !showCompletion) {
-      setPlaying(false)
-      setShowCompletion(true)
-    }
-  }, [subtitles, translations, translationIndices, endTime, showCompletion, startTime, chunkDuration])
+      // Check if chunk is complete
+      if (state.playedSeconds >= endTime && !showCompletion) {
+        setPlaying(false)
+        setShowCompletion(true)
+      }
+    },
+    [subtitles, translations, translationIndices, endTime, showCompletion, startTime, chunkDuration]
+  )
 
   // Handle seeking
-  const handleSeek = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    const bounds = e.currentTarget.getBoundingClientRect()
-    const x = e.clientX - bounds.left
-    const percentage = x / bounds.width
-    const seekTime = startTime + (chunkDuration * percentage)
+  const handleSeek = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      const bounds = e.currentTarget.getBoundingClientRect()
+      const x = e.clientX - bounds.left
+      const percentage = x / bounds.width
+      const seekTime = startTime + chunkDuration * percentage
 
-    if (playerRef.current) {
-      playerRef.current.seekTo(seekTime)
-      setCurrentTime(seekTime)
-    }
-  }, [startTime, chunkDuration])
+      if (playerRef.current) {
+        playerRef.current.seekTo(seekTime)
+        setCurrentTime(seekTime)
+      }
+    },
+    [startTime, chunkDuration]
+  )
 
   // Render subtitles based on mode
   const renderSubtitles = () => {
@@ -1060,14 +1103,10 @@ export const ChunkedLearningPlayer: React.FC<ChunkedLearningPlayerProps> = ({
       <SubtitleDisplay>
         <SubtitleText>
           {showOriginal && currentSubtitle.original && (
-            <OriginalSubtitle>
-              {currentSubtitle.original}
-            </OriginalSubtitle>
+            <OriginalSubtitle>{currentSubtitle.original}</OriginalSubtitle>
           )}
           {showTranslation && currentSubtitle.translation && (
-            <TranslatedSubtitle>
-              {currentSubtitle.translation}
-            </TranslatedSubtitle>
+            <TranslatedSubtitle>{currentSubtitle.translation}</TranslatedSubtitle>
           )}
         </SubtitleText>
       </SubtitleDisplay>
@@ -1140,9 +1179,7 @@ export const ChunkedLearningPlayer: React.FC<ChunkedLearningPlayerProps> = ({
                 </LearnedWordsBadge>
               )}
 
-              <ControlButton onClick={() => setShowSettings(!showSettings)}>
-                ⚙️
-              </ControlButton>
+              <ControlButton onClick={() => setShowSettings(!showSettings)}>⚙️</ControlButton>
             </PlayerControls>
           </TopControls>
 
@@ -1156,11 +1193,7 @@ export const ChunkedLearningPlayer: React.FC<ChunkedLearningPlayerProps> = ({
             <ControlsRow>
               <LeftControls>
                 <ControlButton $large onClick={() => setPlaying(!playing)}>
-                  {playing ? (
-                    <PauseIcon className="w-6 h-6" />
-                  ) : (
-                    <PlayIcon className="w-6 h-6" />
-                  )}
+                  {playing ? <PauseIcon className="w-6 h-6" /> : <PlayIcon className="w-6 h-6" />}
                 </ControlButton>
 
                 <VolumeControl>
@@ -1178,7 +1211,7 @@ export const ChunkedLearningPlayer: React.FC<ChunkedLearningPlayerProps> = ({
                       max={1}
                       step={0.1}
                       value={volume}
-                      onChange={(e) => setVolume(parseFloat(e.target.value))}
+                      onChange={e => setVolume(parseFloat(e.target.value))}
                     />
                   )}
                 </VolumeControl>
@@ -1189,10 +1222,7 @@ export const ChunkedLearningPlayer: React.FC<ChunkedLearningPlayerProps> = ({
               </LeftControls>
 
               <RightControls>
-                <ControlButton
-                  onClick={handleSkip}
-                  title={skipButtonLabel}
-                >
+                <ControlButton onClick={handleSkip} title={skipButtonLabel}>
                   <ForwardIcon className="w-5 h-5" />
                   <span>{skipButtonLabel}</span>
                 </ControlButton>
@@ -1257,7 +1287,8 @@ export const ChunkedLearningPlayer: React.FC<ChunkedLearningPlayerProps> = ({
             <CompletionContent>
               <CompletionTitle>Chunk Complete! 🎉</CompletionTitle>
               <CompletionMessage>
-                Excellent work! You&apos;ve completed this segment and learned {learnedWords.length} new words.
+                Excellent work! You&apos;ve completed this segment and learned {learnedWords.length}{' '}
+                new words.
                 {chunkInfo && chunkInfo.current < chunkInfo.total && (
                   <> Ready for the next chunk?</>
                 )}
@@ -1265,8 +1296,7 @@ export const ChunkedLearningPlayer: React.FC<ChunkedLearningPlayerProps> = ({
               <ContinueButton onClick={onComplete}>
                 {chunkInfo && chunkInfo.current < chunkInfo.total
                   ? 'Continue to Next Chunk'
-                  : 'Complete Episode'
-                }
+                  : 'Complete Episode'}
               </ContinueButton>
             </CompletionContent>
           </CompletionOverlay>

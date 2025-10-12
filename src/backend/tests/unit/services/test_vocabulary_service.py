@@ -6,7 +6,6 @@ from uuid import uuid4
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from database.models import VocabularyWord
 from services.vocabulary.vocabulary_service import VocabularyService
 
 

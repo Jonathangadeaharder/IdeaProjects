@@ -164,11 +164,11 @@ class ChunkTranscriptionService(IChunkTranscriptionService):
                 if not isinstance(loop, asyncio.ProactorEventLoop):
                     # SelectorEventLoop doesn't support subprocesses - use sync fallback
                     logger.info("[WINDOWS FIX] Using sync subprocess fallback (SelectorEventLoop detected)")
-                    import subprocess
                     import concurrent.futures
+                    import subprocess
 
                     def run_ffmpeg_sync():
-                        result = subprocess.run(cmd, capture_output=True, timeout=600)
+                        result = subprocess.run(cmd, check=False, capture_output=True, timeout=600)
                         return result.returncode, result.stdout, result.stderr
 
                     with concurrent.futures.ThreadPoolExecutor() as pool:
@@ -230,7 +230,7 @@ class ChunkTranscriptionService(IChunkTranscriptionService):
                 "See: https://ffmpeg.org/download.html"
             ) from e
 
-        except (asyncio.TimeoutError, TimeoutError) as e:
+        except TimeoutError as e:
             logger.error(f"FFmpeg process timed out for video: {video_file}")
             # Kill the process if it exists and has a kill method
             if process is not None and hasattr(process, "kill"):

@@ -10,13 +10,13 @@ PACKAGES = [
     "hypothesis", "mypy", "ruff"
 ]
 
-print("Checking versions via PyPI JSON API:\n")
+print("Checking versions via PyPI JSON API:\n")  # noqa: T201
 for package in PACKAGES:
     try:
         url = f"https://pypi.org/pypi/{package}/json"
-        with urllib.request.urlopen(url, timeout=5) as response:
+        with urllib.request.urlopen(url, timeout=5) as response:  # noqa: S310
             data = json.loads(response.read())
             version = data["info"]["version"]
-            print(f"{package:20} {version}")
+            print(f"{package:20} {version}")  # noqa: T201
     except Exception as e:
-        print(f"{package:20} ERROR: {e}")
+        print(f"{package:20} ERROR: {e}")  # noqa: T201

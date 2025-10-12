@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React from 'react';
-import { vi } from 'vitest';
+import React from 'react'
+import { vi } from 'vitest'
 
 // Create a proxy-based motion mock that handles any HTML element
 const createMotionComponent = (element: string) => {
@@ -32,38 +32,38 @@ const createMotionComponent = (element: string) => {
       onAnimationComplete: _onAnimationComplete,
       onAnimationStart: _onAnimationStart,
       ...rest
-    } = props;
+    } = props
 
-    return React.createElement(element, { ...rest, ref }, props.children);
-  });
-  Component.displayName = `Motion${element.charAt(0).toUpperCase() + element.slice(1)}`;
-  return Component;
-};
+    return React.createElement(element, { ...rest, ref }, props.children)
+  })
+  Component.displayName = `Motion${element.charAt(0).toUpperCase() + element.slice(1)}`
+  return Component
+}
 
 export const motion = new Proxy({} as any, {
   get: (_target, key: string) => {
-    return createMotionComponent(key);
-  }
-});
+    return createMotionComponent(key)
+  },
+})
 
-export const AnimatePresence = ({ children }: any) => children;
-export const AnimateSharedLayout = ({ children }: any) => children;
-export const LazyMotion = ({ children }: any) => children;
-export const MotionConfig = ({ children }: any) => children;
+export const AnimatePresence = ({ children }: any) => children
+export const AnimateSharedLayout = ({ children }: any) => children
+export const LazyMotion = ({ children }: any) => children
+export const MotionConfig = ({ children }: any) => children
 
 export const useAnimation = () => ({
   start: vi.fn(),
   set: vi.fn(),
   stop: vi.fn(),
   mount: vi.fn(),
-});
+})
 
 export const useAnimationControls = () => ({
   start: vi.fn(),
   set: vi.fn(),
   stop: vi.fn(),
   mount: vi.fn(),
-});
+})
 
 export const useMotionValue = (initial: any) => ({
   get: () => initial,
@@ -71,50 +71,50 @@ export const useMotionValue = (initial: any) => ({
   onChange: vi.fn(),
   clearListeners: vi.fn(),
   destroy: vi.fn(),
-});
+})
 
 export const useTransform = () => ({
   get: vi.fn(),
   set: vi.fn(),
   onChange: vi.fn(),
   clearListeners: vi.fn(),
-});
+})
 
 export const useSpring = () => ({
   get: vi.fn(),
   set: vi.fn(),
   onChange: vi.fn(),
   clearListeners: vi.fn(),
-});
+})
 
 export const useVelocity = () => ({
   get: vi.fn(),
   set: vi.fn(),
   onChange: vi.fn(),
   clearListeners: vi.fn(),
-});
+})
 
 export const useDragControls = () => ({
   start: vi.fn(),
-});
+})
 
 export const useScroll = () => ({
   scrollX: { get: () => 0 },
   scrollY: { get: () => 0 },
   scrollXProgress: { get: () => 0 },
   scrollYProgress: { get: () => 0 },
-});
+})
 
-export const useInView = () => false;
-export const usePresence = () => [true, vi.fn()];
-export const useReducedMotion = () => false;
+export const useInView = () => false
+export const usePresence = () => [true, vi.fn()]
+export const useReducedMotion = () => false
 
 // Shorthand
-export const m = motion;
+export const m = motion
 
 // Feature detection
-export const domAnimation = {};
-export const domMax = {};
+export const domAnimation = {}
+export const domMax = {}
 
 export default {
   motion,
@@ -136,4 +136,4 @@ export default {
   m,
   domAnimation,
   domMax,
-};
+}

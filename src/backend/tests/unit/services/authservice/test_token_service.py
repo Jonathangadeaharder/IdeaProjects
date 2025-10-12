@@ -4,11 +4,11 @@ Unit tests for TokenService
 Tests JWT token generation, validation, refresh, and expiration handling
 """
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from unittest.mock import patch
 
 # Python 3.10 compatibility: Use timezone.utc instead of UTC constant
-UTC = timezone.utc
+UTC = UTC
 
 import pytest
 from jose import jwt

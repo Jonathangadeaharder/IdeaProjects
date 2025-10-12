@@ -113,12 +113,16 @@ class SecurityConfig:
     @staticmethod
     def hash_password(password: str) -> str:
         """
-        Hash password using Argon2 (delegates to PasswordValidator)
+        Hash password using Argon2 (via fastapi-users pwdlib)
 
         Argon2 is more secure than bcrypt for modern threats.
+        Note: In production, use fastapi-users UserManager for password operations.
+        This method is provided for compatibility only.
         """
-        from services.authservice.password_validator import PasswordValidator
-        return PasswordValidator.hash_password(password)
+        from pwdlib import PasswordHash
+
+        password_hash = PasswordHash.recommended()
+        return password_hash.hash(password)
 
     @staticmethod
     def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -127,10 +131,11 @@ class SecurityConfig:
 
         Only Argon2 hashes are supported. Legacy bcrypt hashes must be migrated.
         """
-        from services.authservice.password_validator import PasswordValidator
+        from pwdlib import PasswordHash
 
         try:
-            return PasswordValidator.verify_password(plain_password, hashed_password)
+            password_hash = PasswordHash.recommended()
+            return password_hash.verify(plain_password, hashed_password)
         except Exception as e:
             logger.error(f"Password verification error: {e}")
             return False

@@ -82,21 +82,21 @@ export const useAppStore = create<AppState>()(
       immer((set, get) => ({
         ...initialState,
 
-        setConfig: (newConfig) => {
-          set((state) => {
+        setConfig: newConfig => {
+          set(state => {
             state.config = { ...state.config, ...newConfig }
           })
         },
 
-        setLoading: (loading) => {
-          set((state) => {
+        setLoading: loading => {
+          set(state => {
             state.isLoading = loading
           })
         },
 
-        addNotification: (notification) => {
+        addNotification: notification => {
           const id = `notification_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-          set((state) => {
+          set(state => {
             state.notifications.push({
               ...notification,
               id,
@@ -112,26 +112,26 @@ export const useAppStore = create<AppState>()(
           }
         },
 
-        removeNotification: (id) => {
-          set((state) => {
+        removeNotification: id => {
+          set(state => {
             state.notifications = state.notifications.filter((n: NotificationState) => n.id !== id)
           })
         },
 
         clearNotifications: () => {
-          set((state) => {
+          set(state => {
             state.notifications = []
           })
         },
 
-        setSidebarOpen: (open) => {
-          set((state) => {
+        setSidebarOpen: open => {
+          set(state => {
             state.sidebarOpen = open
           })
         },
 
-        setError: (error) => {
-          set((state) => {
+        setError: error => {
+          set(state => {
             state.lastError = error
             if (error) {
               state.errorHistory.push({
@@ -147,20 +147,20 @@ export const useAppStore = create<AppState>()(
         },
 
         clearErrorHistory: () => {
-          set((state) => {
+          set(state => {
             state.errorHistory = []
             state.lastError = null
           })
         },
 
         recordLoadTime: (page, time) => {
-          set((state) => {
+          set(state => {
             state.performanceMetrics.loadTimes[page] = time
           })
         },
 
         recordApiResponseTime: (endpoint, time) => {
-          set((state) => {
+          set(state => {
             state.performanceMetrics.apiResponseTimes[endpoint] = time
           })
         },
@@ -177,16 +177,16 @@ export const useAppStore = create<AppState>()(
 )
 
 // Selectors for better performance
-export const useAppConfig = () => useAppStore((state) => state.config)
-export const useAppLoading = () => useAppStore((state) => state.isLoading)
-export const useAppNotifications = () => useAppStore((state) => state.notifications)
-export const useAppError = () => useAppStore((state) => state.lastError)
-export const useAppPerformance = () => useAppStore((state) => state.performanceMetrics)
+export const useAppConfig = () => useAppStore(state => state.config)
+export const useAppLoading = () => useAppStore(state => state.isLoading)
+export const useAppNotifications = () => useAppStore(state => state.notifications)
+export const useAppError = () => useAppStore(state => state.lastError)
+export const useAppPerformance = () => useAppStore(state => state.performanceMetrics)
 
 // Persist config to localStorage
 useAppStore.subscribe(
-  (state) => state.config,
-  (config) => {
+  state => state.config,
+  config => {
     try {
       localStorage.setItem('langplug-config', JSON.stringify(config))
     } catch (error) {

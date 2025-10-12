@@ -14,8 +14,8 @@ if sys.platform.startswith("win"):
     import codecs
 
     # Set stdout and stderr to use UTF-8 encoding
-    sys.stdout = codecs.getwriter("utf-8")(sys.stdout.detach())
-    sys.stderr = codecs.getwriter("utf-8")(sys.stderr.detach())
+    sys.stdout = codecs.getwriter("utf-8")(sys.stdout.detach())  # type: ignore[union-attr]
+    sys.stderr = codecs.getwriter("utf-8")(sys.stderr.detach())  # type: ignore[union-attr]
     # Set environment variable for Python to use UTF-8
     os.environ["PYTHONIOENCODING"] = "utf-8"
 
@@ -124,7 +124,6 @@ def main():
 
                 asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
                 logging.info("[WINDOWS FIX] Set ProactorEventLoopPolicy for subprocess support")
-                print("[WINDOWS FIX] Set ProactorEventLoopPolicy for subprocess support", flush=True)
 
             from core.dependencies import init_services
 

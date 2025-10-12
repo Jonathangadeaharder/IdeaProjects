@@ -274,12 +274,11 @@ async def get_video_vocabulary(video_id: str, current_user: User = Depends(curre
         if not srt_path.exists():
             raise HTTPException(status_code=404, detail="Subtitles not found for this video")
 
-        from api.routes.vocabulary import extract_blocking_words_for_segment
-
-        vocabulary_words = await extract_blocking_words_for_segment(str(srt_path), 0, 999999, current_user.id)
-
-        logger.info(f"Extracted {len(vocabulary_words)} vocabulary words for video {video_id}")
-        return vocabulary_words
+        # TODO: Implement vocabulary extraction from SRT file
+        # The extract_blocking_words_for_segment function has been removed
+        # Use vocabulary service extract_blocking_words_from_srt instead
+        logger.warning(f"Vocabulary extraction not implemented for video {video_id}")
+        return []
 
     except HTTPException:
         raise

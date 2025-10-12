@@ -249,15 +249,15 @@ async def test_e2e_subtitle_display_workflow():
             has_controls = await page.evaluate("document.querySelector('video')?.controls || false")
 
             # Log success
-            print(f"\n[E2E SUCCESS] Full workflow completed:")
-            print(f"  - Login: ✅")
-            print(f"  - Episode selection: ✅")
-            print(f"  - Chunk processing (audio + transcription + translation): ✅")
-            print(f"  - Vocabulary game: ✅ (skipped)")
-            print(f"  - Video player rendered: ✅")
-            print(f"  - Video authenticated: ✅ (has token)")
-            print(f"  - Subtitles loaded: ✅ (14 German + 14 English entries)")
-            print(f"\nE2E smoke test PASSED - core workflow verified")
+            print("\n[E2E SUCCESS] Full workflow completed:")
+            print("  - Login: ✅")
+            print("  - Episode selection: ✅")
+            print("  - Chunk processing (audio + transcription + translation): ✅")
+            print("  - Vocabulary game: ✅ (skipped)")
+            print("  - Video player rendered: ✅")
+            print("  - Video authenticated: ✅ (has token)")
+            print("  - Subtitles loaded: ✅ (14 German + 14 English entries)")
+            print("\nE2E smoke test PASSED - core workflow verified")
 
         except Exception:
             # Print all captured logs on failure

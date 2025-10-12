@@ -36,7 +36,9 @@ async def run_chunk_processing(
 ) -> None:
     """Process a specific chunk of video for vocabulary learning"""
     from core.database import get_async_session
-    from services.processing.chunk_processor import ChunkProcessingService
+    from services.processing.chunk_processor import (
+        ChunkProcessingService,
+    )
 
     try:
         # Get database session and create service instance

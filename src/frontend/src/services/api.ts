@@ -7,7 +7,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000
 
 OpenAPI.BASE = API_BASE_URL
 OpenAPI.HEADERS = {
-  'Content-Type': 'application/json'
+  'Content-Type': 'application/json',
 }
 OpenAPI.TOKEN = async () => localStorage.getItem('authToken') ?? ''
 
@@ -48,12 +48,17 @@ export const handleApiError = (error: unknown, context: string) => {
     }
     status = errObj.response?.status ?? errObj.status
     const detail = (errObj.response?.data as { detail?: string })?.detail
-    
+
     // Check for network errors
-    if (errObj.code === 'ECONNREFUSED' || errObj.code === 'ERR_NETWORK' || 
-        errObj.message?.includes('Network Error') || errObj.message?.includes('Failed to fetch')) {
+    if (
+      errObj.code === 'ECONNREFUSED' ||
+      errObj.code === 'ERR_NETWORK' ||
+      errObj.message?.includes('Network Error') ||
+      errObj.message?.includes('Failed to fetch')
+    ) {
       isNetworkError = true
-      message = 'Cannot connect to server. Please check your internet connection or ensure the backend is running.'
+      message =
+        'Cannot connect to server. Please check your internet connection or ensure the backend is running.'
     } else if (typeof detail === 'string' && detail) {
       message = detail
     } else if (typeof errObj.message === 'string' && errObj.message) {

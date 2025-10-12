@@ -1,18 +1,18 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { expect, afterEach, vi } from 'vitest';
-import { cleanup } from '@testing-library/react';
-import * as matchers from '@testing-library/jest-dom/matchers';
-import React from 'react';
-import { ThemeProvider } from 'styled-components';
-import { act } from 'react';
+import { expect, afterEach, vi } from 'vitest'
+import { cleanup } from '@testing-library/react'
+import * as matchers from '@testing-library/jest-dom/matchers'
+import React from 'react'
+import { ThemeProvider } from 'styled-components'
+import { act } from 'react'
 
 // extends Vitest's expect method with methods from react-testing-library
-expect.extend(matchers);
+expect.extend(matchers)
 
 // runs a cleanup after each test case (e.g. clearing jsdom)
 afterEach(() => {
-  cleanup();
-});
+  cleanup()
+})
 
 // Mock theme for styled-components
 const mockTheme = {
@@ -63,7 +63,8 @@ const mockTheme = {
   },
   typography: {
     fontFamily: {
-      primary: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+      primary:
+        '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
       mono: 'Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
     },
     fontSize: {
@@ -95,58 +96,54 @@ const mockTheme = {
     popover: 900,
     tooltip: 800,
   },
-};
+}
 
 // Make theme available globally for tests
-(global as any).mockTheme = mockTheme;
+;(global as any).mockTheme = mockTheme
 
 // Helper to wrap components with theme provider
-(global as any).withTheme = (component: React.ReactElement) =>
-  React.createElement(ThemeProvider, { theme: mockTheme }, component);
+;(global as any).withTheme = (component: React.ReactElement) =>
+  React.createElement(ThemeProvider, { theme: mockTheme }, component)
 
 // Make React.act available globally to replace ReactDOMTestUtils.act
-(global as any).act = act;
+;(global as any).act = act
 
 // Enhanced act wrapper for async operations
-(global as any).actAsync = async (fn: () => Promise<any>) => {
+;(global as any).actAsync = async (fn: () => Promise<any>) => {
   await act(async () => {
-    await fn();
-  });
-};
+    await fn()
+  })
+}
 
 // Suppress specific warnings that come from testing libraries
-const originalConsoleWarn = console.warn;
-const originalConsoleError = console.error;
+const originalConsoleWarn = console.warn
+const originalConsoleError = console.error
 
 console.warn = (...args) => {
-  const message = args[0];
+  const message = args[0]
   if (
     typeof message === 'string' &&
-    (
-      message.includes('ReactDOMTestUtils.act') ||
+    (message.includes('ReactDOMTestUtils.act') ||
       message.includes('React Router Future Flag Warning') ||
       (message.includes('An update to') && message.includes('was not wrapped in act')) ||
-      message.includes('Warning: `ReactDOMTestUtils.act` is deprecated')
-    )
+      message.includes('Warning: `ReactDOMTestUtils.act` is deprecated'))
   ) {
-    return; // Suppress these warnings
+    return // Suppress these warnings
   }
-  originalConsoleWarn.apply(console, args);
-};
+  originalConsoleWarn.apply(console, args)
+}
 
 console.error = (...args) => {
-  const message = args[0];
+  const message = args[0]
   if (
     typeof message === 'string' &&
-    (
-      message.includes('ReactDOMTestUtils.act') ||
-      (message.includes('An update to') && message.includes('was not wrapped in act'))
-    )
+    (message.includes('ReactDOMTestUtils.act') ||
+      (message.includes('An update to') && message.includes('was not wrapped in act')))
   ) {
-    return; // Suppress these errors
+    return // Suppress these errors
   }
-  originalConsoleError.apply(console, args);
-};
+  originalConsoleError.apply(console, args)
+}
 
 // Mock IntersectionObserver
 class MockIntersectionObserver {
@@ -162,12 +159,14 @@ class MockIntersectionObserver {
   unobserve() {
     // Mock unobserve - no-op for testing
   }
-  readonly root = null;
-  readonly rootMargin = '';
-  readonly thresholds = [];
-  takeRecords() { return [] }
+  readonly root = null
+  readonly rootMargin = ''
+  readonly thresholds = []
+  takeRecords() {
+    return []
+  }
 }
-global.IntersectionObserver = MockIntersectionObserver as any;
+global.IntersectionObserver = MockIntersectionObserver as any
 
 // Mock ResizeObserver
 global.ResizeObserver = class ResizeObserver {
@@ -183,7 +182,7 @@ global.ResizeObserver = class ResizeObserver {
   unobserve() {
     // Mock unobserve - no-op for testing
   }
-};
+}
 
 // Mock matchMedia
 Object.defineProperty(window, 'matchMedia', {
@@ -198,11 +197,11 @@ Object.defineProperty(window, 'matchMedia', {
     removeEventListener: vi.fn(),
     dispatchEvent: vi.fn(),
   })),
-});
+})
 
 // Mock URL.createObjectURL
-global.URL.createObjectURL = vi.fn(() => 'mocked-url');
-global.URL.revokeObjectURL = vi.fn();
+global.URL.createObjectURL = vi.fn(() => 'mocked-url')
+global.URL.revokeObjectURL = vi.fn()
 
 // Mock localStorage
 const localStorageMock = {
@@ -212,46 +211,20 @@ const localStorageMock = {
   clear: vi.fn(),
   length: 0,
   key: vi.fn(),
-};
+}
 Object.defineProperty(window, 'localStorage', {
   value: localStorageMock,
   writable: true,
-  configurable: true
-});
+  configurable: true,
+})
 
 // Fix URLSearchParams for jsdom
 if (!global.URLSearchParams) {
-  global.URLSearchParams = URLSearchParams;
+  global.URLSearchParams = URLSearchParams
 }
 
-// Ensure DOM is properly set up for testing
-if (typeof global.document === 'undefined' || !global.document.body) {
-  // Create a basic document if it doesn't exist
-  // Using dynamic import to avoid require statement
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const { JSDOM } = require('jsdom');
-  const dom = new JSDOM('<!doctype html><html><body></body></html>');
-  global.document = dom.window.document;
-  global.window = dom.window;
-
-  // Ensure body exists
-  if (!global.document.body) {
-    global.document.documentElement.appendChild(global.document.createElement('body'));
-  }
-}
-
-// Ensure DOM globals are available for tests
-Object.defineProperty(global.window, 'Node', {
-  value: global.window.Node,
-  writable: true,
-  configurable: true
-});
-
-Object.defineProperty(global.window, 'Element', {
-  value: global.window.Element,
-  writable: true,
-  configurable: true
-});
+// Note: Vitest's jsdom environment automatically sets up the DOM
+// No need for manual jsdom initialization here
 
 // Framer-motion is mocked via resolve.alias in vitest.config.ts
 
@@ -287,9 +260,9 @@ const sessionStorageMock = {
   clear: vi.fn(),
   length: 0,
   key: vi.fn(),
-};
+}
 Object.defineProperty(window, 'sessionStorage', {
   value: sessionStorageMock,
   writable: true,
-  configurable: true
-});
+  configurable: true,
+})

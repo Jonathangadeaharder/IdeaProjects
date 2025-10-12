@@ -115,13 +115,13 @@ class FilterDecision(str, Enum):
 
 __all__ = [
     "CEFRLevel",
-    "GameType",
-    "GameDifficulty",
-    "GameSessionStatus",
-    "ProcessingStatus",
-    "TaskStatus",
-    "QuestionType",
-    "WordType",
     "ConfidenceLevel",
     "FilterDecision",
+    "GameDifficulty",
+    "GameSessionStatus",
+    "GameType",
+    "ProcessingStatus",
+    "QuestionType",
+    "TaskStatus",
+    "WordType",
 ]

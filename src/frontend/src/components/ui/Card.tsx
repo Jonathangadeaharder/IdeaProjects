@@ -1,15 +1,18 @@
-import React from 'react';
-import styled, { css } from 'styled-components';
-import { motion } from 'framer-motion';
+import React from 'react'
+import styled, { css } from 'styled-components'
+import { motion, type HTMLMotionProps } from 'framer-motion'
 
-interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
-  children: React.ReactNode;
-  variant?: 'default' | 'elevated' | 'outlined' | 'glass';
-  padding?: 'none' | 'small' | 'medium' | 'large';
-  hoverable?: boolean;
-  clickable?: boolean;
-  className?: string;
-  onClick?: () => void;
+interface CardProps extends Omit<
+  React.HTMLAttributes<HTMLDivElement>,
+  'onDrag' | 'onDragStart' | 'onDragEnd' | 'onAnimationStart' | 'onAnimationEnd' | 'onAnimationIteration'
+> {
+  children: React.ReactNode
+  variant?: 'default' | 'elevated' | 'outlined' | 'glass'
+  padding?: 'none' | 'small' | 'medium' | 'large'
+  hoverable?: boolean
+  clickable?: boolean
+  className?: string
+  onClick?: () => void
 }
 
 const paddingStyles = {
@@ -25,7 +28,7 @@ const paddingStyles = {
   large: css`
     padding: ${({ theme }) => theme.spacing.lg};
   `,
-};
+}
 
 const variantStyles = {
   default: css`
@@ -44,15 +47,15 @@ const variantStyles = {
     box-shadow: none;
   `,
   glass: css`
-    background: rgba(255, 255, 255, 0.1);
+    background: rgb(255 255 255 / 10%);
     backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border: 1px solid rgb(255 255 255 / 20%);
     box-shadow: ${({ theme }) => theme.shadows.lg};
   `,
-};
+}
 
 const StyledCard = styled(motion.div).withConfig({
-  shouldForwardProp: (prop) => !['variant', 'padding', 'hoverable', 'clickable'].includes(prop)
+  shouldForwardProp: prop => !['variant', 'padding', 'hoverable', 'clickable'].includes(prop),
 })<CardProps>`
   border-radius: ${({ theme }) => theme.radius.lg};
   overflow: hidden;
@@ -62,22 +65,26 @@ const StyledCard = styled(motion.div).withConfig({
   ${({ variant = 'default' }) => variantStyles[variant]}
   ${({ padding = 'medium' }) => paddingStyles[padding]}
 
-  ${({ hoverable }) => hoverable && css`
-    &:hover {
-      transform: translateY(-4px);
-      box-shadow: ${({ theme }) => theme.shadows.xl};
-    }
-  `}
+  ${({ hoverable }) =>
+    hoverable &&
+    css`
+      &:hover {
+        transform: translateY(-4px);
+        box-shadow: ${({ theme }) => theme.shadows.xl};
+      }
+    `}
 
-  ${({ clickable }) => clickable && css`
-    cursor: pointer;
-    user-select: none;
+  ${({ clickable }) =>
+    clickable &&
+    css`
+      cursor: pointer;
+      user-select: none;
 
-    &:active {
-      transform: scale(0.98);
-    }
-  `}
-`;
+      &:active {
+        transform: scale(0.98);
+      }
+    `}
+`
 
 const CardHeader = styled.div`
   padding: ${({ theme }) => theme.spacing.md};
@@ -95,11 +102,11 @@ const CardHeader = styled.div`
     font-size: ${({ theme }) => theme.typography.fontSize.sm};
     color: ${({ theme }) => theme.colors.textSecondary};
   }
-`;
+`
 
 const CardContent = styled.div`
   padding: ${({ theme }) => theme.spacing.md};
-`;
+`
 
 const CardFooter = styled.div`
   padding: ${({ theme }) => theme.spacing.md};
@@ -108,7 +115,7 @@ const CardFooter = styled.div`
   align-items: center;
   justify-content: space-between;
   gap: ${({ theme }) => theme.spacing.sm};
-`;
+`
 
 const CardImage = styled.div<{ height?: string }>`
   position: relative;
@@ -126,7 +133,7 @@ const CardImage = styled.div<{ height?: string }>`
   &:hover img {
     transform: scale(1.05);
   }
-`;
+`
 
 const CardBadge = styled.span<{ color?: string }>`
   position: absolute;
@@ -139,71 +146,77 @@ const CardBadge = styled.span<{ color?: string }>`
   font-size: ${({ theme }) => theme.typography.fontSize.xs};
   font-weight: ${({ theme }) => theme.typography.fontWeight.semibold};
   z-index: 1;
-`;
+`
 
-interface CardComponent extends React.ForwardRefExoticComponent<CardProps & React.RefAttributes<HTMLDivElement>> {
-  Header: React.FC<{ children: React.ReactNode }>;
-  Content: React.FC<{ children: React.ReactNode }>;
-  Footer: React.FC<{ children: React.ReactNode }>;
-  Image: React.FC<{ height?: string; children: React.ReactNode }>;
-  Badge: React.FC<{ color?: string; children: React.ReactNode }>;
+interface CardComponent
+  extends React.ForwardRefExoticComponent<CardProps & React.RefAttributes<HTMLDivElement>> {
+  Header: React.FC<{ children: React.ReactNode }>
+  Content: React.FC<{ children: React.ReactNode }>
+  Footer: React.FC<{ children: React.ReactNode }>
+  Image: React.FC<{ height?: string; children: React.ReactNode }>
+  Badge: React.FC<{ color?: string; children: React.ReactNode }>
 }
 
-const CardComponent = React.forwardRef<HTMLDivElement, CardProps>(({
-  children,
-  onClick,
-  clickable,
-  hoverable,
-  variant = 'default',
-  padding = 'medium',
-  role,
-  tabIndex,
-  ...props
-}, ref) => {
-  const cardVariants = {
-    initial: { opacity: 0, y: 20 },
-    animate: { opacity: 1, y: 0 },
-    exit: { opacity: 0, y: -20 }
-  };
+const CardComponent = React.forwardRef<HTMLDivElement, CardProps>(
+  (
+    {
+      children,
+      onClick,
+      clickable,
+      hoverable,
+      variant = 'default',
+      padding = 'medium',
+      role,
+      tabIndex,
+      ...props
+    },
+    ref
+  ) => {
+    const cardVariants = {
+      initial: { opacity: 0, y: 20 },
+      animate: { opacity: 1, y: 0 },
+      exit: { opacity: 0, y: -20 },
+    }
 
-  const isClickable = Boolean(onClick || clickable);
-  const shouldHover = hoverable || isClickable;
+    const isClickable = Boolean(onClick || clickable)
+    const shouldHover = hoverable || isClickable
 
-  return (
-    <StyledCard
-      ref={ref}
-      onClick={onClick}
-      variants={cardVariants}
-      initial="initial"
-      animate="animate"
-      exit="exit"
-      transition={{ duration: 0.3 }}
-      variant={variant}
-      padding={padding}
-      hoverable={shouldHover}
-      clickable={isClickable}
-      role={isClickable ? (role || 'button') : role}
-      tabIndex={isClickable ? (tabIndex ?? 0) : tabIndex}
-      {...props}
-    >
-      {children}
-    </StyledCard>
-  );
-}) as CardComponent;
+    return (
+      <StyledCard
+        ref={ref}
+        onClick={onClick}
+        variants={cardVariants}
+        initial="initial"
+        animate="animate"
+        exit="exit"
+        transition={{ duration: 0.3 }}
+        variant={variant}
+        padding={padding}
+        hoverable={shouldHover}
+        clickable={isClickable}
+        role={isClickable ? role || 'button' : role}
+        tabIndex={isClickable ? (tabIndex ?? 0) : tabIndex}
+        {...props}
+      >
+        {children}
+      </StyledCard>
+    )
+  }
+) as CardComponent
 
-CardComponent.displayName = 'Card';
+CardComponent.displayName = 'Card'
 
 // Export the main component
-export const Card = CardComponent;
+export const Card = CardComponent
 
 // Export sub-components with proper typing
-Card.Header = CardHeader;
-Card.Content = CardContent;
-Card.Footer = CardFooter;
-Card.Image = CardImage;
-Card.Badge = CardBadge;
+Card.Header = CardHeader
+Card.Content = CardContent
+Card.Footer = CardFooter
+Card.Image = CardImage
+Card.Badge = CardBadge
 
 // Export sub-components as named exports for testing
-export { CardHeader, CardContent, CardFooter, CardImage, CardBadge };
+export { CardHeader, CardContent, CardFooter, CardImage, CardBadge }
 
-export default Card;
+export default Card

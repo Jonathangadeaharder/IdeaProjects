@@ -48,7 +48,7 @@ export function useApi<T>(
     error: null,
   })
 
-  const setError = useAppStore((state) => state.setError)
+  const setError = useAppStore(state => state.setError)
   const retryCount = useRef(0)
   const cacheRef = useRef<{ data: T; timestamp: number } | null>(null)
 
@@ -62,7 +62,7 @@ export function useApi<T>(
       }
     }
 
-    setState((prev) => ({ ...prev, loading: true, error: null }))
+    setState(prev => ({ ...prev, loading: true, error: null }))
 
     try {
       const response = await apiCall()
@@ -79,7 +79,7 @@ export function useApi<T>(
       const apiError = error as ApiError
       const errorMessage = apiError.message || 'An unexpected error occurred'
 
-      setState((prev) => ({ ...prev, loading: false, error: errorMessage }))
+      setState(prev => ({ ...prev, loading: false, error: errorMessage }))
       setError(errorMessage)
 
       // Retry logic
@@ -116,7 +116,7 @@ export function useApi<T>(
  * Hook for authentication-related API calls
  */
 export function useAuth() {
-  const setError = useAppStore((state) => state.setError)
+  const setError = useAppStore(state => state.setError)
 
   const login = useCallback(
     async (credentials: { username: string; password: string }) => {
@@ -153,11 +153,10 @@ export function useAuth() {
     localStorage.removeItem('authToken')
   }, [])
 
-  const getCurrentUser = useApi(
-    () => api.auth.getCurrentUser(),
-    [],
-    { cache: true, cacheTtl: 60000 }
-  )
+  const getCurrentUser = useApi(() => api.auth.getCurrentUser(), [], {
+    cache: true,
+    cacheTtl: 60000,
+  })
 
   return {
     login,
@@ -171,22 +170,21 @@ export function useAuth() {
  * Hook for searching vocabulary words
  */
 export function useVocabularySearch(query: string, language = 'de', limit = 20) {
-  return useApi(
-    () => api.vocabulary.search(query, language, limit),
-    [query, language, limit],
-    { cache: true, cacheTtl: 10 * 60 * 1000, immediate: !!query }
-  )
+  return useApi(() => api.vocabulary.search(query, language, limit), [query, language, limit], {
+    cache: true,
+    cacheTtl: 10 * 60 * 1000,
+    immediate: !!query,
+  })
 }
 
 /**
  * Hook for getting words by level
  */
 export function useWordsByLevel(level: string, language = 'de') {
-  return useApi(
-    () => api.vocabulary.getByLevel(level, language),
-    [level, language],
-    { cache: true, cacheTtl: 30 * 60 * 1000 }
-  )
+  return useApi(() => api.vocabulary.getByLevel(level, language), [level, language], {
+    cache: true,
+    cacheTtl: 30 * 60 * 1000,
+  })
 }
 
 /**
@@ -204,53 +202,45 @@ export function useRandomWords(language = 'de', levels?: string[], limit = 10) {
  * Hook for getting user progress
  */
 export function useUserProgress(language = 'de') {
-  return useApi(
-    () => api.vocabulary.getProgress(language),
-    [language],
-    { cache: true, cacheTtl: 30 * 1000 }
-  )
+  return useApi(() => api.vocabulary.getProgress(language), [language], {
+    cache: true,
+    cacheTtl: 30 * 1000,
+  })
 }
 
 /**
  * Hook for getting vocabulary stats
  */
 export function useVocabularyStats(language = 'de') {
-  return useApi(
-    () => api.vocabulary.getStats(language),
-    [language],
-    { cache: true, cacheTtl: 60 * 1000 }
-  )
+  return useApi(() => api.vocabulary.getStats(language), [language], {
+    cache: true,
+    cacheTtl: 60 * 1000,
+  })
 }
 
 /**
  * Hook for vocabulary mutations (mark/bulk mark)
  */
 export function useVocabularyMutations() {
-  const markWord = useCallback(
-    async (vocabularyId: number, isKnown: boolean) => {
-      try {
-        const response = await api.vocabulary.markWord(vocabularyId, isKnown)
-        return response.data
-      } catch (error) {
-        const apiError = error as ApiError
-        throw new Error(apiError.message)
-      }
-    },
-    []
-  )
+  const markWord = useCallback(async (vocabularyId: number, isKnown: boolean) => {
+    try {
+      const response = await api.vocabulary.markWord(vocabularyId, isKnown)
+      return response.data
+    } catch (error) {
+      const apiError = error as ApiError
+      throw new Error(apiError.message)
+    }
+  }, [])
 
-  const bulkMarkWords = useCallback(
-    async (vocabularyIds: number[], isKnown: boolean) => {
-      try {
-        const response = await api.vocabulary.bulkMarkWords(vocabularyIds, isKnown)
-        return response.data
-      } catch (error) {
-        const apiError = error as ApiError
-        throw new Error(apiError.message)
-      }
-    },
-    []
-  )
+  const bulkMarkWords = useCallback(async (vocabularyIds: number[], isKnown: boolean) => {
+    try {
+      const response = await api.vocabulary.bulkMarkWords(vocabularyIds, isKnown)
+      return response.data
+    } catch (error) {
+      const apiError = error as ApiError
+      throw new Error(apiError.message)
+    }
+  }, [])
 
   return {
     markWord,
@@ -262,42 +252,32 @@ export function useVocabularyMutations() {
  * Hook for getting processing progress
  */
 export function useProcessingProgress(taskId: string) {
-  return useApi(
-    () => api.processing.getProgress(taskId),
-    [taskId],
-    { immediate: !!taskId }
-  )
+  return useApi(() => api.processing.getProgress(taskId), [taskId], { immediate: !!taskId })
 }
 
 /**
  * Hook for processing mutations (start transcription, prepare episode)
  */
 export function useProcessingMutations() {
-  const startTranscription = useCallback(
-    async (series: string, episode: string) => {
-      try {
-        const response = await api.processing.startTranscription(series, episode)
-        return response.data
-      } catch (error) {
-        const apiError = error as ApiError
-        throw new Error(apiError.message)
-      }
-    },
-    []
-  )
+  const startTranscription = useCallback(async (series: string, episode: string) => {
+    try {
+      const response = await api.processing.startTranscription(series, episode)
+      return response.data
+    } catch (error) {
+      const apiError = error as ApiError
+      throw new Error(apiError.message)
+    }
+  }, [])
 
-  const prepareEpisode = useCallback(
-    async (series: string, episode: string) => {
-      try {
-        const response = await api.processing.prepareEpisode(series, episode)
-        return response.data
-      } catch (error) {
-        const apiError = error as ApiError
-        throw new Error(apiError.message)
-      }
-    },
-    []
-  )
+  const prepareEpisode = useCallback(async (series: string, episode: string) => {
+    try {
+      const response = await api.processing.prepareEpisode(series, episode)
+      return response.data
+    } catch (error) {
+      const apiError = error as ApiError
+      throw new Error(apiError.message)
+    }
+  }, [])
 
   return {
     startTranscription,
@@ -309,22 +289,18 @@ export function useProcessingMutations() {
  * Hook for getting video list
  */
 export function useVideoList() {
-  return useApi(
-    () => api.videos.getList(),
-    [],
-    { cache: true, cacheTtl: 10 * 60 * 1000 }
-  )
+  return useApi(() => api.videos.getList(), [], { cache: true, cacheTtl: 10 * 60 * 1000 })
 }
 
 /**
  * Hook for getting episodes for a series
  */
 export function useEpisodes(series: string) {
-  return useApi(
-    () => api.videos.getEpisodes(series),
-    [series],
-    { cache: true, cacheTtl: 10 * 60 * 1000, immediate: !!series }
-  )
+  return useApi(() => api.videos.getEpisodes(series), [series], {
+    cache: true,
+    cacheTtl: 10 * 60 * 1000,
+    immediate: !!series,
+  })
 }
 
 /**

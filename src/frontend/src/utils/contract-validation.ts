@@ -157,11 +157,13 @@ export const GameSessionSchema = z.object({
 export const ErrorResponseSchema = z.object({
   detail: z.union([
     z.string(),
-    z.array(z.object({
-      loc: z.array(z.union([z.string(), z.number()])),
-      msg: z.string(),
-      type: z.string(),
-    }))
+    z.array(
+      z.object({
+        loc: z.array(z.union([z.string(), z.number()])),
+        msg: z.string(),
+        type: z.string(),
+      })
+    ),
   ]),
   path: z.string().optional(),
   method: z.string().optional(),
@@ -181,41 +183,31 @@ export class ContractValidationError extends Error {
 }
 
 // Validation helper functions
-export function validateApiResponse<T>(
-  data: unknown,
-  schema: z.ZodSchema<T>,
-  endpoint: string
-): T {
+export function validateApiResponse<T>(data: unknown, schema: z.ZodSchema<T>, endpoint: string): T {
   try {
     return schema.parse(data)
   } catch (error) {
     if (error instanceof z.ZodError) {
-      logger.error('API response validation failed', `${endpoint}: ${error.issues.map(i => i.message).join(', ')}`)
-      throw new ContractValidationError(
-        `Invalid API response from ${endpoint}`,
-        endpoint,
-        error
+      logger.error(
+        'API response validation failed',
+        `${endpoint}: ${error.issues.map(i => i.message).join(', ')}`
       )
+      throw new ContractValidationError(`Invalid API response from ${endpoint}`, endpoint, error)
     }
     throw error
   }
 }
 
-export function validateApiRequest<T>(
-  data: unknown,
-  schema: z.ZodSchema<T>,
-  endpoint: string
-): T {
+export function validateApiRequest<T>(data: unknown, schema: z.ZodSchema<T>, endpoint: string): T {
   try {
     return schema.parse(data)
   } catch (error) {
     if (error instanceof z.ZodError) {
-      logger.error('API request validation failed', `${endpoint}: ${error.issues.map(i => i.message).join(', ')}`)
-      throw new ContractValidationError(
-        `Invalid API request to ${endpoint}`,
-        endpoint,
-        error
+      logger.error(
+        'API request validation failed',
+        `${endpoint}: ${error.issues.map(i => i.message).join(', ')}`
       )
+      throw new ContractValidationError(`Invalid API request to ${endpoint}`, endpoint, error)
     }
     throw error
   }

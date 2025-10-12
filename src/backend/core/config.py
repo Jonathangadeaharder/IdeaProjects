@@ -94,8 +94,6 @@ class Settings(BaseSettings):
     log_level: str = Field(default="INFO", alias="LANGPLUG_LOG_LEVEL")
     log_format: str = Field(default="json", alias="LANGPLUG_LOG_FORMAT")  # json or text
 
-    model_config = {"env_file": ".env", "case_sensitive": False, "extra": "ignore"}
-
     @field_validator("cors_origins")
     @classmethod
     def parse_cors_origins(cls, v):

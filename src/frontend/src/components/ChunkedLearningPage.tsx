@@ -22,16 +22,18 @@ export const ChunkedLearningPage: React.FC = () => {
 
   if (!videoInfo) {
     return (
-      <div style={{
-        color: 'white',
-        padding: '40px',
-        textAlign: 'center',
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: '#141414'
-      }}>
+      <div
+        style={{
+          color: 'white',
+          padding: '40px',
+          textAlign: 'center',
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: '#141414',
+        }}
+      >
         <h1>Video information not found. Please go back and select an episode.</h1>
       </div>
     )

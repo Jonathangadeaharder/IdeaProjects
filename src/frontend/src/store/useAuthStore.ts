@@ -31,11 +31,12 @@ interface AuthState {
   reset: () => void
 }
 
-const mapUser = (user: UserRead | UserResponse): User => ({
-  ...user,
-  name: user.username,
-  is_verified: 'is_verified' in user ? user.is_verified : false,
-} as User)
+const mapUser = (user: UserRead | UserResponse): User =>
+  ({
+    ...user,
+    name: user.username,
+    is_verified: 'is_verified' in user ? user.is_verified : false,
+  }) as User
 
 const extractErrorMessage = (error: unknown, fallback: string) => {
   if (error instanceof ApiError) {
@@ -218,7 +219,7 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'auth-storage',
-      partialize: (state) => ({
+      partialize: state => ({
         user: state.user,
         isAuthenticated: state.isAuthenticated,
         token: state.token,

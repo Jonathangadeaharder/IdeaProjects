@@ -1,6 +1,9 @@
 import { create } from 'zustand'
 import type { GameSession, VocabularyWord } from '@/types'
-import { getBlockingWordsApiVocabularyBlockingWordsGet, markWordKnownApiVocabularyMarkKnownPost } from '@/client/services.gen'
+import {
+  getBlockingWordsApiVocabularyBlockingWordsGet,
+  markWordKnownApiVocabularyMarkKnownPost,
+} from '@/client/services.gen'
 
 interface GameState {
   gameSession: GameSession | null
@@ -33,7 +36,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       current_segment: 0,
       segments: [],
       user_progress: {},
-      completed: false
+      completed: false,
     }
 
     set({
@@ -41,7 +44,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       currentWords: [],
       currentWordIndex: 0,
       showSubtitles: false,
-      isProcessing: false
+      isProcessing: false,
     })
   },
 
@@ -52,18 +55,18 @@ export const useGameStore = create<GameState>((set, get) => ({
     set({ isProcessing: true })
 
     try {
-      const blockingWordsResponse = await getBlockingWordsApiVocabularyBlockingWordsGet({
+      const blockingWordsResponse = (await getBlockingWordsApiVocabularyBlockingWordsGet({
         videoPath: gameSession.video_path,
-      }) as { blocking_words?: VocabularyWord[] } | VocabularyWord[]
+      })) as { blocking_words?: VocabularyWord[] } | VocabularyWord[]
 
       const words = Array.isArray(blockingWordsResponse)
         ? blockingWordsResponse
-        : blockingWordsResponse?.blocking_words ?? []
+        : (blockingWordsResponse?.blocking_words ?? [])
 
       set({
         currentWords: words,
         currentWordIndex: 0,
-        isProcessing: false
+        isProcessing: false,
       })
     } catch (error) {
       console.error('Failed to load segment words:', error)
@@ -94,20 +97,18 @@ export const useGameStore = create<GameState>((set, get) => ({
       const wordKey = targetWord.lemma || targetWord.word
       const updatedProgress = {
         ...gameSession.user_progress,
-        [wordKey]: known
+        [wordKey]: known,
       }
 
       // Update current words
-      const updatedWords = currentWords.map(w =>
-        w.word === word ? { ...w, known } : w
-      )
+      const updatedWords = currentWords.map(w => (w.word === word ? { ...w, known } : w))
 
       set({
         gameSession: {
           ...gameSession,
-          user_progress: updatedProgress
+          user_progress: updatedProgress,
         },
-        currentWords: updatedWords
+        currentWords: updatedWords,
       })
     } catch (error) {
       console.error('Failed to mark word:', error)
@@ -136,10 +137,10 @@ export const useGameStore = create<GameState>((set, get) => ({
     set({
       gameSession: {
         ...gameSession,
-        current_segment: nextSegmentIndex
+        current_segment: nextSegmentIndex,
       },
       currentWords: [],
-      currentWordIndex: 0
+      currentWordIndex: 0,
     })
 
     // Load words for next segment
@@ -152,7 +153,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       currentWords: [],
       currentWordIndex: 0,
       showSubtitles: false,
-      isProcessing: false
+      isProcessing: false,
     })
   },
 
@@ -162,7 +163,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       currentWords: [],
       currentWordIndex: 0,
       showSubtitles: false,
-      isProcessing: false
+      isProcessing: false,
     })
-  }
+  },
 }))

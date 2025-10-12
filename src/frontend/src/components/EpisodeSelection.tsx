@@ -17,7 +17,7 @@ import type { VideoInfo, ProcessingStatus } from '@/types'
 
 const Header = styled.header`
   padding: 20px 0;
-  background: rgba(0, 0, 0, 0.9);
+  background: rgb(0 0 0 / 90%);
   position: sticky;
   top: 0;
   z-index: 100;
@@ -56,9 +56,9 @@ const SeriesHeader = styled.section`
   text-align: center;
   background: linear-gradient(
     180deg,
-    rgba(0, 0, 0, 0.8) 0%,
-    rgba(0, 0, 0, 0.4) 50%,
-    rgba(0, 0, 0, 0.8) 100%
+    rgb(0 0 0 / 80%) 0%,
+    rgb(0 0 0 / 40%) 50%,
+    rgb(0 0 0 / 80%) 100%
   );
 `
 
@@ -68,7 +68,7 @@ const SeriesTitle = styled.h1`
   margin-bottom: 16px;
   color: white;
 
-  @media (max-width: 768px) {
+  @media (width <= 768px) {
     font-size: 28px;
   }
 `
@@ -82,7 +82,7 @@ const SeriesInfo = styled.div`
   font-size: 16px;
   margin-bottom: 24px;
 
-  @media (max-width: 768px) {
+  @media (width <= 768px) {
     flex-direction: column;
     gap: 12px;
   }
@@ -113,19 +113,19 @@ const EpisodeCard = styled.div`
   display: grid;
   grid-template-columns: 200px 1fr auto;
   gap: 20px;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgb(0 0 0 / 60%);
   border-radius: 8px;
   overflow: hidden;
   transition: all 0.3s ease;
   border: 2px solid transparent;
 
   &:hover {
-    background: rgba(0, 0, 0, 0.8);
+    background: rgb(0 0 0 / 80%);
     border-color: #e50914;
     transform: translateY(-2px);
   }
 
-  @media (max-width: 768px) {
+  @media (width <= 768px) {
     grid-template-columns: 1fr;
     gap: 16px;
   }
@@ -143,14 +143,14 @@ const EpisodeThumbnail = styled.div`
     content: '';
     position: absolute;
     inset: 0;
-    background: rgba(0, 0, 0, 0.3);
+    background: rgb(0 0 0 / 30%);
   }
 `
 
 const PlayIconOverlay = styled.div`
   width: 40px;
   height: 40px;
-  background: rgba(255, 255, 255, 0.9);
+  background: rgb(255 255 255 / 90%);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -257,14 +257,20 @@ export const EpisodeSelection: React.FC = () => {
   }
 
   // Poll for progress updates with exponential backoff
-  const pollProgress = async (taskId: string, episodePath: string, taskType: 'transcription' | 'filtering' | 'translation' = 'transcription') => {
+  const pollProgress = async (
+    taskId: string,
+    episodePath: string,
+    taskType: 'transcription' | 'filtering' | 'translation' = 'transcription'
+  ) => {
     const maxAttempts = 120 // Reduced from 180, with longer intervals
     let attempts = 0
     let pollInterval = 5000 // Start at 5 seconds
 
     const poll = async () => {
       try {
-        const progress = await getTaskProgressApiProcessProgressTaskIdGet({ taskId }) as ProcessingStatus
+        const progress = (await getTaskProgressApiProcessProgressTaskIdGet({
+          taskId,
+        })) as ProcessingStatus
         setProgressData(prev => ({ ...prev, [episodePath]: progress }))
 
         if (progress.status === 'completed') {
@@ -302,7 +308,10 @@ export const EpisodeSelection: React.FC = () => {
   }
 
   // Handle progress completion
-  const handleTaskComplete = (episodePath: string, taskType: 'transcription' | 'filtering' | 'translation') => {
+  const handleTaskComplete = (
+    episodePath: string,
+    taskType: 'transcription' | 'filtering' | 'translation'
+  ) => {
     // Remove from processing tasks
     setProcessingTasks(prev => {
       const newSet = new Set(prev)
@@ -320,9 +329,9 @@ export const EpisodeSelection: React.FC = () => {
     if (taskType === 'transcription') {
       toast.success('Episode is ready for learning!', { id: 'transcription' })
       // Update episode status
-      setEpisodes(prev => prev.map(ep =>
-        ep.path === episodePath ? { ...ep, has_subtitles: true } : ep
-      ))
+      setEpisodes(prev =>
+        prev.map(ep => (ep.path === episodePath ? { ...ep, has_subtitles: true } : ep))
+      )
     } else if (taskType === 'filtering') {
       toast.success('Episode filtering completed!', { id: 'filtering' })
     } else if (taskType === 'translation') {
@@ -351,9 +360,12 @@ export const EpisodeSelection: React.FC = () => {
 
   const handlePlayEpisode = async (episode: VideoInfo) => {
     // Navigate directly to the chunked learning flow
-    navigate(`/learn/${encodeURIComponent(episode.series)}/${encodeURIComponent(episode.episode)}`, {
-      state: { videoInfo: episode }
-    })
+    navigate(
+      `/learn/${encodeURIComponent(episode.series)}/${encodeURIComponent(episode.episode)}`,
+      {
+        state: { videoInfo: episode },
+      }
+    )
   }
 
   const _handleFilterEpisode = async (episode: VideoInfo) => {
@@ -362,9 +374,9 @@ export const EpisodeSelection: React.FC = () => {
       toast.loading('Filtering episode subtitles...', { id: 'filtering' })
 
       // Start filtering
-      const result = await filterSubtitlesApiProcessFilterSubtitlesPost({
+      const result = (await filterSubtitlesApiProcessFilterSubtitlesPost({
         requestBody: { video_path: episode.path },
-      }) as { task_id: string }
+      })) as { task_id: string }
 
       // Start polling progress
       pollProgress(result.task_id, episode.path, 'filtering')
@@ -413,9 +425,12 @@ export const EpisodeSelection: React.FC = () => {
 
   const _getStatusText = (status: string) => {
     switch (status) {
-      case 'ready': return 'Ready to Learn'
-      case 'processing': return 'Processing...'
-      default: return 'Will Process'
+      case 'ready':
+        return 'Ready to Learn'
+      case 'processing':
+        return 'Processing...'
+      default:
+        return 'Will Process'
     }
   }
 
@@ -453,13 +468,11 @@ export const EpisodeSelection: React.FC = () => {
               <ClockIcon className="w-5 h-5" />
               ~5 min segments
             </InfoItem>
-            <InfoItem>
-              German Learning
-            </InfoItem>
+            <InfoItem>German Learning</InfoItem>
           </SeriesInfo>
           <SeriesDescription>
-            Learn German through engaging TV episodes. Our interactive system will help you master new vocabulary
-            by focusing on the most challenging words for your level.
+            Learn German through engaging TV episodes. Our interactive system will help you master
+            new vocabulary by focusing on the most challenging words for your level.
           </SeriesDescription>
         </Container>
       </SeriesHeader>
@@ -503,8 +516,8 @@ export const EpisodeSelection: React.FC = () => {
                         )}
                       </EpisodeMeta>
                       <EpisodeDescription>
-                        Interactive German learning experience with vocabulary games
-                        and subtitle-based comprehension exercises.
+                        Interactive German learning experience with vocabulary games and
+                        subtitle-based comprehension exercises.
                       </EpisodeDescription>
                     </EpisodeInfo>
 

@@ -86,7 +86,7 @@ const ProfileScreen: React.FC = () => {
   const loadProfile = async () => {
     try {
       setLoading(true)
-      const profileData = await Services.profileGetApiProfileGet() as unknown as ProfileResponse
+      const profileData = (await Services.profileGetApiProfileGet()) as unknown as ProfileResponse
 
       if (!profileData) {
         toast.error('Could not load profile details.')
@@ -116,7 +116,9 @@ const ProfileScreen: React.FC = () => {
 
     // Check if this pair is supported
     if (!isTranslationPairSupported(language.code, targetLanguage.code)) {
-      toast.error(`Translation from ${language.name} to ${targetLanguage.name} is not supported yet.`)
+      toast.error(
+        `Translation from ${language.name} to ${targetLanguage.name} is not supported yet.`
+      )
       return
     }
 
@@ -132,7 +134,9 @@ const ProfileScreen: React.FC = () => {
 
     // Check if this pair is supported
     if (!isTranslationPairSupported(nativeLanguage.code, language.code)) {
-      toast.error(`Translation from ${nativeLanguage.name} to ${language.name} is not supported yet.`)
+      toast.error(
+        `Translation from ${nativeLanguage.name} to ${language.name} is not supported yet.`
+      )
       return
     }
 
@@ -202,14 +206,17 @@ const ProfileScreen: React.FC = () => {
         <HeroCard>
           <Avatar>{initials}</Avatar>
           <HeroContent>
-          <HeroTitle>Hello {profile?.username ?? 'Explorer'}</HeroTitle>
+            <HeroTitle>Hello {profile?.username ?? 'Explorer'}</HeroTitle>
             <HeroSubtitle>
-              Personalize your language journey by choosing the languages you speak and the ones you want to master.
+              Personalize your language journey by choosing the languages you speak and the ones you
+              want to master.
             </HeroSubtitle>
             <HeroStats>
               <Stat>
                 <StatLabel>Member since</StatLabel>
-                <StatValue>{profile ? new Date(profile.created_at).toLocaleDateString() : '—'}</StatValue>
+                <StatValue>
+                  {profile ? new Date(profile.created_at).toLocaleDateString() : '—'}
+                </StatValue>
               </Stat>
               {profile?.last_login && (
                 <Stat>
@@ -230,7 +237,8 @@ const ProfileScreen: React.FC = () => {
         <PreferencesCard>
           <SectionHeading>Language preferences</SectionHeading>
           <SectionDescription>
-            Tell us about your language goals so we can tailor vocabulary, subtitles, and exercises just for you.
+            Tell us about your language goals so we can tailor vocabulary, subtitles, and exercises
+            just for you.
           </SectionDescription>
 
           <SelectorGrid>
@@ -297,21 +305,24 @@ const GlassButton = styled.button`
   gap: 10px;
   padding: 12px 20px;
   border-radius: 999px;
-  border: 1px solid rgba(148, 163, 184, 0.25);
-  background: rgba(15, 23, 42, 0.55);
+  border: 1px solid rgb(148 163 184 / 25%);
+  background: rgb(15 23 42 / 55%);
   color: white;
   font-weight: 500;
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    border 0.2s ease;
 
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 16px 32px rgba(15, 23, 42, 0.35);
-    border-color: rgba(59, 130, 246, 0.35);
+    box-shadow: 0 16px 32px rgb(15 23 42 / 35%);
+    border-color: rgb(59 130 246 / 35%);
   }
 
   &:focus-visible {
-    outline: 3px solid rgba(59, 130, 246, 0.5);
+    outline: 3px solid rgb(59 130 246 / 50%);
     outline-offset: 2px;
   }
 
@@ -326,13 +337,13 @@ const BackButton = styled(GlassButton)`
 `
 
 const LogoutGhostButton = styled(GlassButton)`
-  background: rgba(248, 113, 113, 0.18);
-  border-color: rgba(248, 113, 113, 0.35);
+  background: rgb(248 113 113 / 18%);
+  border-color: rgb(248 113 113 / 35%);
   color: #fecaca;
 
   &:hover {
-    border-color: rgba(248, 113, 113, 0.55);
-    box-shadow: 0 16px 32px rgba(248, 113, 113, 0.28);
+    border-color: rgb(248 113 113 / 55%);
+    box-shadow: 0 16px 32px rgb(248 113 113 / 28%);
   }
 `
 
@@ -343,12 +354,12 @@ const HeroCard = styled.section`
   align-items: center;
   padding: 36px 40px;
   border-radius: 28px;
-  border: 1px solid rgba(148, 163, 184, 0.25);
-  background: linear-gradient(135deg, rgba(30, 64, 175, 0.3), rgba(15, 118, 110, 0.2));
-  box-shadow: 0 28px 60px rgba(30, 64, 175, 0.25);
+  border: 1px solid rgb(148 163 184 / 25%);
+  background: linear-gradient(135deg, rgb(30 64 175 / 30%), rgb(15 118 110 / 20%));
+  box-shadow: 0 28px 60px rgb(30 64 175 / 25%);
   margin-bottom: 40px;
 
-  @media (max-width: 768px) {
+  @media (width <= 768px) {
     grid-template-columns: 1fr;
     text-align: center;
     padding: 28px;
@@ -359,8 +370,8 @@ const Avatar = styled.div`
   width: 96px;
   height: 96px;
   border-radius: 24px;
-  background: rgba(15, 23, 42, 0.65);
-  border: 1px solid rgba(148, 163, 184, 0.25);
+  background: rgb(15 23 42 / 65%);
+  border: 1px solid rgb(148 163 184 / 25%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -381,13 +392,13 @@ const HeroTitle = styled.h1`
   font-weight: 700;
   line-height: 1.2;
 
-  @media (max-width: 768px) {
+  @media (width <= 768px) {
     font-size: 28px;
   }
 `
 
 const HeroSubtitle = styled.p`
-  color: rgba(226, 232, 240, 0.78);
+  color: rgb(226 232 240 / 78%);
   font-size: 17px;
   line-height: 1.6;
   max-width: 560px;
@@ -409,13 +420,13 @@ const StatLabel = styled.span`
   font-size: 13px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: rgba(226, 232, 240, 0.55);
+  color: rgb(226 232 240 / 55%);
 `
 
 const StatValue = styled.span`
   font-size: 18px;
   font-weight: 600;
-  color: rgba(226, 232, 240, 0.92);
+  color: rgb(226 232 240 / 92%);
 `
 
 const AdminBadge = styled.span`
@@ -424,7 +435,7 @@ const AdminBadge = styled.span`
   justify-content: center;
   padding: 6px 12px;
   border-radius: 999px;
-  background: rgba(247, 181, 0, 0.2);
+  background: rgb(247 181 0 / 20%);
   color: #fde68a;
   font-size: 13px;
   font-weight: 600;
@@ -434,13 +445,13 @@ const AdminBadge = styled.span`
 
 const PreferencesCard = styled.section`
   border-radius: 28px;
-  border: 1px solid rgba(148, 163, 184, 0.25);
-  background: rgba(15, 23, 42, 0.65);
+  border: 1px solid rgb(148 163 184 / 25%);
+  background: rgb(15 23 42 / 65%);
   backdrop-filter: blur(24px);
   padding: 40px;
-  box-shadow: 0 32px 60px rgba(15, 23, 42, 0.35);
+  box-shadow: 0 32px 60px rgb(15 23 42 / 35%);
 
-  @media (max-width: 768px) {
+  @media (width <= 768px) {
     padding: 28px 24px;
   }
 `
@@ -453,7 +464,7 @@ const SectionHeading = styled.h2`
 const SectionDescription = styled.p`
   margin-top: 12px;
   max-width: 620px;
-  color: rgba(226, 232, 240, 0.7);
+  color: rgb(226 232 240 / 70%);
   line-height: 1.6;
 `
 
@@ -462,7 +473,7 @@ const SelectorGrid = styled.div`
   gap: 24px;
   margin-top: 32px;
 
-  @media (min-width: 900px) {
+  @media (width >= 900px) {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 `
@@ -470,9 +481,9 @@ const SelectorGrid = styled.div`
 const GlassPanel = styled.div`
   border-radius: 20px;
   padding: 20px 24px;
-  background: rgba(148, 163, 184, 0.12);
-  border: 1px solid rgba(148, 163, 184, 0.25);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+  background: rgb(148 163 184 / 12%);
+  border: 1px solid rgb(148 163 184 / 25%);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 3%);
 `
 
 const PanelLabel = styled.h3`
@@ -480,7 +491,7 @@ const PanelLabel = styled.h3`
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: rgba(226, 232, 240, 0.7);
+  color: rgb(226 232 240 / 70%);
   margin-bottom: 12px;
 `
 
@@ -502,9 +513,10 @@ const StatusPill = styled.span<{ $success: boolean }>`
   font-weight: 600;
   font-size: 14px;
   letter-spacing: 0.04em;
-  color: ${props => props.$success ? '#34d399' : '#facc15'};
-  background: ${props => props.$success ? 'rgba(16, 185, 129, 0.18)' : 'rgba(234, 179, 8, 0.18)'};
-  border: 1px solid ${props => props.$success ? 'rgba(16, 185, 129, 0.35)' : 'rgba(234, 179, 8, 0.35)'};
+  color: ${props => (props.$success ? '#34d399' : '#facc15')};
+  background: ${props => (props.$success ? 'rgba(16, 185, 129, 0.18)' : 'rgba(234, 179, 8, 0.18)')};
+  border: 1px solid
+    ${props => (props.$success ? 'rgba(16, 185, 129, 0.35)' : 'rgba(234, 179, 8, 0.35)')};
 `
 
 const PrimaryButton = styled.button`
@@ -516,13 +528,15 @@ const PrimaryButton = styled.button`
   letter-spacing: 0.04em;
   color: white;
   background: linear-gradient(135deg, #2563eb, #7c3aed);
-  box-shadow: 0 18px 40px rgba(37, 99, 235, 0.35);
+  box-shadow: 0 18px 40px rgb(37 99 235 / 35%);
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
 
   &:hover:not(:disabled) {
     transform: translateY(-2px);
-    box-shadow: 0 22px 50px rgba(37, 99, 235, 0.4);
+    box-shadow: 0 22px 50px rgb(37 99 235 / 40%);
   }
 
   &:disabled {
@@ -539,14 +553,14 @@ const CenteredState = styled.div`
   align-items: center;
   justify-content: center;
   gap: 16px;
-  color: rgba(226, 232, 240, 0.75);
+  color: rgb(226 232 240 / 75%);
 `
 
 const LoadingSpinner = styled.div`
   width: 44px;
   height: 44px;
   border-radius: 999px;
-  border: 4px solid rgba(148, 163, 184, 0.25);
+  border: 4px solid rgb(148 163 184 / 25%);
   border-top-color: #60a5fa;
   animation: spin 1s linear infinite;
 

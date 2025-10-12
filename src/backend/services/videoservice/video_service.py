@@ -230,9 +230,9 @@ class VideoService:
         if "season" in episode_info and not episode_info["season"].isdigit():
             del episode_info["season"]
 
-    def _parse_episode_filename(self, filename: str) -> dict[str, str]:
+    def _parse_episode_filename(self, filename: str) -> dict[str, str | None]:
         """Parse episode information from filename using regex patterns (Refactored for lower complexity)"""
-        episode_info = {"title": filename}
+        episode_info: dict[str, str | None] = {"title": filename}
 
         if not filename or len(filename.strip()) < 2:
             return episode_info

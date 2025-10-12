@@ -77,7 +77,11 @@ export interface VocabularyState {
   // API Actions
   searchWords: (query: string, language?: string, limit?: number) => Promise<void>
   fetchWordsByLevel: (level: string, language?: string) => Promise<void>
-  fetchRandomWords: (language?: string, levels?: string[], limit?: number) => Promise<VocabularyWord[]>
+  fetchRandomWords: (
+    language?: string,
+    levels?: string[],
+    limit?: number
+  ) => Promise<VocabularyWord[]>
   markWord: (vocabularyId: number, isKnown: boolean) => Promise<void>
   bulkMarkWords: (vocabularyIds: number[], isKnown: boolean) => Promise<void>
   fetchUserProgress: (language?: string) => Promise<void>
@@ -106,60 +110,60 @@ export const useVocabularyStore = create<VocabularyState>()(
       immer((set, get) => ({
         ...initialState,
 
-        setWords: (words) => {
-          set((state) => {
-            words.forEach((word) => {
+        setWords: words => {
+          set(state => {
+            words.forEach(word => {
               state.words[word.id] = word
             })
           })
         },
 
-        setUserProgress: (progress) => {
-          set((state) => {
-            progress.forEach((p) => {
+        setUserProgress: progress => {
+          set(state => {
+            progress.forEach(p => {
               state.userProgress[p.vocabulary_id] = p
             })
           })
         },
 
-        setStats: (stats) => {
-          set((state) => {
+        setStats: stats => {
+          set(state => {
             state.stats = stats
           })
         },
 
-        setSearchResults: (results) => {
-          set((state) => {
+        setSearchResults: results => {
+          set(state => {
             state.searchResults = results
           })
         },
 
-        setLoading: (loading) => {
-          set((state) => {
+        setLoading: loading => {
+          set(state => {
             state.isLoading = loading
           })
         },
 
-        setSearching: (searching) => {
-          set((state) => {
+        setSearching: searching => {
+          set(state => {
             state.isSearching = searching
           })
         },
 
-        setCurrentLevel: (level) => {
-          set((state) => {
+        setCurrentLevel: level => {
+          set(state => {
             state.currentLevel = level
           })
         },
 
-        setCurrentLanguage: (language) => {
-          set((state) => {
+        setCurrentLanguage: language => {
+          set(state => {
             state.currentLanguage = language
           })
         },
 
-        setSearchQuery: (query) => {
-          set((state) => {
+        setSearchQuery: query => {
+          set(state => {
             state.searchQuery = query
           })
         },
@@ -198,7 +202,7 @@ export const useVocabularyStore = create<VocabularyState>()(
             const response = await api.vocabulary.getByLevel(level, language)
             const words = response.data as VocabularyWord[]
             state.setWords(words)
-            set((s) => {
+            set(s => {
               s.lastFetch[cacheKey] = now
             })
           } catch (error) {
@@ -208,7 +212,11 @@ export const useVocabularyStore = create<VocabularyState>()(
           }
         },
 
-        fetchRandomWords: async (language = 'de', levels, limit = 10): Promise<VocabularyWord[]> => {
+        fetchRandomWords: async (
+          language = 'de',
+          levels,
+          limit = 10
+        ): Promise<VocabularyWord[]> => {
           const state = get()
           state.setLoading(true)
 
@@ -232,7 +240,7 @@ export const useVocabularyStore = create<VocabularyState>()(
             const response = await api.vocabulary.markWord(vocabularyId, isKnown)
             const progress = response.data as UserVocabularyProgress
 
-            set((s) => {
+            set(s => {
               s.userProgress[vocabularyId] = progress
             })
 
@@ -251,8 +259,8 @@ export const useVocabularyStore = create<VocabularyState>()(
             const response = await api.vocabulary.bulkMarkWords(vocabularyIds, isKnown)
             const progressList = response.data as UserVocabularyProgress[]
 
-            set((s) => {
-              progressList.forEach((progress) => {
+            set(s => {
+              progressList.forEach(progress => {
                 s.userProgress[progress.vocabulary_id] = progress
               })
             })
@@ -279,7 +287,7 @@ export const useVocabularyStore = create<VocabularyState>()(
             const response = await api.vocabulary.getProgress(language)
             const progress = response.data as UserVocabularyProgress[]
             state.setUserProgress(progress)
-            set((s) => {
+            set(s => {
               s.lastFetch[cacheKey] = now
             })
           } catch (error) {
@@ -304,7 +312,7 @@ export const useVocabularyStore = create<VocabularyState>()(
           const { currentLanguage, currentLevel } = state
 
           // Clear cache
-          set((s) => {
+          set(s => {
             s.lastFetch = {}
           })
 
@@ -327,17 +335,17 @@ export const useVocabularyStore = create<VocabularyState>()(
 )
 
 // Selectors for better performance
-export const useVocabularyWords = () => useVocabularyStore((state) => Object.values(state.words))
-export const useVocabularySearchResults = () => useVocabularyStore((state) => state.searchResults)
-export const useVocabularyStats = () => useVocabularyStore((state) => state.stats)
-export const useVocabularyLoading = () => useVocabularyStore((state) => state.isLoading)
-export const useVocabularySearching = () => useVocabularyStore((state) => state.isSearching)
-export const useUserProgress = () => useVocabularyStore((state) => Object.values(state.userProgress))
+export const useVocabularyWords = () => useVocabularyStore(state => Object.values(state.words))
+export const useVocabularySearchResults = () => useVocabularyStore(state => state.searchResults)
+export const useVocabularyStats = () => useVocabularyStore(state => state.stats)
+export const useVocabularyLoading = () => useVocabularyStore(state => state.isLoading)
+export const useVocabularySearching = () => useVocabularyStore(state => state.isSearching)
+export const useUserProgress = () => useVocabularyStore(state => Object.values(state.userProgress))
 
 // Helper function to get word progress
 export const useWordProgress = (vocabularyId: number) =>
-  useVocabularyStore((state) => state.userProgress[vocabularyId] || null)
+  useVocabularyStore(state => state.userProgress[vocabularyId] || null)
 
 // Helper function to check if word is known
 export const useIsWordKnown = (vocabularyId: number) =>
-  useVocabularyStore((state) => state.userProgress[vocabularyId]?.is_known || false)
+  useVocabularyStore(state => state.userProgress[vocabularyId]?.is_known || false)

@@ -14,15 +14,15 @@ This will fetch the OpenAPI spec from the backend and generate TypeScript Zod sc
 ## Usage
 
 ```typescript
-import { UserRegisterSchema, LoginRequestSchema } from "@/schemas/api-schemas";
+import { UserRegisterSchema, LoginRequestSchema } from '@/schemas/api-schemas'
 
 // Validate form data
 try {
-  const validData = UserRegisterSchema.parse(formData);
+  const validData = UserRegisterSchema.parse(formData)
   // Data is valid and typed
 } catch (error) {
   // Handle validation errors
-  const formErrors = zodErrorToFormErrors(error);
+  const formErrors = zodErrorToFormErrors(error)
 }
 ```
 

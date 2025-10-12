@@ -45,7 +45,9 @@ let isRefreshing = false
 let refreshPromise: Promise<string | null> | null = null
 
 // Request interceptor to add auth token
-export const authRequestInterceptor = async (config: AxiosRequestConfig): Promise<AxiosRequestConfig> => {
+export const authRequestInterceptor = async (
+  config: AxiosRequestConfig
+): Promise<AxiosRequestConfig> => {
   // Get the current access token
   const accessToken = localStorage.getItem('access_token') || localStorage.getItem('authToken')
 

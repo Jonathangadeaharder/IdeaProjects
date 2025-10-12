@@ -13,19 +13,19 @@ vi.mock('@/client/services.gen', () => ({
 
 const mockWords: VocabularyWord[] = [
   {
-    concept_id: '1',
     word: 'hello',
+    lemma: 'hello',
     translation: 'hola',
     difficulty_level: 'beginner',
-    known: false
+    known: false,
   },
   {
-    concept_id: '2',
     word: 'goodbye',
+    lemma: 'goodbye',
     translation: 'adiós',
     difficulty_level: 'beginner',
-    known: false
-  }
+    known: false,
+  },
 ]
 
 describe('useGameStore', () => {
@@ -60,12 +60,12 @@ describe('useGameStore', () => {
         current_segment: 0,
         segments: [],
         user_progress: {},
-        completed: false
+        completed: false,
       })
     })
 
     it('loads segment words from API', async () => {
-    const { result } = renderHook(() => useGameStore())
+      const { result } = renderHook(() => useGameStore())
 
       sdkMock.getBlockingWordsApiVocabularyBlockingWordsGet.mockResolvedValue({
         blocking_words: mockWords,
@@ -110,7 +110,9 @@ describe('useGameStore', () => {
 
       expect(sdkMock.markWordKnownApiVocabularyMarkKnownPost).toHaveBeenCalledWith({
         requestBody: {
-          concept_id: '1',
+          lemma: 'hello',
+          word: 'hello',
+          language: 'de',
           known: true,
         },
       })
@@ -176,7 +178,9 @@ describe('useGameStore', () => {
         // Intentional no-op to suppress console output during test
       })
 
-      sdkMock.getBlockingWordsApiVocabularyBlockingWordsGet.mockRejectedValue(new Error('API Error'))
+      sdkMock.getBlockingWordsApiVocabularyBlockingWordsGet.mockRejectedValue(
+        new Error('API Error')
+      )
 
       act(() => {
         result.current.startGame('test-video.mp4')
@@ -188,7 +192,10 @@ describe('useGameStore', () => {
 
       expect(result.current.isProcessing).toBe(false)
       expect(result.current.currentWords).toEqual([])
-      expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to load segment words:', expect.any(Error))
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        'Failed to load segment words:',
+        expect.any(Error)
+      )
 
       consoleErrorSpy.mockRestore()
     })

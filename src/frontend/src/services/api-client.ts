@@ -16,6 +16,7 @@ export interface ApiError {
   message: string
   code?: string
   details?: Record<string, unknown>
+  [key: string]: unknown
 }
 
 class ApiClient {
@@ -37,14 +38,15 @@ class ApiClient {
   private setupInterceptors() {
     // Request interceptor for auth token
     this.client.interceptors.request.use(
-      (config) => {
+      config => {
         const token = localStorage.getItem('authToken')
         if (token) {
           config.headers.Authorization = `Bearer ${token}`
         }
 
         // Add request ID for tracing
-        config.headers['X-Request-ID'] = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+        config.headers['X-Request-ID'] =
+          `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
 
         logger.debug('ApiClient', 'Sending request', {
           method: config.method?.toUpperCase(),
@@ -54,7 +56,7 @@ class ApiClient {
 
         return config
       },
-      (error) => {
+      error => {
         logger.error('API Request Error', error)
         return Promise.reject(error)
       }
@@ -62,7 +64,7 @@ class ApiClient {
 
     // Response interceptor for error handling
     this.client.interceptors.response.use(
-      (response) => {
+      response => {
         logger.debug('ApiClient', 'Received response', {
           status: response.status,
           url: response.config.url,
@@ -70,7 +72,7 @@ class ApiClient {
         })
         return response
       },
-      (error) => {
+      error => {
         const apiError = this.handleApiError(error)
         logger.error('ApiClient', 'API error occurred', apiError)
 
@@ -134,7 +136,7 @@ class ApiClient {
   private getFromCache<T>(key: string): T | null {
     const cached = this.cache.get(key)
     if (cached && Date.now() - cached.timestamp < cached.ttl) {
-      return cached.data
+      return cached.data as T
     }
     this.cache.delete(key)
     return null
@@ -271,8 +273,7 @@ export const api = {
   // Videos and processing
   videos: {
     getList: () => apiClient.get('/api/videos', { cache: true }),
-    getEpisodes: (series: string) =>
-      apiClient.get(`/api/videos/${series}`, { cache: true }),
+    getEpisodes: (series: string) => apiClient.get(`/api/videos/${series}`, { cache: true }),
     getStreamUrl: (series: string, episode: string) => {
       const base = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
       const token = localStorage.getItem('authToken')
@@ -285,8 +286,7 @@ export const api = {
   processing: {
     startTranscription: (series: string, episode: string) =>
       apiClient.post('/process/transcribe', { series, episode }),
-    getProgress: (taskId: string) =>
-      apiClient.get(`/process/progress/${taskId}`),
+    getProgress: (taskId: string) => apiClient.get(`/process/progress/${taskId}`),
     prepareEpisode: (series: string, episode: string) =>
       apiClient.post('/process/prepare-episode', { series, episode }),
   },

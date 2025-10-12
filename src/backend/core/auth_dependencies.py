@@ -1,6 +1,6 @@
 """Authentication dependencies for FastAPI with proper DI"""
 
-from typing import Annotated
+from typing import TYPE_CHECKING, Annotated
 
 from fastapi import Depends, Header, HTTPException, Query, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -11,6 +11,9 @@ from database.models import User
 from .auth import current_active_user
 from .database import get_async_session as get_db_session
 from .logging_config import get_logger
+
+if TYPE_CHECKING:
+    from .token_blacklist import TokenBlacklist
 
 security = HTTPBearer()
 logger = get_logger(__name__)
@@ -89,7 +92,7 @@ def cleanup_auth_services():
 async def get_current_user_ws(
     token: str,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    blacklist: Annotated[object, Depends(get_token_blacklist)]
+    blacklist: Annotated["TokenBlacklist", Depends(get_token_blacklist)]
 ) -> User:
     """Validate session token for WebSocket connections with blacklist check"""
     from .auth import jwt_authentication
@@ -183,13 +186,13 @@ async def get_user_from_query_token(
 
 
 __all__ = [
+    "cleanup_auth_services",
     "current_active_user",
     "get_current_user_ws",
-    "get_optional_user",
-    "get_user_from_query_token",
-    "get_token_blacklist",
     "get_login_tracker",
+    "get_optional_user",
+    "get_token_blacklist",
+    "get_user_from_query_token",
     "init_auth_services",
-    "cleanup_auth_services",
     "security",
 ]

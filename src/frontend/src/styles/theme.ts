@@ -6,18 +6,18 @@
 export const lightTheme = {
   // Brand Colors
   colors: {
-    primary: '#FF6B6B',      // Vibrant red (Netflix-inspired)
+    primary: '#FF6B6B', // Vibrant red (Netflix-inspired)
     primaryDark: '#EE5A52',
     primaryLight: '#FF8787',
 
-    secondary: '#4ECDC4',    // Teal accent
+    secondary: '#4ECDC4', // Teal accent
     secondaryDark: '#38B2AA',
     secondaryLight: '#6DD5CE',
 
-    success: '#52C41A',      // Green
-    warning: '#FAAD14',      // Orange
-    error: '#F5222D',        // Red
-    info: '#1890FF',         // Blue
+    success: '#52C41A', // Green
+    warning: '#FAAD14', // Orange
+    error: '#F5222D', // Red
+    info: '#1890FF', // Blue
 
     // Neutrals
     background: '#FFFFFF',
@@ -47,15 +47,15 @@ export const lightTheme = {
     },
 
     fontSize: {
-      xs: '0.75rem',    // 12px
-      sm: '0.875rem',   // 14px
-      base: '1rem',     // 16px
-      lg: '1.125rem',   // 18px
-      xl: '1.25rem',    // 20px
-      '2xl': '1.5rem',  // 24px
-      '3xl': '1.875rem',// 30px
+      xs: '0.75rem', // 12px
+      sm: '0.875rem', // 14px
+      base: '1rem', // 16px
+      lg: '1.125rem', // 18px
+      xl: '1.25rem', // 20px
+      '2xl': '1.5rem', // 24px
+      '3xl': '1.875rem', // 30px
       '4xl': '2.25rem', // 36px
-      '5xl': '3rem',    // 48px
+      '5xl': '3rem', // 48px
     },
 
     fontWeight: {
@@ -77,23 +77,23 @@ export const lightTheme = {
 
   // Spacing
   spacing: {
-    xs: '0.25rem',   // 4px
-    sm: '0.5rem',    // 8px
-    md: '1rem',      // 16px
-    lg: '1.5rem',    // 24px
-    xl: '2rem',      // 32px
-    '2xl': '3rem',   // 48px
-    '3xl': '4rem',   // 64px
-    '4xl': '6rem',   // 96px
+    xs: '0.25rem', // 4px
+    sm: '0.5rem', // 8px
+    md: '1rem', // 16px
+    lg: '1.5rem', // 24px
+    xl: '2rem', // 32px
+    '2xl': '3rem', // 48px
+    '3xl': '4rem', // 64px
+    '4xl': '6rem', // 96px
   },
 
   // Border Radius
   radius: {
     none: '0',
-    sm: '0.25rem',   // 4px
-    md: '0.5rem',    // 8px
-    lg: '0.75rem',   // 12px
-    xl: '1rem',      // 16px
+    sm: '0.25rem', // 4px
+    md: '0.5rem', // 8px
+    lg: '0.75rem', // 12px
+    xl: '1rem', // 16px
     '2xl': '1.5rem', // 24px
     full: '9999px',
   },
@@ -155,7 +155,7 @@ export const lightTheme = {
     gutter: '1rem',
     maxWidth: '1280px',
   },
-};
+}
 
 // Dark Theme
 export const darkTheme = {
@@ -196,9 +196,9 @@ export const darkTheme = {
     primary: '0 10px 40px -10px rgba(255, 107, 107, 0.5)',
     secondary: '0 10px 40px -10px rgba(78, 205, 196, 0.5)',
   },
-};
+}
 
-export type Theme = typeof lightTheme;
+export type Theme = typeof lightTheme
 
 // Media query helpers
 export const media = {
@@ -208,6 +208,6 @@ export const media = {
   lg: `@media (min-width: ${lightTheme.breakpoints.lg})`,
   xl: `@media (min-width: ${lightTheme.breakpoints.xl})`,
   '2xl': `@media (min-width: ${lightTheme.breakpoints['2xl']})`,
-};
+}
 
-export default lightTheme;
+export default lightTheme

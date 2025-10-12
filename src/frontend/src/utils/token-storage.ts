@@ -1,43 +1,47 @@
 // Token storage utility used by tests
 // Keeps API simple and synchronous for unit/integration tests
 
-const TOKEN_KEY = 'auth_token';
-const REFRESH_KEY = 'refresh_token';
+const TOKEN_KEY = 'auth_token'
+const REFRESH_KEY = 'refresh_token'
 
-let memToken: string | null = null;
-let memRefresh: string | null = null;
+let memToken: string | null = null
+let memRefresh: string | null = null
 
 export const tokenStorage = {
   getToken(): string | null {
-    return memToken ?? null;
+    return memToken ?? null
   },
   setToken(token: string) {
-    memToken = token ?? null;
-    try { localStorage.setItem(TOKEN_KEY, token); } catch {
+    memToken = token ?? null
+    try {
+      localStorage.setItem(TOKEN_KEY, token)
+    } catch {
       // Ignore localStorage errors (e.g., in SSR or private mode)
     }
   },
   getRefreshToken(): string | null {
-    return memRefresh ?? null;
+    return memRefresh ?? null
   },
   setRefreshToken(token: string) {
-    memRefresh = token ?? null;
-    try { localStorage.setItem(REFRESH_KEY, token); } catch {
+    memRefresh = token ?? null
+    try {
+      localStorage.setItem(REFRESH_KEY, token)
+    } catch {
       // Ignore localStorage errors (e.g., in SSR or private mode)
     }
   },
   clear() {
-    memToken = null;
-    memRefresh = null;
+    memToken = null
+    memRefresh = null
     try {
-      localStorage.removeItem(TOKEN_KEY);
-      localStorage.removeItem(REFRESH_KEY);
+      localStorage.removeItem(TOKEN_KEY)
+      localStorage.removeItem(REFRESH_KEY)
     } catch {
       // Ignore localStorage errors (e.g., in SSR or private mode)
     }
   },
   isTokenExpired(_token: string): boolean {
     // For tests we assume tokens never expire unless explicitly mocked
-    return false;
+    return false
   },
-};
+}

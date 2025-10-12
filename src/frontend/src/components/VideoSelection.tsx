@@ -11,7 +11,7 @@ import type { VideoInfo } from '@/types'
 
 const Header = styled.header`
   padding: 20px 0;
-  background: rgba(0, 0, 0, 0.9);
+  background: rgb(0 0 0 / 90%);
   position: sticky;
   top: 0;
   z-index: 100;
@@ -71,8 +71,8 @@ const ProfileButton = styled(NetflixButton)`
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgb(255 255 255 / 10%);
+  border: 1px solid rgb(255 255 255 / 25%);
 
   svg {
     width: 18px;
@@ -85,9 +85,9 @@ const Hero = styled.section`
   text-align: center;
   background: linear-gradient(
     180deg,
-    rgba(0, 0, 0, 0.7) 0%,
-    rgba(0, 0, 0, 0.3) 50%,
-    rgba(0, 0, 0, 0.7) 100%
+    rgb(0 0 0 / 70%) 0%,
+    rgb(0 0 0 / 30%) 50%,
+    rgb(0 0 0 / 70%) 100%
   );
 `
 
@@ -97,7 +97,7 @@ const HeroTitle = styled.h1`
   margin-bottom: 16px;
   color: white;
 
-  @media (max-width: 768px) {
+  @media (width <= 768px) {
     font-size: 32px;
   }
 `
@@ -110,7 +110,7 @@ const HeroSubtitle = styled.p`
   margin-left: auto;
   margin-right: auto;
 
-  @media (max-width: 768px) {
+  @media (width <= 768px) {
     font-size: 16px;
   }
 `
@@ -127,7 +127,7 @@ const SectionTitle = styled.h2`
 `
 
 const SeriesCard = styled.div`
-  background: linear-gradient(135deg, rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.6));
+  background: linear-gradient(135deg, rgb(0 0 0 / 80%), rgb(0 0 0 / 60%));
   border-radius: 8px;
   overflow: hidden;
   cursor: pointer;
@@ -137,13 +137,14 @@ const SeriesCard = styled.div`
   &:hover {
     transform: scale(1.05);
     border-color: #e50914;
-    box-shadow: 0 8px 25px rgba(229, 9, 20, 0.3);
+    box-shadow: 0 8px 25px rgb(229 9 20 / 30%);
   }
 `
 
 const CardImage = styled.div<{ $bgImage?: string }>`
   height: 200px;
-  background: ${props => props.$bgImage ? `url(${props.$bgImage})` : 'linear-gradient(135deg, #e50914, #b00610)'};
+  background: ${props =>
+    props.$bgImage ? `url(${props.$bgImage})` : 'linear-gradient(135deg, #e50914, #b00610)'};
   background-size: cover;
   background-position: center;
   display: flex;
@@ -155,14 +156,14 @@ const CardImage = styled.div<{ $bgImage?: string }>`
     content: '';
     position: absolute;
     inset: 0;
-    background: rgba(0, 0, 0, 0.3);
+    background: rgb(0 0 0 / 30%);
   }
 `
 
 const PlayButton = styled.div`
   width: 60px;
   height: 60px;
-  background: rgba(255, 255, 255, 0.9);
+  background: rgb(255 255 255 / 90%);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -207,7 +208,7 @@ const SubtitleBadge = styled.span<{ $hasSubtitles: boolean }>`
   border-radius: 4px;
   font-size: 12px;
   font-weight: 500;
-  background: ${props => props.$hasSubtitles ? '#46d369' : '#e87c03'};
+  background: ${props => (props.$hasSubtitles ? '#46d369' : '#e87c03')};
   color: white;
 `
 
@@ -289,25 +290,28 @@ export const VideoSelection: React.FC = () => {
   }
 
   // Group videos by series (guard against undefined in tests)
-  const seriesList = (videos ?? []).reduce((acc, video) => {
-    const existing = acc.find(s => s.name === video.series)
-    if (existing) {
-      existing.episodes.push(video)
-    } else {
-      acc.push({
-        name: video.series,
-        episodes: [video],
-        hasSubtitles: video.has_subtitles,
-        description: `German TV series perfect for language learning`
-      })
-    }
-    return acc
-  }, [] as Array<{
-    name: string
-    episodes: VideoInfo[]
-    hasSubtitles: boolean
-    description: string
-  }>)
+  const seriesList = (videos ?? []).reduce(
+    (acc, video) => {
+      const existing = acc.find(s => s.name === video.series)
+      if (existing) {
+        existing.episodes.push(video)
+      } else {
+        acc.push({
+          name: video.series,
+          episodes: [video],
+          hasSubtitles: video.has_subtitles,
+          description: `German TV series perfect for language learning`,
+        })
+      }
+      return acc
+    },
+    [] as Array<{
+      name: string
+      episodes: VideoInfo[]
+      hasSubtitles: boolean
+      description: string
+    }>
+  )
 
   return (
     <>
@@ -337,7 +341,8 @@ export const VideoSelection: React.FC = () => {
         <Container>
           <HeroTitle>Learn German Through TV Shows</HeroTitle>
           <HeroSubtitle>
-            Watch your favorite series while improving your German vocabulary with our interactive learning system
+            Watch your favorite series while improving your German vocabulary with our interactive
+            learning system
           </HeroSubtitle>
         </Container>
       </Hero>
@@ -358,13 +363,15 @@ export const VideoSelection: React.FC = () => {
             <EmptyState>
               <h3>No Series Available</h3>
               <p>No video content has been added yet. Please check back later.</p>
-              <NetflixButton onClick={loadVideos} data-testid="refresh-videos-button">Refresh</NetflixButton>
+              <NetflixButton onClick={loadVideos} data-testid="refresh-videos-button">
+                Refresh
+              </NetflixButton>
             </EmptyState>
           )}
 
           {!loading && !error && seriesList.length > 0 && (
             <Grid columns={3}>
-              {seriesList.map((series) => (
+              {seriesList.map(series => (
                 <SeriesCard
                   key={series.name}
                   onClick={() => handleSeriesSelect(series.name)}

@@ -48,7 +48,7 @@ const sdkMock = vi.mocked(sdk)
 
 const renderComponent = () =>
   render(
-    <MemoryRouter initialEntries={["/series/test-series"]}>
+    <MemoryRouter initialEntries={['/series/test-series']}>
       <EpisodeSelection />
     </MemoryRouter>
   )
@@ -138,13 +138,15 @@ describe('EpisodeSelection', () => {
       fireEvent.click(screen.getByRole('button', { name: /play/i }))
     })
 
-    await waitFor(() => expect(navigateSpy).toHaveBeenCalledWith('/learn/test-series/Episode%201', {
-      state: expect.objectContaining({
-        videoInfo: expect.objectContaining({
-          episode: 'Episode 1',
-          series: 'test-series'
-        })
-      }),
-    }))
+    await waitFor(() =>
+      expect(navigateSpy).toHaveBeenCalledWith('/learn/test-series/Episode%201', {
+        state: expect.objectContaining({
+          videoInfo: expect.objectContaining({
+            episode: 'Episode 1',
+            series: 'test-series',
+          }),
+        }),
+      })
+    )
   })
 })

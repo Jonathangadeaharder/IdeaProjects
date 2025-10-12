@@ -96,7 +96,10 @@ function formatZodIssue(issue: ZodIssue): string {
  *   // Form is valid
  * }
  */
-export function isValid<T>(schema: { safeParse: (data: unknown) => { success: boolean, data?: T } }, data: unknown): data is T {
+export function isValid<T>(
+  schema: { safeParse: (data: unknown) => { success: boolean; data?: T } },
+  data: unknown
+): data is T {
   const result = schema.safeParse(data)
   return result.success
 }
@@ -117,7 +120,7 @@ export function isValid<T>(schema: { safeParse: (data: unknown) => { success: bo
  * }
  */
 export function validateWithErrors<T>(
-  schema: { safeParse: (data: unknown) => { success: boolean, data?: T, error?: ZodError } },
+  schema: { safeParse: (data: unknown) => { success: boolean; data?: T; error?: ZodError } },
   data: unknown
 ): { data: T } | { errors: FormErrors } {
   const result = schema.safeParse(data)
@@ -136,7 +139,10 @@ export function validateWithErrors<T>(
  * @param fieldName - Field name to get error for
  * @returns Error message or undefined
  */
-export function getFieldError(error: ZodError | null | undefined, fieldName: string): string | undefined {
+export function getFieldError(
+  error: ZodError | null | undefined,
+  fieldName: string
+): string | undefined {
   if (!error) return undefined
 
   const issue = error.issues.find(issue => {

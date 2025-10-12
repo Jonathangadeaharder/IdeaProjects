@@ -38,13 +38,13 @@ const ProcessingContainer = styled.div`
 `
 
 const ContentCard = styled.div`
-  background: rgba(0, 0, 0, 0.8);
+  background: rgb(0 0 0 / 80%);
   border-radius: 16px;
   padding: 48px;
   max-width: 600px;
   width: 100%;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 20px 60px rgb(0 0 0 / 50%);
+  border: 1px solid rgb(255 255 255 / 10%);
 `
 
 const Title = styled.h1`
@@ -94,7 +94,7 @@ const StepName = styled.h2`
 const ProgressBarContainer = styled.div`
   width: 100%;
   height: 12px;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgb(255 255 255 / 10%);
   border-radius: 6px;
   overflow: hidden;
   margin-bottom: 16px;
@@ -111,16 +111,8 @@ const ProgressBarFill = styled.div<{ $progress: number }>`
   &::after {
     content: '';
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(
-      90deg,
-      transparent,
-      rgba(255, 255, 255, 0.3),
-      transparent
-    );
+    inset: 0;
+    background: linear-gradient(90deg, transparent, rgb(255 255 255 / 30%), transparent);
     animation: shimmer 2s infinite;
   }
 
@@ -128,6 +120,7 @@ const ProgressBarFill = styled.div<{ $progress: number }>`
     0% {
       transform: translateX(-100%);
     }
+
     100% {
       transform: translateX(100%);
     }
@@ -167,7 +160,7 @@ const StatusMessage = styled.p`
 `
 
 const ChunkInfo = styled.div`
-  background: rgba(255, 255, 255, 0.05);
+  background: rgb(255 255 255 / 5%);
   border-radius: 8px;
   padding: 16px;
   margin-top: 24px;
@@ -197,7 +190,7 @@ export const ProcessingScreen: React.FC<ProcessingScreenProps> = ({
   status,
   chunkNumber = 1,
   totalChunks = 1,
-  chunkDuration = "0:00 - 5:00"
+  chunkDuration = '0:00 - 5:00',
 }) => {
   const [estimatedTime, setEstimatedTime] = useState<string>('calculating...')
   const [startTime] = useState<number>(Date.now())
@@ -211,7 +204,8 @@ export const ProcessingScreen: React.FC<ProcessingScreenProps> = ({
       const remainingTime = totalTime - elapsedTime
 
       // Sanity check: don't show ridiculous times
-      if (remainingTime < 0 || remainingTime > 3600000) { // More than 1 hour
+      if (remainingTime < 0 || remainingTime > 3600000) {
+        // More than 1 hour
         setEstimatedTime('calculating...')
       } else {
         const minutes = Math.floor(remainingTime / 60000)
@@ -273,9 +267,7 @@ export const ProcessingScreen: React.FC<ProcessingScreenProps> = ({
             <ProgressBarFill $progress={status.progress} />
           </ProgressBarContainer>
 
-          <StatusMessage>
-            {status.message || 'Processing your episode...'}
-          </StatusMessage>
+          <StatusMessage>{status.message || 'Processing your episode...'}</StatusMessage>
         </ProgressSection>
 
         {totalChunks > 1 && (

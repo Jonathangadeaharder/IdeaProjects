@@ -74,7 +74,7 @@ class TestVocabularyRoutesCore:
         """Test getting supported languages endpoint"""
         helper = AsyncAuthHelper(async_client)
 
-        user, token, headers = await helper.create_authenticated_user()
+        _user, _token, headers = await helper.create_authenticated_user()
 
         # Since the actual endpoint works, let's test the real functionality
         # This will test the actual database integration
@@ -93,7 +93,7 @@ class TestVocabularyRoutesCore:
         """Test error handling in supported languages endpoint"""
         helper = AsyncAuthHelper(async_client)
 
-        user, token, headers = await helper.create_authenticated_user()
+        _user, _token, headers = await helper.create_authenticated_user()
 
         # Create mock session that raises database error
         async def mock_get_async_session():
@@ -133,7 +133,7 @@ class TestVocabularyRoutesCore:
 
         helper = AsyncAuthHelper(async_client)
 
-        user, token, headers = await helper.create_authenticated_user()
+        _user, _token, headers = await helper.create_authenticated_user()
 
         response = await async_client.get(
             "/api/vocabulary/stats",
@@ -176,7 +176,7 @@ class TestVocabularyRoutesCore:
 
         helper = AsyncAuthHelper(async_client)
 
-        user, token, headers = await helper.create_authenticated_user()
+        _user, _token, headers = await helper.create_authenticated_user()
 
         # Test real endpoint - should work regardless of database state
         response = await async_client.get(
@@ -200,7 +200,7 @@ class TestVocabularyRoutesCore:
         """Test vocabulary level endpoint with invalid level"""
         helper = AsyncAuthHelper(async_client)
 
-        user, token, headers = await helper.create_authenticated_user()
+        _user, _token, headers = await helper.create_authenticated_user()
 
         response = await async_client.get(
             "/api/vocabulary/library/Z9", params={"target_language": "de"}, headers=headers
@@ -214,7 +214,7 @@ class TestVocabularyRoutesCore:
         """Test marking word as known endpoint success"""
         helper = AsyncAuthHelper(async_client)
 
-        user, token, headers = await helper.create_authenticated_user()
+        _user, _token, headers = await helper.create_authenticated_user()
 
         # Use actual word instead of UUID
         word = "haus"
@@ -263,7 +263,7 @@ class TestVocabularyRoutesCore:
         """Test marking word as unknown endpoint success"""
         helper = AsyncAuthHelper(async_client)
 
-        user, token, headers = await helper.create_authenticated_user()
+        _user, _token, headers = await helper.create_authenticated_user()
 
         # Use actual word instead of UUID
         word = "welt"
@@ -326,7 +326,7 @@ class TestVocabularyRoutesCore:
 
         helper = AsyncAuthHelper(async_client)
 
-        user, token, headers = await helper.create_authenticated_user()
+        _user, _token, headers = await helper.create_authenticated_user()
 
         # Test real endpoint behavior - should work regardless of database state
         response = await async_client.post(
@@ -349,7 +349,7 @@ class TestVocabularyRoutesCore:
         """Test bulk marking with invalid level"""
         helper = AsyncAuthHelper(async_client)
 
-        user, token, headers = await helper.create_authenticated_user()
+        _user, _token, headers = await helper.create_authenticated_user()
 
         response = await async_client.post(
             "/api/vocabulary/library/bulk-mark",
@@ -384,7 +384,7 @@ class TestVocabularyRoutesCore:
 
         helper = AsyncAuthHelper(async_client)
 
-        user, token, headers = await helper.create_authenticated_user()
+        _user, _token, headers = await helper.create_authenticated_user()
 
         # Test real endpoint - should work regardless of database state
         response = await async_client.get(url_builder.url_for("get_test_data"), headers=headers)
@@ -404,7 +404,7 @@ class TestVocabularyRoutesCore:
         """Test blocking words endpoint with missing SRT file"""
         helper = AsyncAuthHelper(async_client)
 
-        user, token, headers = await helper.create_authenticated_user()
+        _user, _token, headers = await helper.create_authenticated_user()
 
         with patch("api.routes.vocabulary.settings") as mock_settings:
             from pathlib import Path
@@ -426,7 +426,7 @@ class TestVocabularyRoutesCore:
         """Test blocking words endpoint success"""
         helper = AsyncAuthHelper(async_client)
 
-        user, token, headers = await helper.create_authenticated_user()
+        _user, _token, headers = await helper.create_authenticated_user()
 
         with patch("api.routes.vocabulary.settings") as mock_settings:
             from pathlib import Path
@@ -469,7 +469,7 @@ class TestVocabularyRoutesErrorHandling:
         """Test vocabulary stats with realistic error scenarios"""
         helper = AsyncAuthHelper(async_client)
 
-        user, token, headers = await helper.create_authenticated_user()
+        _user, _token, headers = await helper.create_authenticated_user()
 
         # Test with invalid but properly formatted language code
         response = await async_client.get(
@@ -493,7 +493,7 @@ class TestVocabularyRoutesErrorHandling:
         """Test mark known with realistic error scenarios"""
         helper = AsyncAuthHelper(async_client)
 
-        user, token, headers = await helper.create_authenticated_user()
+        _user, _token, headers = await helper.create_authenticated_user()
 
         # Test with valid UUID but non-existent word - should fail gracefully
         non_existent_uuid = str(uuid4())
@@ -513,7 +513,7 @@ class TestVocabularyRoutesErrorHandling:
         """Test vocabulary level with realistic error scenarios"""
         helper = AsyncAuthHelper(async_client)
 
-        user, token, headers = await helper.create_authenticated_user()
+        _user, _token, headers = await helper.create_authenticated_user()
 
         # Test with invalid language - should return empty results gracefully
         response = await async_client.get(
@@ -539,7 +539,7 @@ class TestVocabularyRoutesValidation:
         """Test mark known with invalid UUID"""
         helper = AsyncAuthHelper(async_client)
 
-        user, token, headers = await helper.create_authenticated_user()
+        _user, _token, headers = await helper.create_authenticated_user()
 
         response = await async_client.post(
             "/api/vocabulary/mark-known", json={"concept_id": "not-a-uuid", "known": True}, headers=headers
@@ -552,7 +552,7 @@ class TestVocabularyRoutesValidation:
         """Test bulk mark with missing required fields"""
         helper = AsyncAuthHelper(async_client)
 
-        user, token, headers = await helper.create_authenticated_user()
+        _user, _token, headers = await helper.create_authenticated_user()
 
         response = await async_client.post(
             "/api/vocabulary/library/bulk-mark",
@@ -567,7 +567,7 @@ class TestVocabularyRoutesValidation:
         """Test vocabulary level with various query parameters"""
         helper = AsyncAuthHelper(async_client)
 
-        user, token, headers = await helper.create_authenticated_user()
+        _user, _token, headers = await helper.create_authenticated_user()
 
         with patch("api.routes.vocabulary.get_async_session") as mock_get_session:
             mock_session = AsyncMock()

@@ -72,11 +72,11 @@ async def run_subtitle_filtering(
         task_progress[task_id].message = "Applying vocabulary filters"
 
         # Apply filtering using the subtitle processor
-        filter_result = await subtitle_processor.process_subtitles(
+        filter_result = await subtitle_processor.process_srt_file(
             str(srt_file),
             str(current_user.id),
             user_level="A1",  # Should be fetched from user preferences
-            target_language="de",  # Should be from request
+            language="de",  # Should be from request
         )
 
         # Step 3: Generate output (90% progress)
@@ -88,10 +88,10 @@ async def run_subtitle_filtering(
         output_path = str(srt_file).replace(".srt", "_filtered.srt")
 
         # Save filtered subtitles to file
-        if not filter_result or not hasattr(filter_result, "filtered_subtitles"):
+        if not filter_result or "filtered_subtitles" not in filter_result:
             raise ValueError("No filtered subtitles generated")
 
-        await _save_filtered_subtitles_to_file(filter_result.filtered_subtitles, output_path)
+        await _save_filtered_subtitles_to_file(filter_result["filtered_subtitles"], output_path)
         logger.info(f"Saved filtered subtitles to: {output_path}")
 
         # Complete (100% progress)
@@ -253,11 +253,12 @@ async def _save_filtered_subtitles_to_file(filtered_subtitles: list[FilteredSubt
     try:
         srt_content = []
 
-        for subtitle in filtered_subtitles:
+        for index, subtitle in enumerate(filtered_subtitles, start=1):
             # Create SRT block for each subtitle
-            srt_block = f"{subtitle.index}\n"
+            # FilteredSubtitle has: original_text, start_time, end_time, words
+            srt_block = f"{index}\n"
             srt_block += f"{subtitle.start_time} --> {subtitle.end_time}\n"
-            srt_block += f"{subtitle.text}\n\n"
+            srt_block += f"{subtitle.original_text}\n\n"
             srt_content.append(srt_block)
 
         # Write to file

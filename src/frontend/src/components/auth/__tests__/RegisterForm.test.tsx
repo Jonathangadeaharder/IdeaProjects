@@ -26,7 +26,7 @@ describe('RegisterForm Component', () => {
   it('renders all registration fields', () => {
     renderWithRouter(<RegisterForm />)
 
-    expect(screen.getByPlaceholderText('Name')).toBeInTheDocument()
+    expect(screen.getByPlaceholderText('Username')).toBeInTheDocument()
     expect(screen.getByPlaceholderText('Email')).toBeInTheDocument()
     expect(screen.getByPlaceholderText('Password')).toBeInTheDocument()
     expect(screen.getByPlaceholderText('Confirm Password')).toBeInTheDocument()
@@ -56,11 +56,14 @@ describe('RegisterForm Component', () => {
 
     // Simply verify that the form prevented submission with invalid email
     // The component validation will show an error, but we just verify the button behavior
-    await waitFor(() => {
-      // The button should remain enabled and show "Sign Up" (not loading)
-      expect(submitButton).not.toBeDisabled()
-      expect(submitButton).toHaveTextContent('Sign Up')
-    }, { timeout: 500 })
+    await waitFor(
+      () => {
+        // The button should remain enabled and show "Sign Up" (not loading)
+        expect(submitButton).not.toBeDisabled()
+        expect(submitButton).toHaveTextContent('Sign Up')
+      },
+      { timeout: 500 }
+    )
   })
 
   it('validates password requirements', async () => {
@@ -87,8 +90,10 @@ describe('RegisterForm Component', () => {
     fireEvent.change(confirmPasswordInput, { target: { value: 'Different123!' } })
 
     // Fill other required fields
-    fireEvent.change(screen.getByPlaceholderText('Email'), { target: { value: 'test@example.com' } })
-    fireEvent.change(screen.getByPlaceholderText('Name'), { target: { value: 'testuser' } })
+    fireEvent.change(screen.getByPlaceholderText('Email'), {
+      target: { value: 'test@example.com' },
+    })
+    fireEvent.change(screen.getByPlaceholderText('Username'), { target: { value: 'testuser' } })
 
     const submitButton = screen.getByRole('button', { name: /sign up/i })
     fireEvent.click(submitButton)
@@ -101,17 +106,17 @@ describe('RegisterForm Component', () => {
   it('successfully registers a new user', async () => {
     renderWithRouter(<RegisterForm />)
 
-    fireEvent.change(screen.getByPlaceholderText('Name'), {
-      target: { value: 'testuser' }
+    fireEvent.change(screen.getByPlaceholderText('Username'), {
+      target: { value: 'testuser' },
     })
     fireEvent.change(screen.getByPlaceholderText('Email'), {
-      target: { value: 'test@example.com' }
+      target: { value: 'test@example.com' },
     })
     fireEvent.change(screen.getByPlaceholderText('Password'), {
-      target: { value: 'Password123!' }
+      target: { value: 'Password123!' },
     })
     fireEvent.change(screen.getByPlaceholderText('Confirm Password'), {
-      target: { value: 'Password123!' }
+      target: { value: 'Password123!' },
     })
 
     const submitButton = screen.getByRole('button', { name: /sign up/i })

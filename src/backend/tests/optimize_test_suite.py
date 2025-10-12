@@ -49,7 +49,7 @@ class TestSuiteOptimizer:
 
         return result.returncode, result.stdout + result.stderr, duration
 
-    def profile_test_performance(self) -> dict[str, dict[str, float]]:
+    def profile_test_performance(self) -> dict[str, dict[str, float | str | int]]:
         """Profile different test categories for performance analysis."""
         print("🔍 Profiling test suite performance...")
 
@@ -60,7 +60,7 @@ class TestSuiteOptimizer:
             "vocabulary_comprehensive": "tests/unit/services/test_vocabulary_service_comprehensive.py",
         }
 
-        results = {}
+        results: dict[str, dict[str, float | str | int]] = {}
 
         for category, path in test_categories.items():
             print(f"  📊 Profiling {category}...")
@@ -83,7 +83,15 @@ class TestSuiteOptimizer:
                     "pass_rate": passed_count / max(total_count, 1) * 100,
                 }
             else:
-                results[category] = {"duration": duration, "error": "Could not parse test results"}
+                results[category] = {
+                    "duration": duration,
+                    "error": "Could not parse test results",
+                    "total_tests": 0,
+                    "passed": 0,
+                    "failed": 0,
+                    "avg_test_time": 0.0,
+                    "pass_rate": 0.0,
+                }
 
         return results
 
@@ -97,7 +105,7 @@ class TestSuiteOptimizer:
 
         # Test sequential first
         print("  📈 Testing sequential execution...")
-        code, output, duration = self.run_pytest_command([test_path, "--tb=no", "-q", "--disable-warnings"])
+        _code, output, duration = self.run_pytest_command([test_path, "--tb=no", "-q", "--disable-warnings"])
 
         total_tests = self._extract_test_count(output, "passed") + self._extract_test_count(output, "failed")
         results[1] = {
@@ -133,7 +141,7 @@ class TestSuiteOptimizer:
 
         # Test without pollution detection (optimized)
         print("  ✅ Testing without pollution detection...")
-        code, output, duration_optimized = self.run_pytest_command([test_path, "--tb=no", "-q", "--disable-warnings"])
+        _code, _output, duration_optimized = self.run_pytest_command([test_path, "--tb=no", "-q", "--disable-warnings"])
 
         # Test with pollution detection enabled
         print("  🐌 Testing with pollution detection...")

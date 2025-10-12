@@ -75,9 +75,7 @@ class ErrorBoundary extends Component<Props, State> {
     } else if (hasError && resetKeys) {
       // Reset on specific key changes
       const prevResetKeys = prevProps.resetKeys || []
-      const hasResetKeyChanged = resetKeys.some(
-        (key, index) => key !== prevResetKeys[index]
-      )
+      const hasResetKeyChanged = resetKeys.some((key, index) => key !== prevResetKeys[index])
 
       if (hasResetKeyChanged) {
         this.resetErrorBoundary()
@@ -150,12 +148,7 @@ interface ErrorFallbackProps {
   onReset: () => void
 }
 
-const ErrorFallback: React.FC<ErrorFallbackProps> = ({
-  error,
-  errorInfo,
-  errorId,
-  onReset,
-}) => {
+const ErrorFallback: React.FC<ErrorFallbackProps> = ({ error, errorInfo, errorId, onReset }) => {
   const handleReload = () => {
     window.location.reload()
   }
@@ -178,12 +171,7 @@ const ErrorFallback: React.FC<ErrorFallbackProps> = ({
       <div className="max-w-md w-full space-y-8">
         <div>
           <div className="mx-auto h-12 w-12 text-red-500">
-            <svg
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              className="w-full h-full"
-            >
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-full h-full">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -230,9 +218,7 @@ const ErrorFallback: React.FC<ErrorFallbackProps> = ({
                       <strong>Message:</strong> {error.message}
                     </p>
                     {error.stack && (
-                      <pre className="mt-2 text-xs text-gray-600 overflow-auto">
-                        {error.stack}
-                      </pre>
+                      <pre className="mt-2 text-xs text-gray-600 overflow-auto">{error.stack}</pre>
                     )}
                   </div>
                 )}

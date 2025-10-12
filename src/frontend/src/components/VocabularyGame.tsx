@@ -14,7 +14,7 @@ type VocabularyWord = GeneratedVocabularyWord & {
 const GameContainer = styled.div`
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.95);
+  background: rgb(0 0 0 / 95%);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -44,7 +44,7 @@ const GameSubtitle = styled.p`
 const ProgressBar = styled.div`
   width: 300px;
   height: 4px;
-  background: rgba(255, 255, 255, 0.2);
+  background: rgb(255 255 255 / 20%);
   border-radius: 2px;
   overflow: hidden;
   margin: 0 auto;
@@ -69,21 +69,21 @@ const CardContainer = styled.div`
   height: 500px;
   margin: 40px auto;
 
-  @media (max-width: 480px) {
+  @media (width <= 480px) {
     width: 320px;
     height: 420px;
   }
 `
 
 const VocabularyCard = styled(motion.div).withConfig({
-  shouldForwardProp: (prop) => !['dragConstraints', 'drag', 'onDragEnd'].includes(prop),
+  shouldForwardProp: prop => !['dragConstraints', 'drag', 'onDragEnd'].includes(prop),
 })`
   position: absolute;
   width: 100%;
   height: 100%;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+  background: linear-gradient(135deg, rgb(255 255 255 / 10%), rgb(255 255 255 / 5%));
   border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgb(255 255 255 / 10%);
   backdrop-filter: blur(10px);
   padding: 40px;
   display: flex;
@@ -106,7 +106,7 @@ const WordText = styled.h1`
   margin-bottom: 24px;
   word-break: break-word;
 
-  @media (max-width: 480px) {
+  @media (width <= 480px) {
     font-size: 36px;
   }
 `
@@ -160,15 +160,11 @@ const SwipeAction = styled.div<{ $type: 'know' | 'unknown' }>`
   gap: 8px;
   padding: 8px 12px;
   border-radius: 20px;
-  background: ${props => props.$type === 'know'
-    ? 'rgba(70, 211, 105, 0.1)'
-    : 'rgba(239, 68, 68, 0.1)'
-  };
-  border: 1px solid ${props => props.$type === 'know'
-    ? 'rgba(70, 211, 105, 0.3)'
-    : 'rgba(239, 68, 68, 0.3)'
-  };
-  color: ${props => props.$type === 'know' ? '#46d369' : '#ef4444'};
+  background: ${props =>
+    props.$type === 'know' ? 'rgba(70, 211, 105, 0.1)' : 'rgba(239, 68, 68, 0.1)'};
+  border: 1px solid
+    ${props => (props.$type === 'know' ? 'rgba(70, 211, 105, 0.3)' : 'rgba(239, 68, 68, 0.3)')};
+  color: ${props => (props.$type === 'know' ? '#46d369' : '#ef4444')};
 `
 
 const ActionButtons = styled.div`
@@ -188,7 +184,9 @@ const ActionButton = styled.button<{ $type: 'know' | 'unknown' }>`
   justify-content: center;
   transition: all 0.3s ease;
 
-  ${props => props.$type === 'know' ? `
+  ${props =>
+    props.$type === 'know'
+      ? `
     background: rgba(70, 211, 105, 0.2);
     color: #46d369;
     border: 2px solid #46d369;
@@ -197,7 +195,8 @@ const ActionButton = styled.button<{ $type: 'know' | 'unknown' }>`
       background: rgba(70, 211, 105, 0.3);
       transform: scale(1.1);
     }
-  ` : `
+  `
+      : `
     background: rgba(239, 68, 68, 0.2);
     color: #ef4444;
     border: 2px solid #ef4444;
@@ -252,7 +251,7 @@ export const VocabularyGame: React.FC<VocabularyGameProps> = ({
   onSkip,
   episodeTitle: _episodeTitle,
   chunkInfo,
-  isLoading = false
+  isLoading = false,
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [answeredWords, setAnsweredWords] = useState(0)
@@ -295,7 +294,6 @@ export const VocabularyGame: React.FC<VocabularyGameProps> = ({
         setCurrentIndex(prev => prev + 1)
         setIsProcessing(false)
       }, 300)
-
     } catch (error) {
       setIsProcessing(false)
       setError('Failed to save word progress. Please check your connection and try again.')
@@ -325,7 +323,6 @@ export const VocabularyGame: React.FC<VocabularyGameProps> = ({
       if (onSkip) {
         onSkip()
       }
-
     } catch (error) {
       console.error('Failed to skip:', error)
       // Still allow skip even if error occurs
@@ -356,9 +353,7 @@ export const VocabularyGame: React.FC<VocabularyGameProps> = ({
           <p style={{ color: '#b3b3b3', marginBottom: '32px' }}>
             You already know all the vocabulary in this segment. Great job!
           </p>
-          <NetflixButton onClick={() => onComplete([], [])}>
-            Continue Watching
-          </NetflixButton>
+          <NetflixButton onClick={() => onComplete([], [])}>Continue Watching</NetflixButton>
         </CompletionScreen>
       </GameContainer>
     )
@@ -370,7 +365,8 @@ export const VocabularyGame: React.FC<VocabularyGameProps> = ({
         <CompletionScreen data-testid="success-message">
           <CompletionTitle>Segment Complete!</CompletionTitle>
           <CompletionStats>
-            You knew {knownCount} out of {answeredWords} words ({Math.round((knownCount / answeredWords) * 100)}%)
+            You knew {knownCount} out of {answeredWords} words (
+            {Math.round((knownCount / answeredWords) * 100)}%)
           </CompletionStats>
           <NetflixButton onClick={() => onComplete(knownWords, unknownWords)}>
             Watch This Segment
@@ -418,11 +414,12 @@ export const VocabularyGame: React.FC<VocabularyGameProps> = ({
               }}
             >
               <WordText data-testid="vocabulary-word">{currentWord?.word || ''}</WordText>
-              {currentWord?.lemma && (
-                <Definition>Lemma: {currentWord.lemma}</Definition>
-              )}
+              {currentWord?.lemma && <Definition>Lemma: {currentWord.lemma}</Definition>}
 
-              <DifficultyBadge data-testid="difficulty-badge" $level={currentWord?.difficulty_level}>
+              <DifficultyBadge
+                data-testid="difficulty-badge"
+                $level={currentWord?.difficulty_level}
+              >
                 {(currentWord?.difficulty_level || 'unknown').toUpperCase()} Level
               </DifficultyBadge>
 

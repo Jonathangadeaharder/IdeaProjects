@@ -15,7 +15,7 @@ async def test_Whensubtitle_uploadWithnon_srt_ThenRejects(async_http_client, url
     """Invalid input: uploading a non-.srt file is rejected."""
     helper = AsyncAuthHelper(async_http_client)
 
-    user, token, headers = await helper.create_authenticated_user()
+    _user, _token, headers = await helper.create_authenticated_user()
 
     response = await async_http_client.post(
         url_builder.url_for("upload_subtitle"),
@@ -36,7 +36,7 @@ async def test_Whenvideo_uploadWithoutmp_ThenReturnsError4(async_http_client, ur
     """Boundary: non-mp4 uploads return a validation error."""
     helper = AsyncAuthHelper(async_http_client)
 
-    user, token, headers = await helper.create_authenticated_user()
+    _user, _token, headers = await helper.create_authenticated_user()
 
     response = await async_http_client.post(
         url_builder.url_for("upload_video_to_series", series="series"),

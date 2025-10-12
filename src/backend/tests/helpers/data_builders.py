@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
 
 # Python 3.10 compatibility: Use timezone.utc instead of UTC constant
-UTC = timezone.utc
+UTC = UTC
 
 
 class CEFRLevel(str, Enum):

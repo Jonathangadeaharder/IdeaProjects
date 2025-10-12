@@ -4,15 +4,15 @@
  */
 
 export interface ApiConfig {
-  baseUrl: string;
-  timeout: number;
-  retryAttempts: number;
-  retryDelay: number;
-  enableLogging: boolean;
-  enableValidation: boolean;
+  baseUrl: string
+  timeout: number
+  retryAttempts: number
+  retryDelay: number
+  enableLogging: boolean
+  enableValidation: boolean
 }
 
-export type Environment = 'development' | 'staging' | 'production' | 'test';
+export type Environment = 'development' | 'staging' | 'production' | 'test'
 
 // Environment-specific configurations - evaluated dynamically to support testing
 function getConfigs(): Record<Environment, ApiConfig> {
@@ -49,7 +49,7 @@ function getConfigs(): Record<Environment, ApiConfig> {
       enableLogging: false,
       enableValidation: true,
     },
-  };
+  }
 }
 
 /**
@@ -58,46 +58,46 @@ function getConfigs(): Record<Environment, ApiConfig> {
 function getCurrentEnvironment(): Environment {
   // Check Vite environment variable first (highest priority)
   if (import.meta.env.VITE_ENVIRONMENT) {
-    const env = import.meta.env.VITE_ENVIRONMENT as string;
+    const env = import.meta.env.VITE_ENVIRONMENT as string
     if (['development', 'staging', 'production', 'test'].includes(env)) {
-      return env as Environment;
+      return env as Environment
     }
   }
 
   // Check hostname for staging (before NODE_ENV to support staging detection)
   if (typeof window !== 'undefined' && window.location.hostname.includes('staging')) {
-    return 'staging';
+    return 'staging'
   }
 
   // Check Node environment (but skip test in real app usage)
   if (import.meta.env.NODE_ENV === 'production') {
-    return 'production';
+    return 'production'
   }
 
   // Only use test environment if explicitly set or no other env detected
   if (import.meta.env.NODE_ENV === 'test' && !import.meta.env.VITE_ENVIRONMENT) {
-    return 'test';
+    return 'test'
   }
 
   // Default to development
-  return 'development';
+  return 'development'
 }
 
 /**
  * Get API configuration for the current environment
  */
 export function getApiConfig(): ApiConfig {
-  const environment = getCurrentEnvironment();
-  const configs = getConfigs();
-  return { ...configs[environment] };
+  const environment = getCurrentEnvironment()
+  const configs = getConfigs()
+  return { ...configs[environment] }
 }
 
 /**
  * Get API configuration for a specific environment
  */
 export function getApiConfigForEnvironment(env: Environment): ApiConfig {
-  const configs = getConfigs();
-  return { ...configs[env] };
+  const configs = getConfigs()
+  return { ...configs[env] }
 }
 
 /**
@@ -105,21 +105,21 @@ export function getApiConfigForEnvironment(env: Environment): ApiConfig {
  */
 export function validateApiConfig(config: ApiConfig): boolean {
   if (!config.baseUrl || !config.baseUrl.startsWith('http')) {
-    console.error('Invalid API base URL:', config.baseUrl);
-    return false;
+    console.error('Invalid API base URL:', config.baseUrl)
+    return false
   }
 
   if (config.timeout <= 0) {
-    console.error('Invalid API timeout:', config.timeout);
-    return false;
+    console.error('Invalid API timeout:', config.timeout)
+    return false
   }
 
   if (config.retryAttempts < 0) {
-    console.error('Invalid retry attempts:', config.retryAttempts);
-    return false;
+    console.error('Invalid retry attempts:', config.retryAttempts)
+    return false
   }
 
-  return true;
+  return true
 }
 
 /**
@@ -128,37 +128,37 @@ export function validateApiConfig(config: ApiConfig): boolean {
 export function createApiHeaders(config: ApiConfig): Record<string, string> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    'Accept': 'application/json',
-  };
+    Accept: 'application/json',
+  }
 
   // Add environment-specific headers
-  const environment = getCurrentEnvironment();
-  headers['X-Environment'] = environment;
+  const environment = getCurrentEnvironment()
+  headers['X-Environment'] = environment
 
   // Add version header for contract versioning
-  headers['X-API-Version'] = '1.0';
+  headers['X-API-Version'] = '1.0'
 
   // Add request ID for tracing in non-production environments
   if (config.enableLogging) {
-    headers['X-Request-ID'] = generateRequestId();
+    headers['X-Request-ID'] = generateRequestId()
   }
 
-  return headers;
+  return headers
 }
 
 /**
  * Generate a unique request ID for tracing
  */
 function generateRequestId(): string {
-  return `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  return `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
 }
 
 /**
  * Log API configuration on startup
  */
 export function logApiConfig(): void {
-  const config = getApiConfig();
-  const environment = getCurrentEnvironment();
+  const config = getApiConfig()
+  const environment = getCurrentEnvironment()
 
   if (config.enableLogging && import.meta.env.DEV) {
     // Only log in development mode
@@ -169,9 +169,9 @@ export function logApiConfig(): void {
       timeout: config.timeout,
       retryAttempts: config.retryAttempts,
       enableValidation: config.enableValidation,
-    });
+    })
   }
 }
 
 // Export current configuration as default
-export default getApiConfig();
+export default getApiConfig()

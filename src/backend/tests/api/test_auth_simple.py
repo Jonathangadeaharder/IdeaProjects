@@ -48,7 +48,7 @@ async def test_WhenMeEndpointCalled_ThenReturnsJsonForBothAuthStates(async_http_
     assert_json_error_response(unauth_response, 401)
 
     helper = AsyncAuthHelper(async_http_client)
-    _user, token, headers = await helper.create_authenticated_user()
+    _user, _token, headers = await helper.create_authenticated_user()
     auth_response = await async_http_client.get(me_url, headers=headers)
     assert auth_response.status_code == 200
     assert_json_response(auth_response)

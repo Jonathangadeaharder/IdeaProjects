@@ -15,7 +15,7 @@ from tests.helpers import AsyncAuthHelper
 async def test_Whenvideo_listingCalled_ThenReturnsempty_list(async_http_client, url_builder, monkeypatch, tmp_path):
     helper = AsyncAuthHelper(async_http_client)
 
-    user, token, headers = await helper.create_authenticated_user()
+    _user, _token, headers = await helper.create_authenticated_user()
 
     with patch.object(type(settings), "get_videos_path", return_value=tmp_path):
         response = await async_http_client.get(url_builder.url_for("get_videos"), headers=headers)
@@ -29,7 +29,7 @@ async def test_Whenvideo_listingCalled_ThenReturnsempty_list(async_http_client, 
 async def test_stream_missing_video_returns_404(async_http_client, url_builder, monkeypatch, tmp_path):
     helper = AsyncAuthHelper(async_http_client)
 
-    user, token, headers = await helper.create_authenticated_user()
+    _user, _token, headers = await helper.create_authenticated_user()
 
     with patch.object(type(settings), "get_videos_path", return_value=tmp_path):
         response = await async_http_client.get(

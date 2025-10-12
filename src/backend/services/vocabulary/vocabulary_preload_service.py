@@ -4,11 +4,11 @@ Loads vocabulary data from text files into the database
 """
 
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 # Python 3.10 compatibility: Use timezone.utc instead of UTC constant
-UTC = timezone.utc
+UTC = UTC
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession

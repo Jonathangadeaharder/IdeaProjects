@@ -299,7 +299,7 @@ class StrategicCoveragePlanner:
                     test_content = f.read()
                 test_count = len(re.findall(r"def\s+test_\w+", test_content))
                 return True, test_count
-            except (OSError, IOError):
+            except OSError:
                 return True, 0
 
         return False, 0

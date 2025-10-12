@@ -14,7 +14,7 @@ from tests.helpers import AsyncAuthHelper
 async def test_Whentranscribe_fails_without_serviceCalled_ThenSucceeds(async_http_client, url_builder):
     helper = AsyncAuthHelper(async_http_client)
 
-    user, token, headers = await helper.create_authenticated_user()
+    _user, _token, headers = await helper.create_authenticated_user()
 
     # Mock transcription service to return None (unavailable)
     with patch("api.routes.transcription_routes.get_transcription_service", return_value=None):

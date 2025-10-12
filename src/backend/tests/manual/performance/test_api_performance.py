@@ -50,7 +50,7 @@ async def test_Whenmultilingual_vocab_stats_within_latency_budgetCalled_ThenSucc
     """Multilingual vocabulary stats request remains inside the agreed latency budget."""
     helper = AsyncAuthHelper(async_client)
 
-    user, token, headers = await helper.create_authenticated_user()
+    _user, _token, headers = await helper.create_authenticated_user()
 
     started = time.perf_counter()
     response = await async_client.get(
@@ -75,7 +75,7 @@ async def test_Whenvocab_level_query_within_budgetCalled_ThenSucceeds(async_clie
     """Vocabulary level query with multilingual parameters stays performant."""
     helper = AsyncAuthHelper(async_client)
 
-    user, token, headers = await helper.create_authenticated_user()
+    _user, _token, headers = await helper.create_authenticated_user()
 
     started = time.perf_counter()
     response = await async_client.get(

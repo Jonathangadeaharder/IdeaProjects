@@ -97,7 +97,7 @@ class FileSecurityValidator:
         return ext in cls.ALLOWED_EXTENSIONS
 
     @classmethod
-    async def validate_file_upload(cls, file: UploadFile, allowed_extensions: set[str] = None) -> Path:
+    async def validate_file_upload(cls, file: UploadFile, allowed_extensions: set[str] | None = None) -> Path:
         """
         Validate uploaded file for security
 

@@ -525,8 +525,9 @@ async def clean_database(app: FastAPI):
 
     async def cleanup_all_tables():
         """Remove all data from all tables while preserving schema."""
-        from core.database import Base
         from sqlalchemy import text
+
+        from core.database import Base
 
         async with session_factory() as session:
             # Get all table names from metadata

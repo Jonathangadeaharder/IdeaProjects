@@ -14,7 +14,7 @@ from tests.helpers import AsyncAuthHelper
 async def test_Whenmark_known_endpointCalled_ThenSucceeds(async_client, url_builder):
     helper = AsyncAuthHelper(async_client)
 
-    user, token, headers = await helper.create_authenticated_user()
+    _user, _token, headers = await helper.create_authenticated_user()
     concept_id = str(uuid4())
 
     response = await async_client.post(
@@ -31,7 +31,7 @@ async def test_Whenmark_known_endpointCalled_ThenSucceeds(async_client, url_buil
 async def test_Whenlibrary_levelWithoutvalid_code_ThenReturnsError(async_client):
     helper = AsyncAuthHelper(async_client)
 
-    user, token, headers = await helper.create_authenticated_user()
+    _user, _token, headers = await helper.create_authenticated_user()
 
     response = await async_client.get("/api/vocabulary/library/Z9", params={"target_language": "de"}, headers=headers)
 
@@ -47,7 +47,7 @@ async def test_Whenvocabulary_stats_endpointCalled_ThenReturnsMultilingualStats(
     """Integration test for multilingual vocabulary stats endpoint."""
     helper = AsyncAuthHelper(async_client)
 
-    user, token, headers = await helper.create_authenticated_user()
+    _user, _token, headers = await helper.create_authenticated_user()
 
     response = await async_client.get(
         url_builder.url_for("get_vocabulary_stats"),
@@ -68,7 +68,7 @@ async def test_Whenlanguages_endpointCalled_ThenReturnsLanguageList(async_client
     """Integration test for supported languages endpoint."""
     helper = AsyncAuthHelper(async_client)
 
-    user, token, headers = await helper.create_authenticated_user()
+    _user, _token, headers = await helper.create_authenticated_user()
 
     response = await async_client.get(
         "/api/vocabulary/languages",
@@ -87,7 +87,7 @@ async def test_Whenbulk_mark_endpointCalled_ThenSucceedsWithLanguage(async_clien
     """Integration test for multilingual bulk mark endpoint."""
     helper = AsyncAuthHelper(async_client)
 
-    user, token, headers = await helper.create_authenticated_user()
+    _user, _token, headers = await helper.create_authenticated_user()
 
     response = await async_client.post(
         "/api/vocabulary/library/bulk-mark",

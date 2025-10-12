@@ -118,7 +118,7 @@ async def parse_srt_content(request: ParseSRTRequest):
         segments = SRTParser.parse_content(request.content)
 
         response_segments = []
-        max_end_time = 0
+        max_end_time = 0.0
 
         for segment in segments:
             response_segments.append(

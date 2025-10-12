@@ -9,6 +9,7 @@ import subprocess
 from dataclasses import asdict, dataclass
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 
 
 @dataclass
@@ -103,7 +104,7 @@ class CoverageMonitor:
             return self._create_empty_snapshot()
 
         # Extract service-level coverage
-        service_coverage = []
+        service_coverage: list[ServiceCoverage] = []
         for filename, file_data in data.get("files", {}).items():
             # Handle both Windows and Unix paths
             normalized_path = filename.replace("\\", "/")
@@ -149,13 +150,13 @@ class CoverageMonitor:
                     return name
         return None
 
-    def _analyze_service_coverage(self, service_name: str, filename: str, file_data: dict) -> ServiceCoverage:
+    def _analyze_service_coverage(self, service_name: str, filename: str, file_data: dict[str, Any]) -> ServiceCoverage:
         """Analyze coverage for a specific service"""
         summary = file_data.get("summary", {})
 
         # Analyze critical methods
-        critical_covered = []
-        critical_missing = []
+        critical_covered: list[str] = []
+        critical_missing: list[str] = []
 
         try:
             # Read source file to analyze methods
@@ -222,39 +223,39 @@ Generated: {snapshot.timestamp}
 
 ## Critical Services Status
 """
-        for service, status in snapshot.critical_services_status.items():
-            report += f"- **{service}**: {status}\n"
+        for service_name, status in snapshot.critical_services_status.items():
+            report += f"- **{service_name}**: {status}\n"
 
         report += "\n## Service-Level Coverage\n"
 
         # Sort services by coverage percentage
         sorted_services = sorted(snapshot.service_coverage, key=lambda s: s.coverage_percentage, reverse=True)
 
-        for service in sorted_services:
+        for service_cov in sorted_services:
             status_indicator = (
                 "[GOOD]"
-                if service.coverage_percentage >= 70
+                if service_cov.coverage_percentage >= 70
                 else "[FAIR]"
-                if service.coverage_percentage >= 40
+                if service_cov.coverage_percentage >= 40
                 else "[POOR]"
             )
             report += f"""
-### {status_indicator} {service.service_name}
-- **Coverage**: {service.coverage_percentage:.1f}%
-- **Statements**: {service.total_statements - service.missing_statements}/{service.total_statements}
-- **Missing Lines**: {len(service.missing_lines)} lines
+### {status_indicator} {service_cov.service_name}
+- **Coverage**: {service_cov.coverage_percentage:.1f}%
+- **Statements**: {service_cov.total_statements - service_cov.missing_statements}/{service_cov.total_statements}
+- **Missing Lines**: {len(service_cov.missing_lines)} lines
 """
 
         return report
 
-    def analyze_trends(self, snapshots_limit: int = 10) -> dict:
+    def analyze_trends(self, snapshots_limit: int = 10) -> dict[str, Any]:
         """Analyze coverage trends over time"""
         snapshot_files = sorted(self.reports_dir.glob("coverage_snapshot_*.json"))[-snapshots_limit:]
 
         if len(snapshot_files) < 2:
             return {"message": "Need at least 2 snapshots to analyze trends"}
 
-        trends = {"total_coverage_trend": [], "service_trends": {}, "test_count_trend": []}
+        trends: dict[str, Any] = {"total_coverage_trend": [], "service_trends": {}, "test_count_trend": []}
 
         for snapshot_file in snapshot_files:
             try:

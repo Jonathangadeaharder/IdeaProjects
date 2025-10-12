@@ -347,10 +347,10 @@ class TestMultiUserVocabularyIsolation:
         """Test vocabulary progress is properly isolated between users"""
         # Create and authenticate two different users using consistent patterns
         helper1 = AsyncAuthHelper(async_client)
-        user1, _token1, user1_headers = await helper1.create_authenticated_user()
+        _user1, _token1, user1_headers = await helper1.create_authenticated_user()
 
         helper2 = AsyncAuthHelper(async_client)
-        user2, _token2, user2_headers = await helper2.create_authenticated_user()
+        _user2, _token2, user2_headers = await helper2.create_authenticated_user()
 
         user_tokens = {"user1": {"headers": user1_headers}, "user2": {"headers": user2_headers}}
 

@@ -10,16 +10,13 @@ const LoginContainer = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(
-    rgba(0, 0, 0, 0.7),
-    rgba(0, 0, 0, 0.7)
-  );
+  background: linear-gradient(rgb(0 0 0 / 70%), rgb(0 0 0 / 70%));
   background-size: cover;
   background-position: center;
 `
 
 const LoginCard = styled.div`
-  background: rgba(0, 0, 0, 0.85);
+  background: rgb(0 0 0 / 85%);
   padding: 48px 68px;
   border-radius: 4px;
   width: 100%;
@@ -161,7 +158,7 @@ export const LoginForm: React.FC = () => {
             type="email"
             placeholder="Email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={e => setEmail(e.target.value)}
             disabled={isLoading}
             data-testid="login-email-input"
           />
@@ -170,18 +167,14 @@ export const LoginForm: React.FC = () => {
             type="password"
             placeholder="Password"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={e => setPassword(e.target.value)}
             disabled={isLoading}
             data-testid="login-password-input"
           />
 
           {error && <ErrorMessage data-testid="login-error">{error}</ErrorMessage>}
 
-          <LoginButton
-            type="submit"
-            disabled={isLoading}
-            data-testid="login-submit-button"
-          >
+          <LoginButton type="submit" disabled={isLoading} data-testid="login-submit-button">
             {isLoading ? 'Signing In...' : 'Sign In'}
           </LoginButton>
 
@@ -190,7 +183,7 @@ export const LoginForm: React.FC = () => {
               <input
                 type="checkbox"
                 checked={rememberMe}
-                onChange={(e) => setRememberMe(e.target.checked)}
+                onChange={e => setRememberMe(e.target.checked)}
               />
               Remember me
             </label>
@@ -199,7 +192,11 @@ export const LoginForm: React.FC = () => {
         </form>
 
         <SignUpText>
-          New to LangPlug? <Link to="/register" data-testid="register-link">Sign up now</Link>.
+          New to LangPlug?{' '}
+          <Link to="/register" data-testid="register-link">
+            Sign up now
+          </Link>
+          .
         </SignUpText>
       </LoginCard>
     </LoginContainer>

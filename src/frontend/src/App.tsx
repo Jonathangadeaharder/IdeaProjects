@@ -12,13 +12,27 @@ import { BackendReadinessCheck } from '@/components/BackendReadinessCheck'
 import { setupAuthInterceptors } from '@/services/auth-interceptor'
 
 // Lazy load route components for code splitting
-const LandingPage = lazy(() => import('@/components/LandingPage').then(m => ({ default: m.LandingPage })))
-const LoginForm = lazy(() => import('@/components/auth/LoginForm').then(m => ({ default: m.LoginForm })))
-const RegisterForm = lazy(() => import('@/components/auth/RegisterForm').then(m => ({ default: m.RegisterForm })))
-const VideoSelection = lazy(() => import('@/components/VideoSelection').then(m => ({ default: m.VideoSelection })))
-const EpisodeSelection = lazy(() => import('@/components/EpisodeSelection').then(m => ({ default: m.EpisodeSelection })))
-const ChunkedLearningPage = lazy(() => import('@/components/ChunkedLearningPage').then(m => ({ default: m.ChunkedLearningPage })))
-const VocabularyLibrary = lazy(() => import('@/components/VocabularyLibrary').then(m => ({ default: m.VocabularyLibrary })))
+const LandingPage = lazy(() =>
+  import('@/components/LandingPage').then(m => ({ default: m.LandingPage }))
+)
+const LoginForm = lazy(() =>
+  import('@/components/auth/LoginForm').then(m => ({ default: m.LoginForm }))
+)
+const RegisterForm = lazy(() =>
+  import('@/components/auth/RegisterForm').then(m => ({ default: m.RegisterForm }))
+)
+const VideoSelection = lazy(() =>
+  import('@/components/VideoSelection').then(m => ({ default: m.VideoSelection }))
+)
+const EpisodeSelection = lazy(() =>
+  import('@/components/EpisodeSelection').then(m => ({ default: m.EpisodeSelection }))
+)
+const ChunkedLearningPage = lazy(() =>
+  import('@/components/ChunkedLearningPage').then(m => ({ default: m.ChunkedLearningPage }))
+)
+const VocabularyLibrary = lazy(() =>
+  import('@/components/VocabularyLibrary').then(m => ({ default: m.VocabularyLibrary }))
+)
 const ProfileScreen = lazy(() => import('@/screens/ProfileScreen'))
 
 // Exported for testing - this is the routing logic without the Router wrapper
@@ -28,79 +42,68 @@ export const AppRoutes: React.FC = () => {
   return (
     <Suspense fallback={<Loading />}>
       <Routes>
-      {/* Public routes */}
-      <Route
-        path="/"
-        element={
-          isAuthenticated ? <Navigate to="/videos" replace /> : <LandingPage />
-        }
-      />
-      <Route
-        path="/login"
-        element={
-          isAuthenticated ? <Navigate to="/videos" replace /> : <LoginForm />
-        }
-      />
-      <Route
-        path="/register"
-        element={
-          isAuthenticated ? <Navigate to="/videos" replace /> : <RegisterForm />
-        }
-      />
+        {/* Public routes */}
+        <Route
+          path="/"
+          element={isAuthenticated ? <Navigate to="/videos" replace /> : <LandingPage />}
+        />
+        <Route
+          path="/login"
+          element={isAuthenticated ? <Navigate to="/videos" replace /> : <LoginForm />}
+        />
+        <Route
+          path="/register"
+          element={isAuthenticated ? <Navigate to="/videos" replace /> : <RegisterForm />}
+        />
 
-      {/* Protected routes */}
-      <Route
-        path="/videos"
-        element={
-          <ProtectedRoute>
-            <VideoSelection />
-          </ProtectedRoute>
-        }
-      />
+        {/* Protected routes */}
+        <Route
+          path="/videos"
+          element={
+            <ProtectedRoute>
+              <VideoSelection />
+            </ProtectedRoute>
+          }
+        />
 
-      <Route
-        path="/episodes/:series"
-        element={
-          <ProtectedRoute>
-            <EpisodeSelection />
-          </ProtectedRoute>
-        }
-      />
+        <Route
+          path="/episodes/:series"
+          element={
+            <ProtectedRoute>
+              <EpisodeSelection />
+            </ProtectedRoute>
+          }
+        />
 
-      <Route
-        path="/learn/:series/:episode"
-        element={
-          <ProtectedRoute>
-            <ChunkedLearningPage />
-          </ProtectedRoute>
-        }
-      />
+        <Route
+          path="/learn/:series/:episode"
+          element={
+            <ProtectedRoute>
+              <ChunkedLearningPage />
+            </ProtectedRoute>
+          }
+        />
 
-      <Route
-        path="/vocabulary"
-        element={
-          <ProtectedRoute>
-            <VocabularyLibrary />
-          </ProtectedRoute>
-        }
-      />
+        <Route
+          path="/vocabulary"
+          element={
+            <ProtectedRoute>
+              <VocabularyLibrary />
+            </ProtectedRoute>
+          }
+        />
 
-      <Route
-        path="/profile"
-        element={
-          <ProtectedRoute>
-            <ProfileScreen />
-          </ProtectedRoute>
-        }
-      />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <ProfileScreen />
+            </ProtectedRoute>
+          }
+        />
 
-      {/* Fallback route */}
-      <Route
-        path="*"
-        element={
-          <Navigate to={isAuthenticated ? "/videos" : "/"} replace />
-        }
-      />
+        {/* Fallback route */}
+        <Route path="*" element={<Navigate to={isAuthenticated ? '/videos' : '/'} replace />} />
       </Routes>
     </Suspense>
   )
@@ -120,7 +123,7 @@ const App: React.FC = () => {
           <Router
             future={{
               v7_startTransition: true,
-              v7_relativeSplatPath: true
+              v7_relativeSplatPath: true,
             }}
           >
             <AppRoutes />
@@ -133,20 +136,20 @@ const App: React.FC = () => {
               style: {
                 background: '#363636',
                 color: '#fff',
-                fontFamily: 'Helvetica Neue, Arial, sans-serif'
+                fontFamily: 'Helvetica Neue, Arial, sans-serif',
               },
               success: {
                 iconTheme: {
                   primary: '#46d369',
-                  secondary: '#fff'
-                }
+                  secondary: '#fff',
+                },
               },
               error: {
                 iconTheme: {
                   primary: '#ef4444',
-                  secondary: '#fff'
-                }
-              }
+                  secondary: '#fff',
+                },
+              },
             }}
           />
         </BackendReadinessCheck>

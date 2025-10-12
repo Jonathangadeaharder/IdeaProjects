@@ -14,7 +14,7 @@ from .base_repository import BaseRepository
 from .interfaces import VocabularyRepositoryInterface
 
 
-class VocabularyRepository(BaseRepository[VocabularyWordModel], VocabularyRepositoryInterface):
+class VocabularyRepository(BaseRepository[VocabularyWordModel], VocabularyRepositoryInterface):  # type: ignore[misc]
     """Repository for vocabulary database operations using domain entities"""
 
     def __init__(self, session: AsyncSession):

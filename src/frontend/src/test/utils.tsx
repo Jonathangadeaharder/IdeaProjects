@@ -38,15 +38,17 @@ export { srtApi as SRTApi, srtUtils } from '../utils/srtApi'
 
 console.warn(
   'DEPRECATION WARNING: This test utility file is deprecated. ' +
-  'Use the new SRT API client from ../utils/srtApi instead. ' +
-  'See subtitle-parsing.test.ts for proper test examples.'
+    'Use the new SRT API client from ../utils/srtApi instead. ' +
+    'See subtitle-parsing.test.ts for proper test examples.'
 )
 
 /**
  * DEPRECATED: Legacy synchronous SRT parser for backward compatibility
  * Only used in deprecated tests. New code should use srtApi.parseSRTContent()
  */
-export function parseSRT(content: string): Array<{ start: number; end: number; text: string; translation: string }> {
+export function parseSRT(
+  content: string
+): Array<{ start: number; end: number; text: string; translation: string }> {
   if (!content.trim()) return []
 
   const blocks = content.split(/\n\s*\n/).filter(block => block.trim())
@@ -57,7 +59,9 @@ export function parseSRT(content: string): Array<{ start: number; end: number; t
     if (lines.length < 3) continue // Need at least index, timestamp, text
 
     const timestampLine = lines[1]
-    const timestampMatch = timestampLine.match(/(\d{2}:\d{2}:\d{2},\d{3}) --> (\d{2}:\d{2}:\d{2},\d{3})/)
+    const timestampMatch = timestampLine.match(
+      /(\d{2}:\d{2}:\d{2},\d{3}) --> (\d{2}:\d{2}:\d{2},\d{3})/
+    )
     if (!timestampMatch) continue
 
     const [, startStr, endStr] = timestampMatch

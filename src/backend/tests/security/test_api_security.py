@@ -45,7 +45,7 @@ async def test_Whensql_injection_in_concept_lookupCalled_ThenReturnssafe_respons
     """SQL injection payloads in concept-based queries should not compromise the database."""
     helper = AsyncAuthHelper(async_client)
 
-    user, token, headers = await helper.create_authenticated_user()
+    _user, _token, headers = await helper.create_authenticated_user()
     malicious_uuid = "'; DROP TABLE vocabulary_concept; --"
 
     response = await async_client.post(
@@ -73,7 +73,7 @@ async def test_Whenxss_payload_in_language_parameterCalled_ThenSucceeds(async_cl
     """XSS payloads in language parameters must be properly validated."""
     helper = AsyncAuthHelper(async_client)
 
-    user, token, headers = await helper.create_authenticated_user()
+    _user, _token, headers = await helper.create_authenticated_user()
     xss_payload = "<script>alert('xss')</script>"
 
     response = await async_client.get(
@@ -107,7 +107,7 @@ async def test_WhenLogoutCalled_ThenRevokesaccess(async_client, url_builder) -> 
     This test verifies logout succeeds but skips token invalidation check.
     """
     helper = AsyncAuthHelper(async_client)
-    _user, token, headers = await helper.create_authenticated_user()
+    _user, _token, headers = await helper.create_authenticated_user()
 
     logout = await async_client.post(url_builder.url_for("auth_logout"), headers=headers)
     assert (

@@ -83,7 +83,7 @@ class ConnectionManager:
 
     async def broadcast(self, message: dict, exclude_user: str | None = None):
         """Broadcast a message to all connected clients"""
-        all_connections = []
+        all_connections: list[WebSocket] = []
 
         for user_id, connections in self.active_connections.items():
             if user_id != exclude_user:

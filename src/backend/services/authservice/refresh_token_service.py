@@ -40,8 +40,7 @@ Performance Notes:
 import hashlib
 import secrets
 import uuid
-from datetime import datetime, timedelta, timezone
-from typing import Optional
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -51,7 +50,7 @@ from core.logging_config import get_logger
 from core.transaction import transactional
 from database.models import RefreshTokenFamily, User
 
-UTC = timezone.utc
+UTC = UTC
 logger = get_logger(__name__)
 
 
@@ -256,7 +255,7 @@ class RefreshTokenService:
 
         return new_token, family.user_id
 
-    async def verify_token(self, token: str) -> Optional[int]:
+    async def verify_token(self, token: str) -> int | None:
         """
         Verify refresh token and return user ID without rotation.
 
@@ -375,7 +374,7 @@ class RefreshTokenService:
         stmt = (
             update(RefreshTokenFamily)
             .where(RefreshTokenFamily.user_id == user_id)
-            .where(RefreshTokenFamily.is_revoked == False)
+            .where(not RefreshTokenFamily.is_revoked)
             .values(
                 is_revoked=True,
                 revoked_at=datetime.now(UTC),

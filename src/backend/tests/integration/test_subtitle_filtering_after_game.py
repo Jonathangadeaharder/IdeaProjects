@@ -6,6 +6,7 @@ from subtitles when reprocessing chunks.
 """
 
 import pytest
+
 from database.models import VocabularyWord
 from tests.helpers import AsyncAuthHelper
 
@@ -71,7 +72,7 @@ class TestSubtitleFilteringAfterGame:
         """
         # Create and authenticate a user
         helper = AsyncAuthHelper(async_client)
-        user, _token, headers = await helper.create_authenticated_user()
+        _user, _token, headers = await helper.create_authenticated_user()
 
         # Simulate first chunk processing - get initial vocabulary for A1 level
         initial_vocab_response = await async_client.get(
@@ -129,7 +130,7 @@ class TestSubtitleFilteringAfterGame:
         """
         # Create and authenticate a user
         helper = AsyncAuthHelper(async_client)
-        user, _token, headers = await helper.create_authenticated_user()
+        _user, _token, headers = await helper.create_authenticated_user()
 
         # Get initial vocabulary statistics
         initial_stats_response = await async_client.get(
@@ -193,7 +194,7 @@ class TestSubtitleFilteringAfterGame:
         """
         # Create and authenticate a user
         helper = AsyncAuthHelper(async_client)
-        user, _token, headers = await helper.create_authenticated_user()
+        _user, _token, headers = await helper.create_authenticated_user()
 
         # Mark an unknown word as known (word not in vocabulary database)
         unknown_word = "brauriger"
@@ -233,7 +234,7 @@ class TestSubtitleFilteringAfterGame:
         """
         # Create and authenticate a user
         helper = AsyncAuthHelper(async_client)
-        user, _token, headers = await helper.create_authenticated_user()
+        _user, _token, headers = await helper.create_authenticated_user()
 
         test_word = test_vocabulary_words[0]  # "hallo"
 
@@ -296,7 +297,7 @@ class TestSubtitleFilteringAfterGame:
         """
         # Create and authenticate a user
         helper = AsyncAuthHelper(async_client)
-        user, _token, headers = await helper.create_authenticated_user()
+        _user, _token, headers = await helper.create_authenticated_user()
 
         # Mark most words as known (simulating multiple game sessions)
         words_to_mark = test_vocabulary_words[:3]  # Mark 3 out of 4 words

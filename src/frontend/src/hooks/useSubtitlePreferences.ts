@@ -10,7 +10,9 @@ const STORAGE_KEY = 'langplug_subtitle_mode'
  * @param defaultMode - Default subtitle mode if none is saved
  * @returns [subtitleMode, setSubtitleMode] - Current mode and setter function
  */
-export function useSubtitlePreferences(defaultMode: SubtitleMode = 'original'): [SubtitleMode, Dispatch<SetStateAction<SubtitleMode>>] {
+export function useSubtitlePreferences(
+  defaultMode: SubtitleMode = 'original'
+): [SubtitleMode, Dispatch<SetStateAction<SubtitleMode>>] {
   const [subtitleMode, setSubtitleMode] = useState<SubtitleMode>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY)

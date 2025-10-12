@@ -6,11 +6,7 @@ import { Input } from '../Input'
 
 // Helper to render with theme
 const renderWithTheme = (component: React.ReactElement) => {
-  return render(
-    <ThemeProvider theme={(global as any).mockTheme}>
-      {component}
-    </ThemeProvider>
-  )
+  return render(<ThemeProvider theme={(global as any).mockTheme}>{component}</ThemeProvider>)
 }
 
 describe('Input Component', () => {
@@ -96,7 +92,7 @@ describe('Input Component', () => {
     it('handles disabled state', () => {
       renderWithTheme(<Input disabled data-testid="input" />)
 
-      const input = screen.getByTestId('input');
+      const input = screen.getByTestId('input')
       expect(input).toHaveAttribute('disabled')
 
       // The input should be disabled
@@ -160,13 +156,7 @@ describe('Input Component', () => {
     })
 
     it('prioritizes error message over help text', () => {
-      renderWithTheme(
-        <Input
-          helperText="Help text"
-          error="Error message"
-          data-testid="input"
-        />
-      )
+      renderWithTheme(<Input helperText="Help text" error="Error message" data-testid="input" />)
 
       expect(screen.getByText('Error message')).toBeInTheDocument()
       expect(screen.queryByText('Help text')).not.toBeInTheDocument()
@@ -330,11 +320,7 @@ describe('Input Component', () => {
 
     it('supports custom ARIA attributes', () => {
       renderWithTheme(
-        <Input
-          aria-label="Search input"
-          aria-describedby="search-help"
-          data-testid="input"
-        />
+        <Input aria-label="Search input" aria-describedby="search-help" data-testid="input" />
       )
 
       const input = screen.getByTestId('input')
@@ -375,7 +361,9 @@ describe('Input Component', () => {
 
       renderWithTheme(
         <Input
-          ref={(ref) => { inputRef = ref }}
+          ref={ref => {
+            inputRef = ref
+          }}
           data-testid="input"
         />
       )
@@ -384,7 +372,7 @@ describe('Input Component', () => {
 
       // Type guard to ensure inputRef is not null
       if (inputRef !== null) {
-        (inputRef as HTMLInputElement).focus()
+        ;(inputRef as HTMLInputElement).focus()
         expect(inputRef).toHaveFocus()
       }
     })

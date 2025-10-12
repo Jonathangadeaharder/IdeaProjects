@@ -6,6 +6,7 @@ in the vocabulary library with the proper known status.
 """
 
 import pytest
+
 from database.models import VocabularyWord
 from tests.helpers import AsyncAuthHelper
 
@@ -64,7 +65,7 @@ class TestGameVocabularyLibraryIntegration:
         """
         # Create and authenticate a user
         helper = AsyncAuthHelper(async_client)
-        user, _token, headers = await helper.create_authenticated_user()
+        _user, _token, headers = await helper.create_authenticated_user()
 
         # Get initial vocabulary library state for A1 level
         initial_library_response = await async_client.get(
@@ -135,7 +136,7 @@ class TestGameVocabularyLibraryIntegration:
         """
         # Create and authenticate a user
         helper = AsyncAuthHelper(async_client)
-        user, _token, headers = await helper.create_authenticated_user()
+        _user, _token, headers = await helper.create_authenticated_user()
 
         # Get initial statistics
         initial_stats_response = await async_client.get(
@@ -204,7 +205,7 @@ class TestGameVocabularyLibraryIntegration:
         """
         # Create and authenticate a user
         helper = AsyncAuthHelper(async_client)
-        user, _token, headers = await helper.create_authenticated_user()
+        _user, _token, headers = await helper.create_authenticated_user()
 
         test_word_lemma = test_vocabulary_words[0].lemma  # "haus"
 
@@ -269,7 +270,7 @@ class TestGameVocabularyLibraryIntegration:
         """
         # Create and authenticate a user
         helper = AsyncAuthHelper(async_client)
-        user, _token, headers = await helper.create_authenticated_user()
+        _user, _token, headers = await helper.create_authenticated_user()
 
         # Mark a word that doesn't exist in vocabulary database
         unknown_word = "brauriger"  # Example from the original issue
@@ -312,7 +313,7 @@ class TestGameVocabularyLibraryIntegration:
         """
         # Create and authenticate a user
         helper = AsyncAuthHelper(async_client)
-        user, _token, headers = await helper.create_authenticated_user()
+        _user, _token, headers = await helper.create_authenticated_user()
 
         # Mark one word as known
         known_word = test_vocabulary_words[0]  # "haus"

@@ -20,50 +20,61 @@ export const useTaskProgress = () => {
     }
   }, [])
 
-  const poll = useCallback(async (currentTaskId?: string) => {
-    const idToUse = currentTaskId || taskId
-    if (!idToUse) return
-    try {
-      const res = await getTaskProgressApiProcessProgressTaskIdGet({ taskId: idToUse }) as ProcessingStatus & {
-        result?: unknown
-      }
-      setProgress(res?.progress ?? 0)
+  const poll = useCallback(
+    async (currentTaskId?: string) => {
+      const idToUse = currentTaskId || taskId
+      if (!idToUse) return
+      try {
+        const res = (await getTaskProgressApiProcessProgressTaskIdGet({
+          taskId: idToUse,
+        })) as ProcessingStatus & {
+          result?: unknown
+        }
+        setProgress(res?.progress ?? 0)
 
-      if (res?.status === 'processing') {
-        setStatus('processing')
-      } else if (res?.status === 'completed') {
-        setStatus('completed')
-        setIsComplete(true)
-        setResult(res?.result ?? null)
+        if (res?.status === 'processing') {
+          setStatus('processing')
+        } else if (res?.status === 'completed') {
+          setStatus('completed')
+          setIsComplete(true)
+          setResult(res?.result ?? null)
+          clearTimer()
+        } else if (res?.status === 'failed' || res?.status === 'error') {
+          setStatus('failed') // Always set to 'failed' for both 'failed' and 'error' statuses
+          const errorMessage =
+            (res as ProcessingStatus & { error?: string })?.error ||
+            res?.message ||
+            'Processing failed'
+          setError(errorMessage)
+          clearTimer()
+        } else {
+          // Unknown status: keep processing
+          setStatus('processing')
+        }
+      } catch (e: unknown) {
+        setStatus('error')
+        const errorObj = e as { message?: string }
+        setError(errorObj?.message || 'Network error')
         clearTimer()
-      } else if (res?.status === 'failed' || res?.status === 'error') {
-        setStatus('failed') // Always set to 'failed' for both 'failed' and 'error' statuses
-        const errorMessage = (res as ProcessingStatus & { error?: string })?.error || res?.message || 'Processing failed'
-        setError(errorMessage)
-        clearTimer()
-      } else {
-        // Unknown status: keep processing
-        setStatus('processing')
       }
-    } catch (e: unknown) {
-      setStatus('error')
-      const errorObj = e as { message?: string }
-      setError(errorObj?.message || 'Network error')
+    },
+    [taskId, clearTimer]
+  )
+
+  const startMonitoring = useCallback(
+    (id: string) => {
+      setTaskId(id)
+      setStatus('monitoring')
+      setIsComplete(false)
+      setError(null)
+      setProgress(0)
+      setResult(null)
       clearTimer()
-    }
-  }, [taskId, clearTimer])
-
-  const startMonitoring = useCallback((id: string) => {
-    setTaskId(id)
-    setStatus('monitoring')
-    setIsComplete(false)
-    setError(null)
-    setProgress(0)
-    setResult(null)
-    clearTimer()
-    // Start polling every 2 seconds
-    intervalRef.current = window.setInterval(() => poll(id), 2000)
-  }, [poll, clearTimer])
+      // Start polling every 2 seconds
+      intervalRef.current = window.setInterval(() => poll(id), 2000)
+    },
+    [poll, clearTimer]
+  )
 
   const stopMonitoring = useCallback(() => {
     clearTimer()

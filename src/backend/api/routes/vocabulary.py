@@ -11,8 +11,8 @@ from core.config import settings
 from core.database import get_async_session
 from core.dependencies import current_active_user
 from core.enums import CEFRLevel
-from database.models import User
 from core.service_dependencies import get_vocabulary_service
+from database.models import User
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["vocabulary"])
@@ -216,6 +216,8 @@ async def mark_word_known_by_lemma(
 ):
     """Mark a word as known or unknown using lemma-based lookup (compatibility endpoint)"""
     try:
+        if not request.word:
+            raise HTTPException(status_code=400, detail="Word is required")
         word = request.word.strip()
         language = request.language
         known = request.known
@@ -511,11 +513,11 @@ async def get_blocking_words(
 
         if not srt_file.exists():
             raise HTTPException(status_code=404, detail="Subtitle file not found")
-        
+
         # Read SRT file content
-        with open(srt_file, 'r', encoding='utf-8') as f:
+        with open(srt_file, encoding='utf-8') as f:
             srt_content = f.read()
-        
+
         # Extract blocking words from SRT content
         blocking_words = await vocabulary_service.extract_blocking_words_from_srt(
             db=db,
@@ -523,7 +525,7 @@ async def get_blocking_words(
             user_id=current_user.id,
             video_path=video_path
         )
-        
+
         return {
             "blocking_words": blocking_words,
             "total_count": len(blocking_words),
@@ -580,8 +582,9 @@ async def create_vocabulary(
     Raises:
         HTTPException: 400 if creation fails
     """
-    from database.models import VocabularyWord
     from sqlalchemy import select
+
+    from database.models import VocabularyWord
 
     try:
         # Map difficulty level to CEFR level for storage
@@ -632,7 +635,7 @@ async def create_vocabulary(
     except Exception as e:
         logger.error(f"Error creating vocabulary: {e}")
         await db.rollback()
-        raise HTTPException(status_code=400, detail=f"Failed to create vocabulary: {str(e)}") from e
+        raise HTTPException(status_code=400, detail=f"Failed to create vocabulary: {e!s}") from e
 
 
 @router.post("/custom/add", name="add_custom_word")

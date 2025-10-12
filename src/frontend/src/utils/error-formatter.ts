@@ -9,11 +9,17 @@ export interface ApiError {
   }
   message?: string
   status?: number
+  headers?: {
+    'retry-after'?: string
+  }
   response?: {
     data?: {
       detail?: string | Array<{ msg?: string }>
     }
     status?: number
+    headers?: {
+      'retry-after'?: string
+    }
   }
 }
 
@@ -69,9 +75,7 @@ export function isRateLimitError(error: unknown): boolean {
  */
 export function getRetryAfter(error: unknown): number {
   const err = error as ApiError
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const retryAfter = (err?.response as any)?.headers?.['retry-after']
-    || (err as any)?.headers?.['retry-after']
+  const retryAfter = err?.response?.headers?.['retry-after'] || err?.headers?.['retry-after']
 
   return retryAfter ? parseInt(retryAfter, 10) : 60
 }
