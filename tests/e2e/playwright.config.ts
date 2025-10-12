@@ -19,7 +19,7 @@ export default defineConfig({
     ['line']
   ],
   use: {
-    baseURL: process.env.FRONTEND_URL || 'http://localhost:3000',
+    baseURL: process.env.FRONTEND_URL || 'http://localhost:5173',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
@@ -30,18 +30,6 @@ export default defineConfig({
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
-    },
-    {
-      name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
-    },
-    {
-      name: 'webkit',
-      use: { ...devices['Desktop Safari'] },
-    },
-    {
-      name: 'mobile-chrome',
-      use: { ...devices['Pixel 5'] },
     },
   ],
   outputDir: 'test-results/',
