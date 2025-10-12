@@ -16,9 +16,9 @@ LangPlug/
 
 ## Core Rules
 
-- Always run the servers with powershell to have the windows setting instead of WSL
+- **Server Management**: Use `scripts\\start-all.bat` and `scripts\\stop-all.bat` for server lifecycle. Monitor status via log files (see Server Management section)
 - **NEVER use emojis or Unicode characters in Python code** - Windows PowerShell has encoding issues with Unicode characters (🚀, 📊, ✅, ❌, etc.). Always use plain ASCII text like [INFO], [ERROR], [WARN], [GOOD], [POOR] instead
-- **ALWAYS activate backend venv before Python/pytest commands** - Use the venv path: `/mnt/c/Users/Jonandrop/IdeaProjects/LangPlug/src/backend/api_venv/Scripts/activate && python -m pytest ...`
+- **Testing**: Run tests with PowerShell commands that activate the venv (see Backend Virtual Environment section for examples)
 - **NO VERSION SUFFIXES IN CODE**: NEVER use \_v2, \_new, \_old, \_temp, \_backup suffixes in filenames or class names. Source control (Git) handles versioning. When replacing code, delete the old version completely. If you need to reference old code, use git history.
 - **NO BACKWARD COMPATIBILITY LAYERS**: When refactoring, update ALL dependencies to use the new architecture directly. Do NOT maintain facades, convenience functions, or compatibility layers just for backward compatibility. Update all imports and usages across the codebase to use the new services/modules. Keep the code modern and slim by removing all boilerplate that exists only for backward compatibility. Source control is the safety net, not compatibility layers in production code.
 - **NEVER COMMENT OUT CODE**: ALWAYS delete obsolete code completely. Never use comments to "disable" code (e.g., `# old_function()` or `# TODO: uncomment when ready`). If code is not needed, delete it entirely. Source control (Git) is the safety net for retrieving old code if needed. Commented-out code creates confusion, bloats the codebase, and suggests uncertainty. Be decisive: either keep the code active or delete it completely.
@@ -52,6 +52,51 @@ Location: `~/.claude/hooks/powershell_wrapper.py`
     powershell.exe -Command ". api_venv/Scripts/activate; pip install pre-commit; pre-commit install"
     ```
   - For subsequent commits just reuse the same pattern, chaining whatever action you need after activation, e.g. `...; pre-commit run --all-files` or `...; git commit`.
+
+## Server Management
+
+### Critical Understanding
+
+**The servers run in separate Windows CMD windows that are NOT visible from WSL.** When you run `start-all.bat`, it spawns two independent CMD windows (one for backend, one for frontend) that run in the Windows environment. You CANNOT see these windows or interact with them directly from WSL bash.
+
+### Starting and Stopping Servers
+
+- **Start servers**: `cmd.exe /c scripts\\start-all.bat` or `powershell.exe -Command "& scripts\\start-all.bat"`
+- **Stop servers**: `cmd.exe /c scripts\\stop-all.bat`
+- The batch scripts handle all venv activation, port cleanup, and process management automatically
+- **DO NOT** attempt to activate the venv from WSL using input redirection (`. api_venv/Scripts/activate`) - this causes "Input redirection is not supported" errors
+
+### Verifying Server Status
+
+**You MUST use log files to verify servers are running** - you cannot rely on seeing processes or terminal output:
+
+- **Backend log**: `/mnt/c/Users/Jonandrop/IdeaProjects/LangPlug/src/backend/logs/backend.log`
+- **Frontend log**: `/mnt/c/Users/Jonandrop/IdeaProjects/LangPlug/src/frontend/frontend.log`
+
+**Verification Examples**:
+```bash
+# Check if backend is ready (REQUIRED to confirm startup)
+tail -50 /mnt/c/Users/Jonandrop/IdeaProjects/LangPlug/src/backend/logs/backend.log | grep "Server is ready"
+
+# Check log file modification time (recent = server is writing logs)
+ls -lh /mnt/c/Users/Jonandrop/IdeaProjects/LangPlug/src/backend/logs/backend.log
+
+# Check for errors
+tail -100 /mnt/c/Users/Jonandrop/IdeaProjects/LangPlug/src/backend/logs/backend.log | grep -i error
+
+# Watch backend log in real-time
+tail -f /mnt/c/Users/Jonandrop/IdeaProjects/LangPlug/src/backend/logs/backend.log
+```
+
+### When to Restart Servers
+
+Restart servers after:
+- Installing new Python packages (argon2-cffi, etc.)
+- Changing environment variables
+- Modifying core configuration files
+- Backend crashes or errors
+
+**Key Principle**: If the log files show "Server is ready" and have recent timestamps, the servers ARE running even if you can't see the CMD windows.
 
 ## LangPlug-Specific Testing Standards
 
