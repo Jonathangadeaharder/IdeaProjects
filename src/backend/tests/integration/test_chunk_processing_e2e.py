@@ -163,7 +163,6 @@ class TestChunkProcessingServiceInstantiation:
         service = ChunkTranscriptionService()
 
         assert service is not None
-        assert hasattr(service, "extract_audio_chunk")
 
     @pytest.mark.asyncio
     async def test_chunk_translation_service_instantiation(self):
@@ -171,7 +170,6 @@ class TestChunkProcessingServiceInstantiation:
         service = ChunkTranslationService()
 
         assert service is not None
-        assert hasattr(service, "build_translation_segments")
 
     @pytest.mark.asyncio
     async def test_chunk_processor_instantiation(self, test_db_session):

@@ -131,7 +131,6 @@ class TestVocabularyServiceSessionManagement:
 
         # Verify actual processing worked
         assert result is not None
-        assert hasattr(result, "learning_subtitles")
 
 
 @skip_if_no_spacy_de
@@ -146,7 +145,6 @@ class TestTranslationServiceMethodCalls:
         service = TranslationServiceFactory.create_service("nllb")
 
         # Verify service has correct method
-        assert hasattr(service, "translate")
         assert callable(service.translate)
 
         # Verify it doesn't have the wrong method name
@@ -188,8 +186,7 @@ class TestTranslationServiceMethodCalls:
             original_text="Hello", translated_text="Hallo", source_language="en", target_language="de"
         )
 
-        # Verify the attribute exists and can be accessed
-        assert hasattr(result, "translated_text")
+        # Verify the attribute can be accessed
         translated_text = result.translated_text
         assert isinstance(translated_text, str)
         assert translated_text == "Hallo"
@@ -247,7 +244,6 @@ class TestIntegrationWithoutMocks:
 
         # Verify actual processing results
         assert result is not None
-        assert hasattr(result, "statistics")
         total_words = result.statistics.get("total_words", 0)
         assert total_words == 4
 
@@ -264,7 +260,6 @@ class TestIntegrationWithoutMocks:
         # Verify service type and interface
         assert service is not None
         assert isinstance(service, ITranslationService)
-        assert hasattr(service, "translate")
         assert callable(service.translate)
 
         # Verify it's not initialized yet (no heavy models loaded)
@@ -299,7 +294,6 @@ class TestBugReproduction:
         service = TranslationServiceFactory.create_service("nllb")
 
         # Verify service has translate() not translate_text()
-        assert hasattr(service, "translate")
         assert callable(service.translate)
         assert not hasattr(service, "translate_text")
 

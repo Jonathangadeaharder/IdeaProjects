@@ -190,9 +190,6 @@ class TestCompleteUserWorkflow:
                 "This is Bug #8: concept_id must be valid UUID"
             )
 
-        # Step 5: Verify complete workflow succeeded
-        assert True, "Complete workflow from processing → display → interaction succeeded"
-
     @pytest.mark.asyncio
     async def test_vocabulary_survives_round_trip(self, test_user, german_vocabulary):
         """
@@ -244,8 +241,6 @@ class TestCompleteUserWorkflow:
                 f"Error: {e}\n"
                 "Backend would reject its own data with 422!"
             )
-
-        assert True, "Vocabulary survives complete round-trip"
 
     @pytest.mark.asyncio
     async def test_multiple_words_all_have_valid_uuids(self, test_user, german_vocabulary):

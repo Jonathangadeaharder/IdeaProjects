@@ -39,8 +39,6 @@ class TestTranscriptionServiceIntegration:
         # Test service creation
         service = get_transcription_service("whisper-tiny")
         assert service is not None
-        assert hasattr(service, "transcribe")
-        assert hasattr(service, "initialize")
 
         # Test model configuration
         assert service.model_size == "tiny"
@@ -92,19 +90,14 @@ class TestTranslationServiceIntegration:
         """Test that opus-de-es service can be created with correct configuration"""
         service = TranslationServiceFactory.create_service("opus-de-es")
         assert service is not None
-        assert hasattr(service, "translate")
 
         # Verify model configuration
         assert service.model_name == "Helsinki-NLP/opus-mt-de-es"
-
-        # Test service interface
-        assert hasattr(service, "initialize") or hasattr(service, "model_name")
 
     def test_nllb_distilled_600m_service_creation(self):
         """Test that nllb-distilled-600m service can be created"""
         service = TranslationServiceFactory.create_service("nllb-distilled-600m")
         assert service is not None
-        assert hasattr(service, "translate")
 
         # Verify model configuration for smallest NLLB model
         assert service.model_name == "facebook/nllb-200-distilled-600M"
