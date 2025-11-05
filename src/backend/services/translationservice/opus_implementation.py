@@ -48,6 +48,18 @@ class OpusTranslationService(ITranslationService):
     def initialize(self) -> None:
         """Initialize the OPUS-MT model and tokenizer"""
         if self._translator is None:
+            from core.gpu_utils import check_cuda_availability
+
+            # Check CUDA availability and configure device
+            cuda_available = check_cuda_availability("OPUS-MT")
+
+            if cuda_available:
+                logger.info(f"[CUDA] GPU available: {torch.cuda.get_device_name(0)}")
+                logger.info(f"[CUDA] CUDA version: {torch.version.cuda}")
+                self.device = "cuda"
+            else:
+                self.device = "cpu"
+
             logger.info(f"Loading OPUS-MT model: {self.model_name}")
             logger.info(f"Device set to use {self.device}")
 

@@ -136,7 +136,7 @@ class FileSecurityValidator:
 
         if file_size > cls.MAX_FILE_SIZE:
             raise ValueError(
-                f"File too large: {file_size} bytes (max {cls.MAX_FILE_SIZE} bytes / {cls.MAX_FILE_SIZE // (1024*1024)} MB)"
+                f"File too large: {file_size} bytes (max {cls.MAX_FILE_SIZE} bytes / {cls.MAX_FILE_SIZE // (1024 * 1024)} MB)"
             )
 
         if file_size == 0:

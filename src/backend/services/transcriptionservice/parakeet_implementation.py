@@ -5,7 +5,6 @@ High-performance ASR using NVIDIA NeMo
 
 import logging
 import os
-import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -47,8 +46,23 @@ class ParakeetTranscriptionService(ITranscriptionService):
     def initialize(self) -> None:
         """Initialize the Parakeet model"""
         if self._model is None:
+            from core.gpu_utils import check_cuda_availability
+
+            # Check CUDA availability
+            cuda_available = check_cuda_availability("Parakeet")
+
+            if not cuda_available:
+                self.device = "cpu"
+
             try:
                 import nemo.collections.asr as nemo_asr
+
+                if cuda_available:
+                    import torch
+
+                    logger.info(f"[CUDA] GPU available: {torch.cuda.get_device_name(0)}")
+                    logger.info(f"[CUDA] CUDA version: {torch.version.cuda}")
+                    self.device = "cuda"
 
                 logger.info(f"Loading Parakeet model: {self.model_name}")
                 self._model = nemo_asr.models.ASRModel.from_pretrained(model_name=self.model_path)
@@ -145,25 +159,9 @@ class ParakeetTranscriptionService(ITranscriptionService):
 
     def extract_audio_from_video(self, video_path: str, output_path: str | None = None) -> str:
         """Extract audio from video file"""
-        try:
-            from moviepy.editor import VideoFileClip
-        except ImportError:
-            from moviepy import VideoFileClip
+        from services.media import extract_audio_from_video
 
-        if output_path is None:
-            output_path = tempfile.NamedTemporaryFile(suffix=".wav", delete=False).name
-
-        video = VideoFileClip(video_path)
-        audio = video.audio
-
-        if audio is None:
-            raise ValueError(f"No audio track found in {video_path}")
-
-        # Parakeet prefers 16kHz audio
-        audio.write_audiofile(output_path, fps=16000, logger=None)
-        video.close()
-
-        return output_path
+        return extract_audio_from_video(video_path, output_path, sample_rate=16000)
 
     def get_supported_languages(self) -> list[str]:
         """Get list of supported language codes"""

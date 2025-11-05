@@ -57,6 +57,7 @@ class TestTranscriptionServiceIntegration:
         # Create a minimal test audio file (silent WAV)
         # Use the real audio file for transcription - use Path to get platform-independent path
         from pathlib import Path
+
         # __file__ is in tests/integration/, so parent.parent is tests/, then add data/
         test_dir = Path(__file__).parent.parent / "data"
         audio_file_path = str(test_dir / "HalloWelt.wav")
@@ -114,7 +115,7 @@ class TestTranslationServiceIntegration:
         german_text = "Hallo Welt"
 
         try:
-            result = service.translate(text=german_text, source_language="de", target_language="es")
+            result = service.translate(text=german_text, source_lang="de", target_lang="es")
 
             # Basic validation of translation result
             assert result is not None
@@ -142,7 +143,7 @@ class TestTranslationServiceIntegration:
         german_text = "Guten Tag"
 
         try:
-            result = service.translate(text=german_text, source_language="de", target_language="es")
+            result = service.translate(text=german_text, source_lang="de", target_lang="es")
 
             # Basic validation
             assert result is not None

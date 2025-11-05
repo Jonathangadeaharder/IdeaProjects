@@ -297,9 +297,9 @@ class TestRegressionPrevention:
             VocabularyWord(**buggy_vocab_dict)
 
         error_message = str(exc_info.value)
-        assert (
-            "active" in error_message.lower() or "extra" in error_message.lower()
-        ), "ValidationError should mention the 'active' field or extra fields"
+        assert "active" in error_message.lower() or "extra" in error_message.lower(), (
+            "ValidationError should mention the 'active' field or extra fields"
+        )
 
     def test_processing_status_with_buggy_vocabulary_is_rejected(self):
         """

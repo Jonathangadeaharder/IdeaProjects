@@ -133,6 +133,7 @@ def main():
         # Note: We don't call create_app() here - uvicorn will call it via factory pattern
 
         import logging
+
         logger = logging.getLogger(__name__)
         logger.info("[STARTUP] Starting uvicorn server...")
 
@@ -197,6 +198,7 @@ def main():
 
     except ImportError as e:
         import logging
+
         logger = logging.getLogger(__name__)
         logger.error(f"[ERROR] Import failed: {e}", exc_info=True)
         traceback.print_exc()
@@ -204,6 +206,7 @@ def main():
 
     except Exception as e:
         import logging
+
         logger = logging.getLogger(__name__)
         logger.error(f"[ERROR] Startup failed: {e}", exc_info=True)
         traceback.print_exc()

@@ -46,8 +46,8 @@ class Settings(BaseSettings):
     logs_path: str | None = Field(default=None, alias="LANGPLUG_LOGS_PATH")
 
     # Service settings
-    transcription_service: str = Field(default="whisper-tiny", alias="LANGPLUG_TRANSCRIPTION_SERVICE")
-    translation_service: str = Field(default="opus-de-es", alias="LANGPLUG_TRANSLATION_SERVICE")  # Fast for testing
+    transcription_service: str = Field(default="whisper-turbo", alias="LANGPLUG_TRANSCRIPTION_SERVICE")
+    translation_service: str = Field(default="opus-de-es-big", alias="LANGPLUG_TRANSLATION_SERVICE")  # de->es big model
     default_language: str = Field(default="de", alias="LANGPLUG_DEFAULT_LANGUAGE")
 
     # SpaCy model settings

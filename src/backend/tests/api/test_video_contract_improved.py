@@ -95,6 +95,6 @@ async def test_Whenvideo_uploadWithnon_video_ThenRejects(async_client, url_build
     )
 
     # Invalid file type should return 400 (bad request)
-    assert (
-        response.status_code == 400
-    ), f"Expected 400 (bad request for wrong file type), got {response.status_code}: {response.text}"
+    assert response.status_code == 400, (
+        f"Expected 400 (bad request for wrong file type), got {response.status_code}: {response.text}"
+    )

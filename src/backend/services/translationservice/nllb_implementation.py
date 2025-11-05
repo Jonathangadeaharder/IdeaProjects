@@ -79,6 +79,20 @@ class NLLBTranslationService(ITranslationService):
     def initialize(self) -> None:
         """Initialize the NLLB model and tokenizer"""
         if self._translator is None:
+            from core.gpu_utils import check_cuda_availability
+
+            # Check CUDA availability and configure device
+            cuda_available = check_cuda_availability("NLLB")
+
+            if cuda_available:
+                logger.info(f"[CUDA] GPU available: {torch.cuda.get_device_name(0)}")
+                logger.info(f"[CUDA] CUDA version: {torch.version.cuda}")
+                self.device = 0
+                self.device_str = "cuda"
+            else:
+                self.device = -1
+                self.device_str = "cpu"
+
             logger.info(f"Loading NLLB model: {self.model_name}")
 
             # Load tokenizer and model

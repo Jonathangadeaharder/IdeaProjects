@@ -10,9 +10,9 @@ def assert_successful_response(response, expected_code: int = 200) -> None:
         response: HTTP response object
         expected_code: Single expected status code (default: 200)
     """
-    assert (
-        response.status_code == expected_code
-    ), f"Expected status code {expected_code}, got {response.status_code}: {response.text[:200]}"
+    assert response.status_code == expected_code, (
+        f"Expected status code {expected_code}, got {response.status_code}: {response.text[:200]}"
+    )
 
 
 def assert_json_response(response) -> None:
@@ -48,9 +48,9 @@ def assert_task_response(response, expected_code: int = 200) -> None:
         response: HTTP response object
         expected_code: Expected status code (200 for sync completion, 202 for async acceptance)
     """
-    assert (
-        response.status_code == expected_code
-    ), f"Expected status code {expected_code}, got {response.status_code}: {response.text[:200]}"
+    assert response.status_code == expected_code, (
+        f"Expected status code {expected_code}, got {response.status_code}: {response.text[:200]}"
+    )
     body = response.json()
     assert "task" in body or "task_id" in body or "status" in body
 
@@ -71,7 +71,7 @@ def assert_dict_response(response, expected_code: int = 200) -> None:
         response: HTTP response object
         expected_code: Single expected status code (default: 200)
     """
-    assert (
-        response.status_code == expected_code
-    ), f"Expected status code {expected_code}, got {response.status_code}: {response.text[:200]}"
+    assert response.status_code == expected_code, (
+        f"Expected status code {expected_code}, got {response.status_code}: {response.text[:200]}"
+    )
     assert isinstance(response.json(), dict)

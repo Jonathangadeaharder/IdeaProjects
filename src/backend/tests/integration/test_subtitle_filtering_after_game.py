@@ -185,9 +185,7 @@ class TestSubtitleFilteringAfterGame:
         assert found_known_words == marked_lemmas, "All marked words should appear as known in library"
 
     @pytest.mark.asyncio
-    async def test_WhenUnknownWordMarkedKnown_ThenNotInSubsequentVocabularyExtraction(
-        self, async_client, url_builder
-    ):
+    async def test_WhenUnknownWordMarkedKnown_ThenNotInSubsequentVocabularyExtraction(self, async_client, url_builder):
         """
         Test that words not in the vocabulary database (like 'brauriger')
         are saved as known and don't reappear in future vocabulary extraction

@@ -40,16 +40,21 @@ class WordFilter:
         Returns:
             FilteredWord with status and metadata updated
         """
+        logger.info(
+            f"[FILTER TRACE] Processing word: '{word.text}' (user_level={user_level}, known_words={user_known_words})"
+        )
+
         # Check if proper name - filter out immediately
         if is_proper_name(word.text, language):
             word.status = WordStatus.FILTERED_OTHER
             word.filter_reason = "Proper name (automatically filtered)"
-            logger.debug(f"Filtered proper name: '{word.text}'")
+            logger.info(f"[FILTER TRACE] FILTERED: '{word.text}' - Proper name")
             return word
 
         # Generate lemma using spaCy (always, no fallbacks)
         try:
             lemma = lemmatize_word(word.text, language)
+            logger.info(f"[FILTER TRACE] Lemmatized '{word.text}' -> '{lemma}'")
         except Exception as e:
             logger.error(f"spaCy lemmatization failed for '{word.text}': {e}")
             word.status = WordStatus.FILTERED_INVALID
@@ -58,27 +63,40 @@ class WordFilter:
 
         # Get difficulty from word info (fallback to C2 if not found)
         word_difficulty = word_info.get("difficulty_level", "C2") if word_info else "C2"
+        logger.info(f"[FILTER TRACE] Word difficulty: '{word.text}' (lemma='{lemma}') -> {word_difficulty}")
 
         # Store lemma and difficulty in metadata
         word.metadata["lemma"] = lemma
         word.metadata["difficulty_level"] = word_difficulty
 
         # Check user knowledge
-        if self.is_known_by_user(lemma, user_known_words):
+        is_known = self.is_known_by_user(lemma, user_known_words)
+        logger.info(f"[FILTER TRACE] Known check: '{lemma}' in user_known_words? {is_known}")
+        if is_known:
             word.status = WordStatus.FILTERED_KNOWN
             word.filter_reason = "User already knows this word"
+            logger.info(f"[FILTER TRACE] FILTERED: '{word.text}' (lemma='{lemma}') - User knows this word")
             return word
 
         # Check difficulty level
-        if self.is_at_or_below_user_level(word_difficulty, user_level):
+        is_at_or_below = self.is_at_or_below_user_level(word_difficulty, user_level)
+        word_rank = self._get_level_rank(word_difficulty)
+        user_rank = self._get_level_rank(user_level)
+        logger.info(
+            f"[FILTER TRACE] Level check: word_level={word_difficulty} (rank={word_rank}) vs user_level={user_level} (rank={user_rank}) -> at_or_below={is_at_or_below}"
+        )
+        if is_at_or_below:
             word.status = WordStatus.FILTERED_OTHER
             word.filter_reason = f"Word level ({word_difficulty}) at or below user level ({user_level})"
+            logger.info(f"[FILTER TRACE] FILTERED: '{word.text}' (lemma='{lemma}') - At or below user level")
             return word
 
         # Word passed all filters - it's a learning target
         word.status = WordStatus.ACTIVE
         word.metadata.update({"user_level": user_level, "language": language})
-        logger.debug(f"Word '{word.text}' -> lemma '{lemma}' (level: {word_difficulty})")
+        logger.info(
+            f"[FILTER TRACE] ACTIVE: '{word.text}' (lemma='{lemma}', level={word_difficulty}) - Learning target!"
+        )
         return word
 
     def _extract_word_data(self, word_text: str, word_info: dict[str, Any] | None) -> tuple[str, str]:
@@ -115,19 +133,19 @@ class WordFilter:
 
     def is_at_or_below_user_level(self, word_difficulty: str, user_level: str) -> bool:
         """
-        Check if word difficulty is at or below user's level
+        Check if word difficulty is below user's level (not at or above)
 
         Args:
             word_difficulty: Word difficulty level (A1-C2)
             user_level: User's level (A1-C2)
 
         Returns:
-            True if word is at or below user level
+            True if word is below user level (not including words at user's level)
         """
         user_level_rank = self._get_level_rank(user_level)
         word_level_rank = self._get_level_rank(word_difficulty)
 
-        return word_level_rank <= user_level_rank
+        return word_level_rank < user_level_rank
 
     def _get_level_rank(self, level: str) -> int:
         """

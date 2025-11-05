@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from core.database import AsyncSessionLocal
 
 if TYPE_CHECKING:
-    from sqlalchemy.orm import Session
+    pass
 
 
 async def get_db_session() -> AsyncGenerator[AsyncSession, None]:

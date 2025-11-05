@@ -100,9 +100,9 @@ async def test_WhenloginWithoutform_encoded_payload_ThenReturnsError(async_http_
     )
 
     # FastAPI-Users expects form-encoded data, so JSON should return 422 validation error
-    assert (
-        response.status_code == 422
-    ), f"Expected 422 (validation error for wrong content type), got {response.status_code}: {response.text}"
+    assert response.status_code == 422, (
+        f"Expected 422 (validation error for wrong content type), got {response.status_code}: {response.text}"
+    )
 
 
 @pytest.mark.asyncio

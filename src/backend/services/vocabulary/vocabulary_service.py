@@ -201,41 +201,112 @@ class VocabularyService:
             import re
 
             # Parse SRT content to extract text
-            blocks = re.split(r'\n\s*\n', srt_content.strip())
+            blocks = re.split(r"\n\s*\n", srt_content.strip())
             all_text = []
 
             for block in blocks:
-                lines = block.split('\n')
+                lines = block.split("\n")
                 if len(lines) >= 3:
                     # Skip the sequence number and timestamp lines
                     text_lines = lines[2:]
                     if text_lines:
-                        all_text.append(' '.join(text_lines))
+                        all_text.append(" ".join(text_lines))
 
             # Combine all subtitle text
-            full_text = ' '.join(all_text)
+            full_text = " ".join(all_text)
 
             if not full_text.strip():
                 return []
 
             # Extract German words from the text
             # Simple word extraction - in production this would use proper NLP
-            german_words = re.findall(r'\b[A-Za-zäöüÄÖÜß]+(?:-[A-Za-zäöüÄÖÜß]+)*\b', full_text)
+            german_words = re.findall(r"\b[A-Za-zäöüÄÖÜß]+(?:-[A-Za-zäöüÄÖÜß]+)*\b", full_text)
 
             # Filter out common words and short words
             filtered_words = [
-                word.lower() for word in german_words
-                if len(word) > 3 and word.lower() not in {
-                    'und', 'oder', 'der', 'die', 'das', 'ein', 'eine', 'einer', 'eines',
-                    'den', 'dem', 'des', 'sie', 'wir', 'ihr', 'ich', 'du', 'er',
-                    'es', 'ist', 'sind', 'war', 'waren', 'hat', 'haben', 'habe',
-                    'mit', 'auf', 'aus', 'von', 'zu', 'für', 'durch', 'über', 'unter',
-                    'vor', 'nach', 'bei', 'als', 'wie', 'was', 'wer', 'wo', 'wann',
-                    'warum', 'viel', 'viele', 'wenig', 'wenige', 'mehr',
-                    'weniger', 'am', 'im', 'um', 'an', 'in', 'ab',
-                    'dann', 'also', 'aber', 'sondern', 'denn', 'doch', 'jedoch', 'nur',
-                    'auch', 'noch', 'schon', 'bereits', 'immer', 'nie', 'oft', 'selten',
-                    'manchmal', 'vielleicht', 'wahrscheinlich', 'sicher', 'bestimmt'
+                word.lower()
+                for word in german_words
+                if len(word) > 3
+                and word.lower()
+                not in {
+                    "und",
+                    "oder",
+                    "der",
+                    "die",
+                    "das",
+                    "ein",
+                    "eine",
+                    "einer",
+                    "eines",
+                    "den",
+                    "dem",
+                    "des",
+                    "sie",
+                    "wir",
+                    "ihr",
+                    "ich",
+                    "du",
+                    "er",
+                    "es",
+                    "ist",
+                    "sind",
+                    "war",
+                    "waren",
+                    "hat",
+                    "haben",
+                    "habe",
+                    "mit",
+                    "auf",
+                    "aus",
+                    "von",
+                    "zu",
+                    "für",
+                    "durch",
+                    "über",
+                    "unter",
+                    "vor",
+                    "nach",
+                    "bei",
+                    "als",
+                    "wie",
+                    "was",
+                    "wer",
+                    "wo",
+                    "wann",
+                    "warum",
+                    "viel",
+                    "viele",
+                    "wenig",
+                    "wenige",
+                    "mehr",
+                    "weniger",
+                    "am",
+                    "im",
+                    "um",
+                    "an",
+                    "in",
+                    "ab",
+                    "dann",
+                    "also",
+                    "aber",
+                    "sondern",
+                    "denn",
+                    "doch",
+                    "jedoch",
+                    "nur",
+                    "auch",
+                    "noch",
+                    "schon",
+                    "bereits",
+                    "immer",
+                    "nie",
+                    "oft",
+                    "selten",
+                    "manchmal",
+                    "vielleicht",
+                    "wahrscheinlich",
+                    "sicher",
+                    "bestimmt",
                 }
             ]
 
@@ -245,16 +316,18 @@ class VocabularyService:
             blocking_words = []
             for word in unique_words:
                 # Create a vocabulary entry matching the expected schema
-                blocking_words.append({
-                    "word": word,
-                    "translation": f"Translation for {word}",  # Placeholder translation
-                    "difficulty_level": "B1",  # Use difficulty_level not level
-                    "lemma": word.lower(),
-                    "concept_id": None,
-                    "semantic_category": None,
-                    "domain": None,
-                    "known": False
-                })
+                blocking_words.append(
+                    {
+                        "word": word,
+                        "translation": f"Translation for {word}",  # Placeholder translation
+                        "difficulty_level": "B1",  # Use difficulty_level not level
+                        "lemma": word.lower(),
+                        "concept_id": None,
+                        "semantic_category": None,
+                        "domain": None,
+                        "known": False,
+                    }
+                )
 
             logger.info(f"Extracted {len(blocking_words)} blocking words from SRT content")
             return blocking_words

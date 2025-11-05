@@ -35,9 +35,9 @@ async def test_Whentranscribe_endpointCalled_ThenReturnstask(async_http_client, 
         )
 
         # Async processing should return 200 (OK with task started)
-        assert (
-            response.status_code == 200
-        ), f"Expected 200 (async task started), got {response.status_code}: {response.text}"
+        assert response.status_code == 200, (
+            f"Expected 200 (async task started), got {response.status_code}: {response.text}"
+        )
         assert "task_id" in response.json()
 
 

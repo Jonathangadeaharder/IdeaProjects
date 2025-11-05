@@ -42,13 +42,13 @@ interface UserProfileResponse {
 
 interface ChunkedLearningFlowProps {
   videoInfo: VideoInfo
-  chunkDurationMinutes?: number // Default 0.5 minutes (30 seconds)
+  chunkDurationMinutes?: number // Default 20 minutes
   onComplete?: () => void // Called when entire episode is completed
 }
 
 export const ChunkedLearningFlow: React.FC<ChunkedLearningFlowProps> = ({
   videoInfo,
-  chunkDurationMinutes = 0.5,
+  chunkDurationMinutes = 20,
   onComplete,
 }) => {
   const navigate = useNavigate()

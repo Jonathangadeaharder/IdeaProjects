@@ -81,6 +81,7 @@ def clear_service_caches():
         # Clear service registry cache if available
         try:
             from services.service_factory import get_service_registry
+
             if hasattr(get_service_registry, "cache_clear"):
                 get_service_registry.cache_clear()
                 cleared_count += 1
@@ -90,6 +91,7 @@ def clear_service_caches():
         # Clear task progress registry contents
         try:
             from core.task_dependencies import get_task_progress_registry
+
             registry = get_task_progress_registry()
             registry.clear()
             cleared_count += 1

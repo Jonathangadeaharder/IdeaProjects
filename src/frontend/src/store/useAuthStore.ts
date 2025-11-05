@@ -87,6 +87,9 @@ const authenticate = async (email: string, password: string): Promise<AuthRespon
   }
 }
 
+// Export this reference so we can call it from outside React components
+let clearAuthStateRef: (() => void) | null = null
+
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
@@ -167,6 +170,13 @@ export const useAuthStore = create<AuthState>()(
       initializeAuth: async () => {
         const storedToken = localStorage.getItem('authToken')
         if (!storedToken) {
+          // No token, ensure state is clean
+          set({
+            user: null,
+            token: null,
+            isAuthenticated: false,
+            isLoading: false,
+          })
           return
         }
 
@@ -181,7 +191,10 @@ export const useAuthStore = create<AuthState>()(
             error: null,
           })
         } catch (error) {
+          // Auth failed - clear all tokens and state
           localStorage.removeItem('authToken')
+          localStorage.removeItem('access_token')
+          localStorage.removeItem('refresh_token')
           set({
             user: null,
             token: null,
@@ -207,6 +220,8 @@ export const useAuthStore = create<AuthState>()(
 
       reset: () => {
         localStorage.removeItem('authToken')
+        localStorage.removeItem('access_token')
+        localStorage.removeItem('refresh_token')
         set({
           user: null,
           token: null,
@@ -228,3 +243,15 @@ export const useAuthStore = create<AuthState>()(
     }
   )
 )
+
+// Initialize the clearAuthStateRef after store creation
+clearAuthStateRef = () => {
+  useAuthStore.getState().reset()
+}
+
+// Export a function that can be called from anywhere to clear auth state
+export const clearAuthState = () => {
+  if (clearAuthStateRef) {
+    clearAuthStateRef()
+  }
+}

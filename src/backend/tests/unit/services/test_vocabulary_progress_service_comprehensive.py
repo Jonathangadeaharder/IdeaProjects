@@ -18,7 +18,7 @@ from unittest.mock import AsyncMock, Mock, patch
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from database.models import UserVocabularyProgress, VocabularyWord
+from database.models import UserVocabularyProgress
 from services.vocabulary.vocabulary_progress_service import (
     VocabularyProgressService,
     get_vocabulary_progress_service,
@@ -212,9 +212,7 @@ class TestBulkMarkLevel:
         mock_db_session.execute.return_value = mock_vocab_result
 
         # Execute
-        result = await service.bulk_mark_level(
-            db=mock_db_session, user_id=1, language="de", level="C2", is_known=True
-        )
+        result = await service.bulk_mark_level(db=mock_db_session, user_id=1, language="de", level="C2", is_known=True)
 
         # Assert
         assert result["success"] is True
@@ -249,9 +247,7 @@ class TestBulkMarkLevel:
         mock_db_session.execute.side_effect = mock_execute
 
         # Execute
-        result = await service.bulk_mark_level(
-            db=mock_db_session, user_id=1, language="de", level="A1", is_known=True
-        )
+        result = await service.bulk_mark_level(db=mock_db_session, user_id=1, language="de", level="A1", is_known=True)
 
         # Assert
         assert result["success"] is True
@@ -267,8 +263,7 @@ class TestBulkMarkLevel:
         assert all(record.is_known is True for record in added_records)
         assert all(record.confidence_level == 3 for record in added_records)  # Bulk sets to 3
 
-        # Verify flush called (transactional)
-        mock_db_session.flush.assert_called_once()
+        # Transaction managed externally - verify behavior (data persisted), not implementation
 
     async def test_bulk_mark_level_updates_existing_progress_records(self, service, mock_db_session):
         """Test bulk marking updates existing progress records"""
@@ -280,11 +275,13 @@ class TestBulkMarkLevel:
         # Mock existing progress for both words
         mock_progress_1 = Mock()
         mock_progress_1.vocabulary_id = 1
+        mock_progress_1.lemma = "der"
         mock_progress_1.confidence_level = 2
         mock_progress_1.is_known = False
 
         mock_progress_2 = Mock()
         mock_progress_2.vocabulary_id = 2
+        mock_progress_2.lemma = "die"
         mock_progress_2.confidence_level = 1
         mock_progress_2.is_known = False
 
@@ -303,9 +300,7 @@ class TestBulkMarkLevel:
         mock_db_session.execute.side_effect = mock_execute
 
         # Execute
-        result = await service.bulk_mark_level(
-            db=mock_db_session, user_id=1, language="de", level="A1", is_known=True
-        )
+        result = await service.bulk_mark_level(db=mock_db_session, user_id=1, language="de", level="A1", is_known=True)
 
         # Assert
         assert result["success"] is True
@@ -330,6 +325,7 @@ class TestBulkMarkLevel:
         # Mock existing progress for only first word
         mock_progress_1 = Mock()
         mock_progress_1.vocabulary_id = 1
+        mock_progress_1.lemma = "der"
         mock_progress_1.confidence_level = 2
         mock_progress_1.is_known = False
 
@@ -348,9 +344,7 @@ class TestBulkMarkLevel:
         mock_db_session.execute.side_effect = mock_execute
 
         # Execute
-        result = await service.bulk_mark_level(
-            db=mock_db_session, user_id=1, language="de", level="A1", is_known=True
-        )
+        result = await service.bulk_mark_level(db=mock_db_session, user_id=1, language="de", level="A1", is_known=True)
 
         # Assert
         assert result["success"] is True
@@ -388,9 +382,7 @@ class TestBulkMarkLevel:
         mock_db_session.execute.side_effect = mock_execute
 
         # Execute - mark as UNKNOWN
-        result = await service.bulk_mark_level(
-            db=mock_db_session, user_id=1, language="de", level="A1", is_known=False
-        )
+        result = await service.bulk_mark_level(db=mock_db_session, user_id=1, language="de", level="A1", is_known=False)
 
         # Assert
         assert result["success"] is True

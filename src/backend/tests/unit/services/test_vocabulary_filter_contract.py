@@ -219,14 +219,14 @@ class TestFrontendBackendContract:
         vocabulary = service.extract_vocabulary_from_result(filter_result)
 
         # This assertion would FAIL with the buggy code that used "difficulty"
-        assert (
-            "difficulty_level" in vocabulary[0]
-        ), "Response must have 'difficulty_level' field to match frontend VocabularyWord type"
+        assert "difficulty_level" in vocabulary[0], (
+            "Response must have 'difficulty_level' field to match frontend VocabularyWord type"
+        )
 
         # This assertion catches the bug
-        assert (
-            "difficulty" not in vocabulary[0]
-        ), "Response must NOT have 'difficulty' field - frontend expects 'difficulty_level'"
+        assert "difficulty" not in vocabulary[0], (
+            "Response must NOT have 'difficulty' field - frontend expects 'difficulty_level'"
+        )
 
         # Verify the value is correctly set
         assert vocabulary[0]["difficulty_level"] == "A1"
@@ -469,9 +469,9 @@ class TestUUIDValidation:
         vocabulary2 = service.extract_vocabulary_from_result(filter_result)
 
         # Same word should generate same UUID
-        assert (
-            vocabulary1[0]["concept_id"] == vocabulary2[0]["concept_id"]
-        ), "Same word+difficulty must generate same UUID (deterministic)"
+        assert vocabulary1[0]["concept_id"] == vocabulary2[0]["concept_id"], (
+            "Same word+difficulty must generate same UUID (deterministic)"
+        )
 
     def test_all_vocabulary_words_have_valid_uuids(self):
         """

@@ -40,7 +40,7 @@ def _load_model(model_name: str) -> spacy.Language:
         logger.info("Loaded spaCy model '%s' successfully", model_name)
     except Exception as exc:
         raise RuntimeError(
-            f"Failed to load spaCy model '{model_name}'. " f"Install it with: python -m spacy download {model_name}"
+            f"Failed to load spaCy model '{model_name}'. Install it with: python -m spacy download {model_name}"
         ) from exc
 
     _MODEL_CACHE[model_name] = nlp

@@ -897,6 +897,11 @@
     "@types/fs-extra" "^9.0.13"
     fs-extra "^10.1.0"
 
+"@ls-lint/ls-lint@^2.3.1":
+  version "2.3.1"
+  resolved "https://registry.npmjs.org/@ls-lint/ls-lint/-/ls-lint-2.3.1.tgz"
+  integrity sha512-vPe6IDByQnQRTxcAYjTxrmga/tSIui50VBFTB5KIJWY3OOFmxE2VtymjeSEfQfiMbhZV/ZPAqYy2lt8pZFQ0Rw==
+
 "@mswjs/interceptors@^0.39.1":
   version "0.39.6"
   resolved "https://registry.npmjs.org/@mswjs/interceptors/-/interceptors-0.39.6.tgz"

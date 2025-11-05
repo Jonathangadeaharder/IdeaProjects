@@ -45,9 +45,9 @@ async def test_WhenloginWithoutform_encoding_ThenReturnsError(async_client_no_db
     )
 
     # JSON login should return 422 (validation error - expects form data)
-    assert (
-        response.status_code == 422
-    ), f"Expected 422 (validation error for JSON login), got {response.status_code}: {response.text}"
+    assert response.status_code == 422, (
+        f"Expected 422 (validation error for JSON login), got {response.status_code}: {response.text}"
+    )
 
 
 @pytest.mark.timeout(30)

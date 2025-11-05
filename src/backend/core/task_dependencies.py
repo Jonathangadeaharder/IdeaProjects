@@ -51,17 +51,18 @@ async def init_services():
 
         # Initialize transcription service
         logger.info("[STARTUP] Step 3/5: Initializing transcription service...")
-        logger.info("[STARTUP] Using model: whisper-tiny (smallest, fastest model)")
+        from .config import settings
         from .service_dependencies import get_transcription_service
 
+        logger.info(f"[STARTUP] Using transcription model: {settings.transcription_service}")
         get_transcription_service()
         logger.info("[STARTUP] Transcription service ready")
 
         # Initialize translation service
         logger.info("[STARTUP] Step 4/5: Initializing translation service...")
-        logger.info("[STARTUP] Using model: opus-de-es (fast model)")
         from .service_dependencies import get_translation_service
 
+        logger.info(f"[STARTUP] Using translation model: {settings.translation_service}")
         get_translation_service()
         logger.info("[STARTUP] Translation service ready")
 

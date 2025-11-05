@@ -143,8 +143,7 @@ class GameQuestionService:
                     ),
                 )
                 .where(
-                    (UserVocabularyProgress.is_known.is_(None))
-                    | (UserVocabularyProgress.is_known == False)  # noqa: E712
+                    (UserVocabularyProgress.is_known.is_(None)) | (UserVocabularyProgress.is_known == False)  # noqa: E712
                 )
                 .limit(total_questions * 2)  # Get extra in case we need more
             )

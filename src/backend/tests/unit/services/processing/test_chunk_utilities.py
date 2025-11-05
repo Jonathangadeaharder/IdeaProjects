@@ -253,8 +253,9 @@ class TestInitializeProgress:
         video_file = tmp_path / "video.mp4"
         start_time = 0.0
         end_time = 10.5
+        user_id = 1
 
-        service.initialize_progress(task_id, task_progress, video_file, start_time, end_time)
+        service.initialize_progress(task_id, task_progress, video_file, start_time, end_time, user_id)
 
         assert task_id in task_progress
         assert task_progress[task_id].status == "processing"
@@ -389,7 +390,7 @@ class TestIntegration:
                 mock_resolve.return_value = {"target": "de", "native": "en"}
 
                 # Act - run through workflow
-                service.initialize_progress(task_id, task_progress, video_file, start_time, end_time)
+                service.initialize_progress(task_id, task_progress, video_file, start_time, end_time, user_id=1)
                 user = await service.get_authenticated_user(1, None)
                 preferences = service.load_user_language_preferences(user)
                 service.complete_processing(task_id, task_progress)

@@ -24,6 +24,14 @@ class MockJWTAuth:
         return self.user
 
 
+class MockTokenBlacklist:
+    def __init__(self, is_blacklisted=False):
+        self.blacklisted = is_blacklisted
+
+    async def is_blacklisted(self, token: str):
+        return self.blacklisted
+
+
 @pytest.mark.asyncio
 @pytest.mark.timeout(30)
 async def test_Whenget_current_user_ws_successCalled_ThenSucceeds(monkeypatch):
@@ -43,7 +51,10 @@ async def test_Whenget_current_user_ws_successCalled_ThenSucceeds(monkeypatch):
     # Create a mock db session
     mock_db = AsyncMock()
 
-    user = await deps.get_current_user_ws("valid_token", mock_db)
+    # Create a mock blacklist
+    mock_blacklist = MockTokenBlacklist(is_blacklisted=False)
+
+    user = await deps.get_current_user_ws("valid_token", mock_db, mock_blacklist)
     assert user.username == "testuser"
     assert user.email == "test@example.com"
 
@@ -56,9 +67,10 @@ async def test_get_current_user_ws_InvalidToken(monkeypatch):
     monkeypatch.setattr("core.auth.jwt_authentication", mock_jwt_auth)
 
     mock_db = AsyncMock()
+    mock_blacklist = MockTokenBlacklist(is_blacklisted=False)
 
     with pytest.raises(HTTPException) as exc_info:
-        await deps.get_current_user_ws("invalid_token", mock_db)
+        await deps.get_current_user_ws("invalid_token", mock_db, mock_blacklist)
 
     assert exc_info.value.status_code == 401
     assert "Invalid authentication" in exc_info.value.detail
@@ -72,9 +84,10 @@ async def test_Whenget_current_user_ws_auth_exceptionCalled_ThenSucceeds(monkeyp
     monkeypatch.setattr("core.auth.jwt_authentication", mock_jwt_auth)
 
     mock_db = AsyncMock()
+    mock_blacklist = MockTokenBlacklist(is_blacklisted=False)
 
     with pytest.raises(HTTPException) as exc_info:
-        await deps.get_current_user_ws("token", mock_db)
+        await deps.get_current_user_ws("token", mock_db, mock_blacklist)
 
     assert exc_info.value.status_code == 401
     assert "Invalid authentication" in exc_info.value.detail

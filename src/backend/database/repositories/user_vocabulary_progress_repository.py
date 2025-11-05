@@ -212,7 +212,9 @@ class UserVocabularyProgressRepository(
             if vocab_words.get(model.vocabulary_id)
         ]
 
-    def _to_domain_entity(self, model: ProgressModel, vocab_word: VocabularyWordModel | None = None) -> UserVocabularyProgress:
+    def _to_domain_entity(
+        self, model: ProgressModel, vocab_word: VocabularyWordModel | None = None
+    ) -> UserVocabularyProgress:
         """Convert database model to domain entity"""
         # Import vocabulary repository to get vocabulary word if needed
         if not vocab_word and model.vocabulary_id:

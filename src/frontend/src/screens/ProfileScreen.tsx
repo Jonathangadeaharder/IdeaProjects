@@ -42,6 +42,7 @@ interface ProfileResponse {
   is_superuser?: boolean
   native_language: ProfileLanguage
   target_language: ProfileLanguage
+  chunk_duration_minutes?: number
 }
 
 const ProfileScreen: React.FC = () => {
@@ -54,6 +55,7 @@ const ProfileScreen: React.FC = () => {
   const [languageOptions, setLanguageOptions] = useState<Language[]>(LANGUAGE_LIBRARY)
   const [nativeLanguage, setNativeLanguage] = useState<Language>(LANGUAGE_LIBRARY[0])
   const [targetLanguage, setTargetLanguage] = useState<Language>(LANGUAGE_LIBRARY[1])
+  const [chunkDuration, setChunkDuration] = useState<number>(20)
   const [hasChanges, setHasChanges] = useState(false)
 
   const initials = useMemo(() => {
@@ -99,6 +101,7 @@ const ProfileScreen: React.FC = () => {
       setProfile(profileData)
       setNativeLanguage(findLanguage(profileData.native_language))
       setTargetLanguage(findLanguage(profileData.target_language))
+      setChunkDuration(profileData.chunk_duration_minutes ?? 20)
       setHasChanges(false)
     } catch (error) {
       toast.error('Something went wrong while loading your profile.')
@@ -147,13 +150,23 @@ const ProfileScreen: React.FC = () => {
   const savePreferences = async () => {
     try {
       setSaving(true)
+
+      // Save language preferences
       await Services.profileUpdateLanguagesApiProfileLanguagesPut({
         requestBody: {
           native_language: nativeLanguage.code,
           target_language: targetLanguage.code,
         },
       })
-      toast.success('Your language preferences are saved.')
+
+      // Save chunk duration in settings
+      await Services.profileUpdateSettingsApiProfileSettingsPut({
+        requestBody: {
+          chunk_duration_minutes: chunkDuration,
+        },
+      })
+
+      toast.success('Your preferences are saved.')
       setHasChanges(false)
       await loadProfile()
     } catch (error) {
@@ -162,6 +175,11 @@ const ProfileScreen: React.FC = () => {
     } finally {
       setSaving(false)
     }
+  }
+
+  const handleChunkDurationChange = (duration: number) => {
+    setChunkDuration(duration)
+    setHasChanges(true)
   }
 
   const handleLogout = async () => {
@@ -264,6 +282,48 @@ const ProfileScreen: React.FC = () => {
               />
             </GlassPanel>
           </SelectorGrid>
+        </PreferencesCard>
+
+        <PreferencesCard style={{ marginTop: '24px' }}>
+          <SectionHeading>Learning preferences</SectionHeading>
+          <SectionDescription>
+            Choose how often vocabulary quizzes interrupt your viewing. Shorter segments quiz you more frequently for maximum learning, while longer segments let you stay immersed in the story.
+          </SectionDescription>
+
+          <ChunkDurationGrid>
+            <ChunkDurationOption
+              $selected={chunkDuration === 5}
+              onClick={() => handleChunkDurationChange(5)}
+              disabled={saving}
+            >
+              <DurationIcon>⚡</DurationIcon>
+              <DurationTime>5 min</DurationTime>
+              <DurationLabel>Maximum learning</DurationLabel>
+              <DurationDescription>Quiz every 5 minutes - most effective</DurationDescription>
+            </ChunkDurationOption>
+
+            <ChunkDurationOption
+              $selected={chunkDuration === 10}
+              onClick={() => handleChunkDurationChange(10)}
+              disabled={saving}
+            >
+              <DurationIcon>🎯</DurationIcon>
+              <DurationTime>10 min</DurationTime>
+              <DurationLabel>Balanced</DurationLabel>
+              <DurationDescription>Quiz every 10 minutes - good compromise</DurationDescription>
+            </ChunkDurationOption>
+
+            <ChunkDurationOption
+              $selected={chunkDuration === 20}
+              onClick={() => handleChunkDurationChange(20)}
+              disabled={saving}
+            >
+              <DurationIcon>🚀</DurationIcon>
+              <DurationTime>20 min</DurationTime>
+              <DurationLabel>Maximum immersion</DurationLabel>
+              <DurationDescription>Quiz every 20 minutes - least interruptions</DurationDescription>
+            </ChunkDurationOption>
+          </ChunkDurationGrid>
 
           <ActionRow>
             <StatusPill $success={!hasChanges}>
@@ -573,6 +633,98 @@ const LoadingSpinner = styled.div`
 
 const LoadingText = styled.span`
   font-size: 16px;
+`
+
+const ChunkDurationGrid = styled.div`
+  display: grid;
+  gap: 20px;
+  margin-top: 32px;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+
+  @media (width >= 900px) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+`
+
+const ChunkDurationOption = styled.button<{ $selected: boolean }>`
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 28px 20px;
+  border-radius: 20px;
+  border: 2px solid ${props => (props.$selected ? 'rgb(59 130 246 / 60%)' : 'rgb(148 163 184 / 25%)')};
+  background: ${props =>
+    props.$selected
+      ? 'linear-gradient(135deg, rgb(59 130 246 / 20%), rgb(124 58 237 / 15%))'
+      : 'rgb(148 163 184 / 8%)'};
+  cursor: pointer;
+  transition:
+    all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: ${props => (props.$selected ? '0 8px 24px rgb(59 130 246 / 25%)' : '0 2px 8px rgb(15 23 42 / 15%)')};
+
+  &:hover:not(:disabled) {
+    transform: translateY(-4px);
+    border-color: rgb(59 130 246 / 50%);
+    box-shadow: 0 12px 32px rgb(59 130 246 / 30%);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  ${props =>
+    props.$selected &&
+    `
+    &::before {
+      content: '✓';
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      background: rgb(59 130 246);
+      color: white;
+      font-size: 14px;
+      font-weight: 700;
+      box-shadow: 0 4px 12px rgb(59 130 246 / 40%);
+    }
+  `}
+`
+
+const DurationIcon = styled.div`
+  font-size: 32px;
+  line-height: 1;
+  margin-bottom: 4px;
+`
+
+const DurationTime = styled.div`
+  font-size: 24px;
+  font-weight: 700;
+  color: white;
+  letter-spacing: -0.02em;
+`
+
+const DurationLabel = styled.div`
+  font-size: 15px;
+  font-weight: 600;
+  color: rgb(226 232 240 / 85%);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+`
+
+const DurationDescription = styled.div`
+  font-size: 13px;
+  color: rgb(226 232 240 / 60%);
+  text-align: center;
+  margin-top: 2px;
 `
 
 export default ProfileScreen

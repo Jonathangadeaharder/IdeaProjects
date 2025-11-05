@@ -1,6 +1,7 @@
 import { AxiosRequestConfig, AxiosResponse } from 'axios'
 import { OpenAPI } from '@/client/core/OpenAPI'
 import { logger } from './logger'
+import { clearAuthState } from '@/store/useAuthStore'
 
 // Token refresh endpoint
 const refreshAccessToken = async (): Promise<string | null> => {
@@ -141,12 +142,11 @@ export const authResponseInterceptor = async (response: AxiosResponse): Promise<
         }
       }
     } else {
-      // Token refresh failed - clear tokens and redirect to login
+      // Token refresh failed - clear auth state and redirect to login
       logger.warn('auth-interceptor', 'Token refresh failed, clearing auth')
-      localStorage.removeItem('access_token')
-      localStorage.removeItem('refresh_token')
-      localStorage.removeItem('authToken')
-      localStorage.removeItem('user_id')
+
+      // Clear auth state (this clears both localStorage and zustand store)
+      clearAuthState()
 
       // Redirect to login (if not already there)
       if (window.location.pathname !== '/login') {

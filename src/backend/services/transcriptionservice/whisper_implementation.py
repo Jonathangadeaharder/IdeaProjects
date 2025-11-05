@@ -5,7 +5,6 @@ State-of-the-art speech recognition
 
 import logging
 import os
-import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -55,6 +54,17 @@ class WhisperTranscriptionService(ITranscriptionService):
         """Initialize the Whisper model"""
         if self._model is None:
             import os
+
+            import torch
+
+            from core.gpu_utils import check_cuda_availability
+
+            # Check CUDA availability
+            cuda_available = check_cuda_availability("Whisper")
+
+            if cuda_available:
+                logger.info(f"[CUDA] GPU available: {torch.cuda.get_device_name(0)}")
+                logger.info(f"[CUDA] CUDA version: {torch.version.cuda}")
 
             # Check if model is already downloaded
             model_cache_dir = self.download_root or os.path.expanduser("~/.cache/whisper")
@@ -155,25 +165,9 @@ class WhisperTranscriptionService(ITranscriptionService):
 
     def extract_audio_from_video(self, video_path: str, output_path: str | None = None) -> str:
         """Extract audio from video file"""
-        try:
-            from moviepy.editor import VideoFileClip
-        except ImportError:
-            # Fallback for older moviepy versions
-            from moviepy import VideoFileClip
+        from services.media import extract_audio_from_video
 
-        if output_path is None:
-            output_path = tempfile.NamedTemporaryFile(suffix=".wav", delete=False).name
-
-        video = VideoFileClip(video_path)
-        audio = video.audio
-
-        if audio is None:
-            raise ValueError(f"No audio track found in {video_path}")
-
-        audio.write_audiofile(output_path, logger=None)
-        video.close()
-
-        return output_path
+        return extract_audio_from_video(video_path, output_path, sample_rate=16000)
 
     def get_supported_languages(self) -> list[str]:
         """Get list of supported language codes"""

@@ -259,9 +259,7 @@ class TestGameVocabularyLibraryIntegration:
         assert word_is_known_after is False
 
     @pytest.mark.asyncio
-    async def test_WhenUnknownWordMarkedKnownInGame_ThenAppearsInVocabularyLibrary(
-        self, async_client, url_builder
-    ):
+    async def test_WhenUnknownWordMarkedKnownInGame_ThenAppearsInVocabularyLibrary(self, async_client, url_builder):
         """
         Test marking a word as known that is NOT in the vocabulary database
         (e.g., a word from actual video content like 'brauriger')
@@ -342,8 +340,7 @@ class TestGameVocabularyLibraryIntegration:
             question_text = question.get("question_text", "")
             # Check if the known word appears in any question
             assert known_word.word.lower() not in question_text.lower(), (
-                f"Game showed word '{known_word.word}' which user marked as known! "
-                f"Question: {question_text}"
+                f"Game showed word '{known_word.word}' which user marked as known! Question: {question_text}"
             )
 
         # Verify all questions are about unknown words only

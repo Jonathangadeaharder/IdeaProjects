@@ -27,6 +27,9 @@ class UserProfileDTO(BaseModel):
     is_active: bool = Field(default=True, description="Account active status")
     native_language: str = Field(default="en", description="Native language")
     target_language: str = Field(default="de", description="Target language")
+    chunk_duration_minutes: int = Field(
+        default=20, ge=5, le=20, description="Video chunk duration (5, 10, or 20 minutes)"
+    )
     level: str | None = Field(None, description="Current CEFR level")
     created_at: str | None = Field(None, description="Account creation date (ISO format)")
     last_login: str | None = Field(None, description="Last login timestamp (ISO format)")
@@ -51,4 +54,7 @@ class UpdateProfileRequest(BaseModel):
     email: str | None = Field(None, description="New email address")
     native_language: str | None = Field(None, max_length=5, description="Native language")
     target_language: str | None = Field(None, max_length=5, description="Target language")
+    chunk_duration_minutes: int | None = Field(
+        None, ge=5, le=20, description="Video chunk duration (5, 10, or 20 minutes)"
+    )
     level: str | None = Field(None, description="CEFR level")

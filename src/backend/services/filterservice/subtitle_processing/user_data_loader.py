@@ -52,7 +52,7 @@ class UserDataLoader:
                 if isawaitable(rows):
                     rows = await rows
                 lemmas = {lemma.lower() for (lemma,) in rows}
-                logger.debug(f"Loaded {len(lemmas)} known lemmas for user {user_id_str} from database")
+                logger.info(f"Loaded {len(lemmas)} known lemmas for user {user_id_str}: {lemmas}")
                 return lemmas
         except Exception as exc:
             logger.error(f"Error loading user known words from database: {exc}")

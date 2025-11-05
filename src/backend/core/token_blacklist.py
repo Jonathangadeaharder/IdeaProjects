@@ -122,10 +122,7 @@ class TokenBlacklist:
         Should be called periodically to prevent memory bloat.
         """
         now = datetime.now(UTC)
-        expired_tokens = [
-            token for token, expires_at in self._blacklist.items()
-            if expires_at <= now
-        ]
+        expired_tokens = [token for token, expires_at in self._blacklist.items() if expires_at <= now]
 
         for token in expired_tokens:
             del self._blacklist[token]

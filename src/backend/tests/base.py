@@ -198,9 +198,9 @@ class ServiceTestBase(DatabaseTestBase):
         for operation, expected_count in expected_operations.items():
             if hasattr(mock_session, operation):
                 actual_count = getattr(mock_session, operation).call_count
-                assert (
-                    actual_count == expected_count
-                ), f"Expected {operation} to be called {expected_count} times, but it was called {actual_count} times"
+                assert actual_count == expected_count, (
+                    f"Expected {operation} to be called {expected_count} times, but it was called {actual_count} times"
+                )
             else:
                 raise ValueError(f"Unknown session operation: {operation}")
 

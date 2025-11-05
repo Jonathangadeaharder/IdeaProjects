@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Check fastapi-users version history for pwdlib dependency."""
+
 import json
 import urllib.request
 

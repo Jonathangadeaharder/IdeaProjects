@@ -242,6 +242,8 @@ class TestAuthApiResponseValidation:
             "is_superuser": False,
             "is_active": True,
             "is_verified": False,
+            "created_at": "2025-10-01T10:00:00",
+            "last_login": None,
         }
 
         user_response = UserRead(**user_data)

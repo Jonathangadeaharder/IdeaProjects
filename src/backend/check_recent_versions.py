@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Check recent fastapi-users versions."""
+
 import json
 import urllib.request
 
@@ -27,6 +28,6 @@ with urllib.request.urlopen(url, timeout=10) as response:  # noqa: S310
         except Exception:
             pass
 
-    print("\n" + "="*80)  # noqa: T201
+    print("\n" + "=" * 80)  # noqa: T201
     print("Conclusion: pwdlib was introduced in v13.0.0+")  # noqa: T201
-    print("="*80)  # noqa: T201
+    print("=" * 80)  # noqa: T201

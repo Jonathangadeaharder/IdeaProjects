@@ -47,9 +47,9 @@ async def test_Whenlogin_routeWithoutform_encoding_ThenReturnsError(async_http_c
         },
     )
 
-    assert (
-        response.status_code == 422
-    ), f"Expected 422 (validation error for JSON instead of form data), got {response.status_code}: {response.text}"
+    assert response.status_code == 422, (
+        f"Expected 422 (validation error for JSON instead of form data), got {response.status_code}: {response.text}"
+    )
 
 
 @pytest.mark.asyncio

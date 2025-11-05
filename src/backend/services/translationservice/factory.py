@@ -51,6 +51,7 @@ class TranslationServiceFactory:
         # OPUS-MT models - fast and efficient for specific language pairs
         "opus": "services.translationservice.opus_implementation.OpusTranslationService",
         "opus-de-en": "services.translationservice.opus_implementation.OpusTranslationService",
+        "opus-de-en-big": "services.translationservice.opus_implementation.OpusTranslationService",
         "opus-de-es": "services.translationservice.opus_implementation.OpusTranslationService",
         "opus-de-es-big": "services.translationservice.opus_implementation.OpusTranslationService",
     }
@@ -67,6 +68,7 @@ class TranslationServiceFactory:
         # OPUS-MT configurations
         "opus": {"model_name": "Helsinki-NLP/opus-mt-de-en"},  # Fast default
         "opus-de-en": {"model_name": "Helsinki-NLP/opus-mt-de-en"},
+        "opus-de-en-big": {"model_name": "Helsinki-NLP/opus-mt-tc-big-de-en"},  # Big model for German-English
         "opus-de-es": {"model_name": "Helsinki-NLP/opus-mt-de-es"},  # For testing
         "opus-de-es-big": {"model_name": "Helsinki-NLP/opus-mt-tc-big-de-es"},  # For production
     }
@@ -164,6 +166,7 @@ class TranslationServiceFactory:
             # OPUS-MT models - language-pair specific, fast
             "opus": "OPUS-MT DE-EN - Fast, efficient",
             "opus-de-en": "OPUS-MT DE-EN - Fast German to English",
+            "opus-de-en-big": "OPUS-MT DE-EN Big - High quality German to English (production)",
             "opus-de-es": "OPUS-MT DE-ES - Fast German to Spanish (testing)",
             "opus-de-es-big": "OPUS-MT DE-ES Big - High quality German to Spanish (production)",
         }

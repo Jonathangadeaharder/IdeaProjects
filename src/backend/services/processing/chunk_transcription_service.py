@@ -154,7 +154,6 @@ class ChunkTranscriptionService(IChunkTranscriptionService):
                 str(audio_output),
             ]
 
-
             # On Windows, check if we can use async subprocess or need workaround
             import sys
 

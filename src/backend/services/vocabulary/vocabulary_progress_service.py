@@ -38,7 +38,6 @@ Usage Example:
 
 Dependencies:
     - sqlalchemy: Database operations and queries
-    - core.transaction: Transactional boundaries (@transactional decorator)
     - database.models: UserVocabularyProgress, VocabularyWord
 
 Thread Safety:
@@ -58,7 +57,6 @@ from typing import Any
 from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from core.transaction import transactional
 from database.models import UserVocabularyProgress, VocabularyWord
 
 logger = logging.getLogger(__name__)
@@ -92,7 +90,7 @@ class VocabularyProgressService:
         ```
 
     Note:
-        Uses @transactional decorator for atomic updates.
+        Transaction management handled by FastAPI dependency injection.
         Confidence levels: 0 (unknown) to 5 (very confident).
         Each review increments/decrements confidence.
     """
@@ -101,7 +99,6 @@ class VocabularyProgressService:
         """Initialize with optional query service dependency"""
         self.query_service = query_service
 
-    @transactional
     async def mark_word_known(
         self, user_id: int, word: str, language: str, is_known: bool, db: AsyncSession
     ) -> dict[str, Any]:
@@ -112,7 +109,7 @@ class VocabularyProgressService:
         - Words in the vocabulary database (with vocabulary_id)
         - Unknown words not in the database (vocabulary_id = NULL, lemma-based)
 
-        Uses transaction boundaries to ensure atomic updates
+        Transaction management handled by FastAPI session dependency
         """
         # Get word info from query service
         if not self.query_service:
@@ -174,9 +171,8 @@ class VocabularyProgressService:
             )
             db.add(progress)
 
-        await db.flush()  # Flush to DB within transaction, commit handled by decorator
-
-        return {
+        # Capture values before commit (to avoid detached instance issues)
+        result_data = {
             "success": True,
             "word": word,
             "lemma": lemma,
@@ -185,13 +181,16 @@ class VocabularyProgressService:
             "confidence_level": progress.confidence_level,
         }
 
-    @transactional
+        await db.commit()  # Explicitly commit to persist changes
+
+        return result_data
+
     async def bulk_mark_level(
         self, db: AsyncSession, user_id: int, language: str, level: str, is_known: bool
     ) -> dict[str, Any]:
         """
         Mark all words of a level as known or unknown
-        Uses transaction boundaries to ensure atomic bulk updates
+        Transaction management handled by FastAPI session dependency
         """
         # Get all words for the level
         stmt = select(VocabularyWord.id, VocabularyWord.lemma).where(
@@ -204,22 +203,32 @@ class VocabularyProgressService:
             return {"success": True, "level": level, "language": language, "updated_count": 0, "is_known": is_known}
 
         vocab_ids = [vocab_id for vocab_id, _ in words]
+        lemmas = [lemma for _, lemma in words]
 
-        # Bulk get existing progress
+        # Bulk get existing progress by lemma (matches unique constraint)
         existing_progress_stmt = select(UserVocabularyProgress).where(
-            and_(UserVocabularyProgress.user_id == user_id, UserVocabularyProgress.vocabulary_id.in_(vocab_ids))
+            and_(
+                UserVocabularyProgress.user_id == user_id,
+                UserVocabularyProgress.lemma.in_(lemmas),
+                UserVocabularyProgress.language == language,
+            )
         )
         existing_result = await db.execute(existing_progress_stmt)
-        existing_progress = {p.vocabulary_id: p for p in existing_result.scalars()}
+        existing_progress = {p.lemma: p for p in existing_result.scalars()}
 
-        # Update or create progress records
+        # Update or create progress records (deduplicate by lemma to handle duplicate words)
         new_progress_records = []
+        processed_lemmas = set()  # Track lemmas we've already processed in this batch
+
         for vocab_id, lemma in words:
-            if vocab_id in existing_progress:
-                progress = existing_progress[vocab_id]
+            if lemma in existing_progress:
+                # Update existing progress record
+                progress = existing_progress[lemma]
                 progress.is_known = is_known
                 progress.confidence_level = 3 if is_known else 0
-            else:
+                processed_lemmas.add(lemma)
+            elif lemma not in processed_lemmas:
+                # Create new progress record (only once per unique lemma)
                 new_progress_records.append(
                     UserVocabularyProgress(
                         user_id=user_id,
@@ -231,11 +240,12 @@ class VocabularyProgressService:
                         review_count=0,
                     )
                 )
+                processed_lemmas.add(lemma)
 
         if new_progress_records:
             db.add_all(new_progress_records)
 
-        await db.flush()  # Flush to DB within transaction, commit handled by decorator
+        await db.commit()  # Explicitly commit to persist all changes
 
         return {
             "success": True,

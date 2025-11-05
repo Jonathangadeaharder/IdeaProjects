@@ -94,10 +94,18 @@ class ChunkProcessingRequest(BaseModel):
     video_path: str = Field(..., min_length=1, description="Path to the video file to process")
     start_time: float = Field(..., ge=0, description="Start time of the chunk in seconds")
     end_time: float = Field(..., gt=0, description="End time of the chunk in seconds")
+    is_reprocessing: bool = Field(
+        default=False, description="True if reprocessing after vocabulary game (generates postgame filtered subtitles)"
+    )
 
     model_config = ConfigDict(
         json_schema_extra={
-            "example": {"video_path": "/videos/Superstore/S01/E01.mp4", "start_time": 120.5, "end_time": 180.0}
+            "example": {
+                "video_path": "/videos/Superstore/S01/E01.mp4",
+                "start_time": 120.5,
+                "end_time": 180.0,
+                "is_reprocessing": False,
+            }
         }
     )
 

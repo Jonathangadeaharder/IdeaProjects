@@ -17,7 +17,8 @@ import asyncio
 
 from sqlalchemy import text
 
-from core.database import get_async_session, init_db as init_database  # type: ignore[attr-defined]
+from core.database import get_async_session  # type: ignore[attr-defined]
+from core.database import init_db as init_database
 from database.migration import DataMigration
 
 # Default database configuration

@@ -25,9 +25,9 @@ async def test_Whensubtitle_uploadWithnon_srt_ThenRejects(async_http_client, url
     )
 
     # Invalid file type should return 400 (bad request)
-    assert (
-        response.status_code == 400
-    ), f"Expected 400 (bad request for invalid file type), got {response.status_code}: {response.text}"
+    assert response.status_code == 400, (
+        f"Expected 400 (bad request for invalid file type), got {response.status_code}: {response.text}"
+    )
 
 
 @pytest.mark.asyncio
@@ -45,6 +45,6 @@ async def test_Whenvideo_uploadWithoutmp_ThenReturnsError4(async_http_client, ur
     )
 
     # Invalid file type should return 400 (bad request)
-    assert (
-        response.status_code == 400
-    ), f"Expected 400 (bad request for invalid file type), got {response.status_code}: {response.text}"
+    assert response.status_code == 400, (
+        f"Expected 400 (bad request for invalid file type), got {response.status_code}: {response.text}"
+    )

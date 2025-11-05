@@ -136,6 +136,7 @@ class ChunkProcessingService(IChunkHandler):
         task_id: str,
         task_progress: dict[str, Any],
         session_token: str | None = None,
+        is_reprocessing: bool = False,
     ) -> None:
         """
         Process a specific chunk of video for vocabulary learning
@@ -148,6 +149,7 @@ class ChunkProcessingService(IChunkHandler):
             task_id: Unique task identifier for progress tracking
             task_progress: Progress tracking dictionary
             session_token: Optional session token for authentication
+            is_reprocessing: True if reprocessing after vocabulary game (generates postgame subtitles)
 
         Note:
             Database operations are handled by delegated services using their own sessions.
@@ -156,7 +158,7 @@ class ChunkProcessingService(IChunkHandler):
         try:
             # Resolve video path and initialize progress
             video_file = self.utilities.resolve_video_path(video_path)
-            self.utilities.initialize_progress(task_id, task_progress, video_file, start_time, end_time)
+            self.utilities.initialize_progress(task_id, task_progress, video_file, start_time, end_time, user_id)
 
             # Authenticate user
             user = await self.utilities.get_authenticated_user(user_id, session_token)
@@ -176,8 +178,9 @@ class ChunkProcessingService(IChunkHandler):
             vocabulary = await self._filter_vocabulary(task_id, task_progress, srt_file, user, language_preferences)
 
             # Step 4: Generate filtered subtitles (85-95% progress)
+            # Use pregame version on first processing, postgame version on reprocessing
             filtered_srt = await self._generate_filtered_subtitles(
-                task_id, task_progress, srt_file, vocabulary, language_preferences
+                task_id, task_progress, srt_file, vocabulary, language_preferences, is_pregame=not is_reprocessing
             )
 
             # Step 5: Build translation segments (95-100% progress)
@@ -213,7 +216,7 @@ class ChunkProcessingService(IChunkHandler):
                 task_id,
                 task_progress,
                 vocabulary,
-                subtitle_path=str(srt_file) if srt_file else None,
+                subtitle_path=str(filtered_srt) if filtered_srt else str(srt_file),
                 translation_path=translation_srt_path,
             )
 
@@ -276,6 +279,7 @@ class ChunkProcessingService(IChunkHandler):
         srt_file: str,
         vocabulary: list,
         language_preferences: dict[str, Any],
+        is_pregame: bool = True,
     ) -> str:
         """
         Generate filtered subtitle files - delegates to SubtitleGenerationService
@@ -286,6 +290,7 @@ class ChunkProcessingService(IChunkHandler):
             srt_file: Path to chunk SRT file
             vocabulary: List of vocabulary words
             language_preferences: User language preferences
+            is_pregame: If True, generates pregame version; if False, generates postgame version
 
         Returns:
             Path to the generated filtered subtitle file
@@ -298,8 +303,11 @@ class ChunkProcessingService(IChunkHandler):
 
         video_file = Path(srt_file).with_suffix(".mp4")  # Derive video path from SRT
 
-        # Delegate to subtitle generation service
-        filtered_srt = await self.subtitle_generator.generate_filtered_subtitles(video_file, vocabulary, srt_file)
+        # Delegate to subtitle generation service with appropriate suffix
+        suffix = "_pregame" if is_pregame else "_postgame"
+        filtered_srt = await self.subtitle_generator.generate_filtered_subtitles(
+            video_file, vocabulary, srt_file, suffix=suffix
+        )
 
         return filtered_srt
 

@@ -15,7 +15,7 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-@pytest.mark.asyncio("asyncio")
+@pytest.mark.asyncio
 @pytest.mark.timeout(30)
 async def test_Whenmultilingual_vocabulary_statsWithoutauthentication_ThenReturnsError(
     async_client, url_builder
@@ -27,7 +27,7 @@ async def test_Whenmultilingual_vocabulary_statsWithoutauthentication_ThenReturn
     assert "detail" in response.json()
 
 
-@pytest.mark.asyncio("asyncio")
+@pytest.mark.asyncio
 @pytest.mark.timeout(30)
 async def test_invalid_BearerToken_is_rejected(async_client, url_builder) -> None:
     """A malformed bearer token must not grant access to vocabulary endpoints."""
@@ -39,7 +39,7 @@ async def test_invalid_BearerToken_is_rejected(async_client, url_builder) -> Non
     assert response.status_code == 401
 
 
-@pytest.mark.asyncio("asyncio")
+@pytest.mark.asyncio
 @pytest.mark.timeout(30)
 async def test_Whensql_injection_in_concept_lookupCalled_ThenReturnssafe_response(async_client) -> None:
     """SQL injection payloads in concept-based queries should not compromise the database."""
@@ -55,9 +55,9 @@ async def test_Whensql_injection_in_concept_lookupCalled_ThenReturnssafe_respons
     )
 
     # Validation should catch invalid UUID and return 422
-    assert (
-        response.status_code == 422
-    ), f"Expected 422 (validation error for malformed UUID), got {response.status_code}: {response.text}"
+    assert response.status_code == 422, (
+        f"Expected 422 (validation error for malformed UUID), got {response.status_code}: {response.text}"
+    )
 
     # System correctly rejects malicious input - that's the main security check
     # Error messages may contain the invalid input for debugging, which is acceptable
@@ -67,7 +67,7 @@ async def test_Whensql_injection_in_concept_lookupCalled_ThenReturnssafe_respons
     assert any("uuid" in str(error).lower() for error in response_data.get("error", {}).get("details", []))
 
 
-@pytest.mark.asyncio("asyncio")
+@pytest.mark.asyncio
 @pytest.mark.timeout(30)
 async def test_Whenxss_payload_in_language_parameterCalled_ThenSucceeds(async_client) -> None:
     """XSS payloads in language parameters must be properly validated."""
@@ -83,9 +83,9 @@ async def test_Whenxss_payload_in_language_parameterCalled_ThenSucceeds(async_cl
     )
 
     # Validation should reject XSS payload in language parameter
-    assert (
-        response.status_code == 422
-    ), f"Expected 422 (validation error for XSS payload), got {response.status_code}: {response.text}"
+    assert response.status_code == 422, (
+        f"Expected 422 (validation error for XSS payload), got {response.status_code}: {response.text}"
+    )
 
     # System correctly rejects XSS payload - that's the main security check
     # Error messages may contain the invalid input for debugging, which is acceptable
@@ -95,7 +95,7 @@ async def test_Whenxss_payload_in_language_parameterCalled_ThenSucceeds(async_cl
     # The key security check is that the request was rejected
 
 
-@pytest.mark.asyncio("asyncio")
+@pytest.mark.asyncio
 @pytest.mark.timeout(30)
 async def test_WhenLogoutCalled_ThenRevokesaccess(async_client, url_builder) -> None:
     """
@@ -109,10 +109,10 @@ async def test_WhenLogoutCalled_ThenRevokesaccess(async_client, url_builder) -> 
     helper = AsyncAuthHelper(async_client)
     _user, _token, headers = await helper.create_authenticated_user()
 
-    logout = await async_client.post(url_builder.url_for("auth_logout"), headers=headers)
-    assert (
-        logout.status_code == 204
-    ), f"Expected 204 (no content - successful logout), got {logout.status_code}: {logout.text}"
+    logout = await async_client.post(url_builder.url_for("auth:jwt.logout"), headers=headers)
+    assert logout.status_code == 204, (
+        f"Expected 204 (no content - successful logout), got {logout.status_code}: {logout.text}"
+    )
 
     # SKIP: JWT tokens remain valid after logout (stateless JWT limitation)
     # me_response = await async_client.get(url_builder.url_for("auth_me"), headers=headers)

@@ -42,7 +42,9 @@ class TestGetVocabularyStats:
         mock_result.total_words = 100
         mock_result.total_known = 50
 
-        with patch.object(service, "_get_vocabulary_stats_with_session", new_callable=AsyncMock, return_value=mock_result) as mock_internal:
+        with patch.object(
+            service, "_get_vocabulary_stats_with_session", new_callable=AsyncMock, return_value=mock_result
+        ) as mock_internal:
             result = await service.get_vocabulary_stats(
                 db_session=mock_db_session, user_id=1, target_language="de", translation_language="en"
             )
@@ -304,7 +306,9 @@ class TestGetSupportedLanguages:
     def service(self):
         return VocabularyStatsService()
 
-    @pytest.mark.skip(reason="ImportError edge case - difficult to test in isolation. Main functionality tested in other tests.")
+    @pytest.mark.skip(
+        reason="ImportError edge case - difficult to test in isolation. Main functionality tested in other tests."
+    )
     async def test_supported_languages_no_language_table(self, service):
         """Test get_supported_languages when Language model doesn't exist (ImportError path)
 

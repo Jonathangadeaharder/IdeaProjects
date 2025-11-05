@@ -36,9 +36,9 @@ async def test_Whenlibrary_levelWithoutvalid_code_ThenReturnsError(async_client)
     response = await async_client.get("/api/vocabulary/library/Z9", params={"target_language": "de"}, headers=headers)
 
     # Invalid level parameter should return 422 (validation error)
-    assert (
-        response.status_code == 422
-    ), f"Expected 422 (validation error for invalid level), got {response.status_code}: {response.text}"
+    assert response.status_code == 422, (
+        f"Expected 422 (validation error for invalid level), got {response.status_code}: {response.text}"
+    )
 
 
 @pytest.mark.asyncio

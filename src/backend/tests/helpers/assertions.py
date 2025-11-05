@@ -184,13 +184,13 @@ def assert_user_response_structure(data: dict[str, Any]) -> None:
     for field, allowed_types in field_types.items():
         if field in data:
             if isinstance(allowed_types, tuple):
-                assert isinstance(
-                    data[field], allowed_types
-                ), f"Field {field}: expected one of {[t.__name__ for t in allowed_types]}, got {type(data[field]).__name__}"
+                assert isinstance(data[field], allowed_types), (
+                    f"Field {field}: expected one of {[t.__name__ for t in allowed_types]}, got {type(data[field]).__name__}"
+                )
             else:
-                assert isinstance(
-                    data[field], allowed_types
-                ), f"Field {field}: expected {allowed_types.__name__}, got {type(data[field]).__name__}"
+                assert isinstance(data[field], allowed_types), (
+                    f"Field {field}: expected {allowed_types.__name__}, got {type(data[field]).__name__}"
+                )
 
 
 def assert_error_response_structure(data: dict[str, Any]) -> None:
@@ -199,9 +199,9 @@ def assert_error_response_structure(data: dict[str, Any]) -> None:
     has_detail = "detail" in data
     has_error_message = "error" in data and isinstance(data["error"], dict) and "message" in data["error"]
 
-    assert (
-        has_detail or has_error_message
-    ), f"Expected error response to have 'detail' or 'error.message', got keys: {list(data.keys())}"
+    assert has_detail or has_error_message, (
+        f"Expected error response to have 'detail' or 'error.message', got keys: {list(data.keys())}"
+    )
 
 
 # Performance assertion helpers

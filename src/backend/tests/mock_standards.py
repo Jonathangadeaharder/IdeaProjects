@@ -126,9 +126,9 @@ class TestAssertions:
             if hasattr(mock_session, operation):
                 if isinstance(expected_value, int):
                     actual_count = getattr(mock_session, operation).call_count
-                    assert (
-                        actual_count == expected_value
-                    ), f"Expected {operation} to be called {expected_value} times, but it was called {actual_count} times"
+                    assert actual_count == expected_value, (
+                        f"Expected {operation} to be called {expected_value} times, but it was called {actual_count} times"
+                    )
                 else:
                     # Allow string values for other types of assertions
                     pass
@@ -150,6 +150,6 @@ class TestAssertions:
         """Assert that a mock was called with arguments matching a pattern"""
         calls = [str(call) for call in mock_obj.call_args_list]
         matching_calls = [call for call in calls if call_pattern in call]
-        assert (
-            len(matching_calls) > 0
-        ), f"Expected mock to be called with pattern '{call_pattern}', but actual calls were: {calls}"
+        assert len(matching_calls) > 0, (
+            f"Expected mock to be called with pattern '{call_pattern}', but actual calls were: {calls}"
+        )

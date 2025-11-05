@@ -164,7 +164,13 @@ class ChunkUtilities:
             logger.warning(f"Chunk cleanup failed: {e}")
 
     def initialize_progress(
-        self, task_id: str, task_progress: dict[str, Any], video_file: Path, start_time: float, end_time: float
+        self,
+        task_id: str,
+        task_progress: dict[str, Any],
+        video_file: Path,
+        start_time: float,
+        end_time: float,
+        user_id: int,
     ) -> None:
         """
         Initialize progress tracking for chunk processing
@@ -175,7 +181,9 @@ class ChunkUtilities:
             video_file: Path to video file
             start_time: Chunk start time
             end_time: Chunk end time
+            user_id: User ID for WebSocket routing
         """
+        # Create ProcessingStatus instance directly (no WebSocket wrapper for now)
         task_progress[task_id] = ProcessingStatus(
             status="processing",
             progress=0.0,

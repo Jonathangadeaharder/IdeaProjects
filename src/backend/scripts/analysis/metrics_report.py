@@ -24,9 +24,9 @@ def run_command(cmd: list[str]) -> tuple[str, int]:
 
 def print_section(title: str):
     """Print formatted section header"""
-    print(f"\n{'='*80}")
+    print(f"\n{'=' * 80}")
     print(f" {title}")
-    print(f"{'='*80}\n")
+    print(f"{'=' * 80}\n")
 
 
 def radon_cyclomatic_complexity():

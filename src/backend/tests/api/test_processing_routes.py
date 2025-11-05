@@ -32,9 +32,9 @@ async def test_WhenChunkEndpointProcessesExistingVideo_ThenSucceeds(async_client
         )
 
     # Async processing should return 200 (OK with task started)
-    assert (
-        response.status_code == 200
-    ), f"Expected 200 (async task started), got {response.status_code}: {response.text}"
+    assert response.status_code == 200, (
+        f"Expected 200 (async task started), got {response.status_code}: {response.text}"
+    )
     assert "task" in response.text or "task_id" in response.text
 
 
@@ -72,3 +72,48 @@ async def test_Whenchunk_endpointWithoutexisting_file_ThenReturnsError(
         )
 
     assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+@pytest.mark.timeout(30)
+async def test_WhenProcessChunkWithReprocessingFlag_ThenAcceptsRequest(
+    async_client, url_builder, tmp_path, monkeypatch
+):
+    """Happy path: is_reprocessing flag is accepted and starts task."""
+    headers = await _auth(async_client)
+    video_path = tmp_path / "postgame.mp4"
+    video_path.write_bytes(b"00")
+
+    with patch.object(type(settings), "get_videos_path", return_value=tmp_path):
+        response = await async_client.post(
+            url_builder.url_for("process_chunk"),
+            json={"video_path": video_path.name, "start_time": 0, "end_time": 10, "is_reprocessing": True},
+            headers=headers,
+        )
+
+    # Should return 200 (async task started)
+    assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.text}"
+    assert "task" in response.text or "task_id" in response.text
+
+
+@pytest.mark.asyncio
+@pytest.mark.timeout(30)
+async def test_WhenProcessChunkWithoutReprocessingFlag_ThenDefaultsToFalse(
+    async_client, url_builder, tmp_path, monkeypatch
+):
+    """Default value: is_reprocessing defaults to False when not provided."""
+    headers = await _auth(async_client)
+    video_path = tmp_path / "regular.mp4"
+    video_path.write_bytes(b"00")
+
+    with patch.object(type(settings), "get_videos_path", return_value=tmp_path):
+        # Don't include is_reprocessing in request
+        response = await async_client.post(
+            url_builder.url_for("process_chunk"),
+            json={"video_path": video_path.name, "start_time": 0, "end_time": 10},
+            headers=headers,
+        )
+
+    # Should still succeed with default is_reprocessing=False
+    assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.text}"
+    assert "task" in response.text or "task_id" in response.text

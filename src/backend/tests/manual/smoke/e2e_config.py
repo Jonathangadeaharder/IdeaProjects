@@ -24,8 +24,7 @@ TEST_PASSWORD = os.getenv("E2E_TEST_PASSWORD")
 
 if not TEST_PASSWORD:
     raise ValueError(
-        "E2E_TEST_PASSWORD environment variable is required. "
-        "Example: export E2E_TEST_PASSWORD='YourSecurePassword123!'"
+        "E2E_TEST_PASSWORD environment variable is required. Example: export E2E_TEST_PASSWORD='YourSecurePassword123!'"
     )
 
 # Screenshot directory
@@ -122,5 +121,5 @@ def start_servers_if_needed() -> None:
         print(f"[E2E] Waiting... ({elapsed + check_interval}s, {status_msg})")
 
     raise RuntimeError(
-        f"Servers did not become healthy within {max_wait} seconds. " f"Check that {start_script} works correctly."
+        f"Servers did not become healthy within {max_wait} seconds. Check that {start_script} works correctly."
     )

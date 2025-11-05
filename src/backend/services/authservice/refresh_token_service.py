@@ -205,26 +205,18 @@ class RefreshTokenService:
 
         # Check if family is revoked
         if family.is_revoked:
-            raise AuthenticationError(
-                f"Refresh token family revoked: {family.revoked_reason or 'security_incident'}"
-            )
+            raise AuthenticationError(f"Refresh token family revoked: {family.revoked_reason or 'security_incident'}")
 
         # Check for token reuse (indicates theft)
         if family.last_used_at is not None:
             logger.warning(
-                f"Token reuse detected for family {family.family_id} "
-                f"(generation {family.generation}). Revoking family."
+                f"Token reuse detected for family {family.family_id} (generation {family.generation}). Revoking family."
             )
 
             # Revoke entire family
-            await self._revoke_family_internal(
-                family.family_id,
-                reason="token_reuse_detected"
-            )
+            await self._revoke_family_internal(family.family_id, reason="token_reuse_detected")
 
-            raise AuthenticationError(
-                "Token reuse detected. All tokens in this family have been revoked for security."
-            )
+            raise AuthenticationError("Token reuse detected. All tokens in this family have been revoked for security.")
 
         # Mark old token as used
         family.last_used_at = datetime.now(UTC)
@@ -248,10 +240,7 @@ class RefreshTokenService:
         self.db.add(new_family)
         await self.db.flush()
 
-        logger.info(
-            f"Rotated token family {family.family_id} "
-            f"from generation {family.generation} to {new_generation}"
-        )
+        logger.info(f"Rotated token family {family.family_id} from generation {family.generation} to {new_generation}")
 
         return new_token, family.user_id
 

@@ -122,7 +122,7 @@ class ChunkTranslationService(IChunkTranslationService):
             # OPUS models follow pattern: Helsinki-NLP/opus-mt-{source}-{target}
             model_name = f"Helsinki-NLP/opus-mt-{source_lang}-{target_lang}"
 
-            logger.info(f"Creating translation service: {source_lang} -> {target_lang} " f"(model: {model_name})")
+            logger.info(f"Creating translation service: {source_lang} -> {target_lang} (model: {model_name})")
 
             self._translation_services[service_key] = TranslationServiceFactory.create_service(
                 service_name="opus",  # Use OPUS service type
@@ -252,7 +252,7 @@ class ChunkTranslationService(IChunkTranslationService):
                         progress = int(65 + (30 * translation_pct))
                         task_progress_dict[task_id].progress = progress
                         task_progress_dict[task_id].current_step = "Building translations..."
-                        task_progress_dict[task_id].message = f"Translating segment {i+1}/{len(subtitle_segments)}"
+                        task_progress_dict[task_id].message = f"Translating segment {i + 1}/{len(subtitle_segments)}"
 
                     # Create translation segment
                     translation_result = translation_service.translate(segment.text, source_lang, target_lang)

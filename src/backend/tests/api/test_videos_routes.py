@@ -72,7 +72,7 @@ async def test_WhenStreamVideoSetsAcceptRanges_ThenSucceeds(async_client, url_bu
     )
 
     # Without Range header, should return 200 (full content)
-    assert (
-        response.status_code == 200
-    ), f"Expected 200 (full content without Range header), got {response.status_code}: {response.text}"
+    assert response.status_code == 200, (
+        f"Expected 200 (full content without Range header), got {response.status_code}: {response.text}"
+    )
     assert response.headers.get("accept-ranges") == "bytes"

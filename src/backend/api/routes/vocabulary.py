@@ -515,15 +515,12 @@ async def get_blocking_words(
             raise HTTPException(status_code=404, detail="Subtitle file not found")
 
         # Read SRT file content
-        with open(srt_file, encoding='utf-8') as f:
+        with open(srt_file, encoding="utf-8") as f:
             srt_content = f.read()
 
         # Extract blocking words from SRT content
         blocking_words = await vocabulary_service.extract_blocking_words_from_srt(
-            db=db,
-            srt_content=srt_content,
-            user_id=current_user.id,
-            video_path=video_path
+            db=db, srt_content=srt_content, user_id=current_user.id, video_path=video_path
         )
 
         return {
@@ -624,3 +621,103 @@ async def create_vocabulary(
         logger.error(f"Error creating vocabulary: {e}")
         await db.rollback()
         raise HTTPException(status_code=400, detail=f"Failed to create vocabulary: {e!s}") from e
+
+
+@router.delete("/progress/{lemma}", name="delete_vocabulary_progress")
+async def delete_vocabulary_progress(
+    lemma: str,
+    language: str = Query("de", description="Language code"),
+    current_user: User = Depends(current_active_user),
+    db: AsyncSession = Depends(get_async_session),
+):
+    """
+    Delete user progress for a specific word (reset to unknown).
+
+    Removes the user's progress entry for a word, effectively resetting it to "unknown" status.
+    This is useful for testing and for users who want to re-learn a word.
+
+    **Authentication Required**: Yes
+
+    Args:
+        lemma (str): The lemma (base form) of the word
+        language (str): Language code (default: "de")
+        current_user (User): Authenticated user
+        db (AsyncSession): Database session dependency
+
+    Returns:
+        dict: Deletion confirmation with:
+            - success: True if deleted
+            - lemma: The lemma that was removed
+            - message: Confirmation message
+
+    Raises:
+        HTTPException: 404 if no progress entry exists for this word
+        HTTPException: 500 if database operation fails
+
+    Example:
+        ```bash
+        curl -X DELETE "http://localhost:8000/api/vocabulary/progress/hallo?language=de" \
+          -H "Authorization: Bearer <token>"
+        ```
+
+        Response:
+        ```json
+        {
+            "success": true,
+            "lemma": "hallo",
+            "message": "Progress removed for 'hallo'"
+        }
+        ```
+
+    Note:
+        This only removes the user's progress entry. The word itself remains in
+        the global vocabulary database. After deletion, the word will appear as
+        "unknown" to the user.
+    """
+    from sqlalchemy import and_, delete, select
+
+    from database.models import UserVocabularyProgress
+
+    try:
+        # First check if progress entry exists
+        stmt = select(UserVocabularyProgress).where(
+            and_(
+                UserVocabularyProgress.user_id == current_user.id,
+                UserVocabularyProgress.lemma == lemma.lower(),
+                UserVocabularyProgress.language == language,
+            )
+        )
+        result = await db.execute(stmt)
+        progress = result.scalar_one_or_none()
+
+        if not progress:
+            raise HTTPException(
+                status_code=404,
+                detail=f"No progress entry found for lemma '{lemma}' in language '{language}'",
+            )
+
+        # Delete the progress entry
+        delete_stmt = delete(UserVocabularyProgress).where(
+            and_(
+                UserVocabularyProgress.user_id == current_user.id,
+                UserVocabularyProgress.lemma == lemma.lower(),
+                UserVocabularyProgress.language == language,
+            )
+        )
+        await db.execute(delete_stmt)
+        await db.commit()
+
+        logger.info(f"Deleted vocabulary progress for user {current_user.id}, lemma '{lemma}'")
+
+        return {
+            "success": True,
+            "lemma": lemma.lower(),
+            "message": f"Progress removed for '{lemma}'",
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting vocabulary progress: {e}")
+        await db.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to delete vocabulary progress: {e!s}") from e

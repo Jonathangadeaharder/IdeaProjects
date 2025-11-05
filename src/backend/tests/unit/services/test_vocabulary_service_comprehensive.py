@@ -3,13 +3,11 @@ Comprehensive tests for VocabularyService to achieve 85%+ coverage
 Tests facade delegation and custom word management functionality
 """
 
-import uuid
-from unittest.mock import AsyncMock, MagicMock, Mock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from database.models import VocabularyWord
 from services.vocabulary.vocabulary_service import VocabularyService, get_vocabulary_service
 
 
@@ -32,14 +30,11 @@ class TestVocabularyServiceFacadePatternFunctionality:
         }
 
         # Act
-        with patch.object(service.query_service, "get_vocabulary_library", new_callable=AsyncMock, return_value=expected_result) as mock_method:
+        with patch.object(
+            service.query_service, "get_vocabulary_library", new_callable=AsyncMock, return_value=expected_result
+        ) as mock_method:
             result = await service.get_vocabulary_library(
-                db=mock_db,
-                language="de",
-                level="A1",
-                user_id=123,
-                limit=50,
-                offset=0
+                db=mock_db, language="de", level="A1", user_id=123, limit=50, offset=0
             )
 
         # Assert
@@ -60,7 +55,9 @@ class TestVocabularyServiceFacadePatternFunctionality:
         ]
 
         # Act
-        with patch.object(service.query_service, "search_vocabulary", new_callable=AsyncMock, return_value=expected_result) as mock_method:
+        with patch.object(
+            service.query_service, "search_vocabulary", new_callable=AsyncMock, return_value=expected_result
+        ) as mock_method:
             result = await service.search_vocabulary(mock_db, "Haus", "de", limit=10)
 
         # Assert
@@ -82,7 +79,9 @@ class TestVocabularyServiceFacadePatternFunctionality:
         }
 
         # Act
-        with patch.object(service.progress_service, "bulk_mark_level", new_callable=AsyncMock, return_value=expected_result) as mock_method:
+        with patch.object(
+            service.progress_service, "bulk_mark_level", new_callable=AsyncMock, return_value=expected_result
+        ) as mock_method:
             result = await service.bulk_mark_level(mock_db, user_id=123, language="de", level="A1", is_known=True)
 
         # Assert
@@ -103,7 +102,9 @@ class TestVocabularyServiceFacadePatternFunctionality:
         }
 
         # Act
-        with patch.object(service.stats_service, "get_vocabulary_stats", new_callable=AsyncMock, return_value=expected_result) as mock_method:
+        with patch.object(
+            service.stats_service, "get_vocabulary_stats", new_callable=AsyncMock, return_value=expected_result
+        ) as mock_method:
             result = await service.get_vocabulary_stats("de")
 
         # Assert
@@ -124,11 +125,13 @@ class TestVocabularyServiceFacadePatternFunctionality:
                 "A1": 80,
                 "A2": 50,
                 "B1": 20,
-            }
+            },
         }
 
         # Act
-        with patch.object(service.stats_service, "get_user_progress_summary", new_callable=AsyncMock, return_value=expected_result) as mock_method:
+        with patch.object(
+            service.stats_service, "get_user_progress_summary", new_callable=AsyncMock, return_value=expected_result
+        ) as mock_method:
             result = await service.get_user_progress_summary(mock_db, user_id="123")
 
         # Assert
@@ -145,7 +148,9 @@ class TestVocabularyServiceFacadePatternFunctionality:
         expected_result = ["de", "es", "fr", "it"]
 
         # Act
-        with patch.object(service.stats_service, "get_supported_languages", new_callable=AsyncMock, return_value=expected_result) as mock_method:
+        with patch.object(
+            service.stats_service, "get_supported_languages", new_callable=AsyncMock, return_value=expected_result
+        ) as mock_method:
             result = await service.get_supported_languages()
 
         # Assert
@@ -176,10 +181,7 @@ Heute lernen wir Deutsch sprechen
 
         # Act
         result = await service.extract_blocking_words_from_srt(
-            db=mock_db,
-            srt_content=srt_content,
-            user_id=123,
-            video_path="/test/video.mp4"
+            db=mock_db, srt_content=srt_content, user_id=123, video_path="/test/video.mp4"
         )
 
         # Assert
@@ -209,10 +211,7 @@ und der die das ist sind war
 
         # Act
         result = await service.extract_blocking_words_from_srt(
-            db=mock_db,
-            srt_content=srt_content,
-            user_id=123,
-            video_path="/test/video.mp4"
+            db=mock_db, srt_content=srt_content, user_id=123, video_path="/test/video.mp4"
         )
 
         # Assert - should return empty as all are common words
@@ -230,10 +229,7 @@ und der die das ist sind war
 
         # Act
         result = await service.extract_blocking_words_from_srt(
-            db=mock_db,
-            srt_content=srt_content,
-            user_id=123,
-            video_path="/test/video.mp4"
+            db=mock_db, srt_content=srt_content, user_id=123, video_path="/test/video.mp4"
         )
 
         # Assert
@@ -250,10 +246,7 @@ und der die das ist sind war
 
         # Act
         result = await service.extract_blocking_words_from_srt(
-            db=mock_db,
-            srt_content=srt_content,
-            user_id=123,
-            video_path="/test/video.mp4"
+            db=mock_db, srt_content=srt_content, user_id=123, video_path="/test/video.mp4"
         )
 
         # Assert - should handle gracefully
@@ -277,10 +270,7 @@ Katze Katze Katze
 
         # Act
         result = await service.extract_blocking_words_from_srt(
-            db=mock_db,
-            srt_content=srt_content,
-            user_id=123,
-            video_path="/test/video.mp4"
+            db=mock_db, srt_content=srt_content, user_id=123, video_path="/test/video.mp4"
         )
 
         # Assert
@@ -299,15 +289,12 @@ Katze Katze Katze
         words = [f"testword{i}" for i in range(50)]
         srt_content = f"""1
 00:00:01,000 --> 00:00:03,000
-{' '.join(words)}
+{" ".join(words)}
 """
 
         # Act
         result = await service.extract_blocking_words_from_srt(
-            db=mock_db,
-            srt_content=srt_content,
-            user_id=123,
-            video_path="/test/video.mp4"
+            db=mock_db, srt_content=srt_content, user_id=123, video_path="/test/video.mp4"
         )
 
         # Assert
@@ -325,10 +312,7 @@ Katze Katze Katze
 
         # Act
         result = await service.extract_blocking_words_from_srt(
-            db=mock_db,
-            srt_content=srt_content,
-            user_id=123,
-            video_path="/test/video.mp4"
+            db=mock_db, srt_content=srt_content, user_id=123, video_path="/test/video.mp4"
         )
 
         # Assert - should return empty list on error

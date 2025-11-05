@@ -124,7 +124,10 @@ All other API paths should use url_builder.url_for("route_name") instead.
         print("", file=sys.stderr)
         print("  3. For paths with parameters:", file=sys.stderr)
         print("     Before: await async_client.get(f'/api/vocabulary/level/{level}')", file=sys.stderr)
-        print("     After:  await async_client.get(url_builder.url_for('get_vocabulary_level', level=level))", file=sys.stderr)
+        print(
+            "     After:  await async_client.get(url_builder.url_for('get_vocabulary_level', level=level))",
+            file=sys.stderr,
+        )
         print("", file=sys.stderr)
         print("  4. Find route names in Backend/api/routes/*.py (@router decorator 'name' parameter)", file=sys.stderr)
         print("=" * 70, file=sys.stderr)

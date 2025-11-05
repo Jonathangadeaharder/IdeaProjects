@@ -41,6 +41,11 @@ class User(Base):
     native_language = Column(String(5), default="en", nullable=False)  # User's native language (e.g., "en", "es")
     target_language = Column(String(5), default="de", nullable=False)  # Language user is learning (e.g., "de", "es")
 
+    # Learning preferences
+    chunk_duration_minutes = Column(
+        Integer, default=20, nullable=False
+    )  # Duration of video chunks: 5, 10, or 20 minutes
+
     # Relationships
     refresh_token_families = relationship("RefreshTokenFamily", back_populates="user", cascade="all, delete-orphan")
     audit_logs = relationship("AuthAuditLog", back_populates="user", cascade="all, delete-orphan")
@@ -159,7 +164,9 @@ class UserVocabularyProgress(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    vocabulary_id = Column(Integer, ForeignKey("vocabulary_words.id", ondelete="CASCADE"), nullable=False)
+    vocabulary_id = Column(
+        Integer, ForeignKey("vocabulary_words.id", ondelete="CASCADE"), nullable=True
+    )  # Nullable for unknown words
     lemma = Column(String(100), nullable=False)  # Denormalized for performance
     language = Column(String(5), nullable=False)  # Denormalized for performance
     is_known = Column(Boolean, default=False, nullable=False)
@@ -175,8 +182,11 @@ class UserVocabularyProgress(Base):
     vocabulary = relationship("VocabularyWord", back_populates="user_progress")
 
     __table_args__ = (
-        UniqueConstraint("user_id", "vocabulary_id", name="uq_user_vocabulary"),
+        # Note: Removed vocabulary_id from unique constraint because it can be NULL
+        # Using user_id + lemma + language as unique key instead (supports unknown words)
+        UniqueConstraint("user_id", "lemma", "language", name="uq_user_lemma_language"),
         Index("idx_user_vocab_user", "user_id"),
+        Index("idx_user_vocab_vocab_id", "vocabulary_id"),  # For foreign key lookups
         Index("idx_user_vocab_lemma", "lemma"),
         Index("idx_user_vocab_known", "is_known"),
         Index("idx_user_vocab_user_lemma", "user_id", "lemma", "language"),

@@ -6,6 +6,7 @@ import { Grid } from 'react-window'
 import type { CellComponentProps } from 'react-window'
 import {
   bulkMarkLevelApiVocabularyLibraryBulkMarkPost,
+  createVocabularyApiVocabularyPost,
   getVocabularyLevelApiVocabularyLibraryLevelGet,
   getVocabularyStatsApiVocabularyStatsGet,
   markWordKnownApiVocabularyMarkKnownPost,
@@ -307,6 +308,275 @@ const SearchInput = styled.input`
   }
 `
 
+const Modal = styled.div<{ $isOpen: boolean }>`
+  display: ${props => (props.$isOpen ? 'flex' : 'none')};
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.2s ease;
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+`
+
+const ModalContent = styled.div`
+  background: white;
+  border-radius: 16px;
+  padding: 2rem;
+  max-width: 500px;
+  width: 90%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: slideUp 0.3s ease;
+
+  @keyframes slideUp {
+    from {
+      transform: translateY(20px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+`
+
+const ModalHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+
+  h3 {
+    color: #2c3e50;
+    font-size: 1.5rem;
+    margin: 0;
+  }
+`
+
+const CloseButton = styled.button`
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: #7f8c8d;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s;
+
+  &:hover {
+    background: #f0f0f0;
+    color: #2c3e50;
+  }
+`
+
+const AddWordForm = styled.form`
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+`
+
+const FormGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+
+  label {
+    font-weight: 600;
+    color: #2c3e50;
+    font-size: 0.9rem;
+  }
+`
+
+const FormInput = styled.input`
+  padding: 0.75rem 1rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: border-color 0.2s;
+
+  &:focus {
+    outline: none;
+    border-color: #667eea;
+  }
+`
+
+const FormSelect = styled.select`
+  padding: 0.75rem 1rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  background: white;
+  transition: border-color 0.2s;
+
+  &:focus {
+    outline: none;
+    border-color: #667eea;
+  }
+`
+
+const SubmitButton = styled.button`
+  padding: 0.75rem 1.5rem;
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.2s;
+  margin-top: 0.5rem;
+
+  &:hover {
+    background: #5568d3;
+  }
+
+  &:disabled {
+    background: #a0a0a0;
+    cursor: not-allowed;
+  }
+`
+
+const FloatingActionButton = styled.button`
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  font-size: 2rem;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+
+  &:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 30px rgba(102, 126, 234, 0.6);
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
+
+  &::before {
+    content: '+';
+    line-height: 1;
+  }
+`
+
+const Tooltip = styled.div`
+  position: absolute;
+  bottom: calc(100% + 8px);
+  right: 0;
+  background: #2c3e50;
+  color: white;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+  z-index: 1001;
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    right: 16px;
+    border: 6px solid transparent;
+    border-top-color: #2c3e50;
+  }
+`
+
+const ConfirmDialog = styled(ModalContent)`
+  max-width: 400px;
+  text-align: center;
+
+  h3 {
+    color: #2c3e50;
+    margin-bottom: 1rem;
+  }
+
+  p {
+    color: #7f8c8d;
+    margin-bottom: 1.5rem;
+    line-height: 1.5;
+  }
+`
+
+const DialogActions = styled.div`
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+`
+
+const DeleteButtonWrapper = styled.div`
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  opacity: 0;
+  transition: opacity 0.2s;
+
+  ${WordCard}:hover & {
+    opacity: 1;
+  }
+
+  &:hover ${Tooltip} {
+    opacity: 1;
+  }
+`
+
+const DeleteButton = styled.button`
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #ff4d4f;
+  color: white;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  transition: background 0.2s, transform 0.2s;
+
+  &:hover {
+    background: #cf1322;
+    transform: scale(1.1);
+  }
+
+  &::before {
+    content: '×';
+    font-weight: bold;
+    line-height: 1;
+  }
+`
+
 const PaginationContainer = styled.div`
   display: flex;
   justify-content: center;
@@ -338,6 +608,24 @@ const PageInfo = styled.span`
 
 const LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2']
 const ITEMS_PER_PAGE = 100
+
+// Language code to full name mapping
+const getLanguageName = (code: string | null | undefined): string => {
+  if (!code) return 'Language'
+  const languageMap: Record<string, string> = {
+    de: 'German',
+    en: 'English',
+    es: 'Spanish',
+    fr: 'French',
+    it: 'Italian',
+    pt: 'Portuguese',
+    ru: 'Russian',
+    zh: 'Chinese',
+    ja: 'Japanese',
+    ko: 'Korean',
+  }
+  return languageMap[code.toLowerCase()] || code.toUpperCase()
+}
 
 // Constants for virtual scrolling
 const CARD_WIDTH = 296 // 280px card + 16px gap
@@ -372,11 +660,25 @@ const useWindowSize = () => {
 interface WordCardItemProps {
   word: VocabularyLibraryWord
   onWordClick: (word: VocabularyLibraryWord) => void
+  onDelete?: (word: VocabularyLibraryWord) => void
 }
 
-const WordCardItem = memo(({ word, onWordClick }: WordCardItemProps) => {
+const WordCardItem = memo(({ word, onWordClick, onDelete }: WordCardItemProps) => {
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (onDelete) {
+      onDelete(word)
+    }
+  }
+
   return (
     <WordCard $known={word.known} onClick={() => onWordClick(word)}>
+      {onDelete && (
+        <DeleteButtonWrapper>
+          <DeleteButton onClick={handleDelete} />
+          <Tooltip>Remove word progress</Tooltip>
+        </DeleteButtonWrapper>
+      )}
       <div className="word-header">
         <div className="word">{word.word}</div>
         <div className="known-badge" />
@@ -438,6 +740,11 @@ export const VocabularyLibrary: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('')
   const [currentPage, setCurrentPage] = useState(0)
   const [useVirtualScrolling, setUseVirtualScrolling] = useState(false)
+  const [newWord, setNewWord] = useState('')
+  const [newTranslation, setNewTranslation] = useState('')
+  const [newLevel, setNewLevel] = useState('beginner')
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+  const [deleteConfirmWord, setDeleteConfirmWord] = useState<VocabularyLibraryWord | null>(null)
 
   useEffect(() => {
     logger.info('VocabularyLibrary', 'Component mounted, loading vocabulary stats')
@@ -512,13 +819,28 @@ export const VocabularyLibrary: React.FC = () => {
         knownCount: data.known_count,
       })
 
+      let filteredWords = (data.words ?? []).map((word, index) => ({
+        ...word,
+        id: word.id || word.lemma || `temp-${index}-${word.word}`, // Ensure id is always a string
+        known: Boolean(word.is_known),
+      })) as VocabularyLibraryWord[]
+
+      // Client-side search filtering
+      if (searchTerm) {
+        const searchLower = searchTerm.toLowerCase()
+        filteredWords = filteredWords.filter(
+          word =>
+            word.word?.toLowerCase().includes(searchLower) ||
+            word.lemma?.toLowerCase().includes(searchLower) ||
+            word.translation?.toLowerCase().includes(searchLower)
+        )
+      }
+
       const normalizedLevel: VocabularyLevel = {
         ...data,
-        words: (data.words ?? []).map((word, index) => ({
-          ...word,
-          id: word.id || word.lemma || `temp-${index}-${word.word}`, // Ensure id is always a string
-          known: Boolean(word.known),
-        })) as VocabularyLibraryWord[],
+        words: filteredWords,
+        total_count: searchTerm ? filteredWords.length : data.total_count,
+        known_count: filteredWords.filter(w => w.known).length,
       }
 
       setLevelData(normalizedLevel)
@@ -585,7 +907,8 @@ export const VocabularyLibrary: React.FC = () => {
       try {
         await markWordKnownApiVocabularyMarkKnownPost({
           requestBody: {
-            concept_id: String(word.concept_id || word.id),
+            lemma: word.lemma || word.word,
+            language: 'de',
             known: newStatus,
           },
         })
@@ -717,6 +1040,139 @@ export const VocabularyLibrary: React.FC = () => {
     }
   }
 
+  const handleAddWord = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (!newWord.trim() || !newTranslation.trim()) {
+      toast.error('Word and translation are required')
+      return
+    }
+
+    logger.userAction('add-custom-word', 'VocabularyLibrary', {
+      word: newWord,
+      level: newLevel,
+    })
+
+    try {
+      await createVocabularyApiVocabularyPost({
+        requestBody: {
+          word: newWord.trim(),
+          lemma: newWord.trim(),
+          translation: newTranslation.trim(),
+          difficulty_level: newLevel,
+          language: stats?.target_language || 'de',
+        },
+      })
+
+      toast.success(`Added "${newWord}" to vocabulary`)
+      logger.info('VocabularyLibrary', 'Custom word added', {
+        word: newWord,
+        level: newLevel,
+      })
+
+      // Clear form and close modal
+      setNewWord('')
+      setNewTranslation('')
+      setNewLevel('beginner')
+      setIsAddModalOpen(false)
+
+      // Reload current level and stats
+      await Promise.all([loadLevelData(activeLevel), loadStats()])
+    } catch (error: unknown) {
+      const errorMessage = formatApiError(error, 'Failed to add word')
+      logger.error('VocabularyLibrary', 'Failed to add custom word', {
+        word: newWord,
+        error: errorMessage,
+      })
+      toast.error(errorMessage, { duration: 4000 })
+    }
+  }
+
+  const handleDeleteClick = (word: VocabularyLibraryWord) => {
+    setDeleteConfirmWord(word)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteConfirmWord) return
+
+    const word = deleteConfirmWord
+    setDeleteConfirmWord(null) // Close dialog
+
+    logger.userAction('delete-word-progress', 'VocabularyLibrary', {
+      word: word.word,
+      lemma: word.lemma,
+    })
+
+    // Optimistically remove from UI
+    setLevelData(prevLevelData => {
+      if (!prevLevelData) return null
+
+      const updatedWords = prevLevelData.words.filter(w => w.id !== word.id)
+      const knownCount = updatedWords.filter(w => w.known).length
+
+      return {
+        ...prevLevelData,
+        words: updatedWords,
+        known_count: knownCount,
+        total_count: prevLevelData.total_count - 1,
+      }
+    })
+
+    // Update stats optimistically
+    if (word.known) {
+      setStats(prevStats => {
+        if (!prevStats) return null
+
+        return {
+          ...prevStats,
+          total_known: prevStats.total_known - 1,
+          levels: {
+            ...prevStats.levels,
+            [activeLevel]: {
+              ...prevStats.levels[activeLevel],
+              user_known: prevStats.levels[activeLevel].user_known - 1,
+            },
+          },
+        }
+      })
+    }
+
+    try {
+      const lemma = word.lemma || word.word
+      const response = await fetch(`/api/vocabulary/progress/${lemma}?language=de`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error(`Failed to delete word progress: ${response.statusText}`)
+      }
+
+      toast.success(`Removed progress for "${word.word}"`)
+      logger.info('VocabularyLibrary', 'Word progress deleted', {
+        word: word.word,
+        lemma,
+      })
+    } catch (error: unknown) {
+      const errorMessage = formatApiError(error, 'Failed to delete word progress')
+      logger.error('VocabularyLibrary', 'Failed to delete word progress', {
+        word: word.word,
+        error: errorMessage,
+      })
+
+      toast.error('Failed to delete. Reverting changes.', { duration: 4000 })
+
+      // Reload data to get correct state from backend
+      await Promise.all([loadLevelData(activeLevel), loadStats()])
+    }
+  }
+
+  const handleDeleteCancel = () => {
+    setDeleteConfirmWord(null)
+  }
+
   const getProgressPercentage = (level: string) => {
     if (!stats?.levels[level]) return 0
     const { total_words, user_known } = stats.levels[level]
@@ -758,6 +1214,7 @@ export const VocabularyLibrary: React.FC = () => {
     words: VocabularyLibraryWord[]
     columnCount: number
     onWordClick: (word: VocabularyLibraryWord) => void
+    onDelete: (word: VocabularyLibraryWord) => void
   }
 
   const cellData = useMemo<CellData>(() => {
@@ -768,6 +1225,7 @@ export const VocabularyLibrary: React.FC = () => {
         words: [],
         columnCount: gridConfig.columnCount,
         onWordClick: handleWordClick,
+        onDelete: handleDeleteClick,
       }
     }
 
@@ -775,11 +1233,12 @@ export const VocabularyLibrary: React.FC = () => {
       words: levelData.words,
       columnCount: gridConfig.columnCount,
       onWordClick: handleWordClick,
+      onDelete: handleDeleteClick,
     }
   }, [levelData?.words, gridConfig.columnCount, handleWordClick])
 
   const GridCell = useCallback((props: CellComponentProps<CellData>) => {
-    const { columnIndex, rowIndex, style, words, columnCount, onWordClick } = props
+    const { columnIndex, rowIndex, style, words, columnCount, onWordClick, onDelete } = props
 
     const index = rowIndex * columnCount + columnIndex
     if (index >= words.length) return null
@@ -788,7 +1247,7 @@ export const VocabularyLibrary: React.FC = () => {
 
     return (
       <div style={{ ...style, padding: '8px' }}>
-        <WordCardItem word={word} onWordClick={onWordClick} />
+        <WordCardItem word={word} onWordClick={onWordClick} onDelete={onDelete} />
       </div>
     )
   }, [])
@@ -902,7 +1361,12 @@ export const VocabularyLibrary: React.FC = () => {
           ) : (
             <WordsGrid>
               {levelData.words.map(word => (
-                <WordCardItem key={word.id} word={word} onWordClick={handleWordClick} />
+                <WordCardItem
+                  key={word.id}
+                  word={word}
+                  onWordClick={handleWordClick}
+                  onDelete={handleDeleteClick}
+                />
               ))}
             </WordsGrid>
           )}
@@ -957,6 +1421,76 @@ export const VocabularyLibrary: React.FC = () => {
           </p>
         </div>
       ) : null}
+
+      {/* Floating Action Button for Adding Words */}
+      <FloatingActionButton onClick={() => setIsAddModalOpen(true)} title="Add test word" />
+
+      {/* Add Word Modal */}
+      <Modal $isOpen={isAddModalOpen} onClick={() => setIsAddModalOpen(false)}>
+        <ModalContent onClick={e => e.stopPropagation()}>
+          <ModalHeader>
+            <h3>Add Custom Test Word</h3>
+            <CloseButton onClick={() => setIsAddModalOpen(false)}>×</CloseButton>
+          </ModalHeader>
+          <AddWordForm onSubmit={handleAddWord}>
+            <FormGroup>
+              <label htmlFor="word">{getLanguageName(stats?.target_language)} Word</label>
+              <FormInput
+                id="word"
+                type="text"
+                placeholder={`e.g., ${stats?.target_language === 'de' ? 'Hallo' : 'Word'}`}
+                value={newWord}
+                onChange={e => setNewWord(e.target.value)}
+                required
+                autoFocus
+              />
+            </FormGroup>
+            <FormGroup>
+              <label htmlFor="translation">{getLanguageName(stats?.translation_language)} Translation</label>
+              <FormInput
+                id="translation"
+                type="text"
+                placeholder={`e.g., ${stats?.translation_language === 'en' ? 'Hello' : 'Translation'}`}
+                value={newTranslation}
+                onChange={e => setNewTranslation(e.target.value)}
+                required
+              />
+            </FormGroup>
+            <FormGroup>
+              <label htmlFor="level">Difficulty Level</label>
+              <FormSelect id="level" value={newLevel} onChange={e => setNewLevel(e.target.value)}>
+                <option value="beginner">Beginner (A1)</option>
+                <option value="elementary">Elementary (A2)</option>
+                <option value="intermediate">Intermediate (B1)</option>
+                <option value="upper_intermediate">Upper Intermediate (B2)</option>
+                <option value="advanced">Advanced (C1)</option>
+                <option value="proficient">Proficient (C2)</option>
+              </FormSelect>
+            </FormGroup>
+            <SubmitButton type="submit">Add Word</SubmitButton>
+          </AddWordForm>
+        </ModalContent>
+      </Modal>
+
+      {/* Delete Confirmation Dialog */}
+      <Modal $isOpen={!!deleteConfirmWord} onClick={handleDeleteCancel}>
+        <ConfirmDialog onClick={e => e.stopPropagation()}>
+          <h3>Remove Word Progress?</h3>
+          <p>
+            Are you sure you want to remove your progress for <strong>{deleteConfirmWord?.word}</strong>?
+            <br />
+            This will reset it to unknown status.
+          </p>
+          <DialogActions>
+            <Button $variant="secondary" onClick={handleDeleteCancel}>
+              Cancel
+            </Button>
+            <Button $variant="danger" onClick={handleDeleteConfirm}>
+              Remove Progress
+            </Button>
+          </DialogActions>
+        </ConfirmDialog>
+      </Modal>
     </Container>
   )
 }

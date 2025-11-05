@@ -70,29 +70,53 @@ class VocabularyQueryService:
         return result.scalars().all()
 
     async def _get_user_progress_map(
-        self, db: AsyncSession, user_id: int, vocab_ids: list[int]
+        self, db: AsyncSession, user_id: int, words: list[VocabularyWord]
     ) -> dict[int, dict[str, Any]]:
-        """Fetch user progress for vocabulary IDs
+        """Fetch user progress for vocabulary words by matching lemmas
 
         Args:
             db: Database session
             user_id: User ID to fetch progress for
-            vocab_ids: List of vocabulary IDs
+            words: List of VocabularyWord objects
 
         Returns:
             Dictionary mapping vocabulary_id to progress data
         """
-        if not vocab_ids:
+        if not words:
             return {}
 
+        # Query by lemma to match the unique constraint and bulk_mark_level behavior
+        lemmas = [w.lemma for w in words]
+        language = words[0].language if words else "de"
+
+        logger.debug(
+            f"[VOCAB QUERY] Fetching progress for user_id={user_id}, language={language}, {len(lemmas)} lemmas"
+        )
+
         progress_stmt = select(UserVocabularyProgress).where(
-            and_(UserVocabularyProgress.user_id == user_id, UserVocabularyProgress.vocabulary_id.in_(vocab_ids))
+            and_(
+                UserVocabularyProgress.user_id == user_id,
+                UserVocabularyProgress.lemma.in_(lemmas),
+                UserVocabularyProgress.language == language,
+            )
         )
         progress_result = await db.execute(progress_stmt)
-        return {
-            p.vocabulary_id: {"is_known": p.is_known, "confidence_level": p.confidence_level}
-            for p in progress_result.scalars()
+
+        # Create map from lemma to progress
+        lemma_to_progress = {
+            p.lemma: {"is_known": p.is_known, "confidence_level": p.confidence_level} for p in progress_result.scalars()
         }
+
+        logger.debug(f"[VOCAB QUERY] Found progress for {len(lemma_to_progress)} lemmas")
+        if len(lemma_to_progress) > 0 and len(lemma_to_progress) <= 5:
+            logger.debug(f"[VOCAB QUERY] Sample progress: {list(lemma_to_progress.items())[:5]}")
+
+        # Map back to vocabulary_id using words list
+        result_map = {word.id: lemma_to_progress[word.lemma] for word in words if word.lemma in lemma_to_progress}
+
+        logger.debug(f"[VOCAB QUERY] Mapped progress for {len(result_map)} vocabulary IDs")
+
+        return result_map
 
     def _format_vocabulary_word(
         self, word: VocabularyWord, user_progress: dict[str, Any] | None = None
@@ -219,7 +243,7 @@ class VocabularyQueryService:
         # Get user progress if needed
         progress_map = {}
         if user_id:
-            progress_map = await self._get_user_progress_map(db, user_id, [w.id for w in words])
+            progress_map = await self._get_user_progress_map(db, user_id, words)
 
         # Format response
         word_list = [self._format_vocabulary_word(word, progress_map.get(word.id)) for word in words]

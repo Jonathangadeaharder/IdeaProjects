@@ -25,7 +25,7 @@ async def test_Whentranscribe_fails_without_serviceCalled_ThenSucceeds(async_htt
         )
 
         # When transcription service is not available, should return 422 before checking video
-        assert (
-            response.status_code == 422
-        ), f"Expected 422 (service not available), got {response.status_code}: {response.text}"
+        assert response.status_code == 422, (
+            f"Expected 422 (service not available), got {response.status_code}: {response.text}"
+        )
         assert "Transcription service is not available" in response.json()["detail"]

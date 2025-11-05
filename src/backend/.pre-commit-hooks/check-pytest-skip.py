@@ -90,7 +90,7 @@ def main(argv=None):
         description="Check Python test files for unapproved pytest skip markers",
         epilog=f"""
 Approved skip reasons (must appear in skip decorator or nearby):
-{chr(10).join(f'  - {reason}' for reason in APPROVED_REASONS)}
+{chr(10).join(f"  - {reason}" for reason in APPROVED_REASONS)}
 
 Any skip markers without these approved reasons will block the commit.
 """,

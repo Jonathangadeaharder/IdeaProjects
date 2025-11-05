@@ -4,7 +4,7 @@ Tests actual service methods with database interactions
 """
 
 import pytest
-from sqlalchemy import select
+from sqlalchemy import and_, select
 
 from database.models import User, UserVocabularyProgress, VocabularyWord
 from services.vocabulary.vocabulary_service import VocabularyService
@@ -116,13 +116,28 @@ class TestVocabularyServiceDatabaseIntegration:
         assert progress.lemma == "Haus"
 
     async def test_mark_word_known_word_not_found(self, vocabulary_service, db_session, test_user, test_vocabulary):
-        """Test marking non-existent word as known"""
+        """Test marking non-existent word as known (supports unknown words with lemmatization)"""
         # Act
         result = await vocabulary_service.mark_word_known(test_user.id, "nonexistent", "de", True, db_session)
 
-        # Assert
-        assert result["success"] is False
-        assert "message" in result
+        # Assert - New behavior: allows marking unknown words as known
+        assert result["success"] is True
+        assert result["word"] == "nonexistent"
+        assert result["is_known"] is True
+        assert result["level"] == "unknown"  # No CEFR level for unknown words
+
+        # Verify database state - word should be marked with vocabulary_id=NULL
+        stmt = select(UserVocabularyProgress).where(
+            and_(
+                UserVocabularyProgress.user_id == test_user.id,
+                UserVocabularyProgress.lemma == result["lemma"]
+            )
+        )
+        db_result = await db_session.execute(stmt)
+        progress = db_result.scalar_one()
+
+        assert progress.is_known is True
+        assert progress.vocabulary_id is None  # Unknown word - no vocabulary_id
 
     async def test_mark_word_known_toggle(self, vocabulary_service, db_session, test_user, test_vocabulary):
         """Test toggling word known status"""

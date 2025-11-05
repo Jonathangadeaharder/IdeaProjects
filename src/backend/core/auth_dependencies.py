@@ -92,7 +92,7 @@ def cleanup_auth_services():
 async def get_current_user_ws(
     token: str,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    blacklist: Annotated["TokenBlacklist", Depends(get_token_blacklist)]
+    blacklist: Annotated["TokenBlacklist", Depends(get_token_blacklist)],
 ) -> User:
     """Validate session token for WebSocket connections with blacklist check"""
     from .auth import jwt_authentication

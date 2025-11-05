@@ -9,6 +9,7 @@ import {
   filterSubtitlesApiProcessFilterSubtitlesPost,
   getTaskProgressApiProcessProgressTaskIdGet,
   getVideosApiVideosGet,
+  profileGetApiProfileGet,
   // TODO: translateSubtitlesApiProcessTranslateSubtitlesPost endpoint doesn't exist in backend
   // Investigate if this should use filterSubtitlesApiProcessFilterSubtitlesPost instead
 } from '@/client/services.gen'
@@ -223,6 +224,7 @@ export const EpisodeSelection: React.FC = () => {
   const [error, setError] = useState('')
   const [processingTasks, setProcessingTasks] = useState<Set<string>>(new Set())
   const [progressData, setProgressData] = useState<Record<string, ProcessingStatus>>({})
+  const [chunkDuration, setChunkDuration] = useState<number>(20)
 
   const { user: _user } = useAuthStore()
   const navigate = useNavigate()
@@ -230,9 +232,22 @@ export const EpisodeSelection: React.FC = () => {
   useEffect(() => {
     if (series) {
       loadEpisodes()
+      loadUserPreferences()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [series]) // loadEpisodes is not stable and would cause infinite loop
+  }, [series]) // loadEpisodes and loadUserPreferences are not stable and would cause infinite loop
+
+  const loadUserPreferences = async () => {
+    try {
+      const profile = (await profileGetApiProfileGet()) as unknown as { chunk_duration_minutes?: number }
+      if (profile?.chunk_duration_minutes) {
+        setChunkDuration(profile.chunk_duration_minutes)
+      }
+    } catch (error) {
+      console.error('Failed to load user preferences:', error)
+      // Use default value of 20 if loading fails
+    }
+  }
 
   const loadEpisodes = async () => {
     try {
@@ -466,7 +481,7 @@ export const EpisodeSelection: React.FC = () => {
             </InfoItem>
             <InfoItem>
               <ClockIcon className="w-5 h-5" />
-              ~5 min segments
+              ~{chunkDuration} min segments
             </InfoItem>
             <InfoItem>German Learning</InfoItem>
           </SeriesInfo>

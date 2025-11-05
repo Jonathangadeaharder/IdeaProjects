@@ -33,6 +33,7 @@ async def run_chunk_processing(
     task_progress: dict[str, Any],
     user_id: int,
     session_token: str | None = None,
+    is_reprocessing: bool = False,
 ) -> None:
     """Process a specific chunk of video for vocabulary learning"""
     from core.database import get_async_session
@@ -52,6 +53,7 @@ async def run_chunk_processing(
                 task_id=task_id,
                 task_progress=task_progress,
                 session_token=session_token,
+                is_reprocessing=is_reprocessing,
             )
             break  # Only use the first (and only) session
 
@@ -159,6 +161,8 @@ async def process_chunk(
             task_id,
             task_progress,
             current_user.id,
+            None,  # session_token
+            request.is_reprocessing,
         )
 
         logger.info(f"Started chunk processing task: {task_id}")

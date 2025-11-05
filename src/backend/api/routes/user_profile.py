@@ -53,6 +53,7 @@ class UserProfile(BaseModel):
     last_login: str | None = None  # Make it properly optional
     native_language: dict[str, str]
     target_language: dict[str, str]
+    chunk_duration_minutes: int = 20  # Video chunk duration preference
     language_runtime: dict[str, Any]
 
 
@@ -115,9 +116,20 @@ async def get_profile(current_user: User = Depends(current_active_user)):
         ```
     """
     try:
-        user_id = str(current_user.id)
-        native_code, target_code = load_language_preferences(user_id)
+        from sqlalchemy import select
 
+        from core.database import get_async_session
+
+        user_id = str(current_user.id)
+
+        # Reload user from database to get fresh chunk_duration_minutes
+        async for db in get_async_session():
+            result = await db.execute(select(User).where(User.id == current_user.id))
+            fresh_user = result.scalar_one()
+            chunk_duration = fresh_user.chunk_duration_minutes
+            break
+
+        native_code, target_code = load_language_preferences(user_id)
         runtime = resolve_language_runtime_settings(native_code, target_code)
 
         return UserProfile(
@@ -136,6 +148,7 @@ async def get_profile(current_user: User = Depends(current_active_user)):
                 "name": SUPPORTED_LANGUAGES[target_code]["name"],
                 "flag": SUPPORTED_LANGUAGES[target_code]["flag"],
             },
+            chunk_duration_minutes=chunk_duration,
             language_runtime=runtime,
         )
     except Exception as e:
@@ -259,7 +272,15 @@ class UserSettings(BaseModel):
     playback_speed: float | None = 1.0
     vocabulary_difficulty: str | None = "intermediate"
     daily_goal: int | None = 10
+    chunk_duration_minutes: int | None = 20  # Video chunk duration: 5, 10, or 20 minutes
     language_preferences: LanguagePreferences | None = None
+
+    @field_validator("chunk_duration_minutes")
+    @classmethod
+    def validate_chunk_duration(cls, v):
+        if v is not None and not (5 <= v <= 20):
+            raise ValueError("chunk_duration_minutes must be between 5 and 20 minutes")
+        return v
 
 
 @router.get("/settings", response_model=UserSettings, name="profile_get_settings")
@@ -269,6 +290,8 @@ async def get_user_settings(current_user: User = Depends(current_active_user)):
         user_settings_path = settings.get_user_temp_path(current_user.id) / "settings.json"
 
         default_settings = UserSettings()
+        # Load chunk_duration from database
+        default_settings.chunk_duration_minutes = getattr(current_user, "chunk_duration_minutes", 20)
 
         if user_settings_path.exists():
             try:
@@ -294,6 +317,25 @@ async def get_user_settings(current_user: User = Depends(current_active_user)):
 async def update_user_settings(settings_update: UserSettings, current_user: User = Depends(current_active_user)):
     """Update user settings"""
     try:
+        from sqlalchemy import select
+
+        from core.database import get_async_session
+
+        # Update chunk_duration_minutes in database if provided
+        if settings_update.chunk_duration_minutes is not None:
+            async for db in get_async_session():
+                # Fetch user in this session to avoid "already attached to session" error
+                result = await db.execute(select(User).where(User.id == current_user.id))
+                user_in_db = result.scalar_one()
+                user_in_db.chunk_duration_minutes = settings_update.chunk_duration_minutes
+                await db.commit()
+                await db.refresh(user_in_db)
+                logger.info(
+                    f"Updated chunk_duration_minutes to {settings_update.chunk_duration_minutes} for user {current_user.id}"
+                )
+                break
+
+        # Update other settings in JSON file
         user_data_path = settings.get_user_temp_path(current_user.id)
         user_settings_path = user_data_path / "settings.json"
 

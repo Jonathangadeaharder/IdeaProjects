@@ -26,7 +26,7 @@ async def in_memory_session(monkeypatch) -> AsyncIterator[async_sessionmaker[Asy
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
-    monkeypatch.setattr("services.vocabulary_service.AsyncSessionLocal", session_maker)
+    monkeypatch.setattr("services.vocabulary.vocabulary_service.AsyncSessionLocal", session_maker)
     monkeypatch.setenv("TESTING", "1")
 
     try:

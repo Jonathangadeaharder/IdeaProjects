@@ -20,46 +20,193 @@ async def seed_vocabulary_data(app):
 
     async with SessionLocal() as session:
         words = [
-            VocabularyWord(word="Hallo", lemma="hallo", language="de", difficulty_level="A1",
-                          part_of_speech="noun", translation_en="Hello", translation_native="Hola"),
-            VocabularyWord(word="ich", lemma="ich", language="de", difficulty_level="A1",
-                          part_of_speech="pronoun", translation_en="I", translation_native="yo"),
-            VocabularyWord(word="du", lemma="du", language="de", difficulty_level="A1",
-                          part_of_speech="pronoun", translation_en="you", translation_native="tú"),
-            VocabularyWord(word="ja", lemma="ja", language="de", difficulty_level="A1",
-                          part_of_speech="adverb", translation_en="yes", translation_native="sí"),
-            VocabularyWord(word="nein", lemma="nein", language="de", difficulty_level="A1",
-                          part_of_speech="adverb", translation_en="no", translation_native="no"),
-            VocabularyWord(word="danke", lemma="danke", language="de", difficulty_level="A1",
-                          part_of_speech="noun", translation_en="thanks", translation_native="gracias"),
-            VocabularyWord(word="bitte", lemma="bitte", language="de", difficulty_level="A1",
-                          part_of_speech="adverb", translation_en="please", translation_native="por favor"),
-            VocabularyWord(word="gut", lemma="gut", language="de", difficulty_level="A1",
-                          part_of_speech="adjective", translation_en="good", translation_native="bueno"),
-            VocabularyWord(word="Mann", lemma="mann", language="de", difficulty_level="A1",
-                          part_of_speech="noun", gender="der", translation_en="man", translation_native="hombre"),
-            VocabularyWord(word="Frau", lemma="frau", language="de", difficulty_level="A1",
-                          part_of_speech="noun", gender="die", translation_en="woman", translation_native="mujer"),
-            VocabularyWord(word="sprechen", lemma="sprechen", language="de", difficulty_level="A2",
-                          part_of_speech="verb", translation_en="speak", translation_native="hablar"),
-            VocabularyWord(word="verstehen", lemma="verstehen", language="de", difficulty_level="A2",
-                          part_of_speech="verb", translation_en="understand", translation_native="entender"),
-            VocabularyWord(word="lernen", lemma="lernen", language="de", difficulty_level="A2",
-                          part_of_speech="verb", translation_en="learn", translation_native="aprender"),
-            VocabularyWord(word="arbeiten", lemma="arbeiten", language="de", difficulty_level="A2",
-                          part_of_speech="verb", translation_en="work", translation_native="trabajar"),
-            VocabularyWord(word="wohnen", lemma="wohnen", language="de", difficulty_level="A2",
-                          part_of_speech="verb", translation_en="live", translation_native="vivir"),
-            VocabularyWord(word="Mädchen", lemma="mädchen", language="de", difficulty_level="B1",
-                          part_of_speech="noun", gender="das", translation_en="girl", translation_native="niña"),
-            VocabularyWord(word="Junge", lemma="junge", language="de", difficulty_level="B1",
-                          part_of_speech="noun", gender="der", translation_en="boy", translation_native="niño"),
-            VocabularyWord(word="Familie", lemma="familie", language="de", difficulty_level="B1",
-                          part_of_speech="noun", gender="die", translation_en="family", translation_native="familia"),
-            VocabularyWord(word="Schule", lemma="schule", language="de", difficulty_level="B1",
-                          part_of_speech="noun", gender="die", translation_en="school", translation_native="escuela"),
-            VocabularyWord(word="Arbeit", lemma="arbeit", language="de", difficulty_level="B1",
-                          part_of_speech="noun", gender="die", translation_en="work", translation_native="trabajo"),
+            VocabularyWord(
+                word="Hallo",
+                lemma="hallo",
+                language="de",
+                difficulty_level="A1",
+                part_of_speech="noun",
+                translation_en="Hello",
+                translation_native="Hola",
+            ),
+            VocabularyWord(
+                word="ich",
+                lemma="ich",
+                language="de",
+                difficulty_level="A1",
+                part_of_speech="pronoun",
+                translation_en="I",
+                translation_native="yo",
+            ),
+            VocabularyWord(
+                word="du",
+                lemma="du",
+                language="de",
+                difficulty_level="A1",
+                part_of_speech="pronoun",
+                translation_en="you",
+                translation_native="tú",
+            ),
+            VocabularyWord(
+                word="ja",
+                lemma="ja",
+                language="de",
+                difficulty_level="A1",
+                part_of_speech="adverb",
+                translation_en="yes",
+                translation_native="sí",
+            ),
+            VocabularyWord(
+                word="nein",
+                lemma="nein",
+                language="de",
+                difficulty_level="A1",
+                part_of_speech="adverb",
+                translation_en="no",
+                translation_native="no",
+            ),
+            VocabularyWord(
+                word="danke",
+                lemma="danke",
+                language="de",
+                difficulty_level="A1",
+                part_of_speech="noun",
+                translation_en="thanks",
+                translation_native="gracias",
+            ),
+            VocabularyWord(
+                word="bitte",
+                lemma="bitte",
+                language="de",
+                difficulty_level="A1",
+                part_of_speech="adverb",
+                translation_en="please",
+                translation_native="por favor",
+            ),
+            VocabularyWord(
+                word="gut",
+                lemma="gut",
+                language="de",
+                difficulty_level="A1",
+                part_of_speech="adjective",
+                translation_en="good",
+                translation_native="bueno",
+            ),
+            VocabularyWord(
+                word="Mann",
+                lemma="mann",
+                language="de",
+                difficulty_level="A1",
+                part_of_speech="noun",
+                gender="der",
+                translation_en="man",
+                translation_native="hombre",
+            ),
+            VocabularyWord(
+                word="Frau",
+                lemma="frau",
+                language="de",
+                difficulty_level="A1",
+                part_of_speech="noun",
+                gender="die",
+                translation_en="woman",
+                translation_native="mujer",
+            ),
+            VocabularyWord(
+                word="sprechen",
+                lemma="sprechen",
+                language="de",
+                difficulty_level="A2",
+                part_of_speech="verb",
+                translation_en="speak",
+                translation_native="hablar",
+            ),
+            VocabularyWord(
+                word="verstehen",
+                lemma="verstehen",
+                language="de",
+                difficulty_level="A2",
+                part_of_speech="verb",
+                translation_en="understand",
+                translation_native="entender",
+            ),
+            VocabularyWord(
+                word="lernen",
+                lemma="lernen",
+                language="de",
+                difficulty_level="A2",
+                part_of_speech="verb",
+                translation_en="learn",
+                translation_native="aprender",
+            ),
+            VocabularyWord(
+                word="arbeiten",
+                lemma="arbeiten",
+                language="de",
+                difficulty_level="A2",
+                part_of_speech="verb",
+                translation_en="work",
+                translation_native="trabajar",
+            ),
+            VocabularyWord(
+                word="wohnen",
+                lemma="wohnen",
+                language="de",
+                difficulty_level="A2",
+                part_of_speech="verb",
+                translation_en="live",
+                translation_native="vivir",
+            ),
+            VocabularyWord(
+                word="Mädchen",
+                lemma="mädchen",
+                language="de",
+                difficulty_level="B1",
+                part_of_speech="noun",
+                gender="das",
+                translation_en="girl",
+                translation_native="niña",
+            ),
+            VocabularyWord(
+                word="Junge",
+                lemma="junge",
+                language="de",
+                difficulty_level="B1",
+                part_of_speech="noun",
+                gender="der",
+                translation_en="boy",
+                translation_native="niño",
+            ),
+            VocabularyWord(
+                word="Familie",
+                lemma="familie",
+                language="de",
+                difficulty_level="B1",
+                part_of_speech="noun",
+                gender="die",
+                translation_en="family",
+                translation_native="familia",
+            ),
+            VocabularyWord(
+                word="Schule",
+                lemma="schule",
+                language="de",
+                difficulty_level="B1",
+                part_of_speech="noun",
+                gender="die",
+                translation_en="school",
+                translation_native="escuela",
+            ),
+            VocabularyWord(
+                word="Arbeit",
+                lemma="arbeit",
+                language="de",
+                difficulty_level="B1",
+                part_of_speech="noun",
+                gender="die",
+                translation_en="work",
+                translation_native="trabajo",
+            ),
         ]
         session.add_all(words)
         await session.commit()
@@ -120,13 +267,28 @@ class TestVocabularyRoutesCore:
         """Test vocabulary stats endpoint success"""
         # Seed minimal test data inline - clean_database ensures isolation
         from database.models import VocabularyWord
+
         SessionLocal = app.state._test_session_factory
         async with SessionLocal() as session:
             words = [
-                VocabularyWord(word="Hallo", lemma="hallo", language="de", difficulty_level="A1",
-                              part_of_speech="noun", translation_en="Hello", translation_native="Hola"),
-                VocabularyWord(word="Wasser", lemma="wasser", language="de", difficulty_level="A2",
-                              part_of_speech="noun", translation_en="Water", translation_native="Agua"),
+                VocabularyWord(
+                    word="Hallo",
+                    lemma="hallo",
+                    language="de",
+                    difficulty_level="A1",
+                    part_of_speech="noun",
+                    translation_en="Hello",
+                    translation_native="Hola",
+                ),
+                VocabularyWord(
+                    word="Wasser",
+                    lemma="wasser",
+                    language="de",
+                    difficulty_level="A2",
+                    part_of_speech="noun",
+                    translation_en="Water",
+                    translation_native="Agua",
+                ),
             ]
             session.add_all(words)
             await session.commit()
@@ -163,13 +325,28 @@ class TestVocabularyRoutesCore:
         """Test vocabulary level endpoint success"""
         # Seed minimal test data inline - clean_database ensures isolation
         from database.models import VocabularyWord
+
         SessionLocal = app.state._test_session_factory
         async with SessionLocal() as session:
             words = [
-                VocabularyWord(word="Hallo", lemma="hallo", language="de", difficulty_level="A1",
-                              part_of_speech="noun", translation_en="Hello", translation_native="Hola"),
-                VocabularyWord(word="ich", lemma="ich", language="de", difficulty_level="A1",
-                              part_of_speech="pronoun", translation_en="I", translation_native="yo"),
+                VocabularyWord(
+                    word="Hallo",
+                    lemma="hallo",
+                    language="de",
+                    difficulty_level="A1",
+                    part_of_speech="noun",
+                    translation_en="Hello",
+                    translation_native="Hola",
+                ),
+                VocabularyWord(
+                    word="ich",
+                    lemma="ich",
+                    language="de",
+                    difficulty_level="A1",
+                    part_of_speech="pronoun",
+                    translation_en="I",
+                    translation_native="yo",
+                ),
             ]
             session.add_all(words)
             await session.commit()
@@ -313,13 +490,28 @@ class TestVocabularyRoutesCore:
         """Test bulk marking level as known endpoint success"""
         # Seed minimal test data inline - clean_database ensures isolation
         from database.models import VocabularyWord
+
         SessionLocal = app.state._test_session_factory
         async with SessionLocal() as session:
             words = [
-                VocabularyWord(word="Hallo", lemma="hallo", language="de", difficulty_level="A1",
-                              part_of_speech="noun", translation_en="Hello", translation_native="Hola"),
-                VocabularyWord(word="ich", lemma="ich", language="de", difficulty_level="A1",
-                              part_of_speech="pronoun", translation_en="I", translation_native="yo"),
+                VocabularyWord(
+                    word="Hallo",
+                    lemma="hallo",
+                    language="de",
+                    difficulty_level="A1",
+                    part_of_speech="noun",
+                    translation_en="Hello",
+                    translation_native="Hola",
+                ),
+                VocabularyWord(
+                    word="ich",
+                    lemma="ich",
+                    language="de",
+                    difficulty_level="A1",
+                    part_of_speech="pronoun",
+                    translation_en="I",
+                    translation_native="yo",
+                ),
             ]
             session.add_all(words)
             await session.commit()
@@ -371,13 +563,28 @@ class TestVocabularyRoutesCore:
         """Test test data endpoint success"""
         # Seed minimal test data inline - clean_database ensures isolation
         from database.models import VocabularyWord
+
         SessionLocal = app.state._test_session_factory
         async with SessionLocal() as session:
             words = [
-                VocabularyWord(word="Hallo", lemma="hallo", language="de", difficulty_level="A1",
-                              part_of_speech="noun", translation_en="Hello", translation_native="Hola"),
-                VocabularyWord(word="Wasser", lemma="wasser", language="de", difficulty_level="A2",
-                              part_of_speech="noun", translation_en="Water", translation_native="Agua"),
+                VocabularyWord(
+                    word="Hallo",
+                    lemma="hallo",
+                    language="de",
+                    difficulty_level="A1",
+                    part_of_speech="noun",
+                    translation_en="Hello",
+                    translation_native="Hola",
+                ),
+                VocabularyWord(
+                    word="Wasser",
+                    lemma="wasser",
+                    language="de",
+                    difficulty_level="A2",
+                    part_of_speech="noun",
+                    translation_en="Water",
+                    translation_native="Agua",
+                ),
             ]
             session.add_all(words)
             await session.commit()
@@ -490,12 +697,12 @@ class TestVocabularyRoutesErrorHandling:
 
     @pytest.mark.asyncio
     async def test_mark_known_database_error(self, async_client):
-        """Test mark known with realistic error scenarios"""
+        """Test mark known with non-existent word (supports unknown words)"""
         helper = AsyncAuthHelper(async_client)
 
         _user, _token, headers = await helper.create_authenticated_user()
 
-        # Test with valid UUID but non-existent word - should fail gracefully
+        # Test with valid UUID but non-existent word - new behavior allows marking unknown words
         non_existent_uuid = str(uuid4())
         response = await async_client.post(
             "/api/vocabulary/mark-known",
@@ -503,10 +710,12 @@ class TestVocabularyRoutesErrorHandling:
             headers=headers,
         )
 
-        # Should return 500 error for non-existent words (database constraint violation)
-        assert response.status_code == 500
+        # Should succeed (200) - new feature allows marking unknown words as known
+        assert response.status_code == 200
         data = response.json()
-        assert "Error updating word status" in data["detail"]
+        assert data["success"] is True
+        assert data["known"] is True  # API uses "known" field, not "is_known"
+        assert data["level"] == "unknown"  # Non-existent words have no CEFR level
 
     @pytest.mark.asyncio
     async def test_vocabulary_level_database_error(self, async_client):

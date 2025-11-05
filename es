@@ -1,0 +1,1 @@
+  - Translation:   opus-de-es-big (de-, highest quality)

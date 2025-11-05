@@ -162,7 +162,6 @@ class PasswordValidator:
         return password.lower() in PasswordValidator.COMMON_PASSWORDS
 
 
-
 def validate_password_strength(password: str) -> tuple[bool, str]:
     """
     Convenience function for password validation

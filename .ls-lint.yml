@@ -1,0 +1,55 @@
+ls:
+  # Python backend: snake_case for directories and files
+  src/backend:
+    .dir: snake_case
+    .py: snake_case
+
+  # TypeScript/React frontend: kebab-case for directories, files
+  src/frontend:
+    .dir: kebab-case
+    .ts: kebab-case
+    .tsx: kebab-case
+    .js: kebab-case
+    .jsx: kebab-case
+
+  # Scripts: snake_case for Python
+  scripts:
+    .dir: snake_case
+    .py: snake_case
+    .bat: snake_case
+    .sh: snake_case
+
+  # Data, deploy, tests: snake_case
+  data:
+    .dir: snake_case
+
+  deploy:
+    .dir: kebab-case
+
+  tests:
+    .dir: snake_case
+    .py: snake_case
+
+ignore:
+  - .git
+  - .cache
+  - .venv
+  - node_modules
+  - __pycache__
+  - .pytest_cache
+  - .mypy_cache
+  - .ruff_cache
+  - dist
+  - build
+  - "*.egg-info"
+  - .idea
+  - .vscode
+  - data/downloads
+  - data/models
+
+# Note: Maximum folder depth of 6 is enforced via custom validator:
+# scripts/utilities/validate_folder_depth.py
+# Example allowed paths:
+#   - LangPlug/src/backend/tests/unit/services/vocabulary (depth 6) ✓
+#   - LangPlug/src/frontend/src/components/auth/__tests__ (depth 6) ✓
+#   - LangPlug/src/backend/services/vocabulary/events (depth 5) ✓

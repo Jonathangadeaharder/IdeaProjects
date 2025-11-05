@@ -3,9 +3,11 @@ Translation Service Interface
 Defines the contract that all translation services must implement
 """
 
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from dataclasses import dataclass
 from typing import Any
+
+from services.base_service import IAIService
 
 
 @dataclass
@@ -20,16 +22,11 @@ class TranslationResult:
     metadata: dict[str, Any] | None = None
 
 
-class ITranslationService(ABC):
+class ITranslationService(IAIService):
     """
     Interface for translation services
     All translation implementations must implement these methods
     """
-
-    @abstractmethod
-    def initialize(self) -> None:
-        """Initialize the translation service and load models"""
-        pass
 
     @abstractmethod
     def translate(self, text: str, source_lang: str, target_lang: str) -> TranslationResult:
@@ -82,21 +79,4 @@ class ITranslationService(ABC):
         Returns:
             True if language is supported, False otherwise
         """
-        pass
-
-    @abstractmethod
-    def cleanup(self) -> None:
-        """Clean up resources and unload models"""
-        pass
-
-    @property
-    @abstractmethod
-    def service_name(self) -> str:
-        """Get the name of this translation service"""
-        pass
-
-    @property
-    @abstractmethod
-    def is_initialized(self) -> bool:
-        """Check if the service is initialized and ready"""
         pass

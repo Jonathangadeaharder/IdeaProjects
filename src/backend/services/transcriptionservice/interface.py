@@ -3,9 +3,11 @@ Transcription Service Interface
 Defines the contract that all transcription services must implement
 """
 
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from dataclasses import dataclass, field
 from typing import Any
+
+from services.base_service import IAIService
 
 
 @dataclass
@@ -31,16 +33,11 @@ class TranscriptionResult:
     metadata: dict[str, Any] | None = None
 
 
-class ITranscriptionService(ABC):
+class ITranscriptionService(IAIService):
     """
     Interface for transcription services
     All transcription implementations must implement these methods
     """
-
-    @abstractmethod
-    def initialize(self) -> None:
-        """Initialize the transcription service and load models"""
-        pass
 
     @abstractmethod
     def transcribe(self, audio_path: str, language: str | None = None) -> TranscriptionResult:
@@ -116,23 +113,6 @@ class ITranscriptionService(ABC):
         Returns:
             List of language codes (e.g., ['en', 'de', 'es'])
         """
-        pass
-
-    @abstractmethod
-    def cleanup(self) -> None:
-        """Clean up resources and unload models"""
-        pass
-
-    @property
-    @abstractmethod
-    def service_name(self) -> str:
-        """Get the name of this transcription service"""
-        pass
-
-    @property
-    @abstractmethod
-    def is_initialized(self) -> bool:
-        """Check if the service is initialized and ready"""
         pass
 
     @property

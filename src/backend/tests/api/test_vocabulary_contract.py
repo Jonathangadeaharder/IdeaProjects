@@ -15,7 +15,9 @@ async def _auth(async_client):
 
 @pytest.mark.asyncio
 @pytest.mark.timeout(30)
-async def test_Whenmark_known_AcceptsValid_payloadCalled_ThenSucceeds(async_http_client, url_builder, seeded_vocabulary):
+async def test_Whenmark_known_AcceptsValid_payloadCalled_ThenSucceeds(
+    async_http_client, url_builder, seeded_vocabulary
+):
     """Happy path: mark-known stores the flag and returns success metadata."""
     headers = await _auth(async_http_client)
 
@@ -88,9 +90,9 @@ async def test_Whenlibrary_levelWithoutvalid_code_ThenReturnsError(async_http_cl
     )
 
     # Invalid level parameter should return 422 (validation error)
-    assert (
-        response.status_code == 422
-    ), f"Expected 422 (validation error for invalid level), got {response.status_code}: {response.text}"
+    assert response.status_code == 422, (
+        f"Expected 422 (validation error for invalid level), got {response.status_code}: {response.text}"
+    )
 
 
 @pytest.mark.asyncio

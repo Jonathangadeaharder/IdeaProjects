@@ -18,7 +18,7 @@ class SubtitleGenerationService:
         self._word_pattern = re.compile(r"\b[\w]+\b")
 
     async def generate_filtered_subtitles(
-        self, video_file: Path, vocabulary: list[dict[str, Any]], source_srt: str
+        self, video_file: Path, vocabulary: list[dict[str, Any]], source_srt: str, suffix: str = ""
     ) -> str:
         """
         Generate filtered subtitle files for the chunk
@@ -27,19 +27,23 @@ class SubtitleGenerationService:
             video_file: Path to video file
             vocabulary: List of vocabulary words
             source_srt: Path to source SRT file
+            suffix: Optional suffix for filtered file (e.g., "_pregame" or "_postgame")
 
         Returns:
             Path to the generated filtered subtitle file
         """
-        logger.info(f"Generating filtered subtitles for {len(vocabulary)} words")
+        logger.info(f"Generating filtered subtitles for {len(vocabulary)} words (suffix={suffix})")
 
         # Verify source SRT exists
         if not Path(source_srt).exists():
             logger.warning(f"No source SRT file found: {source_srt}")
             return source_srt
 
-        # Create filtered subtitle file path
-        filtered_srt = video_file.parent / f"{video_file.stem}_filtered.srt"
+        # Create filtered subtitle file path with optional suffix
+        if suffix:
+            filtered_srt = video_file.parent / f"{video_file.stem}_filtered{suffix}.srt"
+        else:
+            filtered_srt = video_file.parent / f"{video_file.stem}_filtered.srt"
 
         # Extract vocabulary words for highlighting
         vocab_words = {word["word"].lower() for word in vocabulary if "word" in word}

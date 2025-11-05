@@ -29,9 +29,9 @@ async def test_Whenvocabulary_statsCalled_ThenReturnslevels(async_client, url_bu
     assert json_response["target_language"] == "de"
     assert isinstance(json_response["total_words"], int)
     # With seeded_vocabulary, we should have at least 20 words
-    assert (
-        json_response["total_words"] >= 20
-    ), f"Expected at least 20 words from seeded_vocabulary, got {json_response['total_words']}"
+    assert json_response["total_words"] >= 20, (
+        f"Expected at least 20 words from seeded_vocabulary, got {json_response['total_words']}"
+    )
 
 
 @pytest.mark.asyncio

@@ -1,11 +1,28 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { ChunkedLearningFlow } from './ChunkedLearningFlow'
 import type { VideoInfo } from '@/types'
+import { profileGetApiProfileGet } from '@/client/services.gen'
 
 export const ChunkedLearningPage: React.FC = () => {
   const location = useLocation()
   let videoInfo = location.state?.videoInfo as VideoInfo
+  const [chunkDuration, setChunkDuration] = useState<number>(20)
+
+  useEffect(() => {
+    const loadUserPreferences = async () => {
+      try {
+        const profile = (await profileGetApiProfileGet()) as unknown as { chunk_duration_minutes?: number }
+        if (profile?.chunk_duration_minutes) {
+          setChunkDuration(profile.chunk_duration_minutes)
+        }
+      } catch (error) {
+        console.error('Failed to load user preferences:', error)
+        // Use default value of 20 if loading fails
+      }
+    }
+    loadUserPreferences()
+  }, [])
 
   // Fallback for E2E tests: check sessionStorage
   // This allows tests to inject videoInfo without fighting React Router's state management
@@ -39,5 +56,5 @@ export const ChunkedLearningPage: React.FC = () => {
     )
   }
 
-  return <ChunkedLearningFlow videoInfo={videoInfo} chunkDurationMinutes={0.5} />
+  return <ChunkedLearningFlow videoInfo={videoInfo} chunkDurationMinutes={chunkDuration} />
 }

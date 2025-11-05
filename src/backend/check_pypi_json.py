@@ -1,13 +1,28 @@
 #!/usr/bin/env python3
 """Check latest versions using PyPI JSON API (faster)."""
+
 import json
 import urllib.request
 
 PACKAGES = [
-    "pydantic", "sqlalchemy", "transformers", "torch", "spacy",
-    "protobuf", "sentencepiece", "opencv-python", "sentry-sdk",
-    "psutil", "pyyaml", "websockets", "rich", "pandas", "numpy",
-    "hypothesis", "mypy", "ruff"
+    "pydantic",
+    "sqlalchemy",
+    "transformers",
+    "torch",
+    "spacy",
+    "protobuf",
+    "sentencepiece",
+    "opencv-python",
+    "sentry-sdk",
+    "psutil",
+    "pyyaml",
+    "websockets",
+    "rich",
+    "pandas",
+    "numpy",
+    "hypothesis",
+    "mypy",
+    "ruff",
 ]
 
 print("Checking versions via PyPI JSON API:\n")  # noqa: T201

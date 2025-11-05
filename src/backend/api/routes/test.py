@@ -52,7 +52,7 @@ async def cleanup_test_data(db: AsyncSession = Depends(get_async_session)):
 
         await db.commit()
 
-        logger.info(f"Test cleanup completed: {deleted_users} users, " f"{deleted_vocabulary} vocabulary items deleted")
+        logger.info(f"Test cleanup completed: {deleted_users} users, {deleted_vocabulary} vocabulary items deleted")
 
         return {
             "success": True,

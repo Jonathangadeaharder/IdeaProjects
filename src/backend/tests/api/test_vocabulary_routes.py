@@ -309,9 +309,9 @@ async def test_When_stats_called_with_unsupported_language_Then_handles_graceful
     )
 
     # Unsupported language codes accepted without validation (TODO: should reject)
-    assert (
-        response.status_code == 200
-    ), f"Expected 200 (accepts invalid languages), got {response.status_code}: {response.text}"
+    assert response.status_code == 200, (
+        f"Expected 200 (accepts invalid languages), got {response.status_code}: {response.text}"
+    )
     # TODO: Should validate language codes and return 422
 
 
