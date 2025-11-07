@@ -59,7 +59,7 @@ async def test_Whenmark_knownWithoutconcept_id_ThenReturnsError(async_http_clien
         headers=headers,
     )
 
-    assert response.status_code == 500  # TODO: Should validate and return 422
+    assert response.status_code == 400  # Now correctly returns 400 for bad request
 
 
 @pytest.mark.asyncio
