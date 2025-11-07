@@ -38,7 +38,7 @@ async def test_Whenmark_known_AcceptsValid_payloadCalled_ThenSucceeds(
 
     response = await async_http_client.post(
         url_builder.url_for("mark_word_known"),
-        json={"word": word_lemma, "language": "de", "known": True},
+        json={"lemma": word_lemma, "language": "de", "known": True},
         headers=headers,
     )
 
@@ -49,8 +49,8 @@ async def test_Whenmark_known_AcceptsValid_payloadCalled_ThenSucceeds(
 
 @pytest.mark.asyncio
 @pytest.mark.timeout(30)
-async def test_Whenmark_knownWithoutconcept_id_ThenReturnsError(async_http_client, url_builder):
-    """Invalid input: missing concept_id causes internal error (TODO: should return 422)."""
+async def test_Whenmark_knownWithout_lemma_ThenReturnsValidationError(async_http_client, url_builder):
+    """Invalid input: missing required lemma field returns validation error."""
     headers = await _auth(async_http_client)
 
     response = await async_http_client.post(
@@ -59,7 +59,7 @@ async def test_Whenmark_knownWithoutconcept_id_ThenReturnsError(async_http_clien
         headers=headers,
     )
 
-    assert response.status_code == 400  # Now correctly returns 400 for bad request
+    assert response.status_code == 422  # Pydantic validation error
 
 
 @pytest.mark.asyncio
@@ -146,13 +146,13 @@ async def test_Whenbulk_mark_WithInvalid_level_ThenReturnsError(async_http_clien
 
 @pytest.mark.asyncio
 @pytest.mark.timeout(30)
-async def test_Whenmark_known_WithInvalid_uuid_ThenReturnsError(async_http_client, url_builder):
-    """Invalid input: mark known with invalid UUID returns validation error."""
+async def test_Whenmark_known_WithEmpty_lemma_ThenReturnsValidationError(async_http_client, url_builder):
+    """Invalid input: mark known with empty lemma returns validation error."""
     headers = await _auth(async_http_client)
 
     response = await async_http_client.post(
         url_builder.url_for("mark_word_known"),
-        json={"concept_id": "not-a-uuid", "known": True},
+        json={"lemma": "", "known": True},
         headers=headers,
     )
 

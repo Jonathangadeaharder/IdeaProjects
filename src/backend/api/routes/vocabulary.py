@@ -1,7 +1,6 @@
 """Vocabulary management API routes - Clean lemma-based implementation"""
 
 import logging
-import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field, field_validator
@@ -32,25 +31,11 @@ router = APIRouter(tags=["vocabulary"])
 
 
 class MarkKnownRequest(BaseModel):
-    """Request to mark a word as known"""
+    """Request to mark a word as known by lemma"""
 
-    concept_id: str | None = Field(None, description="The concept ID to mark (optional)")
-    word: str | None = Field(None, description="The word text (optional)")
-    lemma: str | None = Field(None, description="The word lemma (optional)")
+    lemma: str = Field(..., min_length=1, max_length=200, description="The word lemma (base form)")
     language: str = Field("de", description="Language code")
     known: bool = Field(..., description="Whether to mark as known")
-
-    @field_validator("concept_id")
-    @classmethod
-    def validate_concept_id(cls, v):
-        """Validate that concept_id is a valid UUID format if provided"""
-        if v is None:
-            return v
-        try:
-            uuid.UUID(v)
-            return v
-        except ValueError:
-            raise ValueError("concept_id must be a valid UUID") from None
 
 
 class BulkMarkLevelRequest(BaseModel):
@@ -136,15 +121,13 @@ async def mark_word_known(
     Mark a vocabulary word as known or unknown for the current user.
 
     Updates user's vocabulary progress by marking a word as known (mastered)
-    or unknown (needs practice). Supports lookup by lemma, word form, or concept ID.
+    or unknown (needs practice) using the lemma (base form) of the word.
 
     **Authentication Required**: Yes
 
     Args:
         request (MarkKnownRequest): Request containing:
-            - concept_id (str, optional): UUID of vocabulary concept
-            - word (str, optional): The word text
-            - lemma (str, optional): Base form of the word
+            - lemma (str): Base form of the word
             - language (str): Language code (default: "de")
             - known (bool): Whether to mark as known
         current_user (User): Authenticated user
@@ -153,14 +136,12 @@ async def mark_word_known(
     Returns:
         dict: Update result with:
             - success: Whether operation succeeded
-            - concept_id: The vocabulary concept ID
             - known: The new known status
             - word: The word text
             - lemma: The word lemma
             - level: CEFR level
 
     Raises:
-        HTTPException: 400 if no word identifier provided
         HTTPException: 500 if database update fails
 
     Example:
@@ -179,7 +160,6 @@ async def mark_word_known(
         ```json
         {
             "success": true,
-            "concept_id": "abc-123",
             "known": true,
             "word": "Hallo",
             "lemma": "hallo",
@@ -187,60 +167,22 @@ async def mark_word_known(
         }
         ```
     """
-    # Use lemma if provided, otherwise fall back to word, then concept_id for backward compatibility
-    word_to_lookup = request.lemma or request.word or request.concept_id
-
-    if not word_to_lookup:
-        raise_bad_request("Either word, lemma, or concept_id must be provided")
-
     result = await vocabulary_service.mark_word_known(
         user_id=current_user.id,
-        word=word_to_lookup,
+        word=request.lemma,
         language=request.language,
         is_known=request.known,
         db=db,
     )
 
-    # Format response with result data
-    response_data = {
+    return {
         "success": result.get("success", True),
-        "concept_id": request.concept_id,
         "known": request.known,
         "word": result.get("word"),
         "lemma": result.get("lemma"),
         "level": result.get("level"),
+        "message": result.get("message"),
     }
-    # Include message if present (e.g., error messages)
-    if "message" in result:
-        response_data["message"] = result["message"]
-    return response_data
-
-
-@router.post("/mark-known-lemma", name="mark_word_known_by_lemma")
-@handle_api_errors("marking word by lemma")
-async def mark_word_known_by_lemma(
-    request: MarkKnownRequest,
-    current_user: User = Depends(current_active_user),
-    db: AsyncSession = Depends(get_async_session),
-    vocabulary_service=Depends(get_vocabulary_service),
-):
-    """Mark a word as known or unknown using lemma-based lookup (compatibility endpoint)"""
-    if not request.word:
-        raise_bad_request("Word is required")
-
-    word = request.word.strip()
-    language = request.language
-    known = request.known
-
-    result = await vocabulary_service.mark_word_known(
-        user_id=current_user.id, word=word, language=language, is_known=known, db=db
-    )
-
-    # Add compatibility fields for frontend
-    result["word"] = word
-    result["known"] = known
-
-    return result
 
 
 @router.get("/stats", name="get_vocabulary_stats")

@@ -314,7 +314,6 @@ export const ChunkedLearningFlow: React.FC<ChunkedLearningFlowProps> = ({
       const res = (await markWordKnownApiVocabularyMarkKnownPost({
         requestBody: {
           lemma: wordData.lemma,
-          word: wordData.word,
           language: 'de',
           known: known,
         },
