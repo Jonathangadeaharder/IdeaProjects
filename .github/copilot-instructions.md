@@ -6,17 +6,17 @@ LangPlug is a Netflix-style German language learning platform that combines vide
 
 ## Core Architecture
 
-### Backend (`Backend/`)
+### Backend (`src/backend/`)
 - **Framework**: FastAPI with async/await patterns
 - **Database**: SQLite with SQLAlchemy ORM and async sessions
 - **AI Services**: Whisper transcription, vocabulary filtering, translation
 - **Authentication**: Session-based with bcrypt password hashing
 - **Structure**:
-  - `Backend/core/` - Core modules (database, models)
-  - `Backend/services/` - Business logic services
-  - `Backend/api/` - API routes and endpoints
+  - `src/backend/core/` - Core modules (database, models)
+  - `src/backend/services/` - Business logic services
+  - `src/backend/api/` - API routes and endpoints
 
-### Frontend (`Frontend/`)
+### Frontend (`src/frontend/`)
 - **Framework**: React 18 with TypeScript
 - **Styling**: Styled Components
 - **State Management**: Zustand
@@ -36,12 +36,12 @@ LangPlug is a Netflix-style German language learning platform that combines vide
 
 ### Environment & Tooling
 
-- **Python Environment**: Always use the virtual environment at `Backend/api_venv/`
+- **Python Environment**: Always use the virtual environment at `src/backend/api_venv/`
 - **Windows PowerShell**: Prefer PowerShell for running servers and Python tools on host OS
 - **WSL**: Use only for light file operations; avoid mixing environments for runtime tasks
 - **Activation Pattern**: 
   ```bash
-  cd /mnt/c/Users/Jonandrop/IdeaProjects/LangPlug/Backend && \
+  cd /mnt/c/Users/Jonandrop/IdeaProjects/LangPlug/src/backend && \
   powershell.exe -Command ". api_venv/Scripts/activate; python -m pytest ..."
   ```
 
@@ -59,7 +59,7 @@ LangPlug is a Netflix-style German language learning platform that combines vide
 
 ### Testing Conventions
 
-- Use in-process FastAPI clients with dependency overrides (see `Backend/tests/conftest.py`)
+- Use in-process FastAPI clients with dependency overrides (see `src/backend/tests/conftest.py`)
 - Mock external services (Redis, transcription) and filesystem paths
 - No network or disk I/O in tests
 - Align assertions with behavior, not exact error message text
@@ -69,18 +69,18 @@ LangPlug is a Netflix-style German language learning platform that combines vide
 
 ```bash
 # Run all backend tests
-cd Backend && pytest
+cd src/backend && pytest
 
 # Run with coverage
-cd Backend && pytest --cov=core --cov=api --cov=services
+cd src/backend && pytest --cov=core --cov=api --cov=services
 
 # Lint backend
-cd Backend && ruff check .
+cd src/backend && ruff check .
 ```
 
 ### Database Testing
 
-- Use `async_client` and `db_session` fixtures from `Backend/tests/conftest.py`
+- Use `async_client` and `db_session` fixtures from `src/backend/tests/conftest.py`
 - Tests use single file-backed SQLite database per run
 - Clean schema per test via create/drop cycles
 - Database access via `core.database.AsyncSessionLocal` and `get_async_session` dependency
@@ -96,7 +96,7 @@ cd Backend && ruff check .
 
 ### Contract Requirements
 
-- Contracts live in `Backend/api/openapi_spec.py` and frontend schema modules
+- Contracts live in `src/backend/api/openapi_spec.py` and frontend schema modules
 - All contract updates require peer review
 - Apply semantic versioning (PATCH/MINOR/MAJOR)
 - Run contract tests on every change (`pytest -k contract`)
@@ -154,42 +154,42 @@ cd Backend && ruff check .
 ## Pull Request Checklist
 
 Before submitting PRs:
-- [ ] Tests pass (`cd Backend && pytest`)
-- [ ] Linting passes (`cd Backend && ruff check .`)
+- [ ] Tests pass (`cd src/backend && pytest`)
+- [ ] Linting passes (`cd src/backend && ruff check .`)
 - [ ] Coverage maintained (`pytest --cov`)
 - [ ] Generated artifacts up to date (OpenAPI client, schemas)
 - [ ] Documentation updated
 - [ ] Contract tests pass if contracts changed
-- [ ] Frontend tests pass if frontend changed (`cd Frontend && npm run test`)
+- [ ] Frontend tests pass if frontend changed (`cd src/frontend && npm run test`)
 
 ## Server Management
 
 - **Start servers**: Use `scripts\start-all.bat` or `scripts\stop-all.bat`
-- **Verify status**: Check log files in `Backend/logs/backend.log` and `Frontend/frontend.log`
+- **Verify status**: Check log files in `src/backend/logs/backend.log` and `src/frontend/frontend.log`
 - **Restart after**: Installing packages, changing env vars, modifying config
 
 ## Common Patterns
 
 ### Adding a New API Endpoint
 
-1. Define route in appropriate file under `Backend/api/`
-2. Add request/response models in `Backend/core/models.py`
-3. Implement service logic in `Backend/services/`
-4. Write tests in `Backend/tests/api/`
+1. Define route in appropriate file under `src/backend/api/`
+2. Add request/response models in `src/backend/core/models.py`
+3. Implement service logic in `src/backend/services/`
+4. Write tests in `src/backend/tests/api/`
 5. Update OpenAPI spec if needed
 6. Document in API docs
 
 ### Adding a New Service
 
-1. Create service file in `Backend/services/`
+1. Create service file in `src/backend/services/`
 2. Define service interface and implementation
 3. Add dependency injection if needed
-4. Write unit tests in `Backend/tests/services/`
+4. Write unit tests in `src/backend/tests/services/`
 5. Update service documentation
 
 ### Adding Frontend Component
 
-1. Create component in appropriate directory under `Frontend/src/`
+1. Create component in appropriate directory under `src/frontend/src/`
 2. Define TypeScript interfaces for props
 3. Use styled-components for styling
 4. Add to Storybook if applicable
@@ -236,4 +236,4 @@ Before submitting PRs:
 - Full project documentation: `README.md`
 - Contributing guidelines: `CONTRIBUTING.md`
 - AI agent guidelines: `AGENTS.md`
-- Architecture details: See `Backend/README.md` and `Frontend/README.md`
+- Architecture details: See `src/backend/README.md` and `src/frontend/README.md`
