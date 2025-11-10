@@ -11,6 +11,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from api.error_handlers import handle_api_errors, raise_bad_request, raise_conflict, raise_not_found
 from api.models.video import VideoInfo
 from api.models.vocabulary import VocabularyWord
 from core.config import settings
@@ -83,6 +84,7 @@ async def get_available_videos(
 
 
 @router.get("/subtitles/{subtitle_path:path}", name="get_subtitles")
+@handle_api_errors("serving subtitle file")
 async def get_subtitles(
     subtitle_path: str,
     current_user: User = Depends(current_active_user),
@@ -106,7 +108,6 @@ async def get_subtitles(
 
     Raises:
         HTTPException: 404 if subtitle file not found or invalid
-        HTTPException: 500 if file serving fails
 
     Example:
         ```bash
@@ -125,30 +126,23 @@ async def get_subtitles(
         Heute lernen wir Deutsch.
         ```
     """
-    try:
-        logger.info(f"Serving subtitles: {subtitle_path}")
+    logger.info(f"Serving subtitles: {subtitle_path}")
 
-        subtitle_file = video_service.get_subtitle_file_path(subtitle_path)
+    subtitle_file = video_service.get_subtitle_file_path(subtitle_path)
 
-        # Verify file exists and is readable
-        if not subtitle_file.exists():
-            logger.warning(f"Subtitle file not found: {subtitle_file}")
-            raise HTTPException(status_code=404, detail="Subtitle file not found")
+    # Verify file exists and is readable
+    if not subtitle_file.exists():
+        logger.warning(f"Subtitle file not found: {subtitle_file}")
+        raise_not_found("Subtitle file", subtitle_path)
 
-        if not subtitle_file.is_file():
-            logger.warning(f"Subtitle path is not a file: {subtitle_file}")
-            raise HTTPException(status_code=404, detail="Invalid subtitle file")
+    if not subtitle_file.is_file():
+        logger.warning(f"Subtitle path is not a file: {subtitle_file}")
+        raise_not_found("Subtitle file", subtitle_path)
 
-        logger.info(f"Successfully serving subtitle file: {subtitle_file}")
-        return FileResponse(
-            path=str(subtitle_file), media_type="text/plain", headers={"Content-Type": "text/plain; charset=utf-8"}
-        )
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error serving subtitles {subtitle_path}: {e}")
-        raise HTTPException(status_code=500, detail=f"Error serving subtitles: {e!s}") from e
+    logger.info(f"Successfully serving subtitle file: {subtitle_file}")
+    return FileResponse(
+        path=str(subtitle_file), media_type="text/plain", headers={"Content-Type": "text/plain; charset=utf-8"}
+    )
 
 
 @router.get(
@@ -159,9 +153,9 @@ async def get_subtitles(
         206: {"description": "Partial video content (range request)"},
         401: {"description": "Invalid or missing authentication token"},
         404: {"description": "Video file not accessible"},
-        500: {"description": "Error streaming video"},
     },
 )
+@handle_api_errors("streaming video file")
 async def stream_video(
     series: str,
     episode: str,
@@ -169,33 +163,27 @@ async def stream_video(
     video_service: VideoService = Depends(get_video_service),
 ):
     """Stream video file - Requires authentication"""
-    try:
-        video_file = video_service.get_video_file_path(series, episode)
+    video_file = video_service.get_video_file_path(series, episode)
 
-        if not video_file.exists():
-            logger.error(f"Video file exists check failed: {video_file}")
-            raise HTTPException(status_code=404, detail="Video file not accessible")
+    if not video_file.exists():
+        logger.error(f"Video file exists check failed: {video_file}")
+        raise_not_found("Video file", f"{series}/{episode}")
 
-        response = FileResponse(
-            video_file,
-            media_type="video/mp4",
-            headers={
-                "Accept-Ranges": "bytes",
-                "Access-Control-Allow-Origin": "*",
-                "Access-Control-Allow-Methods": "GET, OPTIONS",
-                "Access-Control-Allow-Headers": "Range",
-            },
-        )
-        return response
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error in stream_video: {e!s}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Error streaming video: {e!s}") from e
+    response = FileResponse(
+        video_file,
+        media_type="video/mp4",
+        headers={
+            "Accept-Ranges": "bytes",
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, OPTIONS",
+            "Access-Control-Allow-Headers": "Range",
+        },
+    )
+    return response
 
 
 @router.post("/subtitle/upload", name="upload_subtitle")
+@handle_api_errors("uploading subtitle file")
 async def upload_subtitle(
     video_path: str, subtitle_file: UploadFile = File(...), current_user: User = Depends(current_active_user)
 ):
@@ -203,45 +191,38 @@ async def upload_subtitle(
     Upload subtitle file for a video - Requires authentication
     Uses FileSecurityValidator for secure file handling
     """
+    # Validate file security using FileSecurityValidator
+    allowed_extensions = {".srt", ".vtt", ".sub"}
     try:
-        # Validate file security using FileSecurityValidator
-        allowed_extensions = {".srt", ".vtt", ".sub"}
-        try:
-            await FileSecurityValidator.validate_file_upload(subtitle_file, allowed_extensions)
-        except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e)) from e
+        await FileSecurityValidator.validate_file_upload(subtitle_file, allowed_extensions)
+    except ValueError as e:
+        raise_bad_request(str(e))
 
-        content = await subtitle_file.read()
+    content = await subtitle_file.read()
 
-        videos_path = settings.get_videos_path()
-        try:
-            video_file_path = str(videos_path / video_path)
-            FileSecurityValidator.validate_file_path(video_file_path)
-            video_file = videos_path / video_path
-        except ValueError as e:
-            raise HTTPException(status_code=400, detail=f"Invalid video path: {e}") from e
+    videos_path = settings.get_videos_path()
+    try:
+        video_file_path = str(videos_path / video_path)
+        FileSecurityValidator.validate_file_path(video_file_path)
+        video_file = videos_path / video_path
+    except ValueError as e:
+        raise_bad_request(f"Invalid video path: {e}")
 
-        if not video_file.exists():
-            raise HTTPException(status_code=404, detail="Video file not found")
+    if not video_file.exists():
+        raise_not_found("Video file", video_path)
 
-        subtitle_path = video_file.with_suffix(".srt")
+    subtitle_path = video_file.with_suffix(".srt")
 
-        with open(subtitle_path, "wb") as buffer:
-            buffer.write(content)
+    with open(subtitle_path, "wb") as buffer:
+        buffer.write(content)
 
-        logger.info(f"[SECURITY] Uploaded subtitle: {subtitle_path}")
+    logger.info(f"[SECURITY] Uploaded subtitle: {subtitle_path}")
 
-        return {
-            "success": True,
-            "message": f"Subtitle uploaded for {video_path}",
-            "subtitle_path": str(subtitle_path.relative_to(videos_path)),
-        }
-
-    except HTTPException:
-        raise
-    except (OSError, PermissionError) as e:
-        logger.error(f"Error uploading subtitle: {e!s}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Error uploading subtitle: {e!s}") from e
+    return {
+        "success": True,
+        "message": f"Subtitle uploaded for {video_path}",
+        "subtitle_path": str(subtitle_path.relative_to(videos_path)),
+    }
 
 
 @router.post("/scan", name="scan_videos")
@@ -261,30 +242,24 @@ async def get_user_videos(
 
 
 @router.get("/{video_id}/vocabulary", response_model=list[VocabularyWord], name="get_video_vocabulary")
+@handle_api_errors("extracting video vocabulary")
 async def get_video_vocabulary(video_id: str, current_user: User = Depends(current_active_user)):
     """Get vocabulary words extracted from a video"""
-    try:
-        videos_path = settings.get_videos_path()
-        video_path = videos_path / video_id
+    videos_path = settings.get_videos_path()
+    video_path = videos_path / video_id
 
-        if not video_path.exists():
-            raise HTTPException(status_code=404, detail="Video not found")
+    if not video_path.exists():
+        raise_not_found("Video", video_id)
 
-        srt_path = video_path.with_suffix(".srt")
-        if not srt_path.exists():
-            raise HTTPException(status_code=404, detail="Subtitles not found for this video")
+    srt_path = video_path.with_suffix(".srt")
+    if not srt_path.exists():
+        raise_not_found("Subtitles for video", video_id)
 
-        # TODO: Implement vocabulary extraction from SRT file
-        # The extract_blocking_words_for_segment function has been removed
-        # Use vocabulary service extract_blocking_words_from_srt instead
-        logger.warning(f"Vocabulary extraction not implemented for video {video_id}")
-        return []
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error extracting vocabulary for video {video_id}: {e!s}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Error extracting vocabulary: {e!s}") from e
+    # TODO: Implement vocabulary extraction from SRT file
+    # The extract_blocking_words_for_segment function has been removed
+    # Use vocabulary service extract_blocking_words_from_srt instead
+    logger.warning(f"Vocabulary extraction not implemented for video {video_id}")
+    return []
 
 
 class ProcessingStatus(BaseModel):
@@ -296,51 +271,45 @@ class ProcessingStatus(BaseModel):
 
 
 @router.get("/{video_id}/status", response_model=ProcessingStatus, name="get_video_status")
+@handle_api_errors("getting video status")
 async def get_video_status(
     video_id: str,
     current_user: User = Depends(current_active_user),
     task_progress: dict[str, Any] = Depends(get_task_progress_registry),
 ):
     """Get processing status for a video"""
-    try:
-        video_tasks = [
-            (task_id, progress)
-            for task_id, progress in task_progress.items()
-            if video_id in task_id or video_id in str(progress.get("video_path", ""))
-        ]
+    video_tasks = [
+        (task_id, progress)
+        for task_id, progress in task_progress.items()
+        if video_id in task_id or video_id in str(progress.get("video_path", ""))
+    ]
 
-        if not video_tasks:
-            videos_path = settings.get_videos_path()
-            video_path = videos_path / video_id
+    if not video_tasks:
+        videos_path = settings.get_videos_path()
+        video_path = videos_path / video_id
 
-            if not video_path.exists():
-                raise HTTPException(status_code=404, detail="Video not found")
+        if not video_path.exists():
+            raise_not_found("Video", video_id)
 
-            srt_path = video_path.with_suffix(".srt")
-            if srt_path.exists():
-                return ProcessingStatus(
-                    status="completed",
-                    progress=100.0,
-                    current_step="Processing completed",
-                    message="Video has been fully processed",
-                    subtitle_path=str(srt_path.relative_to(videos_path)),
-                )
-            else:
-                return ProcessingStatus(
-                    status="completed",
-                    progress=0.0,
-                    current_step="Not processed",
-                    message="Video has not been processed yet",
-                )
+        srt_path = video_path.with_suffix(".srt")
+        if srt_path.exists():
+            return ProcessingStatus(
+                status="completed",
+                progress=100.0,
+                current_step="Processing completed",
+                message="Video has been fully processed",
+                subtitle_path=str(srt_path.relative_to(videos_path)),
+            )
+        else:
+            return ProcessingStatus(
+                status="completed",
+                progress=0.0,
+                current_step="Not processed",
+                message="Video has not been processed yet",
+            )
 
-        _latest_task_id, latest_progress = video_tasks[-1]
-        return latest_progress
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error getting video status for {video_id}: {e!s}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Error getting video status: {e!s}") from e
+    _latest_task_id, latest_progress = video_tasks[-1]
+    return latest_progress
 
 
 @router.post("/upload", name="upload_video_generic")
@@ -355,7 +324,7 @@ def _validate_series_name(series: str) -> str:
     """Validate and sanitize series name to prevent path traversal"""
     safe_series = FileSecurityValidator.sanitize_filename(series)
     if safe_series != series or ".." in series or "/" in series or "\\" in series:
-        raise HTTPException(status_code=400, detail="Invalid series name")
+        raise_bad_request("Invalid series name")
     return safe_series
 
 
@@ -365,7 +334,7 @@ async def _validate_video_file_upload(video_file: UploadFile) -> Path:
     try:
         return await FileSecurityValidator.validate_file_upload(video_file, allowed_extensions)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e)) from e
+        raise_bad_request(str(e))
 
 
 async def _write_video_file(video_file: UploadFile, destination: Path) -> None:
@@ -397,6 +366,7 @@ def _build_video_info_response(destination: Path, safe_series: str) -> VideoInfo
 
 
 @router.post("/upload/{series}", name="upload_video_to_series")
+@handle_api_errors("uploading video file")
 async def upload_video(
     series: str, video_file: UploadFile = File(...), current_user: User = Depends(current_active_user)
 ):
@@ -404,33 +374,26 @@ async def upload_video(
     Upload a new video file to a series - Requires authentication
     Uses FileSecurityValidator for secure file handling with path traversal prevention
     """
-    try:
-        safe_series = _validate_series_name(series)
-        safe_path = await _validate_video_file_upload(video_file)
+    safe_series = _validate_series_name(series)
+    safe_path = await _validate_video_file_upload(video_file)
 
-        series_path = settings.get_videos_path() / safe_series
-        series_path.mkdir(parents=True, exist_ok=True)
+    series_path = settings.get_videos_path() / safe_series
+    series_path.mkdir(parents=True, exist_ok=True)
 
-        final_path = FileSecurityValidator.get_safe_upload_path(video_file.filename, preserve_name=True)
-        final_destination = series_path / final_path.name
+    final_path = FileSecurityValidator.get_safe_upload_path(video_file.filename, preserve_name=True)
+    final_destination = series_path / final_path.name
 
-        if final_destination.exists():
-            raise HTTPException(status_code=409, detail="File already exists")
+    if final_destination.exists():
+        raise_conflict("File", str(final_destination.name))
 
-        await _write_video_file(video_file, final_destination)
+    await _write_video_file(video_file, final_destination)
 
-        if safe_path.exists() and safe_path != final_destination:
-            safe_path.unlink(missing_ok=True)
+    if safe_path.exists() and safe_path != final_destination:
+        safe_path.unlink(missing_ok=True)
 
-        logger.info(f"[SECURITY] Uploaded video: {final_destination}")
+    logger.info(f"[SECURITY] Uploaded video: {final_destination}")
 
-        return _build_video_info_response(final_destination, safe_series)
-
-    except HTTPException:
-        raise
-    except (OSError, PermissionError) as e:
-        logger.error(f"Error uploading video: {e!s}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Error uploading video: {e!s}") from e
+    return _build_video_info_response(final_destination, safe_series)
 
 
 def parse_episode_filename(filename: str) -> dict[str, str | None]:
