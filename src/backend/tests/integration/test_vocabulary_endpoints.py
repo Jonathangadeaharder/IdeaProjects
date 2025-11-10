@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from uuid import uuid4
-
 import pytest
 
 from tests.helpers import AsyncAuthHelper
@@ -15,11 +13,10 @@ async def test_Whenmark_known_endpointCalled_ThenSucceeds(async_client, url_buil
     helper = AsyncAuthHelper(async_client)
 
     _user, _token, headers = await helper.create_authenticated_user()
-    concept_id = str(uuid4())
 
     response = await async_client.post(
         url_builder.url_for("mark_word_known"),
-        json={"concept_id": concept_id, "known": True},
+        json={"lemma": "Hund", "language": "de", "known": True},
         headers=headers,
     )
 

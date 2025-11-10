@@ -35,7 +35,7 @@ async def test_Whenmark_known_can_unmarkCalled_ThenSucceeds(async_client, url_bu
 
     response = await async_client.post(
         url_builder.url_for("mark_word_known"),
-        json={"word": word_lemma, "language": "de", "known": False},
+        json={"lemma": word_lemma, "language": "de", "known": False},
         headers=headers,
     )
 

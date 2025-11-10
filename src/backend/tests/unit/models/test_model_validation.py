@@ -92,25 +92,15 @@ class TestVocabularyModelValidation:
 
     def test_When_valid_mark_known_request_provided_Then_model_created_successfully(self):
         """Valid mark known request should create model without errors."""
-        import uuid
-
         from api.routes.vocabulary import MarkKnownRequest
 
         # Arrange & Act
-        concept_id = uuid.uuid4()
-        request = MarkKnownRequest(concept_id=str(concept_id), known=True)
+        request = MarkKnownRequest(lemma="Hund", language="de", known=True)
 
         # Assert
-        assert request.concept_id == str(concept_id)
+        assert request.lemma == "Hund"
+        assert request.language == "de"
         assert request.known is True
-
-    @pytest.mark.parametrize("invalid_concept_id", ["not-a-uuid", "12345", "invalid-uuid-format"])
-    def test_When_invalid_concept_id_provided_Then_validation_error_raised(self, invalid_concept_id):
-        """Invalid UUID format should raise validation error."""
-        from api.routes.vocabulary import MarkKnownRequest
-
-        with pytest.raises(ValidationError):
-            MarkKnownRequest(concept_id=invalid_concept_id, known=True)
 
 
 class TestProcessingModelValidation:
@@ -225,8 +215,9 @@ class TestModelValidationIntegration:
 
         word = VocabularyWord(concept_id=uuid.uuid4(), word="sprechen", translation="to speak", difficulty_level="A2")
 
-        mark_request = MarkKnownRequest(concept_id=str(word.concept_id), known=True)
+        mark_request = MarkKnownRequest(lemma="sprechen", language="de", known=True)
 
-        assert mark_request.concept_id == str(word.concept_id)
+        assert mark_request.lemma == "sprechen"
+        assert mark_request.language == "de"
         assert mark_request.known is True
         assert word.difficulty_level in ["A1", "A2", "B1", "B2", "C1", "C2"]
