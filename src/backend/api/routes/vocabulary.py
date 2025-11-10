@@ -1,12 +1,22 @@
 """Vocabulary management API routes - Clean lemma-based implementation"""
 
 import logging
-import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from api.constants import (
+    DEFAULT_VOCABULARY_LIMIT,
+    MAX_VOCABULARY_LIMIT,
+    MIN_SEARCH_LENGTH,
+    MAX_SEARCH_LENGTH,
+)
+from api.error_handlers import (
+    handle_api_errors,
+    raise_not_found,
+    raise_validation_error,
+)
 from core.config import settings
 from core.database import get_async_session
 from core.dependencies import current_active_user
@@ -19,25 +29,11 @@ router = APIRouter(tags=["vocabulary"])
 
 
 class MarkKnownRequest(BaseModel):
-    """Request to mark a word as known"""
+    """Request to mark a word as known by lemma"""
 
-    concept_id: str | None = Field(None, description="The concept ID to mark (optional)")
-    word: str | None = Field(None, description="The word text (optional)")
-    lemma: str | None = Field(None, description="The word lemma (optional)")
-    language: str = Field("de", description="Language code")
+    lemma: str = Field(..., min_length=1, max_length=200, description="The word lemma (base form)")
+    language: str = Field(..., pattern=r"^[a-z]{2,3}$", description="Language code (required, e.g. 'de', 'en')")
     known: bool = Field(..., description="Whether to mark as known")
-
-    @field_validator("concept_id")
-    @classmethod
-    def validate_concept_id(cls, v):
-        """Validate that concept_id is a valid UUID format if provided"""
-        if v is None:
-            return v
-        try:
-            uuid.UUID(v)
-            return v
-        except ValueError:
-            raise ValueError("concept_id must be a valid UUID") from None
 
 
 class BulkMarkLevelRequest(BaseModel):
@@ -51,12 +47,13 @@ class BulkMarkLevelRequest(BaseModel):
 class SearchVocabularyRequest(BaseModel):
     """Request to search vocabulary"""
 
-    search_term: str = Field(..., min_length=1, max_length=100)
+    search_term: str = Field(..., min_length=MIN_SEARCH_LENGTH, max_length=MAX_SEARCH_LENGTH)
     language: str = Field("de", description="Language code")
-    limit: int = Field(20, ge=1, le=100)
+    limit: int = Field(DEFAULT_VOCABULARY_LIMIT, ge=1, le=MAX_VOCABULARY_LIMIT)
 
 
 @router.get("/word-info/{word}", name="get_word_info")
+@handle_api_errors("retrieving word information")
 async def get_word_info(
     word: str,
     language: str = Query("de", description="Language code"),
@@ -104,19 +101,14 @@ async def get_word_info(
         }
         ```
     """
-    try:
-        info = await vocabulary_service.get_word_info(word, language, db)
-        if not info:
-            raise HTTPException(status_code=404, detail="Word not found")
-        return info
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error getting word info: {e}")
-        raise HTTPException(status_code=500, detail="Error retrieving word information") from e
+    info = await vocabulary_service.get_word_info(word, language, db)
+    if not info:
+        raise_not_found("Word", word)
+    return info
 
 
 @router.post("/mark-known", name="mark_word_known")
+@handle_api_errors("marking word as known/unknown")
 async def mark_word_known(
     request: MarkKnownRequest,
     current_user: User = Depends(current_active_user),
@@ -127,15 +119,13 @@ async def mark_word_known(
     Mark a vocabulary word as known or unknown for the current user.
 
     Updates user's vocabulary progress by marking a word as known (mastered)
-    or unknown (needs practice). Supports lookup by lemma, word form, or concept ID.
+    or unknown (needs practice) using the lemma (base form) of the word.
 
     **Authentication Required**: Yes
 
     Args:
         request (MarkKnownRequest): Request containing:
-            - concept_id (str, optional): UUID of vocabulary concept
-            - word (str, optional): The word text
-            - lemma (str, optional): Base form of the word
+            - lemma (str): Base form of the word
             - language (str): Language code (default: "de")
             - known (bool): Whether to mark as known
         current_user (User): Authenticated user
@@ -144,7 +134,6 @@ async def mark_word_known(
     Returns:
         dict: Update result with:
             - success: Whether operation succeeded
-            - concept_id: The vocabulary concept ID
             - known: The new known status
             - word: The word text
             - lemma: The word lemma
@@ -169,7 +158,6 @@ async def mark_word_known(
         ```json
         {
             "success": true,
-            "concept_id": "abc-123",
             "known": true,
             "word": "Hallo",
             "lemma": "hallo",
@@ -177,66 +165,28 @@ async def mark_word_known(
         }
         ```
     """
-    try:
-        # Use lemma if provided, otherwise fall back to word, then concept_id for backward compatibility
-        word_to_lookup = request.lemma or request.word or request.concept_id
+    result = await vocabulary_service.mark_word_known(
+        user_id=current_user.id,
+        word=request.lemma,
+        language=request.language,
+        is_known=request.known,
+        db=db,
+    )
 
-        result = await vocabulary_service.mark_word_known(
-            user_id=current_user.id,
-            word=word_to_lookup,
-            language=request.language,
-            is_known=request.known,
-            db=db,
-        )
-
-        # Format response with result data
-        response_data = {
-            "success": result.get("success", True),
-            "concept_id": request.concept_id,
-            "known": request.known,
-            "word": result.get("word"),
-            "lemma": result.get("lemma"),
-            "level": result.get("level"),
-        }
-        # Include message if present (e.g., error messages)
-        if "message" in result:
-            response_data["message"] = result["message"]
-        return response_data
-    except Exception as e:
-        logger.error(f"Error marking word: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Error updating word status") from e
-
-
-@router.post("/mark-known-lemma", name="mark_word_known_by_lemma")
-async def mark_word_known_by_lemma(
-    request: MarkKnownRequest,
-    current_user: User = Depends(current_active_user),
-    db: AsyncSession = Depends(get_async_session),
-    vocabulary_service=Depends(get_vocabulary_service),
-):
-    """Mark a word as known or unknown using lemma-based lookup (compatibility endpoint)"""
-    try:
-        if not request.word:
-            raise HTTPException(status_code=400, detail="Word is required")
-        word = request.word.strip()
-        language = request.language
-        known = request.known
-
-        result = await vocabulary_service.mark_word_known(
-            user_id=current_user.id, word=word, language=language, is_known=known, db=db
-        )
-
-        # Add compatibility fields for frontend
-        result["word"] = word
-        result["known"] = known
-
-        return result
-    except Exception as e:
-        logger.error(f"Error marking word by lemma: {e}")
-        raise HTTPException(status_code=500, detail="Error updating word status") from e
+    response = {
+        "success": result.get("success", True),
+        "known": request.known,
+        "word": result.get("word"),
+        "lemma": result.get("lemma"),
+        "level": result.get("level"),
+    }
+    if result.get("message"):
+        response["message"] = result["message"]
+    return response
 
 
 @router.get("/stats", name="get_vocabulary_stats")
+@handle_api_errors("retrieving vocabulary statistics")
 async def get_vocabulary_stats(
     target_language: str = Query("de", pattern=r"^[a-z]{2,3}$", description="Target language code"),
     translation_language: str = Query("en", pattern=r"^[a-z]{2,3}$", description="Translation language code"),
@@ -289,18 +239,15 @@ async def get_vocabulary_stats(
         }
         ```
     """
-    try:
-        # Use the comprehensive vocabulary stats method that returns VocabularyStats object
-        stats = await vocabulary_service.get_vocabulary_stats(
-            db, current_user.id, target_language, translation_language
-        )
-        return stats
-    except Exception as e:
-        logger.error(f"Error getting stats: {e}")
-        raise HTTPException(status_code=500, detail="Error retrieving statistics") from e
+    # Use the comprehensive vocabulary stats method that returns VocabularyStats object
+    stats = await vocabulary_service.get_vocabulary_stats(
+        db, current_user.id, target_language, translation_language
+    )
+    return stats
 
 
 @router.get("/library", name="get_vocabulary_library")
+@handle_api_errors("retrieving vocabulary library")
 async def get_vocabulary_library(
     language: str = Query("de", description="Language code"),
     level: str | None = Query(None, pattern=r"^(A1|A2|B1|B2|C1|C2)$"),
@@ -359,17 +306,14 @@ async def get_vocabulary_library(
         }
         ```
     """
-    try:
-        library = await vocabulary_service.get_vocabulary_library(
-            db=db, language=language, level=level, user_id=current_user.id, limit=limit, offset=offset
-        )
-        return library
-    except Exception as e:
-        logger.error(f"Error getting library: {e}")
-        raise HTTPException(status_code=500, detail="Error retrieving vocabulary library") from e
+    library = await vocabulary_service.get_vocabulary_library(
+        db=db, language=language, level=level, user_id=current_user.id, limit=limit, offset=offset
+    )
+    return library
 
 
 @router.get("/library/{level}", name="get_vocabulary_level")
+@handle_api_errors("retrieving vocabulary level")
 async def get_vocabulary_level(
     level: str,
     target_language: str = Query("de", description="Target language code"),
@@ -382,45 +326,39 @@ async def get_vocabulary_level(
 ):
     """Get vocabulary for a specific level"""
     if level.upper() not in CEFRLevel.all_levels():
-        raise HTTPException(status_code=422, detail=f"Invalid level. Must be one of {CEFRLevel.all_levels()}")
+        raise_validation_error(f"Invalid level. Must be one of {CEFRLevel.all_levels()}", "level")
 
-    try:
-        library = await vocabulary_service.get_vocabulary_library(
-            db=db, language=target_language, level=level.upper(), user_id=current_user.id, limit=limit, offset=offset
-        )
+    library = await vocabulary_service.get_vocabulary_library(
+        db=db, language=target_language, level=level.upper(), user_id=current_user.id, limit=limit, offset=offset
+    )
 
-        # Format for test expectations
-        return {
-            "level": level.upper(),
-            "target_language": target_language,
-            "translation_language": translation_language,
-            "words": library["words"],
-            "total_count": library["total_count"],
-            "known_count": sum(1 for w in library["words"] if w.get("is_known", False)),
-        }
-    except Exception as e:
-        logger.error(f"Error getting level: {e}")
-        raise HTTPException(status_code=500, detail="Error retrieving vocabulary level") from e
+    # Format for test expectations
+    return {
+        "level": level.upper(),
+        "target_language": target_language,
+        "translation_language": translation_language,
+        "words": library["words"],
+        "total_count": library["total_count"],
+        "known_count": sum(1 for w in library["words"] if w.get("is_known", False)),
+    }
 
 
 @router.post("/search", name="search_vocabulary")
+@handle_api_errors("searching vocabulary")
 async def search_vocabulary(
     request: SearchVocabularyRequest,
     db: AsyncSession = Depends(get_async_session),
     vocabulary_service=Depends(get_vocabulary_service),
 ):
     """Search vocabulary by word or lemma"""
-    try:
-        results = await vocabulary_service.search_vocabulary(
-            db=db, search_term=request.search_term, language=request.language, limit=request.limit
-        )
-        return {"results": results, "count": len(results)}
-    except Exception as e:
-        logger.error(f"Error searching vocabulary: {e}")
-        raise HTTPException(status_code=500, detail="Error searching vocabulary") from e
+    results = await vocabulary_service.search_vocabulary(
+        db=db, search_term=request.search_term, language=request.language, limit=request.limit
+    )
+    return {"results": results, "count": len(results)}
 
 
 @router.post("/library/bulk-mark", name="bulk_mark_level")
+@handle_api_errors("bulk marking level")
 async def bulk_mark_level(
     request: BulkMarkLevelRequest,
     current_user: User = Depends(current_active_user),
@@ -428,77 +366,68 @@ async def bulk_mark_level(
     vocabulary_service=Depends(get_vocabulary_service),
 ):
     """Mark all words in a level as known or unknown"""
-    try:
-        result = await vocabulary_service.bulk_mark_level(
-            db=db,
-            user_id=current_user.id,
-            language=request.target_language,
-            level=request.level.upper(),
-            is_known=request.known,
-        )
+    result = await vocabulary_service.bulk_mark_level(
+        db=db,
+        user_id=current_user.id,
+        language=request.target_language,
+        level=request.level.upper(),
+        is_known=request.known,
+    )
 
-        # Format response for test expectations
-        return {
-            "success": True,
-            "level": request.level.upper(),
-            "known": request.known,
-            "word_count": result.get("updated_count", 0),
-        }
-    except Exception as e:
-        logger.error(f"Error bulk marking level: {e}")
-        raise HTTPException(status_code=500, detail="Error updating level") from e
+    # Format response for test expectations
+    return {
+        "success": True,
+        "level": request.level.upper(),
+        "known": request.known,
+        "word_count": result.get("updated_count", 0),
+    }
 
 
 @router.get("/languages", name="get_supported_languages")
+@handle_api_errors("retrieving supported languages")
 async def get_supported_languages(db: AsyncSession = Depends(get_async_session)):
     """Get list of supported languages"""
     from sqlalchemy import select
 
     from database.models import Language
 
-    try:
-        stmt = select(Language).where(Language.is_active)
-        result = await db.execute(stmt)
-        languages = result.scalars().all()
+    stmt = select(Language).where(Language.is_active)
+    result = await db.execute(stmt)
+    languages = result.scalars().all()
 
-        return {
-            "languages": [
-                {"code": lang.code, "name": lang.name, "native_name": lang.native_name, "is_active": lang.is_active}
-                for lang in languages
-            ]
-        }
-    except Exception as e:
-        logger.error(f"Error getting languages: {e}")
-        raise HTTPException(status_code=500, detail="Error retrieving languages") from e
+    return {
+        "languages": [
+            {"code": lang.code, "name": lang.name, "native_name": lang.native_name, "is_active": lang.is_active}
+            for lang in languages
+        ]
+    }
 
 
 @router.get("/test-data", name="get_test_data")
+@handle_api_errors("retrieving test data")
 async def get_test_data(
     current_user: User = Depends(current_active_user), db: AsyncSession = Depends(get_async_session)
 ):
     """Get test data for frontend testing"""
-    try:
-        # Return minimal test data for testing purposes
-        test_vocabulary = [
-            {"id": "test-word-1", "word": "Hallo", "translation": "Hello", "level": "A1", "language": "de"}
-        ]
+    # Return minimal test data for testing purposes
+    test_vocabulary = [
+        {"id": "test-word-1", "word": "Hallo", "translation": "Hello", "level": "A1", "language": "de"}
+    ]
 
-        return {
-            "test_vocabulary": test_vocabulary,
-            "concept_count": len(test_vocabulary),
-            "translation_count": len(test_vocabulary),
-            "sample_translations": [
-                {"concept_id": "test-word-1", "target_text": "Hallo", "native_text": "Hello", "difficulty_level": "A1"}
-            ],
-            "user_id": current_user.id,
-            "test_mode": True,
-        }
-    except Exception as e:
-        logger.error(f"Error getting test data: {e}")
-        raise HTTPException(status_code=500, detail="Error retrieving test data") from e
+    return {
+        "test_vocabulary": test_vocabulary,
+        "concept_count": len(test_vocabulary),
+        "translation_count": len(test_vocabulary),
+        "sample_translations": [
+            {"concept_id": "test-word-1", "target_text": "Hallo", "native_text": "Hello", "difficulty_level": "A1"}
+        ],
+        "user_id": current_user.id,
+        "test_mode": True,
+    }
 
 
 @router.get("/blocking-words", name="get_blocking_words")
+@handle_api_errors("retrieving blocking words")
 async def get_blocking_words(
     video_path: str = Query(..., description="Video file path"),
     current_user: User = Depends(current_active_user),
@@ -506,34 +435,28 @@ async def get_blocking_words(
     vocabulary_service=Depends(get_vocabulary_service),
 ):
     """Get blocking words from SRT file"""
-    try:
-        # Get videos path
-        videos_path = settings.get_videos_path()
-        srt_file = videos_path / f"{video_path}.srt"
+    # Get videos path
+    videos_path = settings.get_videos_path()
+    srt_file = videos_path / f"{video_path}.srt"
 
-        if not srt_file.exists():
-            raise HTTPException(status_code=404, detail="Subtitle file not found")
+    if not srt_file.exists():
+        raise_not_found("Subtitle file", video_path)
 
-        # Read SRT file content
-        with open(srt_file, encoding="utf-8") as f:
-            srt_content = f.read()
+    # Read SRT file content
+    with open(srt_file, encoding="utf-8") as f:
+        srt_content = f.read()
 
-        # Extract blocking words from SRT content
-        blocking_words = await vocabulary_service.extract_blocking_words_from_srt(
-            db=db, srt_content=srt_content, user_id=current_user.id, video_path=video_path
-        )
+    # Extract blocking words from SRT content
+    blocking_words = await vocabulary_service.extract_blocking_words_from_srt(
+        db=db, srt_content=srt_content, user_id=current_user.id, video_path=video_path
+    )
 
-        return {
-            "blocking_words": blocking_words,
-            "total_count": len(blocking_words),
-            "video_path": video_path,
-            "srt_path": str(srt_file),
-        }
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error getting blocking words: {e}")
-        raise HTTPException(status_code=500, detail="Error retrieving blocking words") from e
+    return {
+        "blocking_words": blocking_words,
+        "total_count": len(blocking_words),
+        "video_path": video_path,
+        "srt_path": str(srt_file),
+    }
 
 
 class CreateVocabularyRequest(BaseModel):
@@ -546,6 +469,7 @@ class CreateVocabularyRequest(BaseModel):
 
 
 @router.post("", name="create_vocabulary")
+@handle_api_errors("creating vocabulary", status_code=400)
 async def create_vocabulary(
     request: CreateVocabularyRequest,
     current_user: User = Depends(current_active_user),
@@ -571,59 +495,54 @@ async def create_vocabulary(
 
     from database.models import VocabularyWord
 
-    try:
-        # Map difficulty level to CEFR level for storage
-        difficulty_to_level = {"beginner": "A1", "intermediate": "B1", "advanced": "C1"}
-        cefr_level = difficulty_to_level.get(request.difficulty_level.lower(), "A1")
+    # Map difficulty level to CEFR level for storage
+    difficulty_to_level = {"beginner": "A1", "intermediate": "B1", "advanced": "C1"}
+    cefr_level = difficulty_to_level.get(request.difficulty_level.lower(), "A1")
 
-        # Check if word already exists
-        result = await db.execute(
-            select(VocabularyWord).where(
-                VocabularyWord.word == request.word, VocabularyWord.language == request.language
-            )
+    # Check if word already exists
+    result = await db.execute(
+        select(VocabularyWord).where(
+            VocabularyWord.word == request.word, VocabularyWord.language == request.language
         )
-        existing_word = result.scalar_one_or_none()
+    )
+    existing_word = result.scalar_one_or_none()
 
-        if existing_word:
-            # Return existing word
-            return {
-                "id": existing_word.id,
-                "word": existing_word.word,
-                "translation": request.translation,
-                "difficulty_level": request.difficulty_level,
-                "language": existing_word.language,
-            }
-
-        # Create new global vocabulary word (no user_id - shared vocabulary)
-        new_word = VocabularyWord(
-            word=request.word,
-            lemma=request.word.lower(),
-            language=request.language,
-            difficulty_level=cefr_level,
-            translation_en=request.translation,
-            translation_native=request.translation,
-            notes=f"E2E test vocabulary - {cefr_level}",
-        )
-
-        db.add(new_word)
-        await db.commit()
-        # Note: refresh removed - not needed after commit, object already has all data
-
-        logger.info(f"Created test vocabulary for E2E: {request.word} ({cefr_level})")
+    if existing_word:
+        # Return existing word
         return {
-            "id": new_word.id,
-            "word": new_word.word,
+            "id": existing_word.id,
+            "word": existing_word.word,
             "translation": request.translation,
             "difficulty_level": request.difficulty_level,
-            "language": new_word.language,
+            "language": existing_word.language,
         }
-    except Exception as e:
-        logger.error(f"Error creating vocabulary: {e}")
-        await db.rollback()
-        raise HTTPException(status_code=400, detail=f"Failed to create vocabulary: {e!s}") from e
+
+    # Create new global vocabulary word (no user_id - shared vocabulary)
+    new_word = VocabularyWord(
+        word=request.word,
+        lemma=request.word.lower(),
+        language=request.language,
+        difficulty_level=cefr_level,
+        translation_en=request.translation,
+        translation_native=request.translation,
+        notes=f"E2E test vocabulary - {cefr_level}",
+    )
+
+    db.add(new_word)
+    await db.commit()
+
+    logger.info(f"Created test vocabulary for E2E: {request.word} ({cefr_level})")
+    return {
+        "id": new_word.id,
+        "word": new_word.word,
+        "translation": request.translation,
+        "difficulty_level": request.difficulty_level,
+        "language": new_word.language,
+    }
 
 
 @router.delete("/progress/{lemma}", name="delete_vocabulary_progress")
+@handle_api_errors("deleting vocabulary progress")
 async def delete_vocabulary_progress(
     lemma: str,
     language: str = Query("de", description="Language code"),
@@ -678,46 +597,35 @@ async def delete_vocabulary_progress(
 
     from database.models import UserVocabularyProgress
 
-    try:
-        # First check if progress entry exists
-        stmt = select(UserVocabularyProgress).where(
-            and_(
-                UserVocabularyProgress.user_id == current_user.id,
-                UserVocabularyProgress.lemma == lemma.lower(),
-                UserVocabularyProgress.language == language,
-            )
+    # First check if progress entry exists
+    stmt = select(UserVocabularyProgress).where(
+        and_(
+            UserVocabularyProgress.user_id == current_user.id,
+            UserVocabularyProgress.lemma == lemma.lower(),
+            UserVocabularyProgress.language == language,
         )
-        result = await db.execute(stmt)
-        progress = result.scalar_one_or_none()
+    )
+    result = await db.execute(stmt)
+    progress = result.scalar_one_or_none()
 
-        if not progress:
-            raise HTTPException(
-                status_code=404,
-                detail=f"No progress entry found for lemma '{lemma}' in language '{language}'",
-            )
+    if not progress:
+        raise_not_found("Progress entry", f"lemma '{lemma}' in language '{language}'")
 
-        # Delete the progress entry
-        delete_stmt = delete(UserVocabularyProgress).where(
-            and_(
-                UserVocabularyProgress.user_id == current_user.id,
-                UserVocabularyProgress.lemma == lemma.lower(),
-                UserVocabularyProgress.language == language,
-            )
+    # Delete the progress entry
+    delete_stmt = delete(UserVocabularyProgress).where(
+        and_(
+            UserVocabularyProgress.user_id == current_user.id,
+            UserVocabularyProgress.lemma == lemma.lower(),
+            UserVocabularyProgress.language == language,
         )
-        await db.execute(delete_stmt)
-        await db.commit()
+    )
+    await db.execute(delete_stmt)
+    await db.commit()
 
-        logger.info(f"Deleted vocabulary progress for user {current_user.id}, lemma '{lemma}'")
+    logger.info(f"Deleted vocabulary progress for user {current_user.id}, lemma '{lemma}'")
 
-        return {
-            "success": True,
-            "lemma": lemma.lower(),
-            "message": f"Progress removed for '{lemma}'",
-        }
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error deleting vocabulary progress: {e}")
-        await db.rollback()
-        raise HTTPException(status_code=500, detail=f"Failed to delete vocabulary progress: {e!s}") from e
+    return {
+        "success": True,
+        "lemma": lemma.lower(),
+        "message": f"Progress removed for '{lemma}'",
+    }

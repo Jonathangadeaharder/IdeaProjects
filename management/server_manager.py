@@ -331,9 +331,12 @@ def is_process_running(pid: int) -> bool:
     """Check if process is running"""
     try:
         import psutil
-
         return psutil.pid_exists(pid)
-    except:
+    except ImportError:
+        # psutil not available
+        return False
+    except (psutil.NoSuchProcess, psutil.AccessDenied):
+        # process not accessible
         return False
 
 

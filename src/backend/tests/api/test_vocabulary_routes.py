@@ -86,8 +86,8 @@ async def test_When_library_level_called_with_language_params_Then_returns_multi
 
 @pytest.mark.asyncio
 @pytest.mark.timeout(30)
-async def test_When_mark_known_called_with_concept_id_Then_succeeds(async_client, url_builder, seeded_vocabulary):
-    """Happy path: mark known endpoint accepts word/lemma parameter."""
+async def test_When_mark_known_called_with_lemma_Then_succeeds(async_client, url_builder, seeded_vocabulary):
+    """Happy path: mark known endpoint accepts lemma parameter."""
     headers = await _auth(async_client)
 
     # Get a real vocabulary word from the library (seeded_vocabulary fixture ensures data exists)
@@ -107,7 +107,7 @@ async def test_When_mark_known_called_with_concept_id_Then_succeeds(async_client
 
     response = await async_client.post(
         url_builder.url_for("mark_word_known"),
-        json={"word": word_lemma, "language": "de", "known": True},
+        json={"lemma": word_lemma, "language": "de", "known": True},
         headers=headers,
     )
 
@@ -119,28 +119,28 @@ async def test_When_mark_known_called_with_concept_id_Then_succeeds(async_client
 
 @pytest.mark.asyncio
 @pytest.mark.timeout(30)
-async def test_When_mark_known_called_without_concept_id_Then_returns_validation_error(async_client, url_builder):
-    """Invalid input: mark known without concept_id causes internal error (TODO: should validate)."""
+async def test_When_mark_known_called_without_lemma_Then_returns_validation_error(async_client, url_builder):
+    """Invalid input: mark known without required lemma field returns validation error."""
     headers = await _auth(async_client)
 
     response = await async_client.post(
         url_builder.url_for("mark_word_known"),
-        json={"known": True},  # Missing concept_id
+        json={"known": True},  # Missing required lemma
         headers=headers,
     )
 
-    assert response.status_code == 500  # TODO: Should validate and return 422
+    assert response.status_code == 422  # Pydantic validation error
 
 
 @pytest.mark.asyncio
 @pytest.mark.timeout(30)
-async def test_When_mark_known_called_with_invalid_uuid_Then_returns_validation_error(async_client, url_builder):
-    """Invalid input: mark known with invalid UUID returns validation error."""
+async def test_When_mark_known_called_with_empty_lemma_Then_returns_validation_error(async_client, url_builder):
+    """Invalid input: mark known with empty lemma returns validation error."""
     headers = await _auth(async_client)
 
     response = await async_client.post(
         url_builder.url_for("mark_word_known"),
-        json={"concept_id": "not-a-uuid", "known": True},
+        json={"lemma": "", "known": True},
         headers=headers,
     )
 
@@ -269,7 +269,7 @@ async def test_When_stats_called_without_auth_Then_returns_unauthorized(async_cl
 async def test_When_mark_known_called_without_auth_Then_returns_unauthorized(async_client, url_builder):
     """Security: mark-known endpoint requires authentication."""
     response = await async_client.post(
-        url_builder.url_for("mark_word_known"), json={"concept_id": str(uuid4()), "known": True}
+        url_builder.url_for("mark_word_known"), json={"lemma": "test", "known": True}
     )
     assert response.status_code == 401, f"Expected 401 (not authenticated), got {response.status_code}: {response.text}"
 
