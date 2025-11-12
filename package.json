@@ -1,0 +1,35 @@
+{
+  "name": "langplug-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "LangPlug - Netflix-style German Language Learning Platform (Monorepo)",
+  "scripts": {
+    "frontend:dev": "nx dev frontend",
+    "frontend:build": "nx build frontend",
+    "frontend:test": "nx test frontend",
+    "frontend:lint": "nx lint frontend",
+    "frontend:typecheck": "nx typecheck frontend",
+    "backend:test": "nx test backend",
+    "backend:lint": "nx lint backend",
+    "backend:typecheck": "nx typecheck backend",
+    "test": "nx run-many --target=test --all --parallel=2",
+    "test:affected": "nx affected --target=test --parallel=2",
+    "lint": "nx run-many --target=lint --all --parallel=2",
+    "lint:affected": "nx affected --target=lint --parallel=2",
+    "build": "nx run-many --target=build --all",
+    "build:affected": "nx affected --target=build",
+    "quality": "nx run-many --target=quality --all --parallel=2",
+    "format": "nx format:write",
+    "format:check": "nx format:check",
+    "graph": "nx graph",
+    "nx": "nx"
+  },
+  "devDependencies": {
+    "nx": "^20.3.0",
+    "@nx/js": "^20.3.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
+}

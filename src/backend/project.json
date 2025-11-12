@@ -1,0 +1,88 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "backend",
+  "sourceRoot": "src/backend",
+  "projectType": "application",
+  "targets": {
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "powershell.exe -Command \". api_venv/Scripts/activate; python -m pytest tests/ -v\"",
+        "cwd": "src/backend"
+      },
+      "cache": true
+    },
+    "test:unit": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "powershell.exe -Command \". api_venv/Scripts/activate; python -m pytest tests/unit/ -v\"",
+        "cwd": "src/backend"
+      },
+      "cache": true
+    },
+    "test:integration": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "powershell.exe -Command \". api_venv/Scripts/activate; python -m pytest tests/integration/ -v\"",
+        "cwd": "src/backend"
+      },
+      "cache": true
+    },
+    "coverage": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "powershell.exe -Command \". api_venv/Scripts/activate; python -m pytest --cov=. --cov-report=html --cov-report=term\"",
+        "cwd": "src/backend"
+      },
+      "cache": true
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "powershell.exe -Command \". api_venv/Scripts/activate; python -m ruff check .\"",
+        "cwd": "src/backend"
+      },
+      "cache": true
+    },
+    "lint:fix": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "powershell.exe -Command \". api_venv/Scripts/activate; python -m ruff check . --fix\"",
+        "cwd": "src/backend"
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "powershell.exe -Command \". api_venv/Scripts/activate; python -m mypy .\"",
+        "cwd": "src/backend"
+      },
+      "cache": true
+    },
+    "format": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "powershell.exe -Command \". api_venv/Scripts/activate; python -m ruff format .\"",
+        "cwd": "src/backend"
+      }
+    },
+    "format:check": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "powershell.exe -Command \". api_venv/Scripts/activate; python -m ruff format . --check\"",
+        "cwd": "src/backend"
+      },
+      "cache": true
+    },
+    "quality": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "powershell.exe -Command \". api_venv/Scripts/activate; python -m ruff check . && python -m mypy .\"",
+        "cwd": "src/backend"
+      },
+      "dependsOn": ["lint", "typecheck"],
+      "cache": true
+    }
+  },
+  "tags": ["type:app", "platform:api"]
+}
