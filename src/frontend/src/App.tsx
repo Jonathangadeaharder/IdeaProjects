@@ -12,7 +12,7 @@ import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { Loading } from '@/components/ui/Loading'
 import { BackendReadinessCheck } from '@/components/BackendReadinessCheck'
 import { setupAuthInterceptors } from '@/services/auth-interceptor'
-import { queryClient } from '@/lib/queryClient'
+import { queryClient } from '@/config/queryClient'
 
 // Lazy load route components for code splitting
 const LandingPage = lazy(() =>

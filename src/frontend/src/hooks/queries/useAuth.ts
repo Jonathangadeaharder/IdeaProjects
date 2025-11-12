@@ -11,7 +11,7 @@
 import { useQuery, UseQueryOptions } from '@tanstack/react-query'
 import { authGetCurrentUserApiAuthMeGet } from '@/client/services.gen'
 import type { UserRead } from '@/client/types.gen'
-import { queryKeys } from '@/lib/queryClient'
+import { queryKeys } from '@/config/queryClient'
 
 /**
  * Fetch current user data

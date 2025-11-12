@@ -5,7 +5,7 @@
 import { useMutation, useQueryClient, UseMutationOptions } from '@tanstack/react-query'
 import { toast } from 'react-hot-toast'
 import { api } from '@/services/api-client'
-import { queryKeys } from '@/lib/queryClient'
+import { queryKeys } from '@/config/queryClient'
 import type { UserVocabularyProgress } from '@/store/useVocabularyStore'
 
 // ========== Mutation Inputs ==========
