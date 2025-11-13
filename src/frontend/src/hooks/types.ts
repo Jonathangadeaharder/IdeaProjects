@@ -5,7 +5,7 @@
 
 // Core vocabulary types (moved from deprecated useVocabularyStore)
 export interface VocabularyWord {
-  id: number
+  concept_id?: string | number | null  // Matches API VocabularyWord from OpenAPI schema
   word: string
   lemma: string
   language: string

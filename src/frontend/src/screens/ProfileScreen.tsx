@@ -159,12 +159,13 @@ const ProfileScreen: React.FC = () => {
         },
       })
 
-      // Save chunk duration in settings
-      await Services.profileUpdateSettingsApiProfileSettingsPut({
-        requestBody: {
-          chunk_duration_minutes: chunkDuration,
-        },
-      })
+      // TODO: Save chunk duration when backend API supports it
+      // chunk_duration_minutes is not in UserSettings schema yet
+      // await Services.profileUpdateSettingsApiProfileSettingsPut({
+      //   requestBody: {
+      //     chunk_duration_minutes: chunkDuration,
+      //   },
+      // })
 
       toast.success('Your preferences are saved.')
       setHasChanges(false)
