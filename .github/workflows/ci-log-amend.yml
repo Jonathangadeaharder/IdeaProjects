@@ -39,10 +39,11 @@ jobs:
         working-directory: src/backend
         continue-on-error: true
         run: |
+          LOG_FILE="${GITHUB_WORKSPACE}/ci-logs/backend-install.log"
           python -m venv api_venv
           source api_venv/bin/activate
           pip install --upgrade pip
-          pip install -r requirements.txt 2>&1 | tee $GITHUB_WORKSPACE/ci-logs/backend-install.log
+          pip install -r requirements.txt 2>&1 | tee "${LOG_FILE}"
         shell: bash
 
       - name: Install Frontend Dependencies
@@ -50,29 +51,33 @@ jobs:
         working-directory: src/frontend
         continue-on-error: true
         run: |
-          npm ci 2>&1 | tee $GITHUB_WORKSPACE/ci-logs/frontend-install.log
+          LOG_FILE="${GITHUB_WORKSPACE}/ci-logs/frontend-install.log"
+          npm ci 2>&1 | tee "${LOG_FILE}"
 
       - name: Backend Lint
         id: backend-lint
         working-directory: src/backend
         continue-on-error: true
         run: |
+          LOG_FILE="${GITHUB_WORKSPACE}/ci-logs/backend-lint.log"
           source api_venv/bin/activate
-          python -m ruff check . 2>&1 | tee $GITHUB_WORKSPACE/ci-logs/backend-lint.log
+          python -m ruff check . 2>&1 | tee "${LOG_FILE}"
 
       - name: Frontend Build
         id: frontend-build
         working-directory: src/frontend
         continue-on-error: true
         run: |
-          npm run build 2>&1 | tee $GITHUB_WORKSPACE/ci-logs/frontend-build.log
+          LOG_FILE="${GITHUB_WORKSPACE}/ci-logs/frontend-build.log"
+          npm run build 2>&1 | tee "${LOG_FILE}"
 
       - name: Frontend Lint
         id: frontend-lint
         working-directory: src/frontend
         continue-on-error: true
         run: |
-          npm run lint 2>&1 | tee $GITHUB_WORKSPACE/ci-logs/frontend-lint.log
+          LOG_FILE="${GITHUB_WORKSPACE}/ci-logs/frontend-lint.log"
+          npm run lint 2>&1 | tee "${LOG_FILE}"
 
       - name: Create CI Summary
         run: |
