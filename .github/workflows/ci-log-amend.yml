@@ -18,6 +18,9 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Create ci-logs directory
+        run: mkdir -p ci-logs
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -73,13 +76,13 @@ jobs:
 
       - name: Create CI Summary
         run: |
-          mkdir -p ci-logs
-          cat > ci-logs/CI_SUMMARY.md << 'EOF'
+          TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          cat > ci-logs/CI_SUMMARY.md << EOF
           # CI Execution Summary
 
           **Commit**: ${{ github.sha }}
           **Branch**: ${{ github.ref_name }}
-          **Timestamp**: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          **Timestamp**: ${TIMESTAMP}
 
           ## Results
 
@@ -93,7 +96,7 @@ jobs:
 
           ## Detailed Logs
 
-          See individual log files in `ci-logs/` directory for full output.
+          See individual log files in \`ci-logs/\` directory for full output.
 
           ---
 
