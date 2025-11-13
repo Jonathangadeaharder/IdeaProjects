@@ -15,7 +15,6 @@
  */
 import React from 'react'
 import { useVocabularyStats } from '@/hooks'
-import type { VocabularyStats } from '@/hooks'
 
 // ============================================================================
 // BEFORE: Using Zustand store with manual state management

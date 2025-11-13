@@ -16,7 +16,7 @@ import type { VocabularyWord, UserVocabularyProgress, VocabularyStats } from '..
  */
 export const useWordsByLevel = (
   level: string,
-  language: string = 'de',
+  language = 'de',
   options?: Omit<UseQueryOptions<VocabularyWord[]>, 'queryKey' | 'queryFn'>
 ) => {
   return useQuery({
@@ -38,8 +38,8 @@ export const useWordsByLevel = (
  */
 export const useSearchWords = (
   query: string,
-  language: string = 'de',
-  limit: number = 20,
+  language = 'de',
+  limit = 20,
   options?: Omit<UseQueryOptions<VocabularyWord[]>, 'queryKey' | 'queryFn'>
 ) => {
   return useQuery({
@@ -64,9 +64,9 @@ export const useSearchWords = (
  * @param limit - Number of words to fetch (default: 10)
  */
 export const useRandomWords = (
-  language: string = 'de',
+  language = 'de',
   levels?: string[],
-  limit: number = 10,
+  limit = 10,
   options?: Omit<UseQueryOptions<VocabularyWord[]>, 'queryKey' | 'queryFn'>
 ) => {
   return useQuery({
@@ -85,7 +85,7 @@ export const useRandomWords = (
  * @param language - Language code (default: 'de')
  */
 export const useUserProgress = (
-  language: string = 'de',
+  language = 'de',
   options?: Omit<UseQueryOptions<UserVocabularyProgress[]>, 'queryKey' | 'queryFn'>
 ) => {
   return useQuery({
@@ -104,7 +104,7 @@ export const useUserProgress = (
  * @param language - Language code (default: 'de')
  */
 export const useVocabularyStats = (
-  language: string = 'de',
+  language = 'de',
   options?: Omit<UseQueryOptions<VocabularyStats>, 'queryKey' | 'queryFn'>
 ) => {
   return useQuery({
@@ -127,7 +127,7 @@ export const useVocabularyStats = (
  * @param vocabularyId - Word ID
  * @param language - Language code (default: 'de')
  */
-export const useWordProgress = (vocabularyId: number, language: string = 'de') => {
+export const useWordProgress = (vocabularyId: number, language = 'de') => {
   return useQuery({
     queryKey: queryKeys.progress.list(language),
     queryFn: async () => {
@@ -146,7 +146,7 @@ export const useWordProgress = (vocabularyId: number, language: string = 'de') =
  * @param vocabularyId - Word ID
  * @param language - Language code (default: 'de')
  */
-export const useIsWordKnown = (vocabularyId: number, language: string = 'de') => {
+export const useIsWordKnown = (vocabularyId: number, language = 'de') => {
   return useQuery({
     queryKey: queryKeys.progress.list(language),
     queryFn: async () => {

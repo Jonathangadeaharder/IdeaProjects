@@ -1,9 +1,9 @@
 Collecting de-core-news-lg==3.8.0 (from -r requirements.txt (line 39))
   Downloading https://github.com/explosion/spacy-models/releases/download/de_core_news_lg-3.8.0/de_core_news_lg-3.8.0-py3-none-any.whl (567.8 MB)
-     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 567.8/567.8 MB 59.6 MB/s  0:00:05
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 567.8/567.8 MB 74.2 MB/s  0:00:04
 Collecting en-core-web-sm==3.8.0 (from -r requirements.txt (line 40))
   Downloading https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl (12.8 MB)
-     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 12.8/12.8 MB 176.9 MB/s  0:00:00
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 12.8/12.8 MB 241.7 MB/s  0:00:00
 Collecting fastapi<1.0.0,>=0.118.3 (from -r requirements.txt (line 7))
   Downloading fastapi-0.121.2-py3-none-any.whl.metadata (28 kB)
 Collecting pydantic<3.0.0,>=2.12.0 (from -r requirements.txt (line 8))

@@ -19,7 +19,7 @@ import { queryKeys } from '@/config/queryClient'
  * and refetches on window focus to keep data fresh
  */
 export const useCurrentUser = (
-  enabled: boolean = true,
+  enabled = true,
   options?: Omit<UseQueryOptions<UserRead>, 'queryKey' | 'queryFn'>
 ) => {
   return useQuery({

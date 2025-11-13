@@ -823,7 +823,7 @@ export const VocabularyLibrary: React.FC = () => {
       let filteredWords = (data.words ?? []).map((word, index) => ({
         ...word,
         id: word.id || word.lemma || `temp-${index}-${word.word}`, // Ensure id is always a string
-        known: Boolean((word as any).is_known ?? word.known),
+        known: Boolean((word as Record<string, unknown>).is_known ?? word.known),
       })) as VocabularyLibraryWord[]
 
       // Client-side search filtering
@@ -1442,7 +1442,6 @@ export const VocabularyLibrary: React.FC = () => {
                 value={newWord}
                 onChange={e => setNewWord(e.target.value)}
                 required
-                autoFocus
               />
             </FormGroup>
             <FormGroup>
