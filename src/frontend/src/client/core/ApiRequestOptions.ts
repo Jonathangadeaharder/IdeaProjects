@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// Auto-generated API client - linting rules disabled for generated code
 export type ApiRequestOptions<T = unknown> = {
 	readonly body?: any;
 	readonly cookies?: Record<string, unknown>;

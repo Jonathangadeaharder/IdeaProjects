@@ -819,10 +819,11 @@ export const VocabularyLibrary: React.FC = () => {
         knownCount: data.known_count,
       })
 
+      // Map API response to VocabularyLibraryWord with proper type handling
       let filteredWords = (data.words ?? []).map((word, index) => ({
         ...word,
         id: word.id || word.lemma || `temp-${index}-${word.word}`, // Ensure id is always a string
-        known: Boolean(word.is_known),
+        known: Boolean((word as Record<string, unknown>).is_known ?? word.known),
       })) as VocabularyLibraryWord[]
 
       // Client-side search filtering
@@ -1057,7 +1058,6 @@ export const VocabularyLibrary: React.FC = () => {
       await createVocabularyApiVocabularyPost({
         requestBody: {
           word: newWord.trim(),
-          lemma: newWord.trim(),
           translation: newTranslation.trim(),
           difficulty_level: newLevel,
           language: stats?.target_language || 'de',
@@ -1442,7 +1442,6 @@ export const VocabularyLibrary: React.FC = () => {
                 value={newWord}
                 onChange={e => setNewWord(e.target.value)}
                 required
-                autoFocus
               />
             </FormGroup>
             <FormGroup>

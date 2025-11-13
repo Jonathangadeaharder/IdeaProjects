@@ -2,15 +2,15 @@
 
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.constants import (
     DEFAULT_VOCABULARY_LIMIT,
+    MAX_SEARCH_LENGTH,
     MAX_VOCABULARY_LIMIT,
     MIN_SEARCH_LENGTH,
-    MAX_SEARCH_LENGTH,
 )
 from api.error_handlers import (
     handle_api_errors,

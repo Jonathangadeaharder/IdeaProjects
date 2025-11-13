@@ -1,0 +1,145 @@
+name: Nx Affected
+
+on:
+  pull_request:
+    branches: [main, master]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - ".github/**.md"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  affected:
+    name: Run Affected Tasks
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install Nx
+        run: npm install
+
+      - name: Derive appropriate SHAs for base and head
+        id: set-shas
+        uses: nrwl/nx-set-shas@v4
+
+      - name: Run affected lint
+        run: npx nx affected --target=lint --parallel=2 --base=${{ steps.set-shas.outputs.base }} --head=${{ steps.set-shas.outputs.head }}
+
+      - name: Run affected tests
+        run: npx nx affected --target=test --parallel=2 --base=${{ steps.set-shas.outputs.base }} --head=${{ steps.set-shas.outputs.head }}
+
+      - name: Run affected typecheck
+        run: npx nx affected --target=typecheck --parallel=2 --base=${{ steps.set-shas.outputs.base }} --head=${{ steps.set-shas.outputs.head }}
+
+  # Example: Frontend-specific setup for affected builds
+  frontend-affected:
+    name: Frontend Affected Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: |
+          npm install
+          cd src/frontend && npm ci
+
+      - name: Derive SHAs
+        id: set-shas
+        uses: nrwl/nx-set-shas@v4
+
+      - name: Check if frontend is affected
+        id: check-frontend
+        run: |
+          AFFECTED=$(npx nx show projects --affected --base=${{ steps.set-shas.outputs.base }} --head=${{ steps.set-shas.outputs.head }})
+          if echo "$AFFECTED" | grep -q "frontend"; then
+            echo "affected=true" >> $GITHUB_OUTPUT
+          else
+            echo "affected=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build frontend if affected
+        if: steps.check-frontend.outputs.affected == 'true'
+        run: npx nx build frontend
+
+  # Example: Backend-specific setup for affected tests
+  backend-affected:
+    name: Backend Affected Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: src/backend/requirements.txt
+
+      - name: Setup Node.js (for Nx)
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install Nx
+        run: npm install
+
+      - name: Install Python dependencies
+        working-directory: src/backend
+        run: |
+          python -m venv api_venv
+          source api_venv/bin/activate
+          pip install -r requirements.txt
+
+      - name: Derive SHAs
+        id: set-shas
+        uses: nrwl/nx-set-shas@v4
+
+      - name: Check if backend is affected
+        id: check-backend
+        run: |
+          AFFECTED=$(npx nx show projects --affected --base=${{ steps.set-shas.outputs.base }} --head=${{ steps.set-shas.outputs.head }})
+          if echo "$AFFECTED" | grep -q "backend"; then
+            echo "affected=true" >> $GITHUB_OUTPUT
+          else
+            echo "affected=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run backend tests if affected
+        if: steps.check-backend.outputs.affected == 'true'
+        working-directory: src/backend
+        run: |
+          source api_venv/bin/activate
+          pytest tests/ -v --cov=. --cov-report=xml
+        env:
+          LANGPLUG_SECRET_KEY: test-secret-key-for-ci-only-not-for-production-use

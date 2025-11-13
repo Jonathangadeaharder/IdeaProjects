@@ -6,8 +6,9 @@ This module provides decorators and helpers to eliminate repetitive error handli
 
 import inspect
 import logging
+from collections.abc import Callable
 from functools import wraps
-from typing import Any, Callable, Optional
+from typing import Any
 
 from fastapi import HTTPException, status
 
@@ -88,7 +89,7 @@ def handle_api_errors(
     return decorator
 
 
-def raise_not_found(resource: str, identifier: Optional[str] = None) -> None:
+def raise_not_found(resource: str, identifier: str | None = None) -> None:
     """
     Raise a standardized 404 HTTPException.
 
@@ -108,7 +109,7 @@ def raise_not_found(resource: str, identifier: Optional[str] = None) -> None:
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=detail)
 
 
-def raise_validation_error(message: str, field: Optional[str] = None) -> None:
+def raise_validation_error(message: str, field: str | None = None) -> None:
     """
     Raise a standardized 422 validation error.
 
@@ -165,7 +166,7 @@ def raise_forbidden(message: str = "Insufficient permissions") -> None:
     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=message)
 
 
-def raise_conflict(resource: str, identifier: str, message: Optional[str] = None) -> None:
+def raise_conflict(resource: str, identifier: str, message: str | None = None) -> None:
     """
     Raise a standardized 409 conflict error.
 
