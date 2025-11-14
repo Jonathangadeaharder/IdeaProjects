@@ -96,13 +96,15 @@ jobs:
         env:
           LANGPLUG_SECRET_KEY: test-secret-key-for-ci-only-not-for-production
           LANGPLUG_DB_TYPE: sqlite
+          LANGPLUG_CORS_ORIGINS: '["http://localhost:3000"]'
+          LANGPLUG_TRANSCRIPTION_SERVICE: whisper-tiny
+          LANGPLUG_TRANSLATION_SERVICE: opus-de-es
+          LANGPLUG_DEFAULT_LANGUAGE: de
+          LANGPLUG_LOG_LEVEL: INFO
+          LANGPLUG_DEBUG: "false"
           TESTING: "1"
         run: |
           LOG_FILE="${GITHUB_WORKSPACE}/ci-logs/backend-test.log"
-          # Use .env.testing as base and override with CI-specific vars
-          if [ -f .env.testing ]; then
-            export $(grep -v '^#' .env.testing | xargs)
-          fi
           source api_venv/bin/activate
           python -m pytest tests/ -v 2>&1 | tee "${LOG_FILE}"
 
