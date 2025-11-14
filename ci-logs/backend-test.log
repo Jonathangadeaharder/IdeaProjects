@@ -5,6 +5,14 @@ core/app.py:22: in <module>
     from api.routes import (
 api/routes/auth.py:12: in <module>
     from core.auth import current_active_user
-core/auth.py:6: in <module>
-    from fastapi_users import BaseUserManager, FastAPIUsers
-E   ModuleNotFoundError: No module named 'fastapi_users'
+core/auth.py:18: in <module>
+    from core.config import settings
+core/config.py:232: in <module>
+    settings = Settings()
+               ^^^^^^^^^^
+api_venv/lib/python3.11/site-packages/pydantic_settings/main.py:194: in __init__
+    super().__init__(
+E   pydantic_core._pydantic_core.ValidationError: 1 validation error for Settings
+E   LANGPLUG_SECRET_KEY
+E     Field required [type=missing, input_value={}, input_type=dict]
+E       For further information visit https://errors.pydantic.dev/2.12/v/missing
