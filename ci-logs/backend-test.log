@@ -1,0 +1,10 @@
+ImportError while loading conftest '/home/runner/work/IdeaProjects/IdeaProjects/src/backend/tests/conftest.py'.
+tests/conftest.py:28: in <module>
+    from core.app import create_app
+core/app.py:22: in <module>
+    from api.routes import (
+api/routes/auth.py:12: in <module>
+    from core.auth import current_active_user
+core/auth.py:6: in <module>
+    from fastapi_users import BaseUserManager, FastAPIUsers
+E   ModuleNotFoundError: No module named 'fastapi_users'

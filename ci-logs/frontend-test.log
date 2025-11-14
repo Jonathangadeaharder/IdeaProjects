@@ -1,0 +1,208 @@
+
+> langplug-frontend@1.0.0 test
+> vitest run
+
+
+[1m[46m RUN [49m[22m [36mv3.2.4 [39m[90m/home/runner/work/IdeaProjects/IdeaProjects/src/frontend[39m
+
+ [32m✓[39m src/config/__tests__/api-config.test.ts [2m([22m[2m33 tests[22m[2m)[22m[32m 51[2mms[22m[39m
+ [32m✓[39m src/store/__tests__/useAppStore.test.ts [2m([22m[2m40 tests[22m[2m)[22m[32m 131[2mms[22m[39m
+[90mstdout[2m | src/__tests__/App.test.tsx
+[22m[39m[Frontend Logger] Logger initialized { logLevel: [32m'DEBUG'[39m, apiEnabled: [33mtrue[39m, maxLogs: [33m1000[39m }
+
+[90mstderr[2m | src/__tests__/App.test.tsx[2m > [22m[2mApp Component[2m > [22m[2mAuthentication Routing[2m > [22m[2mrenders login form for unauthenticated user on /login
+[22m[39mWarning: A suspended resource finished loading inside a test, but the event was not wrapped in act(...).
+
+When testing, code that resolves suspended data should be wrapped into act(...):
+
+act(() => {
+  /* finish loading suspended data */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+
+[90mstderr[2m | src/__tests__/App.test.tsx[2m > [22m[2mApp Component[2m > [22m[2mAuthentication Routing[2m > [22m[2mrenders register form for unauthenticated user on /register
+[22m[39mWarning: A suspended resource finished loading inside a test, but the event was not wrapped in act(...).
+
+When testing, code that resolves suspended data should be wrapped into act(...):
+
+act(() => {
+  /* finish loading suspended data */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+
+[90mstderr[2m | src/__tests__/App.test.tsx[2m > [22m[2mApp Component[2m > [22m[2mAuthentication Routing[2m > [22m[2mredirects authenticated user from /login to home
+[22m[39mWarning: A suspended resource finished loading inside a test, but the event was not wrapped in act(...).
+
+When testing, code that resolves suspended data should be wrapped into act(...):
+
+act(() => {
+  /* finish loading suspended data */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+
+[90mstderr[2m | src/__tests__/App.test.tsx[2m > [22m[2mApp Component[2m > [22m[2mProtected Routes[2m > [22m[2mrenders episode selection route
+[22m[39mWarning: A suspended resource finished loading inside a test, but the event was not wrapped in act(...).
+
+When testing, code that resolves suspended data should be wrapped into act(...):
+
+act(() => {
+  /* finish loading suspended data */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+
+[90mstderr[2m | src/__tests__/App.test.tsx[2m > [22m[2mApp Component[2m > [22m[2mProtected Routes[2m > [22m[2mrenders chunked learning route
+[22m[39mWarning: A suspended resource finished loading inside a test, but the event was not wrapped in act(...).
+
+When testing, code that resolves suspended data should be wrapped into act(...):
+
+act(() => {
+  /* finish loading suspended data */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+
+[90mstderr[2m | src/__tests__/App.test.tsx[2m > [22m[2mApp Component[2m > [22m[2mProtected Routes[2m > [22m[2mrenders vocabulary library route
+[22m[39mWarning: A suspended resource finished loading inside a test, but the event was not wrapped in act(...).
+
+When testing, code that resolves suspended data should be wrapped into act(...):
+
+act(() => {
+  /* finish loading suspended data */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://reactjs.org/link/wrap-tests-with-act
+
+[90mstdout[2m | src/__tests__/App.test.tsx[2m > [22m[2mApp Component[2m > [22m[2mError Handling[2m > [22m[2mwraps app in error boundary
+[22m[39m[auth-interceptor] Auth interceptors registered 
+
+[90mstdout[2m | src/__tests__/App.test.tsx[2m > [22m[2mApp Component[2m > [22m[2mGlobal Components[2m > [22m[2mincludes global styles
+[22m[39m[auth-interceptor] Auth interceptors registered 
+
+ [32m✓[39m src/__tests__/App.test.tsx [2m([22m[2m14 tests[22m[2m)[22m[32m 179[2mms[22m[39m
+ [32m✓[39m src/components/ui/__tests__/Input.test.tsx [2m([22m[2m31 tests[22m[2m)[22m[33m 564[2mms[22m[39m
+ [32m✓[39m src/components/ui/__tests__/Card.test.tsx [2m([22m[2m22 tests[22m[2m)[22m[32m 126[2mms[22m[39m
+ [32m✓[39m src/components/ui/__tests__/Loading.test.tsx [2m([22m[2m38 tests[22m[2m)[22m[32m 271[2mms[22m[39m
+ [32m✓[39m src/components/__tests__/VocabularyGame.test.tsx [2m([22m[2m31 tests[22m[2m)[22m[33m 3409[2mms[22m[39m
+   [33m[2m✓[22m[39m VocabularyGame Component[2m > [22mGame Progression[2m > [22mWhenWordAnswered_ThenAdvancesToNextWord [33m 324[2mms[22m[39m
+   [33m[2m✓[22m[39m VocabularyGame Component[2m > [22mGame Progression[2m > [22mWhenLastWordAnswered_ThenCallsOnComplete [33m 321[2mms[22m[39m
+   [33m[2m✓[22m[39m VocabularyGame Component[2m > [22mGame Progression[2m > [22mWhenAllWordsCompleted_ThenShowsCompletionMessage [33m 312[2mms[22m[39m
+   [33m[2m✓[22m[39m VocabularyGame Component[2m > [22mGame Progression[2m > [22mWhenProgressTracked_ThenUpdatesProgressBar [33m 324[2mms[22m[39m
+   [33m[2m✓[22m[39m VocabularyGame Component[2m > [22mVisual States[2m > [22mWhenAnimationsEnabled_ThenShowsCardAnimations [33m 315[2mms[22m[39m
+   [33m[2m✓[22m[39m VocabularyGame Component[2m > [22mVisual States[2m > [22mWhenGameComplete_ThenShowsCompletionAnimation [33m 317[2mms[22m[39m
+   [33m[2m✓[22m[39m VocabularyGame Component[2m > [22mPerformance[2m > [22mWhenRapidProgression_ThenMaintainsPerformance [33m 701[2mms[22m[39m
+ [32m✓[39m src/hooks/__tests__/useTaskProgress.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 52[2mms[22m[39m
+ [32m✓[39m src/test/contract/schema-validation.test.ts [2m([22m[2m18 tests[22m[2m)[22m[32m 19[2mms[22m[39m
+ [32m✓[39m src/contexts/__tests__/ThemeContext.test.tsx [2m([22m[2m7 tests[22m[2m)[22m[33m 349[2mms[22m[39m
+[90mstdout[2m | src/components/auth/__tests__/RegisterForm.test.tsx
+[22m[39m[Frontend Logger] Logger initialized { logLevel: [32m'DEBUG'[39m, apiEnabled: [33mtrue[39m, maxLogs: [33m1000[39m }
+
+ [32m✓[39m src/store/__tests__/useAuthStore.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 43[2mms[22m[39m
+ [32m✓[39m src/components/auth/__tests__/RegisterForm.test.tsx [2m([22m[2m7 tests[22m[2m)[22m[33m 743[2mms[22m[39m
+ [32m✓[39m src/test/contract/auth.contract.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+[90mstderr[2m | src/components/__tests__/EpisodeSelection.test.tsx[2m > [22m[2mEpisodeSelection[2m > [22m[2mrenders episodes for the current series
+[22m[39mFailed to load user preferences: Error: [vitest] No "profileGetApiProfileGet" export is defined on the "@/client/services.gen" mock. Did you forget to return it from "vi.mock"?
+If you need to partially mock a module, you can use "importOriginal" helper inside:
+
+    at VitestMocker.createError [90m(file:///home/runner/work/IdeaProjects/IdeaProjects/src/frontend/[39mnode_modules/[4mvitest[24m/dist/chunks/execute.B7h3T_Hc.js:284:17[90m)[39m
+    at Object.profileGetApiProfileGet [as get] [90m(file:///home/runner/work/IdeaProjects/IdeaProjects/src/frontend/[39mnode_modules/[4mvitest[24m/dist/chunks/execute.B7h3T_Hc.js:330:16[90m)[39m
+    at loadUserPreferences [90m(/home/runner/work/IdeaProjects/IdeaProjects/src/frontend/[39msrc/components/EpisodeSelection.tsx:242:30[90m)[39m
+    at [90m/home/runner/work/IdeaProjects/IdeaProjects/src/frontend/[39msrc/components/EpisodeSelection.tsx:235:7
+    at commitHookEffectListMount [90m(/home/runner/work/IdeaProjects/IdeaProjects/src/frontend/[39mnode_modules/[4mreact-dom[24m/cjs/react-dom.development.js:23189:26[90m)[39m
+    at commitPassiveMountOnFiber [90m(/home/runner/work/IdeaProjects/IdeaProjects/src/frontend/[39mnode_modules/[4mreact-dom[24m/cjs/react-dom.development.js:24970:11[90m)[39m
+    at commitPassiveMountEffects_complete [90m(/home/runner/work/IdeaProjects/IdeaProjects/src/frontend/[39mnode_modules/[4mreact-dom[24m/cjs/react-dom.development.js:24930:9[90m)[39m
+    at commitPassiveMountEffects_begin [90m(/home/runner/work/IdeaProjects/IdeaProjects/src/frontend/[39mnode_modules/[4mreact-dom[24m/cjs/react-dom.development.js:24917:7[90m)[39m
+    at commitPassiveMountEffects [90m(/home/runner/work/IdeaProjects/IdeaProjects/src/frontend/[39mnode_modules/[4mreact-dom[24m/cjs/react-dom.development.js:24905:3[90m)[39m
+    at flushPassiveEffectsImpl [90m(/home/runner/work/IdeaProjects/IdeaProjects/src/frontend/[39mnode_modules/[4mreact-dom[24m/cjs/react-dom.development.js:27078:3[90m)[39m {
+  codeFrame: [32m'vi\x1B[33m.\x1B[39m\x1B[34mmock\x1B[39m(\x1B[35mimport\x1B[39m(\x1B[32m"@/client/services.gen"\x1B[39m)\x1B[33m,\x1B[39m \x1B[35masync\x1B[39m (importOriginal) \x1B[33m=>\x1B[39m {\n'[39m +
+    [32m'  \x1B[35mconst\x1B[39m actual \x1B[33m=\x1B[39m \x1B[35mawait\x1B[39m \x1B[34mimportOriginal\x1B[39m()\n'[39m +
+    [32m'  \x1B[35mreturn\x1B[39m {\n'[39m +
+    [32m'    \x1B[33m...\x1B[39mactual\x1B[33m,\x1B[39m\n'[39m +
+    [32m'    \x1B[90m// your mocked methods\x1B[39m\n'[39m +
+    [32m'  }\n'[39m +
+    [32m'})'[39m
+}
+
+[90mstderr[2m | src/components/__tests__/EpisodeSelection.test.tsx[2m > [22m[2mEpisodeSelection[2m > [22m[2msurfaces errors when videos cannot be loaded
+[22m[39mFailed to load user preferences: Error: [vitest] No "profileGetApiProfileGet" export is defined on the "@/client/services.gen" mock. Did you forget to return it from "vi.mock"?
+If you need to partially mock a module, you can use "importOriginal" helper inside:
+
+    at VitestMocker.createError [90m(file:///home/runner/work/IdeaProjects/IdeaProjects/src/frontend/[39mnode_modules/[4mvitest[24m/dist/chunks/execute.B7h3T_Hc.js:284:17[90m)[39m
+    at Object.profileGetApiProfileGet [as get] [90m(file:///home/runner/work/IdeaProjects/IdeaProjects/src/frontend/[39mnode_modules/[4mvitest[24m/dist/chunks/execute.B7h3T_Hc.js:330:16[90m)[39m
+    at loadUserPreferences [90m(/home/runner/work/IdeaProjects/IdeaProjects/src/frontend/[39msrc/components/EpisodeSelection.tsx:242:30[90m)[39m
+    at [90m/home/runner/work/IdeaProjects/IdeaProjects/src/frontend/[39msrc/components/EpisodeSelection.tsx:235:7
+    at commitHookEffectListMount [90m(/home/runner/work/IdeaProjects/IdeaProjects/src/frontend/[39mnode_modules/[4mreact-dom[24m/cjs/react-dom.development.js:23189:26[90m)[39m
+    at commitPassiveMountOnFiber [90m(/home/runner/work/IdeaProjects/IdeaProjects/src/frontend/[39mnode_modules/[4mreact-dom[24m/cjs/react-dom.development.js:24970:11[90m)[39m
+    at commitPassiveMountEffects_complete [90m(/home/runner/work/IdeaProjects/IdeaProjects/src/frontend/[39mnode_modules/[4mreact-dom[24m/cjs/react-dom.development.js:24930:9[90m)[39m
+    at commitPassiveMountEffects_begin [90m(/home/runner/work/IdeaProjects/IdeaProjects/src/frontend/[39mnode_modules/[4mreact-dom[24m/cjs/react-dom.development.js:24917:7[90m)[39m
+    at commitPassiveMountEffects [90m(/home/runner/work/IdeaProjects/IdeaProjects/src/frontend/[39mnode_modules/[4mreact-dom[24m/cjs/react-dom.development.js:24905:3[90m)[39m
+    at flushPassiveEffectsImpl [90m(/home/runner/work/IdeaProjects/IdeaProjects/src/frontend/[39mnode_modules/[4mreact-dom[24m/cjs/react-dom.development.js:27078:3[90m)[39m {
+  codeFrame: [32m'vi\x1B[33m.\x1B[39m\x1B[34mmock\x1B[39m(\x1B[35mimport\x1B[39m(\x1B[32m"@/client/services.gen"\x1B[39m)\x1B[33m,\x1B[39m \x1B[35masync\x1B[39m (importOriginal) \x1B[33m=>\x1B[39m {\n'[39m +
+    [32m'  \x1B[35mconst\x1B[39m actual \x1B[33m=\x1B[39m \x1B[35mawait\x1B[39m \x1B[34mimportOriginal\x1B[39m()\n'[39m +
+    [32m'  \x1B[35mreturn\x1B[39m {\n'[39m +
+    [32m'    \x1B[33m...\x1B[39mactual\x1B[33m,\x1B[39m\n'[39m +
+    [32m'    \x1B[90m// your mocked methods\x1B[39m\n'[39m +
+    [32m'  }\n'[39m +
+    [32m'})'[39m
+}
+
+[90mstderr[2m | src/components/__tests__/EpisodeSelection.test.tsx[2m > [22m[2mEpisodeSelection[2m > [22m[2mnavigates to the learning flow when Play is clicked
+[22m[39mFailed to load user preferences: Error: [vitest] No "profileGetApiProfileGet" export is defined on the "@/client/services.gen" mock. Did you forget to return it from "vi.mock"?
+If you need to partially mock a module, you can use "importOriginal" helper inside:
+
+    at VitestMocker.createError [90m(file:///home/runner/work/IdeaProjects/IdeaProjects/src/frontend/[39mnode_modules/[4mvitest[24m/dist/chunks/execute.B7h3T_Hc.js:284:17[90m)[39m
+    at Object.profileGetApiProfileGet [as get] [90m(file:///home/runner/work/IdeaProjects/IdeaProjects/src/frontend/[39mnode_modules/[4mvitest[24m/dist/chunks/execute.B7h3T_Hc.js:330:16[90m)[39m
+    at loadUserPreferences [90m(/home/runner/work/IdeaProjects/IdeaProjects/src/frontend/[39msrc/components/EpisodeSelection.tsx:242:30[90m)[39m
+    at [90m/home/runner/work/IdeaProjects/IdeaProjects/src/frontend/[39msrc/components/EpisodeSelection.tsx:235:7
+    at commitHookEffectListMount [90m(/home/runner/work/IdeaProjects/IdeaProjects/src/frontend/[39mnode_modules/[4mreact-dom[24m/cjs/react-dom.development.js:23189:26[90m)[39m
+    at commitPassiveMountOnFiber [90m(/home/runner/work/IdeaProjects/IdeaProjects/src/frontend/[39mnode_modules/[4mreact-dom[24m/cjs/react-dom.development.js:24970:11[90m)[39m
+    at commitPassiveMountEffects_complete [90m(/home/runner/work/IdeaProjects/IdeaProjects/src/frontend/[39mnode_modules/[4mreact-dom[24m/cjs/react-dom.development.js:24930:9[90m)[39m
+    at commitPassiveMountEffects_begin [90m(/home/runner/work/IdeaProjects/IdeaProjects/src/frontend/[39mnode_modules/[4mreact-dom[24m/cjs/react-dom.development.js:24917:7[90m)[39m
+    at commitPassiveMountEffects [90m(/home/runner/work/IdeaProjects/IdeaProjects/src/frontend/[39mnode_modules/[4mreact-dom[24m/cjs/react-dom.development.js:24905:3[90m)[39m
+    at flushPassiveEffectsImpl [90m(/home/runner/work/IdeaProjects/IdeaProjects/src/frontend/[39mnode_modules/[4mreact-dom[24m/cjs/react-dom.development.js:27078:3[90m)[39m {
+  codeFrame: [32m'vi\x1B[33m.\x1B[39m\x1B[34mmock\x1B[39m(\x1B[35mimport\x1B[39m(\x1B[32m"@/client/services.gen"\x1B[39m)\x1B[33m,\x1B[39m \x1B[35masync\x1B[39m (importOriginal) \x1B[33m=>\x1B[39m {\n'[39m +
+    [32m'  \x1B[35mconst\x1B[39m actual \x1B[33m=\x1B[39m \x1B[35mawait\x1B[39m \x1B[34mimportOriginal\x1B[39m()\n'[39m +
+    [32m'  \x1B[35mreturn\x1B[39m {\n'[39m +
+    [32m'    \x1B[33m...\x1B[39mactual\x1B[33m,\x1B[39m\n'[39m +
+    [32m'    \x1B[90m// your mocked methods\x1B[39m\n'[39m +
+    [32m'  }\n'[39m +
+    [32m'})'[39m
+}
+
+ [32m✓[39m src/components/__tests__/ChunkedLearningFlow.test.tsx [2m([22m[2m2 tests[22m[2m)[22m[32m 171[2mms[22m[39m
+ [32m✓[39m src/components/__tests__/EpisodeSelection.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[33m 755[2mms[22m[39m
+   [33m[2m✓[22m[39m EpisodeSelection[2m > [22mrenders episodes for the current series [33m 496[2mms[22m[39m
+ [32m✓[39m src/components/__tests__/LoginForm.test.tsx [2m([22m[2m5 tests[22m[2m)[22m[33m 1552[2mms[22m[39m
+   [33m[2m✓[22m[39m LoginForm Component[2m > [22mrenders fields and submit button [33m 312[2mms[22m[39m
+   [33m[2m✓[22m[39m LoginForm Component[2m > [22mshows validation error for invalid email format [33m 402[2mms[22m[39m
+   [33m[2m✓[22m[39m LoginForm Component[2m > [22mlogs in successfully and navigates to home [33m 433[2mms[22m[39m
+ [32m✓[39m src/test/subtitle-parsing.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m src/components/__tests__/LanguageSelector.test.tsx [2m([22m[2m7 tests[22m[2m)[22m[32m 159[2mms[22m[39m
+[90mstdout[2m | src/components/__tests__/VideoSelection.test.tsx
+[22m[39m[Frontend Logger] Logger initialized { logLevel: [32m'DEBUG'[39m, apiEnabled: [33mtrue[39m, maxLogs: [33m1000[39m }
+
+[90mstderr[2m | src/components/__tests__/VideoSelection.test.tsx[2m > [22m[2mVideoSelection Component[2m > [22m[2mWhenApiErrorOccurs_ThenHandlesErrorGracefully
+[22m[39m[API error in VideoSelection.loadVideos] Error: API Error  
+
+ [32m✓[39m src/components/__tests__/VideoSelection.test.tsx [2m([22m[2m6 tests[22m[2m)[22m[32m 207[2mms[22m[39m
+ [32m✓[39m src/components/ui/__tests__/Button.test.tsx [2m([22m[2m6 tests[22m[2m)[22m[33m 610[2mms[22m[39m
+ [32m✓[39m src/test/integration/api-connection.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m src/components/__tests__/ChunkedLearningPlayer.test.tsx [2m([22m[2m5 tests[22m[2m)[22m[33m 1263[2mms[22m[39m
+   [33m[2m✓[22m[39m ChunkedLearningPlayer[2m > [22minvokes onBack when back button is clicked [33m 765[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m22 passed[39m[22m[90m (22)[39m
+[2m      Tests [22m [1m[32m308 passed[39m[22m[90m (308)[39m
+[2m   Start at [22m 19:59:56
+[2m   Duration [22m 14.33s[2m (transform 978ms, setup 7.74s, collect 3.64s, tests 10.68s, environment 14.06s, prepare 2.09s)[22m
+
+[1m[7m[35m HTML [39m[27m[22m [35mReport is generated[39m
+[2m       You can run [22m[1mnpx vite preview --outDir test-results[22m[2m to see the test results.[22m

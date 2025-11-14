@@ -79,6 +79,23 @@ jobs:
           LOG_FILE="${GITHUB_WORKSPACE}/ci-logs/frontend-lint.log"
           npm run lint 2>&1 | tee "${LOG_FILE}"
 
+      - name: Backend Tests
+        id: backend-test
+        working-directory: src/backend
+        continue-on-error: true
+        run: |
+          LOG_FILE="${GITHUB_WORKSPACE}/ci-logs/backend-test.log"
+          source api_venv/bin/activate
+          python -m pytest tests/ -v 2>&1 | tee "${LOG_FILE}"
+
+      - name: Frontend Tests
+        id: frontend-test
+        working-directory: src/frontend
+        continue-on-error: true
+        run: |
+          LOG_FILE="${GITHUB_WORKSPACE}/ci-logs/frontend-test.log"
+          npm run test 2>&1 | tee "${LOG_FILE}"
+
       - name: Create CI Summary
         run: |
           TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
@@ -98,6 +115,8 @@ jobs:
           | Backend Lint | ${{ steps.backend-lint.outcome }} |
           | Frontend Build | ${{ steps.frontend-build.outcome }} |
           | Frontend Lint | ${{ steps.frontend-lint.outcome }} |
+          | Backend Tests | ${{ steps.backend-test.outcome }} |
+          | Frontend Tests | ${{ steps.frontend-test.outcome }} |
 
           ## Detailed Logs
 
@@ -138,7 +157,9 @@ jobs:
           steps.frontend-install.outcome == 'failure' ||
           steps.backend-lint.outcome == 'failure' ||
           steps.frontend-build.outcome == 'failure' ||
-          steps.frontend-lint.outcome == 'failure'
+          steps.frontend-lint.outcome == 'failure' ||
+          steps.backend-test.outcome == 'failure' ||
+          steps.frontend-test.outcome == 'failure'
         run: |
           echo "::error::One or more CI steps failed. Check ci-logs/ directory in the amended commit."
           exit 1
