@@ -126,23 +126,27 @@ class TestMarkKnownRequestValidation:
     """Test MarkKnownRequest model validation"""
 
     def test_validate_concept_id_valid_requests(self):
-        """Test concept_id validation with valid mark known requests"""
-        valid_requests = [{"concept_id": str(uuid4()), "known": True}, {"concept_id": str(uuid4()), "known": False}]
+        """Test lemma and language validation with valid mark known requests"""
+        valid_requests = [
+            {"lemma": "Hallo", "language": "de", "known": True},
+            {"lemma": "Welt", "language": "de", "known": False}
+        ]
 
         for request_data in valid_requests:
             request = MarkKnownRequest(**request_data)
-            assert request.concept_id == request_data["concept_id"]
+            assert request.lemma == request_data["lemma"]
+            assert request.language == request_data["language"]
             assert request.known == request_data["known"]
 
     def test_validate_concept_id_invalid_uuid(self):
-        """Test mark known request fails with invalid UUID"""
+        """Test mark known request fails with invalid language code"""
         with pytest.raises(ValidationError):
-            MarkKnownRequest(concept_id="not-a-uuid", known=True)
+            MarkKnownRequest(lemma="Hallo", language="invalid-lang", known=True)
 
     def test_validate_known_field_missing(self):
         """Test known field is required"""
         with pytest.raises(ValidationError) as exc_info:
-            MarkKnownRequest(concept_id=str(uuid4()))  # Missing known field
+            MarkKnownRequest(lemma="Hallo", language="de")  # Missing known field
         error_msg = str(exc_info.value).lower()
         assert "known" in error_msg or "required" in error_msg
 
@@ -150,12 +154,12 @@ class TestMarkKnownRequestValidation:
         """Test known field must be boolean"""
         # Test that string "yes" gets converted to boolean True in Pydantic v2
         # This is expected Pydantic behavior, so we test the successful conversion
-        request = MarkKnownRequest(concept_id=str(uuid4()), known="yes")
+        request = MarkKnownRequest(lemma="Hallo", language="de", known="yes")
         assert request.known is True
 
         # Test that invalid string types that can't be converted raise errors
         with pytest.raises(ValidationError) as exc_info:
-            MarkKnownRequest(concept_id=str(uuid4()), known="not_a_bool")
+            MarkKnownRequest(lemma="Hallo", language="de", known="not_a_bool")
         error_msg = str(exc_info.value).lower()
         assert "bool" in error_msg or "input" in error_msg
 

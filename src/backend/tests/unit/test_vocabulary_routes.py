@@ -257,7 +257,7 @@ class TestVocabularyRoutesCore:
             response = await async_client.get(url_builder.url_for("get_supported_languages"), headers=headers)
 
             assert response.status_code == 500
-            assert "Error retrieving languages" in response.json()["detail"]
+            assert "Error retrieving supported languages" in response.json()["detail"]
         finally:
             # Clean up the override
             app.dependency_overrides.pop(get_async_session, None)
