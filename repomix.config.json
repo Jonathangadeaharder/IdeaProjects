@@ -1,7 +1,7 @@
 {
   "output": {
     "filePath": "repomix-output.txt",
-    "style": "xml",
+    "style": "plain",
     "headerText": "LangPlug - Netflix-style German Language Learning Platform\n\nThis file contains the complete codebase packaged by Repomix for AI analysis.",
     "instructionFilePath": ".repomix-instruction.md",
     "removeComments": false,
