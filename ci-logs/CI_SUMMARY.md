@@ -1,14 +1,14 @@
 # CI Execution Summary
 
-**Commit**: 9468f957b90491d8e697efba139f5780f5b7b5ea
-**Branch**: claude/architecture-improvements-recommendations-011CV4qfSewLV2PvQgZMaFwV
-**Timestamp**: 2025-11-13 17:29:04 UTC
+**Commit**: d20d6afd7c414cd48827284598f7f2f2f0a51234
+**Branch**: claude/repomix-ci-cd-workflow-015xsM7U1NhKNZNZzFHvNQVQ
+**Timestamp**: 2025-11-15 16:06:46 UTC
 
 ## Results
 
 | Step | Status |
 |------|--------|
-| Backend Install | success |
+| Backend Install | failure |
 | Frontend Install | success |
 | Backend Lint | success |
 | Frontend Build | success |

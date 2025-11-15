@@ -1,0 +1,80 @@
+name: Repomix Codebase Packaging
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  repomix:
+    name: Package Codebase with Repomix
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install Repomix
+        run: npm install -g repomix
+
+      - name: Run Repomix
+        run: |
+          echo "Running Repomix to package codebase..."
+          repomix --config repomix.config.json
+          echo "Repomix packaging completed"
+
+      - name: Verify output
+        run: |
+          if [ -f "repomix-output.txt" ]; then
+            echo "Repomix output file created successfully"
+            ls -lh repomix-output.txt
+            echo "File size: $(du -h repomix-output.txt | cut -f1)"
+            echo "Line count: $(wc -l < repomix-output.txt)"
+          else
+            echo "Error: Repomix output file not found"
+            exit 1
+          fi
+
+      - name: Upload Repomix artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: repomix-codebase-${{ github.sha }}
+          path: repomix-output.txt
+          retention-days: 30
+          compression-level: 9
+
+      - name: Upload artifact metadata
+        uses: actions/upload-artifact@v4
+        with:
+          name: repomix-metadata-${{ github.sha }}
+          path: |
+            repomix.config.json
+            .repomix-instruction.md
+          retention-days: 30
+
+      - name: Generate summary
+        run: |
+          echo "## Repomix Packaging Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **File Size**: $(du -h repomix-output.txt | cut -f1)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Line Count**: $(wc -l < repomix-output.txt)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Word Count**: $(wc -w < repomix-output.txt)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "The packaged codebase is available as a workflow artifact." >> $GITHUB_STEP_SUMMARY
