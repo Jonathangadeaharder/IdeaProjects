@@ -1123,143 +1123,18 @@ tests/unit/test_vocabulary_routes.py::TestVocabularyRoutesCore::test_get_support
 tests/unit/test_vocabulary_routes.py::TestVocabularyRoutesCore::test_get_vocabulary_stats_success PASSED [ 98%]
 tests/unit/test_vocabulary_routes.py::TestVocabularyRoutesCore::test_get_vocabulary_level_success PASSED [ 98%]
 tests/unit/test_vocabulary_routes.py::TestVocabularyRoutesCore::test_get_vocabulary_level_invalid_level PASSED [ 98%]
-tests/unit/test_vocabulary_routes.py::TestVocabularyRoutesCore::test_mark_word_as_known_success FAILED [ 98%]
-tests/unit/test_vocabulary_routes.py::TestVocabularyRoutesCore::test_mark_word_unknown_success FAILED [ 99%]
+tests/unit/test_vocabulary_routes.py::TestVocabularyRoutesCore::test_mark_word_as_known_success PASSED [ 98%]
+tests/unit/test_vocabulary_routes.py::TestVocabularyRoutesCore::test_mark_word_unknown_success PASSED [ 99%]
 tests/unit/test_vocabulary_routes.py::TestVocabularyRoutesCore::test_bulk_mark_level_known_success PASSED [ 99%]
 tests/unit/test_vocabulary_routes.py::TestVocabularyRoutesCore::test_bulk_mark_level_invalid_level PASSED [ 99%]
 tests/unit/test_vocabulary_routes.py::TestVocabularyRoutesCore::test_get_test_data_success PASSED [ 99%]
 tests/unit/test_vocabulary_routes.py::TestVocabularyRoutesCore::test_get_blocking_words_missing_srt PASSED [ 99%]
 tests/unit/test_vocabulary_routes.py::TestVocabularyRoutesCore::test_get_blocking_words_success PASSED [ 99%]
 tests/unit/test_vocabulary_routes.py::TestVocabularyRoutesErrorHandling::test_vocabulary_stats_database_error PASSED [ 99%]
-tests/unit/test_vocabulary_routes.py::TestVocabularyRoutesErrorHandling::test_mark_known_database_error FAILED [ 99%]
+tests/unit/test_vocabulary_routes.py::TestVocabularyRoutesErrorHandling::test_mark_known_database_error PASSED [ 99%]
 tests/unit/test_vocabulary_routes.py::TestVocabularyRoutesErrorHandling::test_vocabulary_level_database_error PASSED [ 99%]
 tests/unit/test_vocabulary_routes.py::TestVocabularyRoutesValidation::test_mark_known_invalid_uuid PASSED [ 99%]
 tests/unit/test_vocabulary_routes.py::TestVocabularyRoutesValidation::test_bulk_mark_missing_fields PASSED [ 99%]
 tests/unit/test_vocabulary_routes.py::TestVocabularyRoutesValidation::test_vocabulary_level_query_params PASSED [100%]
 
-=================================== FAILURES ===================================
-___________ TestVocabularyRoutesCore.test_mark_word_as_known_success ___________
-tests/unit/test_vocabulary_routes.py:423: in test_mark_word_as_known_success
-    assert response.status_code == 200
-E   assert 422 == 200
-E    +  where 422 = <Response [422 Unprocessable Entity]>.status_code
-
-During handling of the above exception, another exception occurred:
-tests/unit/test_vocabulary_routes.py:432: in test_mark_word_as_known_success
-    mock_service.mark_word_known.assert_called_once()
-/opt/hostedtoolcache/Python/3.11.14/x64/lib/python3.11/unittest/mock.py:918: in assert_called_once
-    raise AssertionError(msg)
-E   AssertionError: Expected 'mock' to have been called once. Called 0 times.
----------------------------- Captured stderr setup -----------------------------
-Security middleware configured successfully
-Contract validation middleware enabled: requests=True, responses=True, logging=True
-{"event": "Debug and test routes enabled (debug mode)", "logger": "core.app", "level": "info", "timestamp": "2025-11-15T17:22:33.712256Z"}
-{"event": "FastAPI application created and configured", "logger": "core.app", "level": "info", "timestamp": "2025-11-15T17:22:33.712458Z"}
------------------------------- Captured log setup ------------------------------
-INFO     core.security_middleware:security_middleware.py:262 Security middleware configured successfully
-INFO     core.contract_middleware:contract_middleware.py:221 Contract validation middleware enabled: requests=True, responses=True, logging=True
-INFO     core.app:app.py:188 {"event": "Debug and test routes enabled (debug mode)", "logger": "core.app", "level": "info", "timestamp": "2025-11-15T17:22:33.712256Z"}
-INFO     core.app:app.py:192 {"event": "FastAPI application created and configured", "logger": "core.app", "level": "info", "timestamp": "2025-11-15T17:22:33.712458Z"}
------------------------------ Captured stderr call -----------------------------
-API Request: POST /api/auth/register
-API Response: 201 POST /api/auth/register
-HTTP Request: POST http://test/api/auth/register "HTTP/1.1 201 Created"
-API Request: POST /api/auth/login
-API Response: 200 POST /api/auth/login
-HTTP Request: POST http://test/api/auth/login "HTTP/1.1 200 OK"
-API Request: POST /api/vocabulary/mark-known
-{"errors": [{"type": "missing", "loc": ["body", "lemma"], "msg": "Field required", "input": {"word": "haus", "language": "de", "known": true}}], "path": "/api/vocabulary/mark-known", "method": "POST", "event": "Validation error", "logger": "core.exception_handlers", "level": "warning", "timestamp": "2025-11-15T17:22:33.928915Z"}
-API Response: 422 POST /api/vocabulary/mark-known
-HTTP Request: POST http://test/api/vocabulary/mark-known "HTTP/1.1 422 Unprocessable Entity"
------------------------------- Captured log call -------------------------------
-INFO     api:security_middleware.py:27 API Request: POST /api/auth/register
-INFO     api:security_middleware.py:56 API Response: 201 POST /api/auth/register
-INFO     httpx:_client.py:1740 HTTP Request: POST http://test/api/auth/register "HTTP/1.1 201 Created"
-INFO     api:security_middleware.py:27 API Request: POST /api/auth/login
-INFO     api:security_middleware.py:56 API Response: 200 POST /api/auth/login
-INFO     httpx:_client.py:1740 HTTP Request: POST http://test/api/auth/login "HTTP/1.1 200 OK"
-INFO     api:security_middleware.py:27 API Request: POST /api/vocabulary/mark-known
-WARNING  core.exception_handlers:exception_handlers.py:96 {"errors": [{"type": "missing", "loc": ["body", "lemma"], "msg": "Field required", "input": {"word": "haus", "language": "de", "known": true}}], "path": "/api/vocabulary/mark-known", "method": "POST", "event": "Validation error", "logger": "core.exception_handlers", "level": "warning", "timestamp": "2025-11-15T17:22:33.928915Z"}
-INFO     api:security_middleware.py:56 API Response: 422 POST /api/vocabulary/mark-known
-INFO     httpx:_client.py:1740 HTTP Request: POST http://test/api/vocabulary/mark-known "HTTP/1.1 422 Unprocessable Entity"
-___________ TestVocabularyRoutesCore.test_mark_word_unknown_success ____________
-tests/unit/test_vocabulary_routes.py:472: in test_mark_word_unknown_success
-    assert response.status_code == 200
-E   assert 422 == 200
-E    +  where 422 = <Response [422 Unprocessable Entity]>.status_code
----------------------------- Captured stderr setup -----------------------------
-Security middleware configured successfully
-Contract validation middleware enabled: requests=True, responses=True, logging=True
-{"event": "Debug and test routes enabled (debug mode)", "logger": "core.app", "level": "info", "timestamp": "2025-11-15T17:22:34.021811Z"}
-{"event": "FastAPI application created and configured", "logger": "core.app", "level": "info", "timestamp": "2025-11-15T17:22:34.022037Z"}
------------------------------- Captured log setup ------------------------------
-INFO     core.security_middleware:security_middleware.py:262 Security middleware configured successfully
-INFO     core.contract_middleware:contract_middleware.py:221 Contract validation middleware enabled: requests=True, responses=True, logging=True
-INFO     core.app:app.py:188 {"event": "Debug and test routes enabled (debug mode)", "logger": "core.app", "level": "info", "timestamp": "2025-11-15T17:22:34.021811Z"}
-INFO     core.app:app.py:192 {"event": "FastAPI application created and configured", "logger": "core.app", "level": "info", "timestamp": "2025-11-15T17:22:34.022037Z"}
------------------------------ Captured stderr call -----------------------------
-API Request: POST /api/auth/register
-API Response: 201 POST /api/auth/register
-HTTP Request: POST http://test/api/auth/register "HTTP/1.1 201 Created"
-API Request: POST /api/auth/login
-API Response: 200 POST /api/auth/login
-HTTP Request: POST http://test/api/auth/login "HTTP/1.1 200 OK"
-API Request: POST /api/vocabulary/mark-known
-{"errors": [{"type": "missing", "loc": ["body", "lemma"], "msg": "Field required", "input": {"word": "welt", "language": "de", "known": false}}], "path": "/api/vocabulary/mark-known", "method": "POST", "event": "Validation error", "logger": "core.exception_handlers", "level": "warning", "timestamp": "2025-11-15T17:22:34.240655Z"}
-API Response: 422 POST /api/vocabulary/mark-known
-HTTP Request: POST http://test/api/vocabulary/mark-known "HTTP/1.1 422 Unprocessable Entity"
------------------------------- Captured log call -------------------------------
-INFO     api:security_middleware.py:27 API Request: POST /api/auth/register
-INFO     api:security_middleware.py:56 API Response: 201 POST /api/auth/register
-INFO     httpx:_client.py:1740 HTTP Request: POST http://test/api/auth/register "HTTP/1.1 201 Created"
-INFO     api:security_middleware.py:27 API Request: POST /api/auth/login
-INFO     api:security_middleware.py:56 API Response: 200 POST /api/auth/login
-INFO     httpx:_client.py:1740 HTTP Request: POST http://test/api/auth/login "HTTP/1.1 200 OK"
-INFO     api:security_middleware.py:27 API Request: POST /api/vocabulary/mark-known
-WARNING  core.exception_handlers:exception_handlers.py:96 {"errors": [{"type": "missing", "loc": ["body", "lemma"], "msg": "Field required", "input": {"word": "welt", "language": "de", "known": false}}], "path": "/api/vocabulary/mark-known", "method": "POST", "event": "Validation error", "logger": "core.exception_handlers", "level": "warning", "timestamp": "2025-11-15T17:22:34.240655Z"}
-INFO     api:security_middleware.py:56 API Response: 422 POST /api/vocabulary/mark-known
-INFO     httpx:_client.py:1740 HTTP Request: POST http://test/api/vocabulary/mark-known "HTTP/1.1 422 Unprocessable Entity"
-_______ TestVocabularyRoutesErrorHandling.test_mark_known_database_error _______
-tests/unit/test_vocabulary_routes.py:714: in test_mark_known_database_error
-    assert response.status_code == 200
-E   assert 422 == 200
-E    +  where 422 = <Response [422 Unprocessable Entity]>.status_code
----------------------------- Captured stderr setup -----------------------------
-Security middleware configured successfully
-Contract validation middleware enabled: requests=True, responses=True, logging=True
-{"event": "Debug and test routes enabled (debug mode)", "logger": "core.app", "level": "info", "timestamp": "2025-11-15T17:22:35.988028Z"}
-{"event": "FastAPI application created and configured", "logger": "core.app", "level": "info", "timestamp": "2025-11-15T17:22:35.988160Z"}
------------------------------- Captured log setup ------------------------------
-INFO     core.security_middleware:security_middleware.py:262 Security middleware configured successfully
-INFO     core.contract_middleware:contract_middleware.py:221 Contract validation middleware enabled: requests=True, responses=True, logging=True
-INFO     core.app:app.py:188 {"event": "Debug and test routes enabled (debug mode)", "logger": "core.app", "level": "info", "timestamp": "2025-11-15T17:22:35.988028Z"}
-INFO     core.app:app.py:192 {"event": "FastAPI application created and configured", "logger": "core.app", "level": "info", "timestamp": "2025-11-15T17:22:35.988160Z"}
------------------------------ Captured stderr call -----------------------------
-API Request: POST /api/auth/register
-API Response: 201 POST /api/auth/register
-HTTP Request: POST http://test/api/auth/register "HTTP/1.1 201 Created"
-API Request: POST /api/auth/login
-API Response: 200 POST /api/auth/login
-HTTP Request: POST http://test/api/auth/login "HTTP/1.1 200 OK"
-API Request: POST /api/vocabulary/mark-known
-{"errors": [{"type": "missing", "loc": ["body", "lemma"], "msg": "Field required", "input": {"concept_id": "68cfb4bd-b345-41fa-8054-651c5ced8f99", "language": "de", "known": true}}], "path": "/api/vocabulary/mark-known", "method": "POST", "event": "Validation error", "logger": "core.exception_handlers", "level": "warning", "timestamp": "2025-11-15T17:22:36.207034Z"}
-API Response: 422 POST /api/vocabulary/mark-known
-HTTP Request: POST http://test/api/vocabulary/mark-known "HTTP/1.1 422 Unprocessable Entity"
------------------------------- Captured log call -------------------------------
-INFO     api:security_middleware.py:27 API Request: POST /api/auth/register
-INFO     api:security_middleware.py:56 API Response: 201 POST /api/auth/register
-INFO     httpx:_client.py:1740 HTTP Request: POST http://test/api/auth/register "HTTP/1.1 201 Created"
-INFO     api:security_middleware.py:27 API Request: POST /api/auth/login
-INFO     api:security_middleware.py:56 API Response: 200 POST /api/auth/login
-INFO     httpx:_client.py:1740 HTTP Request: POST http://test/api/auth/login "HTTP/1.1 200 OK"
-INFO     api:security_middleware.py:27 API Request: POST /api/vocabulary/mark-known
-WARNING  core.exception_handlers:exception_handlers.py:96 {"errors": [{"type": "missing", "loc": ["body", "lemma"], "msg": "Field required", "input": {"concept_id": "68cfb4bd-b345-41fa-8054-651c5ced8f99", "language": "de", "known": true}}], "path": "/api/vocabulary/mark-known", "method": "POST", "event": "Validation error", "logger": "core.exception_handlers", "level": "warning", "timestamp": "2025-11-15T17:22:36.207034Z"}
-INFO     api:security_middleware.py:56 API Response: 422 POST /api/vocabulary/mark-known
-INFO     httpx:_client.py:1740 HTTP Request: POST http://test/api/vocabulary/mark-known "HTTP/1.1 422 Unprocessable Entity"
-=========================== short test summary info ============================
-FAILED tests/unit/test_vocabulary_routes.py::TestVocabularyRoutesCore::test_mark_word_as_known_success - AssertionError: Expected 'mock' to have been called once. Called 0 times.
-FAILED tests/unit/test_vocabulary_routes.py::TestVocabularyRoutesCore::test_mark_word_unknown_success - assert 422 == 200
- +  where 422 = <Response [422 Unprocessable Entity]>.status_code
-FAILED tests/unit/test_vocabulary_routes.py::TestVocabularyRoutesErrorHandling::test_mark_known_database_error - assert 422 == 200
- +  where 422 = <Response [422 Unprocessable Entity]>.status_code
-============ 3 failed, 1098 passed, 24 skipped in 123.77s (0:02:03) ============
+================= 1101 passed, 24 skipped in 128.76s (0:02:08) =================

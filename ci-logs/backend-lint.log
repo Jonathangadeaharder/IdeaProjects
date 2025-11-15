@@ -1,4 +1,16 @@
 warning: The following rules have been removed and ignoring them has no effect:
     - UP038
 
-All checks passed!
+F401 [*] `uuid.uuid4` imported but unused
+ --> tests/unit/test_vocabulary_routes.py:6:18
+  |
+5 | from unittest.mock import AsyncMock, MagicMock, patch
+6 | from uuid import uuid4
+  |                  ^^^^^
+7 |
+8 | import pytest
+  |
+help: Remove unused import: `uuid.uuid4`
+
+Found 1 error.
+[*] 1 fixable with the `--fix` option.

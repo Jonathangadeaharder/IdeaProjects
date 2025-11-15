@@ -416,7 +416,7 @@ class TestVocabularyRoutesCore:
         try:
             response = await async_client.post(
                 "/api/vocabulary/mark-known",
-                json={"word": word, "language": "de", "known": True},
+                json={"lemma": word, "language": "de", "known": True},
                 headers=headers,
             )
 
@@ -465,7 +465,7 @@ class TestVocabularyRoutesCore:
         try:
             response = await async_client.post(
                 "/api/vocabulary/mark-known",
-                json={"word": word, "language": "de", "known": False},
+                json={"lemma": word, "language": "de", "known": False},
                 headers=headers,
             )
 
@@ -702,11 +702,11 @@ class TestVocabularyRoutesErrorHandling:
 
         _user, _token, headers = await helper.create_authenticated_user()
 
-        # Test with valid UUID but non-existent word - new behavior allows marking unknown words
-        non_existent_uuid = str(uuid4())
+        # Test with non-existent word - new behavior allows marking unknown words
+        non_existent_word = "nonexistentword"
         response = await async_client.post(
             "/api/vocabulary/mark-known",
-            json={"concept_id": non_existent_uuid, "language": "de", "known": True},
+            json={"lemma": non_existent_word, "language": "de", "known": True},
             headers=headers,
         )
 
