@@ -1,0 +1,68 @@
+{
+  "output": {
+    "filePath": "repomix-output.txt",
+    "style": "plain",
+    "headerText": "LangPlug - Netflix-style German Language Learning Platform\n\nThis file contains the complete codebase packaged by Repomix for AI analysis.",
+    "instructionFilePath": ".repomix-instruction.md",
+    "removeComments": false,
+    "removeEmptyLines": false,
+    "topFilesLength": 5,
+    "showLineNumbers": true,
+    "copyToClipboard": false
+  },
+  "include": [
+    "src/**/*",
+    "scripts/**/*",
+    ".github/**/*",
+    "*.md",
+    "*.json",
+    "*.yml",
+    "*.yaml",
+    "*.txt",
+    "nx.json",
+    "tsconfig*.json"
+  ],
+  "ignore": {
+    "useGitignore": true,
+    "useDefaultPatterns": true,
+    "customPatterns": [
+      "**/__pycache__/**",
+      "**/*.pyc",
+      "**/.pytest_cache/**",
+      "**/.ruff_cache/**",
+      "**/.mypy_cache/**",
+      "**/node_modules/**",
+      "**/dist/**",
+      "**/build/**",
+      "**/.venv/**",
+      "**/venv/**",
+      "**/api_venv/**",
+      "**/.cache/**",
+      "**/cache/**",
+      "**/logs/**",
+      "**/*.log",
+      "!ci-logs/*.log",
+      "**/*.db",
+      "**/*.sqlite*",
+      "**/*.mp4",
+      "**/*.wav",
+      "**/*.avi",
+      "**/*.mov",
+      "**/*.webm",
+      "**/*.zip",
+      "**/*.tar.gz",
+      "**/coverage/**",
+      "**/.nx/**",
+      "**/test-results/**",
+      "**/playwright-report/**",
+      "**/*.backup*",
+      "**/backup_*/**",
+      ".idea/**",
+      ".vscode/**",
+      ".claude/**"
+    ]
+  },
+  "security": {
+    "enableSecurityCheck": true
+  }
+}
