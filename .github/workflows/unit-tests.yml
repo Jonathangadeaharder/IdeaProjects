@@ -2,7 +2,7 @@ name: Unit Tests
 
 on:
   push:
-    branches: [main, master]
+    branches: [main, master, develop]
     paths-ignore:
       - '**.md'
       - 'docs/**'
@@ -12,7 +12,7 @@ on:
       - '.vscode/**'
       - '.idea/**'
   pull_request:
-    branches: [main, master]
+    branches: [main, master, develop]
     paths-ignore:
       - '**.md'
       - 'docs/**'
