@@ -23,6 +23,75 @@ LangPlug/
 - **NO BACKWARD COMPATIBILITY LAYERS**: When refactoring, update ALL dependencies to use the new architecture directly. Do NOT maintain facades, convenience functions, or compatibility layers just for backward compatibility. Update all imports and usages across the codebase to use the new services/modules. Keep the code modern and slim by removing all boilerplate that exists only for backward compatibility. Source control is the safety net, not compatibility layers in production code.
 - **NEVER COMMENT OUT CODE**: ALWAYS delete obsolete code completely. Never use comments to "disable" code (e.g., `# old_function()` or `# TODO: uncomment when ready`). If code is not needed, delete it entirely. Source control (Git) is the safety net for retrieving old code if needed. Commented-out code creates confusion, bloats the codebase, and suggests uncertainty. Be decisive: either keep the code active or delete it completely.
 
+## Structurelint - Project Structure Enforcement
+
+The project uses [structurelint](https://github.com/Jonathangadeaharder/structurelint) to enforce architectural integrity and project organization.
+
+### Installation
+
+**Go Install (Recommended)**:
+```bash
+go install github.com/structurelint/structurelint/cmd/structurelint@latest
+```
+
+**Download Binary**:
+```bash
+# Linux
+curl -L https://github.com/structurelint/structurelint/releases/latest/download/structurelint-linux-amd64 -o structurelint
+chmod +x structurelint
+sudo mv structurelint /usr/local/bin/
+```
+
+### Running Structurelint
+
+```bash
+# Check entire project
+structurelint .
+
+# Check specific directory
+structurelint src/backend
+
+# Auto-fix issues (if supported)
+structurelint --fix .
+```
+
+### What Structurelint Enforces
+
+The `.structurelint.yml` configuration enforces:
+
+1. **Maximum Folder Depth**: 7 levels maximum (aligned with project standard)
+2. **Maximum Files Per Directory**: 20 files (configurable per section)
+3. **Naming Conventions**:
+   - Backend Python: `snake_case` for files and directories
+   - Frontend TypeScript: `kebab-case` for files, `PascalCase` for React components
+   - Scripts: `snake_case`
+4. **Version Suffix Prevention**: Blocks `_v2`, `_new`, `_old`, `_temp`, `_backup` suffixes (enforces "NO VERSION SUFFIXES IN CODE" rule)
+5. **Required Files**: Ensures `CLAUDE.md`, `README.md`, `.gitignore` exist
+
+### Integration with CI/CD
+
+Add structurelint to your CI pipeline by adding this step:
+
+```yaml
+- name: Lint Project Structure
+  run: structurelint .
+```
+
+Consider adding it to pre-commit hooks for early detection:
+
+```yaml
+# .pre-commit-config.yaml
+repos:
+  - repo: local
+    hooks:
+      - id: structurelint
+        name: structurelint
+        entry: structurelint
+        args: [.]
+        language: system
+        pass_filenames: false
+```
+
 ## PowerShell Integration Hook (Last Resort)
 
 A PreToolUse hook is configured in `~/.claude/settings.json` that automatically intercepts Python/Node commands and suggests PowerShell-wrapped versions. This hook should be a **last resort** when Claude consistently forgets to use PowerShell commands.
