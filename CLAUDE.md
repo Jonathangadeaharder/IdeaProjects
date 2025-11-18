@@ -102,7 +102,15 @@ The `.structurelint.yml` configuration provides **comprehensive enforcement** ac
 - **Security Scanning**: Requires CodeQL/dependency scanning
 - **Code Quality**: Requires linting/formatting checks
 
-**Current Status**: 829 violations detected (68 functions exceed CoC=15)
+**Current Status**: 593 violations detected after configuration tuning
+
+Breakdown of remaining violations:
+- **Cognitive Complexity**: 64 functions exceed CoC=15 (actual technical debt)
+- **Unused Exports**: ~315 exports never imported (APIs, test exports, DTOs)
+- **Orphaned Files**: ~198 files (primarily test utilities, examples)
+- **Structural**: 12 file/subdirectory limit violations
+
+The configuration balances strict enforcement with practical project needs.
 
 ### Integration with CI/CD
 
