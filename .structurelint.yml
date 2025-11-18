@@ -12,6 +12,12 @@ entrypoints:
   - "src/backend/run_backend.py"
   - "src/backend/core/app.py"
   - "src/backend/alembic/env.py"
+  - "src/backend/alembic/versions/**"  # Migration files called by Alembic
+  - "src/backend/.pre-commit-hooks/**"  # Called by pre-commit
+  - "src/backend/scripts/**"  # Utility scripts
+  - "src/backend/data/**"  # Data processing scripts
+  - "src/backend/database/cli.py"  # CLI tool
+  - "src/backend/api/**"  # API routes, DTOs, models (loaded by FastAPI)
   # Frontend entry points
   - "src/frontend/src/main.tsx"
   - "src/frontend/src/App.tsx"
@@ -21,6 +27,24 @@ entrypoints:
   - "**/*test*.tsx"
   - "**/__tests__/**"
   - "**/*.spec.ts"
+  # Standalone tools and scripts
+  - "management/**"
+  - "scripts/**"
+  - "tools/**"
+  - "setup_project.py"
+  # Config and workflow files
+  - "*.yml"
+  - "*.yaml"
+  - "*.json"
+  - "*.md"
+  - "*.workflow"
+  - "*.log"
+  - "*.puml"
+  - "*.png"
+  - "*.svg"
+  - "*.env*"
+  - "*.conf"
+  - ".secrets.baseline"
 
 # ============================================================================
 # Architectural Layers (Clean Architecture enforcement)
@@ -299,3 +323,9 @@ ignore:
   - .qwen
   - .windsurf
   - .codex
+  - .github  # GitHub workflows/actions are not "imported"
+  - "*.md"  # Documentation files are standalone
+  - "*.workflow"  # Workflow files are standalone
+  - ".ls-lint.yml"
+  - ".nxignore"
+  - ".repomix-instruction.md"
