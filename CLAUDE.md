@@ -25,7 +25,7 @@ LangPlug/
 
 ## Structurelint - Project Structure Enforcement
 
-The project uses [structurelint](https://github.com/Jonathangadeaharder/structurelint) to enforce architectural integrity and project organization.
+The project uses [structurelint](https://github.com/structurelint/structurelint) to enforce architectural integrity and project organization.
 
 ### Installation
 
@@ -34,12 +34,24 @@ The project uses [structurelint](https://github.com/Jonathangadeaharder/structur
 go install github.com/structurelint/structurelint/cmd/structurelint@latest
 ```
 
+**Build from Source** (if go install fails):
+```bash
+git clone https://github.com/structurelint/structurelint.git
+cd structurelint
+go build -o structurelint ./cmd/structurelint
+# Move binary to PATH or use directly
+```
+
 **Download Binary**:
 ```bash
 # Linux
 curl -L https://github.com/structurelint/structurelint/releases/latest/download/structurelint-linux-amd64 -o structurelint
 chmod +x structurelint
 sudo mv structurelint /usr/local/bin/
+
+# Windows (PowerShell)
+Invoke-WebRequest -Uri "https://github.com/structurelint/structurelint/releases/latest/download/structurelint-windows-amd64.exe" -OutFile "structurelint.exe"
+# Move structurelint.exe to a directory in your system's PATH
 ```
 
 ### Running Structurelint
@@ -60,13 +72,17 @@ structurelint --fix .
 The `.structurelint.yml` configuration enforces:
 
 1. **Maximum Folder Depth**: 7 levels maximum (aligned with project standard)
-2. **Maximum Files Per Directory**: 20 files (configurable per section)
+2. **Maximum Files Per Directory**: 50 files globally, with stricter limits in specific areas:
+   - Backend: 40 files
+   - Frontend: 35 files
+   - Services: 25 files
+   - Tests/Docs: 50 files
 3. **Naming Conventions**:
    - Backend Python: `snake_case` for files and directories
    - Frontend TypeScript: `kebab-case` for files, `PascalCase` for React components
    - Scripts: `snake_case`
 4. **Version Suffix Prevention**: Blocks `_v2`, `_new`, `_old`, `_temp`, `_backup` suffixes (enforces "NO VERSION SUFFIXES IN CODE" rule)
-5. **Required Files**: Ensures `CLAUDE.md`, `README.md`, `.gitignore` exist
+5. **Required Files**: Ensures `CLAUDE.md`, `README.md`, `.gitignore` exist at project root
 
 ### Integration with CI/CD
 

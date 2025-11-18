@@ -1,6 +1,6 @@
 # Structurelint Configuration for LangPlug
 # Enforces project structure, organization, and architectural integrity
-# See: https://github.com/Jonathangadeaharder/structurelint
+# See: https://github.com/structurelint/structurelint
 
 root: true
 
