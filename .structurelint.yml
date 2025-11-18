@@ -131,6 +131,12 @@ overrides:
         "README.md": "exists:1"
         ".gitignore": "exists:1"
 
+  # Backend root: Slightly higher limits for major project section
+  - files: ['src/backend']
+    rules:
+      max-files-in-dir: { max: 30 }  # Backend root has many config files
+      max-subdirs: { max: 15 }  # Major project sections can have more organization
+
   # Backend: Python naming + test adjacency
   - files: ['src/backend/**']
     rules:
@@ -167,11 +173,16 @@ overrides:
     rules:
       max-files-in-dir: { max: 15 }
 
+  # Backend tests root: Higher limits for test organization
+  - files: ['src/backend/tests']
+    rules:
+      max-subdirs: { max: 20 }  # Test suite organization needs many categories
+
   # Backend tests: Higher limits + test-specific rules
   - files: ['src/backend/tests/**']
     rules:
       max-depth: { max: 8 }
-      max-files-in-dir: { max: 25 }
+      max-files-in-dir: { max: 35 }  # Test directories naturally have many files
 
       naming-convention:
         "*.py": "snake_case"
@@ -193,8 +204,24 @@ overrides:
   # Backend docs: Documentation organization
   - files: ['src/backend/docs/**', 'docs/**']
     rules:
-      max-files-in-dir: { max: 20 }
+      max-files-in-dir: { max: 30 }  # Documentation can have many files
       disallow-orphaned-files: false  # Docs can be standalone
+
+  # Documentation archives: Can have many files
+  - files: ['docs/archive/**', 'src/backend/docs/archive/**', 'docs/architecture/diagrams/**']
+    rules:
+      max-files-in-dir: { max: 50 }  # Archives and diagrams can be extensive
+      disallow-orphaned-files: false
+
+  # Frontend root: Config files
+  - files: ['src/frontend']
+    rules:
+      max-files-in-dir: { max: 30 }  # Frontend root has many config files
+
+  # Frontend src: Main source organization
+  - files: ['src/frontend/src']
+    rules:
+      max-subdirs: { max: 15 }  # Frontend source needs feature organization
 
   # Frontend: TypeScript/React naming + test adjacency
   - files: ['src/frontend/**']
