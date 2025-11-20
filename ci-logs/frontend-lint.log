@@ -2,3 +2,30 @@
 > langplug-frontend@1.0.0 lint
 > eslint src --max-warnings 0
 
+
+/home/runner/work/IdeaProjects/IdeaProjects/src/frontend/src/components/SyncedSubtitleDisplay.tsx
+  100:13  warning  Visible, non-interactive elements with click handlers must have at least one keyboard listener                                                                                                     jsx-a11y/click-events-have-key-events
+  100:13  warning  Avoid non-native interactive elements. If using native HTML is not possible, add an appropriate role and support for tabbing, mouse, keyboard, and touch inputs to an interactive content element  jsx-a11y/no-static-element-interactions
+
+/home/runner/work/IdeaProjects/IdeaProjects/src/frontend/src/components/examples/InteractiveSubtitleExample.tsx
+   48:5   warning  Unexpected console statement                                                                                                                                                                       no-console
+   84:5   warning  Unexpected console statement                                                                                                                                                                       no-console
+   97:9   error    Media elements such as <audio> and <video> must have a <track> for captions                                                                                                                        jsx-a11y/media-has-caption
+  155:11  warning  Visible, non-interactive elements with click handlers must have at least one keyboard listener                                                                                                     jsx-a11y/click-events-have-key-events
+  155:11  warning  Avoid non-native interactive elements. If using native HTML is not possible, add an appropriate role and support for tabbing, mouse, keyboard, and touch inputs to an interactive content element  jsx-a11y/no-static-element-interactions
+
+/home/runner/work/IdeaProjects/IdeaProjects/src/frontend/src/hooks/useSubtitleHover.ts
+  28:34  error  Type string trivially inferred from a string literal, remove type annotation  @typescript-eslint/no-inferrable-types
+
+/home/runner/work/IdeaProjects/IdeaProjects/src/frontend/src/hooks/useSubtitleSeek.ts
+   33:11  warning  Unexpected console statement  no-console
+   51:9   warning  Unexpected console statement  no-console
+   68:9   warning  Unexpected console statement  no-console
+   85:7   warning  Unexpected console statement  no-console
+   89:7   warning  Unexpected console statement  no-console
+  102:7   warning  Unexpected console statement  no-console
+  104:7   warning  Unexpected console statement  no-console
+
+✖ 15 problems (2 errors, 13 warnings)
+  1 error and 0 warnings potentially fixable with the `--fix` option.
+

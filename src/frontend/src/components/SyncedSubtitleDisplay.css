@@ -1,0 +1,224 @@
+/**
+ * Synced Subtitle Display Styles
+ * Real-time word highlighting synchronized with video
+ */
+
+.synced-subtitle-display {
+  position: relative;
+  padding: 16px 24px;
+  background: rgba(0, 0, 0, 0.85);
+  border-radius: 8px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+  user-select: none;
+  min-height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.synced-subtitle-display.empty {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.no-subtitle-message {
+  color: #999;
+  font-size: 14px;
+  font-style: italic;
+}
+
+.subtitle-words {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+  align-items: baseline;
+  font-size: 20px;
+  line-height: 1.6;
+}
+
+/* Word styling */
+.subtitle-word {
+  display: inline-block;
+  padding: 4px 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border-radius: 4px;
+  font-weight: 400;
+}
+
+/* Known words - subtle green */
+.subtitle-word.known {
+  color: #81c784;
+}
+
+/* Unknown words - subtle orange */
+.subtitle-word.unknown {
+  color: #ffb74d;
+  font-weight: 500;
+}
+
+/* Active word (currently being spoken) */
+.subtitle-word.active {
+  background-color: rgba(255, 215, 0, 0.3);
+  font-weight: 600;
+  transform: scale(1.05);
+  box-shadow: 0 0 8px rgba(255, 215, 0, 0.5);
+  color: #ffd700;
+}
+
+/* Hover state */
+.subtitle-word:hover,
+.subtitle-word.hovered {
+  background-color: rgba(255, 255, 255, 0.15);
+  text-decoration: underline;
+  text-decoration-color: currentColor;
+  text-underline-offset: 3px;
+}
+
+/* Active word takes priority over hover */
+.subtitle-word.active:hover,
+.subtitle-word.active.hovered {
+  background-color: rgba(255, 215, 0, 0.4);
+}
+
+/* Translation tooltip (same as InteractiveSubtitle) */
+.translation-tooltip {
+  position: fixed;
+  z-index: 10000;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 12px 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  min-width: 150px;
+  max-width: 300px;
+  pointer-events: none;
+  animation: tooltipFadeIn 0.15s ease;
+}
+
+@keyframes tooltipFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.tooltip-loading {
+  color: #999;
+  font-size: 14px;
+  font-style: italic;
+}
+
+.tooltip-content {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tooltip-word {
+  font-size: 16px;
+  font-weight: 600;
+  color: #4caf50;
+}
+
+.tooltip-translation {
+  font-size: 15px;
+  color: #ffffff;
+  line-height: 1.4;
+}
+
+.tooltip-level {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  color: #ffffff;
+  background: #2196f3;
+  padding: 2px 8px;
+  border-radius: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 4px;
+  width: fit-content;
+}
+
+.tooltip-pos {
+  font-size: 12px;
+  color: #999;
+  font-style: italic;
+  margin-top: 2px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .synced-subtitle-display {
+    padding: 12px 16px;
+    min-height: 50px;
+  }
+
+  .subtitle-words {
+    font-size: 16px;
+    gap: 4px;
+  }
+
+  .subtitle-word {
+    padding: 3px 5px;
+  }
+
+  .translation-tooltip {
+    max-width: 250px;
+    font-size: 14px;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: light) {
+  .synced-subtitle-display {
+    background: rgba(255, 255, 255, 0.95);
+  }
+
+  .subtitle-word.known {
+    color: #388e3c;
+  }
+
+  .subtitle-word.unknown {
+    color: #f57c00;
+  }
+
+  .subtitle-word.active {
+    background-color: rgba(255, 193, 7, 0.3);
+    color: #f57f17;
+  }
+
+  .translation-tooltip {
+    background: #ffffff;
+    border-color: #e0e0e0;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  }
+
+  .tooltip-translation {
+    color: #333;
+  }
+
+  .tooltip-pos {
+    color: #666;
+  }
+}
+
+/* Accessibility: reduce motion */
+@media (prefers-reduced-motion: reduce) {
+  .subtitle-word {
+    transition: none;
+  }
+
+  .subtitle-word.active {
+    transform: none;
+  }
+
+  .translation-tooltip {
+    animation: none;
+  }
+}
