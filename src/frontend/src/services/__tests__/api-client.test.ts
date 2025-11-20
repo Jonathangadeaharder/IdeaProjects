@@ -1,23 +1,23 @@
 import { describe, it, expect, beforeEach, afterEach, vi, beforeAll } from 'vitest'
 
-// Mock axios BEFORE importing api-client
-// Define axiosInstance inside the factory to avoid hoisting issues
-vi.mock('axios', () => {
-  const axiosInstance = {
-    get: vi.fn(),
-    post: vi.fn(),
-    put: vi.fn(),
-    delete: vi.fn(),
-    patch: vi.fn(),
-    interceptors: {
-      request: { use: vi.fn(), eject: vi.fn() },
-      response: { use: vi.fn(), eject: vi.fn() },
-    },
-  }
+// Use vi.hoisted to ensure mockAxiosInstance is available when mocks are hoisted
+const mockAxiosInstance = vi.hoisted(() => ({
+  get: vi.fn(),
+  post: vi.fn(),
+  put: vi.fn(),
+  delete: vi.fn(),
+  patch: vi.fn(),
+  interceptors: {
+    request: { use: vi.fn(), eject: vi.fn() },
+    response: { use: vi.fn(), eject: vi.fn() },
+  },
+}))
 
+// Mock axios BEFORE importing api-client
+vi.mock('axios', () => {
   return {
     default: {
-      create: vi.fn(() => axiosInstance),
+      create: vi.fn(() => mockAxiosInstance),
     },
   }
 })
@@ -45,20 +45,26 @@ import { toast } from 'react-hot-toast'
 import axios from 'axios'
 
 const mockedAxios = axios as any
+// Use the mockAxiosInstance we defined at module level
+const axiosInstance = mockAxiosInstance
 
-// Get the axiosInstance from the mocked create call
-// @ts-expect-error - accessing mock internals
-const axiosInstance = mockedAxios.create.mock.results[0]?.value
+let localStorageMock: { [key: string]: string }
 
 describe('ApiClient', () => {
   beforeAll(() => {
-    // Mock localStorage
+    // Mock localStorage with actual storage
     Object.defineProperty(window, 'localStorage', {
       value: {
-        getItem: vi.fn(),
-        setItem: vi.fn(),
-        removeItem: vi.fn(),
-        clear: vi.fn(),
+        getItem: (key: string) => localStorageMock[key] || null,
+        setItem: (key: string, value: string) => {
+          localStorageMock[key] = value
+        },
+        removeItem: (key: string) => {
+          delete localStorageMock[key]
+        },
+        clear: () => {
+          localStorageMock = {}
+        },
       },
       writable: true,
       configurable: true,
@@ -66,7 +72,8 @@ describe('ApiClient', () => {
   })
 
   beforeEach(() => {
-    // Clear all mocks
+    // Clear all mocks and localStorage
+    localStorageMock = {}
     vi.clearAllMocks()
   })
 
@@ -287,10 +294,8 @@ describe('ApiClient', () => {
 
         await api.auth.getCurrentUser()
 
-        expect(axiosInstance.get).toHaveBeenCalledWith('/auth/me', {
-          cache: true,
-          cacheTtl: 60000,
-        })
+        // cache and cacheTtl are stripped by apiClient before reaching axios
+        expect(axiosInstance.get).toHaveBeenCalledWith('/auth/me', {})
       })
 
       it('should logout and clear cache', () => {
@@ -308,10 +313,9 @@ describe('ApiClient', () => {
 
         await api.vocabulary.search('Haus', 'de', 20)
 
+        // cache and cacheTtl are stripped by apiClient before reaching axios
         expect(axiosInstance.get).toHaveBeenCalledWith('/vocabulary/search', {
           params: { query: 'Haus', language: 'de', limit: 20 },
-          cache: true,
-          cacheTtl: 10 * 60 * 1000,
         })
       })
 
@@ -322,8 +326,6 @@ describe('ApiClient', () => {
 
         expect(axiosInstance.get).toHaveBeenCalledWith('/vocabulary/level/A1', {
           params: { language: 'de', skip: 0, limit: 100 },
-          cache: true,
-          cacheTtl: 30 * 60 * 1000,
         })
       })
 
@@ -334,8 +336,6 @@ describe('ApiClient', () => {
 
         expect(axiosInstance.get).toHaveBeenCalledWith('/vocabulary/random', {
           params: { language: 'de', levels: ['A1', 'A2'], limit: 10 },
-          cache: true,
-          cacheTtl: 5 * 60 * 1000,
         })
       })
 
@@ -370,8 +370,6 @@ describe('ApiClient', () => {
 
         expect(axiosInstance.get).toHaveBeenCalledWith('/vocabulary/progress', {
           params: { language: 'de' },
-          cache: true,
-          cacheTtl: 30 * 1000,
         })
       })
 
@@ -382,8 +380,6 @@ describe('ApiClient', () => {
 
         expect(axiosInstance.get).toHaveBeenCalledWith('/vocabulary/stats', {
           params: { language: 'de' },
-          cache: true,
-          cacheTtl: 60 * 1000,
         })
       })
     })
@@ -394,7 +390,7 @@ describe('ApiClient', () => {
 
         await api.videos.getList()
 
-        expect(axiosInstance.get).toHaveBeenCalledWith('/api/videos', { cache: true })
+        expect(axiosInstance.get).toHaveBeenCalledWith('/api/videos', {})
       })
 
       it('should get episodes for series with cache', async () => {
@@ -402,7 +398,7 @@ describe('ApiClient', () => {
 
         await api.videos.getEpisodes('dark')
 
-        expect(axiosInstance.get).toHaveBeenCalledWith('/api/videos/dark', { cache: true })
+        expect(axiosInstance.get).toHaveBeenCalledWith('/api/videos/dark', {})
       })
 
       it('should generate stream URL without token', () => {
@@ -447,7 +443,8 @@ describe('ApiClient', () => {
 
         await api.processing.getProgress('task-123')
 
-        expect(axiosInstance.get).toHaveBeenCalledWith('/process/progress/task-123', undefined)
+        // apiClient.get() converts undefined config to {}
+        expect(axiosInstance.get).toHaveBeenCalledWith('/process/progress/task-123', {})
       })
 
       it('should prepare episode', async () => {
