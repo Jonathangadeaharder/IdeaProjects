@@ -8,10 +8,17 @@ import { AxiosRequestConfig, AxiosResponse } from 'axios'
 import * as authStore from '@/store/useAuthStore'
 
 // Mock dependencies
-vi.mock('@/client/core/OpenAPI', () => ({
-  OpenAPI: {
+let mockTOKEN: (() => Promise<string>) | null = null
+
+vi.mock('@/client/core/OpenAPI', () => {
+  const mockOpenAPI = {
     BASE: 'http://localhost:8000',
-    TOKEN: null,
+    get TOKEN() {
+      return mockTOKEN
+    },
+    set TOKEN(value) {
+      mockTOKEN = value
+    },
     interceptors: {
       request: {
         use: vi.fn(),
@@ -20,8 +27,9 @@ vi.mock('@/client/core/OpenAPI', () => ({
         use: vi.fn(),
       },
     },
-  },
-}))
+  }
+  return { OpenAPI: mockOpenAPI }
+})
 
 vi.mock('@/services/logger', () => ({
   logger: {
@@ -43,6 +51,9 @@ describe('auth-interceptor', () => {
   beforeEach(() => {
     // Reset all mocks
     vi.clearAllMocks()
+
+    // Reset TOKEN
+    mockTOKEN = null
 
     // Create a fresh localStorage mock for each test
     localStorageMock = {}

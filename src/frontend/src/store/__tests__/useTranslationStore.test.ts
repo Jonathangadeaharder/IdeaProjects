@@ -185,13 +185,12 @@ describe('useTranslationStore', () => {
         })
       })
 
-      const store = useTranslationStore.getState()
-
       act(() => {
-        store.pruneExpiredCache()
+        useTranslationStore.getState().pruneExpiredCache()
       })
 
-      const { cache } = store
+      // Get fresh state after pruning
+      const { cache } = useTranslationStore.getState()
       expect(cache.old).toBeUndefined()
       expect(cache.recent).toBeTruthy()
     })
@@ -202,13 +201,13 @@ describe('useTranslationStore', () => {
         useTranslationStore.getState().cacheTranslation('test2', 'translation2', {})
       })
 
-      const store = useTranslationStore.getState()
-
       act(() => {
-        store.clearCache()
+        useTranslationStore.getState().clearCache()
       })
 
-      expect(store.cache).toEqual({})
+      // Get fresh state after clearing
+      const { cache } = useTranslationStore.getState()
+      expect(cache).toEqual({})
     })
   })
 })

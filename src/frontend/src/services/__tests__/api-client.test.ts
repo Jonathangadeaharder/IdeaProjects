@@ -1,11 +1,32 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import axios from 'axios'
-import { apiClient, api } from '../api-client'
-import { toast } from 'react-hot-toast'
+import { describe, it, expect, beforeEach, afterEach, vi, beforeAll } from 'vitest'
 
-// Mock axios
-vi.mock('axios')
-vi.mock('react-hot-toast')
+// Mock axios BEFORE importing api-client
+const axiosInstance = {
+  get: vi.fn(),
+  post: vi.fn(),
+  put: vi.fn(),
+  delete: vi.fn(),
+  patch: vi.fn(),
+  interceptors: {
+    request: { use: vi.fn(), eject: vi.fn() },
+    response: { use: vi.fn(), eject: vi.fn() },
+  },
+}
+
+vi.mock('axios', () => ({
+  default: {
+    create: vi.fn(() => axiosInstance),
+  },
+}))
+
+vi.mock('react-hot-toast', () => ({
+  toast: {
+    error: vi.fn(),
+    success: vi.fn(),
+    loading: vi.fn(),
+  },
+}))
+
 vi.mock('../logger', () => ({
   logger: {
     debug: vi.fn(),
@@ -15,30 +36,30 @@ vi.mock('../logger', () => ({
   },
 }))
 
+// Import AFTER mocks are set up
+import { apiClient, api } from '../api-client'
+import { toast } from 'react-hot-toast'
+import axios from 'axios'
+
 const mockedAxios = axios as any
 
 describe('ApiClient', () => {
-  let axiosInstance: any
+  beforeAll(() => {
+    // Mock localStorage
+    Object.defineProperty(window, 'localStorage', {
+      value: {
+        getItem: vi.fn(),
+        setItem: vi.fn(),
+        removeItem: vi.fn(),
+        clear: vi.fn(),
+      },
+      writable: true,
+      configurable: true,
+    })
+  })
 
   beforeEach(() => {
-    // Clear localStorage
-    localStorage.clear()
-
-    // Reset axios mock
-    axiosInstance = {
-      get: vi.fn(),
-      post: vi.fn(),
-      put: vi.fn(),
-      delete: vi.fn(),
-      interceptors: {
-        request: { use: vi.fn() },
-        response: { use: vi.fn() },
-      },
-    }
-
-    mockedAxios.create = vi.fn(() => axiosInstance)
-
-    // Clear toast mocks
+    // Clear all mocks
     vi.clearAllMocks()
   })
 
