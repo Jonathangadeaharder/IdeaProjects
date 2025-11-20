@@ -8,10 +8,7 @@
 
 /home/runner/work/IdeaProjects/IdeaProjects/src/frontend/src/components/common/__tests__/ErrorBoundary.test.tsx
   353:83  error  Unexpected empty arrow function                                                  @typescript-eslint/no-empty-function
-  441:26  error  Require statement not part of import statement                                   @typescript-eslint/no-var-requires
-  474:26  error  Require statement not part of import statement                                   @typescript-eslint/no-var-requires
-  509:13  error  'user' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
-  625:13  error  'user' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  511:13  error  'user' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
 
 /home/runner/work/IdeaProjects/IdeaProjects/src/frontend/src/hooks/__tests__/useSubtitleSeek.test.ts
    87:81  error  Unexpected empty arrow function  @typescript-eslint/no-empty-function
@@ -40,5 +37,5 @@
   457:14  warning  Forbidden non-null assertion                    @typescript-eslint/no-non-null-assertion
   472:14  warning  Forbidden non-null assertion                    @typescript-eslint/no-non-null-assertion
 
-✖ 27 problems (17 errors, 10 warnings)
+✖ 24 problems (14 errors, 10 warnings)
 
