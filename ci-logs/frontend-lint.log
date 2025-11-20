@@ -3,6 +3,16 @@
 > eslint src --max-warnings 0
 
 
+/home/runner/work/IdeaProjects/IdeaProjects/src/frontend/src/components/auth/__tests__/ProtectedRoute.test.tsx
+  97:13  error  'container' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/home/runner/work/IdeaProjects/IdeaProjects/src/frontend/src/components/common/__tests__/ErrorBoundary.test.tsx
+  353:83  error  Unexpected empty arrow function                                                  @typescript-eslint/no-empty-function
+  441:26  error  Require statement not part of import statement                                   @typescript-eslint/no-var-requires
+  474:26  error  Require statement not part of import statement                                   @typescript-eslint/no-var-requires
+  509:13  error  'user' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  625:13  error  'user' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
 /home/runner/work/IdeaProjects/IdeaProjects/src/frontend/src/hooks/__tests__/useSubtitleSeek.test.ts
    87:81  error  Unexpected empty arrow function  @typescript-eslint/no-empty-function
   146:81  error  Unexpected empty arrow function  @typescript-eslint/no-empty-function
@@ -10,5 +20,25 @@
   207:81  error  Unexpected empty arrow function  @typescript-eslint/no-empty-function
   221:81  error  Unexpected empty arrow function  @typescript-eslint/no-empty-function
 
-✖ 5 problems (5 errors, 0 warnings)
+/home/runner/work/IdeaProjects/IdeaProjects/src/frontend/src/services/__tests__/api-client.test.ts
+  4:10  error  'toast' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/home/runner/work/IdeaProjects/IdeaProjects/src/frontend/src/services/__tests__/auth-interceptor.test.ts
+   77:14  warning  Forbidden non-null assertion                    @typescript-eslint/no-non-null-assertion
+   90:14  warning  Forbidden non-null assertion                    @typescript-eslint/no-non-null-assertion
+  104:14  warning  Forbidden non-null assertion                    @typescript-eslint/no-non-null-assertion
+  132:14  warning  Forbidden non-null assertion                    @typescript-eslint/no-non-null-assertion
+  133:14  warning  Forbidden non-null assertion                    @typescript-eslint/no-non-null-assertion
+  134:14  warning  Forbidden non-null assertion                    @typescript-eslint/no-non-null-assertion
+  148:14  warning  Forbidden non-null assertion                    @typescript-eslint/no-non-null-assertion
+  375:27  error    Require statement not part of import statement  @typescript-eslint/no-var-requires
+  384:27  error    Require statement not part of import statement  @typescript-eslint/no-var-requires
+  396:27  error    Require statement not part of import statement  @typescript-eslint/no-var-requires
+  406:27  error    Require statement not part of import statement  @typescript-eslint/no-var-requires
+  419:27  error    Require statement not part of import statement  @typescript-eslint/no-var-requires
+  443:14  warning  Forbidden non-null assertion                    @typescript-eslint/no-non-null-assertion
+  457:14  warning  Forbidden non-null assertion                    @typescript-eslint/no-non-null-assertion
+  472:14  warning  Forbidden non-null assertion                    @typescript-eslint/no-non-null-assertion
+
+✖ 27 problems (17 errors, 10 warnings)
 
