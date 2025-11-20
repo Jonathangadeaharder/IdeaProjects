@@ -22,21 +22,21 @@
   4:10  error  'toast' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
 
 /home/runner/work/IdeaProjects/IdeaProjects/src/frontend/src/services/__tests__/auth-interceptor.test.ts
-   77:14  warning  Forbidden non-null assertion                    @typescript-eslint/no-non-null-assertion
-   90:14  warning  Forbidden non-null assertion                    @typescript-eslint/no-non-null-assertion
-  104:14  warning  Forbidden non-null assertion                    @typescript-eslint/no-non-null-assertion
-  132:14  warning  Forbidden non-null assertion                    @typescript-eslint/no-non-null-assertion
-  133:14  warning  Forbidden non-null assertion                    @typescript-eslint/no-non-null-assertion
-  134:14  warning  Forbidden non-null assertion                    @typescript-eslint/no-non-null-assertion
-  148:14  warning  Forbidden non-null assertion                    @typescript-eslint/no-non-null-assertion
-  375:27  error    Require statement not part of import statement  @typescript-eslint/no-var-requires
-  384:27  error    Require statement not part of import statement  @typescript-eslint/no-var-requires
+   98:14  warning  Forbidden non-null assertion                    @typescript-eslint/no-non-null-assertion
+  111:14  warning  Forbidden non-null assertion                    @typescript-eslint/no-non-null-assertion
+  125:14  warning  Forbidden non-null assertion                    @typescript-eslint/no-non-null-assertion
+  153:14  warning  Forbidden non-null assertion                    @typescript-eslint/no-non-null-assertion
+  154:14  warning  Forbidden non-null assertion                    @typescript-eslint/no-non-null-assertion
+  155:14  warning  Forbidden non-null assertion                    @typescript-eslint/no-non-null-assertion
+  169:14  warning  Forbidden non-null assertion                    @typescript-eslint/no-non-null-assertion
   396:27  error    Require statement not part of import statement  @typescript-eslint/no-var-requires
-  406:27  error    Require statement not part of import statement  @typescript-eslint/no-var-requires
-  419:27  error    Require statement not part of import statement  @typescript-eslint/no-var-requires
-  443:14  warning  Forbidden non-null assertion                    @typescript-eslint/no-non-null-assertion
-  457:14  warning  Forbidden non-null assertion                    @typescript-eslint/no-non-null-assertion
-  472:14  warning  Forbidden non-null assertion                    @typescript-eslint/no-non-null-assertion
+  405:27  error    Require statement not part of import statement  @typescript-eslint/no-var-requires
+  417:27  error    Require statement not part of import statement  @typescript-eslint/no-var-requires
+  427:27  error    Require statement not part of import statement  @typescript-eslint/no-var-requires
+  440:27  error    Require statement not part of import statement  @typescript-eslint/no-var-requires
+  464:14  warning  Forbidden non-null assertion                    @typescript-eslint/no-non-null-assertion
+  478:14  warning  Forbidden non-null assertion                    @typescript-eslint/no-non-null-assertion
+  493:14  warning  Forbidden non-null assertion                    @typescript-eslint/no-non-null-assertion
 
 ✖ 25 problems (15 errors, 10 warnings)
 

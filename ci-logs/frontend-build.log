@@ -2,9 +2,7 @@
 > langplug-frontend@1.0.0 build
 > tsc && vite build
 
-src/hooks/__tests__/useSubtitleHover.test.ts(27,11): error TS2353: Object literal may only specify known properties, and 'ipa' does not exist in type '{ confidence?: number | undefined; partOfSpeech?: string | undefined; level?: string | undefined; }'.
-src/hooks/__tests__/useSubtitleHover.test.ts(44,46): error TS2339: Property 'metadata' does not exist on type 'WordTranslationData'.
-src/hooks/__tests__/useSubtitleHover.test.ts(212,22): error TS2339: Property 'metadata' does not exist on type 'TranslationCacheEntry'.
+src/hooks/__tests__/useSubtitleHover.test.ts(18,49): error TS2353: Object literal may only specify known properties, and 'loading' does not exist in type 'TranslationStore | Partial<TranslationStore> | ((state: TranslationStore) => TranslationStore | Partial<...>)'.
 src/hooks/__tests__/useSubtitleSeek.test.ts(18,9): error TS2741: Property 'confidence' is missing in type '{ word: string; start: number; end: number; }' but required in type 'WordTimestamp'.
 src/hooks/__tests__/useSubtitleSeek.test.ts(19,9): error TS2741: Property 'confidence' is missing in type '{ word: string; start: number; end: number; }' but required in type 'WordTimestamp'.
 src/hooks/__tests__/useSubtitleSeek.test.ts(28,9): error TS2741: Property 'confidence' is missing in type '{ word: string; start: number; end: number; }' but required in type 'WordTimestamp'.
@@ -13,9 +11,9 @@ src/hooks/__tests__/useSubtitleSeek.test.ts(38,9): error TS2741: Property 'confi
 src/hooks/__tests__/useSubtitleSeek.test.ts(39,9): error TS2741: Property 'confidence' is missing in type '{ word: string; start: number; end: number; }' but required in type 'WordTimestamp'.
 src/hooks/__tests__/useSubtitleSeek.test.ts(354,19): error TS2741: Property 'confidence' is missing in type '{ word: string; start: number; end: number; }' but required in type 'WordTimestamp'.
 src/hooks/__tests__/useSubtitleSeek.test.ts(354,58): error TS2741: Property 'confidence' is missing in type '{ word: string; start: number; end: number; }' but required in type 'WordTimestamp'.
-src/services/__tests__/auth-interceptor.test.ts(52,5): error TS2322: Type '{ href: string; pathname: string; ancestorOrigins: DOMStringList; hash: string; host: string; hostname: string; toString(): string; origin: string; port: string; protocol: string; search: string; assign(url: string | URL): void; reload(): void; replace(url: string | URL): void; }' is not assignable to type 'string & Location'.
+src/services/__tests__/auth-interceptor.test.ts(73,5): error TS2322: Type '{ href: string; pathname: string; ancestorOrigins: DOMStringList; hash: string; host: string; hostname: string; toString(): string; origin: string; port: string; protocol: string; search: string; assign(url: string | URL): void; reload(): void; replace(url: string | URL): void; }' is not assignable to type 'string & Location'.
   Type '{ href: string; pathname: string; ancestorOrigins: DOMStringList; hash: string; host: string; hostname: string; toString(): string; origin: string; port: string; protocol: string; search: string; assign(url: string | URL): void; reload(): void; replace(url: string | URL): void; }' is not assignable to type 'string'.
-src/services/__tests__/auth-interceptor.test.ts(61,5): error TS2322: Type 'Location' is not assignable to type 'string & Location'.
+src/services/__tests__/auth-interceptor.test.ts(82,5): error TS2322: Type 'Location' is not assignable to type 'string & Location'.
   Type 'Location' is not assignable to type 'string'.
 src/services/__tests__/subtitleSyncService.test.ts(155,60): error TS2345: Argument of type '{ id: string; start: number; end: number; text: string; words: { word: string; start: number; end: number; }[]; }[]' is not assignable to parameter of type 'SubtitleSegment[]'.
   Type '{ id: string; start: number; end: number; text: string; words: { word: string; start: number; end: number; }[]; }' is not assignable to type 'SubtitleSegment'.

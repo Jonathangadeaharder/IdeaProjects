@@ -38,11 +38,32 @@ vi.mock('@/store/useAuthStore', () => ({
 describe('auth-interceptor', () => {
   const originalFetch = global.fetch
   const originalLocation = window.location
+  let localStorageMock: { [key: string]: string }
 
   beforeEach(() => {
     // Reset all mocks
     vi.clearAllMocks()
-    localStorage.clear()
+
+    // Create a fresh localStorage mock for each test
+    localStorageMock = {}
+
+    // Mock localStorage methods
+    Object.defineProperty(window, 'localStorage', {
+      value: {
+        getItem: (key: string) => localStorageMock[key] || null,
+        setItem: (key: string, value: string) => {
+          localStorageMock[key] = value
+        },
+        removeItem: (key: string) => {
+          delete localStorageMock[key]
+        },
+        clear: () => {
+          localStorageMock = {}
+        },
+      },
+      writable: true,
+      configurable: true,
+    })
 
     // Mock fetch
     global.fetch = vi.fn()
@@ -59,7 +80,7 @@ describe('auth-interceptor', () => {
   afterEach(() => {
     global.fetch = originalFetch
     window.location = originalLocation
-    localStorage.clear()
+    localStorageMock = {}
   })
 
   describe('authRequestInterceptor', () => {
