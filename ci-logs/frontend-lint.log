@@ -2,3 +2,13 @@
 > langplug-frontend@1.0.0 lint
 > eslint src --max-warnings 0
 
+
+/home/runner/work/IdeaProjects/IdeaProjects/src/frontend/src/hooks/__tests__/useSubtitleSeek.test.ts
+   87:81  error  Unexpected empty arrow function  @typescript-eslint/no-empty-function
+  146:81  error  Unexpected empty arrow function  @typescript-eslint/no-empty-function
+  160:81  error  Unexpected empty arrow function  @typescript-eslint/no-empty-function
+  207:81  error  Unexpected empty arrow function  @typescript-eslint/no-empty-function
+  221:81  error  Unexpected empty arrow function  @typescript-eslint/no-empty-function
+
+✖ 5 problems (5 errors, 0 warnings)
+

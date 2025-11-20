@@ -5,6 +5,14 @@
 src/hooks/__tests__/useSubtitleHover.test.ts(27,11): error TS2353: Object literal may only specify known properties, and 'ipa' does not exist in type '{ confidence?: number | undefined; partOfSpeech?: string | undefined; level?: string | undefined; }'.
 src/hooks/__tests__/useSubtitleHover.test.ts(44,46): error TS2339: Property 'metadata' does not exist on type 'WordTranslationData'.
 src/hooks/__tests__/useSubtitleHover.test.ts(212,22): error TS2339: Property 'metadata' does not exist on type 'TranslationCacheEntry'.
+src/hooks/__tests__/useSubtitleSeek.test.ts(18,9): error TS2741: Property 'confidence' is missing in type '{ word: string; start: number; end: number; }' but required in type 'WordTimestamp'.
+src/hooks/__tests__/useSubtitleSeek.test.ts(19,9): error TS2741: Property 'confidence' is missing in type '{ word: string; start: number; end: number; }' but required in type 'WordTimestamp'.
+src/hooks/__tests__/useSubtitleSeek.test.ts(28,9): error TS2741: Property 'confidence' is missing in type '{ word: string; start: number; end: number; }' but required in type 'WordTimestamp'.
+src/hooks/__tests__/useSubtitleSeek.test.ts(29,9): error TS2741: Property 'confidence' is missing in type '{ word: string; start: number; end: number; }' but required in type 'WordTimestamp'.
+src/hooks/__tests__/useSubtitleSeek.test.ts(38,9): error TS2741: Property 'confidence' is missing in type '{ word: string; start: number; end: number; }' but required in type 'WordTimestamp'.
+src/hooks/__tests__/useSubtitleSeek.test.ts(39,9): error TS2741: Property 'confidence' is missing in type '{ word: string; start: number; end: number; }' but required in type 'WordTimestamp'.
+src/hooks/__tests__/useSubtitleSeek.test.ts(354,19): error TS2741: Property 'confidence' is missing in type '{ word: string; start: number; end: number; }' but required in type 'WordTimestamp'.
+src/hooks/__tests__/useSubtitleSeek.test.ts(354,58): error TS2741: Property 'confidence' is missing in type '{ word: string; start: number; end: number; }' but required in type 'WordTimestamp'.
 src/services/__tests__/subtitleSyncService.test.ts(155,60): error TS2345: Argument of type '{ id: string; start: number; end: number; text: string; words: { word: string; start: number; end: number; }[]; }[]' is not assignable to parameter of type 'SubtitleSegment[]'.
   Type '{ id: string; start: number; end: number; text: string; words: { word: string; start: number; end: number; }[]; }' is not assignable to type 'SubtitleSegment'.
     Types of property 'words' are incompatible.
@@ -30,3 +38,4 @@ src/services/__tests__/subtitleSyncService.test.ts(175,60): error TS2345: Argume
     Types of property 'words' are incompatible.
       Type '{ word: string; start: number; end: number; }[]' is not assignable to type 'WordTimestamp[]'.
         Property 'confidence' is missing in type '{ word: string; start: number; end: number; }' but required in type 'WordTimestamp'.
+src/utils/__tests__/error-formatter.test.ts(58,17): error TS2353: Object literal may only specify known properties, and 'field' does not exist in type '{ msg?: string | undefined; }'.
