@@ -11,10 +11,30 @@ src/hooks/__tests__/useSubtitleSeek.test.ts(38,9): error TS2741: Property 'confi
 src/hooks/__tests__/useSubtitleSeek.test.ts(39,9): error TS2741: Property 'confidence' is missing in type '{ word: string; start: number; end: number; }' but required in type 'WordTimestamp'.
 src/hooks/__tests__/useSubtitleSeek.test.ts(354,19): error TS2741: Property 'confidence' is missing in type '{ word: string; start: number; end: number; }' but required in type 'WordTimestamp'.
 src/hooks/__tests__/useSubtitleSeek.test.ts(354,58): error TS2741: Property 'confidence' is missing in type '{ word: string; start: number; end: number; }' but required in type 'WordTimestamp'.
-src/services/__tests__/auth-interceptor.test.ts(73,5): error TS2322: Type '{ href: string; pathname: string; ancestorOrigins: DOMStringList; hash: string; host: string; hostname: string; toString(): string; origin: string; port: string; protocol: string; search: string; assign(url: string | URL): void; reload(): void; replace(url: string | URL): void; }' is not assignable to type 'string & Location'.
+src/services/__tests__/auth-interceptor.test.ts(85,5): error TS2322: Type '{ href: string; pathname: string; ancestorOrigins: DOMStringList; hash: string; host: string; hostname: string; toString(): string; origin: string; port: string; protocol: string; search: string; assign(url: string | URL): void; reload(): void; replace(url: string | URL): void; }' is not assignable to type 'string & Location'.
   Type '{ href: string; pathname: string; ancestorOrigins: DOMStringList; hash: string; host: string; hostname: string; toString(): string; origin: string; port: string; protocol: string; search: string; assign(url: string | URL): void; reload(): void; replace(url: string | URL): void; }' is not assignable to type 'string'.
-src/services/__tests__/auth-interceptor.test.ts(82,5): error TS2322: Type 'Location' is not assignable to type 'string & Location'.
+src/services/__tests__/auth-interceptor.test.ts(94,5): error TS2322: Type 'Location' is not assignable to type 'string & Location'.
   Type 'Location' is not assignable to type 'string'.
+src/services/__tests__/auth-interceptor.test.ts(419,27): error TS2722: Cannot invoke an object which is possibly 'undefined'.
+src/services/__tests__/auth-interceptor.test.ts(419,27): error TS18048: 'OpenAPI.TOKEN' is possibly 'undefined'.
+src/services/__tests__/auth-interceptor.test.ts(419,35): error TS2349: This expression is not callable.
+  Not all constituents of type 'string | Resolver<string>' are callable.
+    Type 'string' has no call signatures.
+src/services/__tests__/auth-interceptor.test.ts(427,27): error TS2722: Cannot invoke an object which is possibly 'undefined'.
+src/services/__tests__/auth-interceptor.test.ts(427,27): error TS18048: 'OpenAPI.TOKEN' is possibly 'undefined'.
+src/services/__tests__/auth-interceptor.test.ts(427,35): error TS2349: This expression is not callable.
+  Not all constituents of type 'string | Resolver<string>' are callable.
+    Type 'string' has no call signatures.
+src/services/__tests__/auth-interceptor.test.ts(438,27): error TS2722: Cannot invoke an object which is possibly 'undefined'.
+src/services/__tests__/auth-interceptor.test.ts(438,27): error TS18048: 'OpenAPI.TOKEN' is possibly 'undefined'.
+src/services/__tests__/auth-interceptor.test.ts(438,35): error TS2349: This expression is not callable.
+  Not all constituents of type 'string | Resolver<string>' are callable.
+    Type 'string' has no call signatures.
+src/services/__tests__/auth-interceptor.test.ts(448,27): error TS2722: Cannot invoke an object which is possibly 'undefined'.
+src/services/__tests__/auth-interceptor.test.ts(448,27): error TS18048: 'OpenAPI.TOKEN' is possibly 'undefined'.
+src/services/__tests__/auth-interceptor.test.ts(448,35): error TS2349: This expression is not callable.
+  Not all constituents of type 'string | Resolver<string>' are callable.
+    Type 'string' has no call signatures.
 src/services/__tests__/subtitleSyncService.test.ts(155,60): error TS2345: Argument of type '{ id: string; start: number; end: number; text: string; words: { word: string; start: number; end: number; }[]; }[]' is not assignable to parameter of type 'SubtitleSegment[]'.
   Type '{ id: string; start: number; end: number; text: string; words: { word: string; start: number; end: number; }[]; }' is not assignable to type 'SubtitleSegment'.
     Types of property 'words' are incompatible.

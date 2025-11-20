@@ -19,24 +19,19 @@
   221:81  error  Unexpected empty arrow function  @typescript-eslint/no-empty-function
 
 /home/runner/work/IdeaProjects/IdeaProjects/src/frontend/src/services/__tests__/api-client.test.ts
-  4:10  error  'toast' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  41:10  error  'toast' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
 
 /home/runner/work/IdeaProjects/IdeaProjects/src/frontend/src/services/__tests__/auth-interceptor.test.ts
-   98:14  warning  Forbidden non-null assertion                    @typescript-eslint/no-non-null-assertion
-  111:14  warning  Forbidden non-null assertion                    @typescript-eslint/no-non-null-assertion
-  125:14  warning  Forbidden non-null assertion                    @typescript-eslint/no-non-null-assertion
-  153:14  warning  Forbidden non-null assertion                    @typescript-eslint/no-non-null-assertion
-  154:14  warning  Forbidden non-null assertion                    @typescript-eslint/no-non-null-assertion
-  155:14  warning  Forbidden non-null assertion                    @typescript-eslint/no-non-null-assertion
-  169:14  warning  Forbidden non-null assertion                    @typescript-eslint/no-non-null-assertion
-  396:27  error    Require statement not part of import statement  @typescript-eslint/no-var-requires
-  405:27  error    Require statement not part of import statement  @typescript-eslint/no-var-requires
-  417:27  error    Require statement not part of import statement  @typescript-eslint/no-var-requires
-  427:27  error    Require statement not part of import statement  @typescript-eslint/no-var-requires
-  440:27  error    Require statement not part of import statement  @typescript-eslint/no-var-requires
-  464:14  warning  Forbidden non-null assertion                    @typescript-eslint/no-non-null-assertion
-  478:14  warning  Forbidden non-null assertion                    @typescript-eslint/no-non-null-assertion
-  493:14  warning  Forbidden non-null assertion                    @typescript-eslint/no-non-null-assertion
+  110:14  warning  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  123:14  warning  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  137:14  warning  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  165:14  warning  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  166:14  warning  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  167:14  warning  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  181:14  warning  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  466:14  warning  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  480:14  warning  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  495:14  warning  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
 
-✖ 25 problems (15 errors, 10 warnings)
+✖ 20 problems (10 errors, 10 warnings)
 

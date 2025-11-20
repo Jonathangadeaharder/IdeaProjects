@@ -6,6 +6,7 @@ import {
 } from '../auth-interceptor'
 import { AxiosRequestConfig, AxiosResponse } from 'axios'
 import * as authStore from '@/store/useAuthStore'
+import { OpenAPI } from '@/client/core/OpenAPI'
 
 // Mock dependencies
 let mockTOKEN: (() => Promise<string>) | null = null
@@ -404,8 +405,6 @@ describe('auth-interceptor', () => {
 
   describe('setupAuthInterceptors', () => {
     it('should register request and response interceptors', () => {
-      const { OpenAPI } = require('@/client/core/OpenAPI')
-
       setupAuthInterceptors()
 
       expect(OpenAPI.interceptors.request.use).toHaveBeenCalledWith(authRequestInterceptor)
@@ -413,8 +412,6 @@ describe('auth-interceptor', () => {
     })
 
     it('should set up TOKEN function to retrieve from localStorage', async () => {
-      const { OpenAPI } = require('@/client/core/OpenAPI')
-
       localStorage.setItem('access_token', 'stored-token')
 
       setupAuthInterceptors()
@@ -425,8 +422,6 @@ describe('auth-interceptor', () => {
     })
 
     it('should return empty string when no token exists', async () => {
-      const { OpenAPI } = require('@/client/core/OpenAPI')
-
       setupAuthInterceptors()
 
       const token = await OpenAPI.TOKEN()
@@ -435,8 +430,6 @@ describe('auth-interceptor', () => {
     })
 
     it('should prefer access_token in TOKEN function', async () => {
-      const { OpenAPI } = require('@/client/core/OpenAPI')
-
       localStorage.setItem('access_token', 'new-token')
       localStorage.setItem('authToken', 'legacy-token')
 
@@ -448,8 +441,6 @@ describe('auth-interceptor', () => {
     })
 
     it('should fallback to authToken in TOKEN function', async () => {
-      const { OpenAPI } = require('@/client/core/OpenAPI')
-
       localStorage.setItem('authToken', 'legacy-token')
 
       setupAuthInterceptors()
