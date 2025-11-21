@@ -8,7 +8,7 @@
     "test:e2e": "jest"
   },
   "dependencies": {
-    "axios": "^1.12.2",
+    "axios": "^1.13.2",
     "puppeteer": "^24.22.0",
     "ts-node": "^10.9.1",
     "typescript": "^5.0.2",
