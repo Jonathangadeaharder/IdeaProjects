@@ -7,7 +7,7 @@ import logging
 from datetime import datetime
 from typing import Any
 
-from core.database import AsyncSessionLocal
+from core.database.database import AsyncSessionLocal
 
 from ..interface import FilteredSubtitle, FilteredWord, FilteringResult, WordStatus
 from .word_filter import WordFilter

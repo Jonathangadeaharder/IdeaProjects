@@ -43,7 +43,7 @@ from database.repositories.user_repository import UserRepository
 from database.repositories.user_vocabulary_progress_repository import UserVocabularyProgressRepository
 from database.repositories.vocabulary_repository import VocabularyRepository
 
-from .database import get_async_session
+from core.database.database import get_async_session
 
 
 def get_user_repository(db: Annotated[AsyncSession, Depends(get_async_session)]) -> UserRepositoryInterface:

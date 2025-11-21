@@ -1,6 +1,6 @@
 """
 Rate Limiting Configuration
-Requires: pip install slowapi==0.1.9
+Optional: pip install slowapi==0.1.9
 
 To enable rate limiting:
 1. Install: pip install slowapi==0.1.9
@@ -32,15 +32,30 @@ Example endpoint protection:
         ...
 """
 
-from slowapi import Limiter
-from slowapi.util import get_remote_address
+import logging
 
-# Create limiter instance
-limiter = Limiter(
-    key_func=get_remote_address,  # Rate limit by IP address
-    default_limits=["1000/hour"],  # Default limit for all endpoints
-    headers_enabled=True,  # Send rate limit info in response headers
-)
+logger = logging.getLogger(__name__)
+
+# Try to import slowapi - it's optional
+try:
+    from slowapi import Limiter
+    from slowapi.util import get_remote_address
+
+    # Create limiter instance
+    limiter = Limiter(
+        key_func=get_remote_address,  # Rate limit by IP address
+        default_limits=["1000/hour"],  # Default limit for all endpoints
+        headers_enabled=True,  # Send rate limit info in response headers
+    )
+    RATE_LIMITING_AVAILABLE = True
+except ImportError:
+    logger.warning(
+        "slowapi not installed - rate limiting disabled. "
+        "Install with: pip install slowapi==0.1.9"
+    )
+    # Provide stub limiter that does nothing
+    limiter = None  # type: ignore[assignment]
+    RATE_LIMITING_AVAILABLE = False
 
 
 # Recommended rate limits by endpoint type

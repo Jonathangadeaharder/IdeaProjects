@@ -12,8 +12,8 @@ from services.interfaces import (
     IChunkTranslationService,
 )
 
-from .auth_dependencies import current_active_user
-from .database import get_async_session as get_db_session
+from core.auth.auth_dependencies import current_active_user
+from core.database.database import get_async_session as get_db_session
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +54,7 @@ def get_transcription_service():
     try:
         from services.transcriptionservice.factory import get_transcription_service as _get_transcription_service
 
-        from .config import settings
+        from core.config.config import settings
 
         logger.info(f"Initializing transcription service: {settings.transcription_service}")
         service = _get_transcription_service(settings.transcription_service)
@@ -77,7 +77,7 @@ def get_translation_service():
     try:
         from services.translationservice.factory import get_translation_service as _get_translation_service
 
-        from .config import settings
+        from core.config.config import settings
 
         logger.info(f"Initializing translation service: {settings.translation_service}")
         service = _get_translation_service(settings.translation_service)

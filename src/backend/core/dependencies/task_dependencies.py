@@ -1,6 +1,6 @@
 """Task and lifecycle dependencies for FastAPI"""
 
-from .logging_config import get_logger
+from core.config.logging_config import get_logger
 
 logger = get_logger(__name__)
 
@@ -37,21 +37,21 @@ async def init_services():
     try:
         # Initialize authentication services
         logger.info("[STARTUP] Step 1/5: Initializing authentication services...")
-        from .auth_dependencies import init_auth_services
+        from core.auth.auth_dependencies import init_auth_services
 
         init_auth_services()
         logger.info("[STARTUP] Authentication services initialized")
 
         # Initialize database tables
         logger.info("[STARTUP] Step 2/5: Initializing database...")
-        from .database import init_db
+        from core.database.database import init_db
 
         await init_db()
         logger.info("[STARTUP] Database initialized successfully")
 
         # Initialize transcription service
         logger.info("[STARTUP] Step 3/5: Initializing transcription service...")
-        from .config import settings
+        from core.config.config import settings
         from .service_dependencies import get_transcription_service
 
         logger.info(f"[STARTUP] Using transcription model: {settings.transcription_service}")
@@ -86,12 +86,12 @@ async def cleanup_services():
     logger.info("Cleaning up services...")
 
     # Cleanup authentication services
-    from .auth_dependencies import cleanup_auth_services
+    from core.auth.auth_dependencies import cleanup_auth_services
 
     cleanup_auth_services()
 
     # Close database engine
-    from .database import engine
+    from core.database.database import engine
 
     await engine.dispose()
 

@@ -10,7 +10,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from core.exceptions import LangPlugException
-from core.sentry_config import capture_exception, set_context
+from core.config.sentry_config import capture_exception, set_context
 
 logger = structlog.get_logger(__name__)
 

@@ -9,8 +9,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from database.models import User
 
 from .auth import current_active_user
-from .database import get_async_session as get_db_session
-from .logging_config import get_logger
+from core.database.database import get_async_session as get_db_session
+from core.config.logging_config import get_logger
 
 if TYPE_CHECKING:
     from .token_blacklist import TokenBlacklist

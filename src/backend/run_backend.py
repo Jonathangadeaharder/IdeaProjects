@@ -53,7 +53,7 @@ def main():
         import uvicorn
 
         from core.config import settings
-        from core.logging_config import setup_logging
+        from core.config.logging_config import setup_logging
 
         # Step 2: Initialize logging
         setup_logging()
