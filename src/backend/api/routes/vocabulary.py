@@ -19,9 +19,8 @@ from api.error_handlers import (
 )
 from core.config import settings
 from core.database import get_async_session
-from core.dependencies import current_active_user
+from core.dependencies import current_active_user, get_vocabulary_service
 from core.enums import CEFRLevel
-from core.service_dependencies import get_vocabulary_service
 from database.models import User
 
 logger = logging.getLogger(__name__)

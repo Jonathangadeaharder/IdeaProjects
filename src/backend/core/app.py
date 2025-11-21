@@ -34,12 +34,12 @@ from api.routes import (
 )
 
 from .config import settings
-from .contract_middleware import setup_contract_validation
+from .middleware.contract_middleware import setup_contract_validation
 from .dependencies import cleanup_services, init_services
-from .exception_handlers import setup_exception_handlers
-from .logging_config import configure_logging, get_logger
-from .security_middleware import setup_security_middleware
-from .sentry_config import configure_sentry
+from .middleware.exception_handlers import setup_exception_handlers
+from .config.logging_config import configure_logging, get_logger
+from .security.security_middleware import setup_security_middleware
+from .config.sentry_config import configure_sentry
 
 # Initialize logging and Sentry
 configure_logging()
