@@ -27,7 +27,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Performance Monitoring
         run: |
@@ -62,7 +62,7 @@ jobs:
           cat dashboard.md >> $GITHUB_STEP_SUMMARY
 
       - name: Upload Dashboard
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         if: always()
         with:
           name: workflow-dashboard-${{ github.run_number }}
