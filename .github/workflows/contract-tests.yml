@@ -18,10 +18,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: "20"
           cache: "npm"
@@ -36,7 +36,7 @@ jobs:
         run: npm test -- src/test/contract --run
 
       - name: Upload frontend test results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         if: always()
         with:
           name: frontend-contract-test-results
@@ -48,7 +48,7 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Start Postgres (docker)
         run: |
@@ -62,7 +62,7 @@ jobs:
           echo "Postgres did not become ready" && exit 1
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.11"
           cache: "pip"
@@ -106,7 +106,7 @@ jobs:
           pytest tests/ -v -k "contract" --tb=short
 
       - name: Upload backend test results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         if: always()
         with:
           name: backend-contract-test-results
@@ -120,7 +120,7 @@ jobs:
     needs: [frontend-contract-tests, backend-contract-tests]
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Start Postgres (docker)
         run: |
@@ -134,14 +134,14 @@ jobs:
           echo "Postgres did not become ready" && exit 1
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: "20"
           cache: "npm"
           cache-dependency-path: src/frontend/package-lock.json
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.11"
           cache: "pip"
@@ -197,7 +197,7 @@ jobs:
           echo "✅ Passed: End-to-end contract compatibility" >> contract-test-report.md
 
       - name: Upload contract test report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         if: always()
         with:
           name: contract-test-report

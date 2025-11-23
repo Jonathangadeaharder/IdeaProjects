@@ -29,7 +29,7 @@ jobs:
         test-group: [api, core, services, management, integration]
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -44,7 +44,7 @@ jobs:
 
       - name: Upload pip install log
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: pip-install-log-${{ matrix.test-group }}
           path: src/backend/pip-install.log
@@ -86,7 +86,7 @@ jobs:
 
       - name: Upload coverage HTML
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: backend-coverage-html-${{ matrix.test-group }}
           path: src/backend/htmlcov
@@ -102,7 +102,7 @@ jobs:
         shard: [1, 2]
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node.js Environment
         uses: ./.github/actions/setup-node
@@ -117,7 +117,7 @@ jobs:
 
       - name: Upload coverage
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: frontend-coverage-shard-${{ matrix.shard }}
           path: src/frontend/coverage

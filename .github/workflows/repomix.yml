@@ -19,12 +19,12 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: "20"
           cache: "npm"
@@ -51,7 +51,7 @@ jobs:
           fi
 
       - name: Upload Repomix artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: repomix-codebase-${{ github.sha }}
           path: repomix-output.txt
@@ -59,7 +59,7 @@ jobs:
           compression-level: 9
 
       - name: Upload artifact metadata
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: repomix-metadata-${{ github.sha }}
           path: |
