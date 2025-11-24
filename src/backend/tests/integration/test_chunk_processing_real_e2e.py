@@ -291,7 +291,14 @@ class TestBugReproduction:
         Reproduces Bug #4: VocabularyService.get_db_session() doesn't exist
         This test would have failed with the buggy code
         """
-        vocab_service = VocabularyService()
+        from services.vocabulary.vocabulary_query_service import get_vocabulary_query_service
+        from services.vocabulary.vocabulary_progress_service import get_vocabulary_progress_service
+        from services.vocabulary.vocabulary_stats_service import get_vocabulary_stats_service
+        
+        query_service = get_vocabulary_query_service()
+        progress_service = get_vocabulary_progress_service()
+        stats_service = get_vocabulary_stats_service()
+        vocab_service = VocabularyService(query_service, progress_service, stats_service)
 
         # Verify service doesn't have get_db_session() method (the bug)
         assert not hasattr(vocab_service, "get_db_session")

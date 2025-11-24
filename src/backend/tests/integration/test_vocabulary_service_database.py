@@ -23,7 +23,14 @@ class TestVocabularyServiceDatabaseIntegration:
     @pytest.fixture
     async def vocabulary_service(self):
         """Create vocabulary service instance"""
-        return VocabularyService()
+        from services.vocabulary.vocabulary_query_service import get_vocabulary_query_service
+        from services.vocabulary.vocabulary_progress_service import get_vocabulary_progress_service
+        from services.vocabulary.vocabulary_stats_service import get_vocabulary_stats_service
+        
+        query_service = get_vocabulary_query_service()
+        progress_service = get_vocabulary_progress_service()
+        stats_service = get_vocabulary_stats_service()
+        return VocabularyService(query_service, progress_service, stats_service)
 
     @pytest.fixture
     async def test_user(self, db_session):

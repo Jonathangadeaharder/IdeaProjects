@@ -195,7 +195,13 @@ class SRTFileHandler:
         """
         if not subtitles:
             return 0
-        return subtitles[-1].end.milliseconds
+        end_time = subtitles[-1].end
+        # Convert time to total milliseconds: hours*3600000 + minutes*60000 + seconds*1000 + milliseconds
+        total_ms = (end_time.hours * 3600000 + 
+                   end_time.minutes * 60000 + 
+                   end_time.seconds * 1000 + 
+                   end_time.milliseconds)
+        return total_ms
 
 
 # Example usage and testing
