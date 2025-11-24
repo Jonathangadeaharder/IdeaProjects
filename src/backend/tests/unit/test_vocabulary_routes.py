@@ -468,7 +468,10 @@ class TestVocabularyRoutesCore:
         from core.dependencies import get_vocabulary_service
         from services.vocabulary.vocabulary_service import VocabularyService
 
-        mock_service = VocabularyService()
+        mock_query_service = AsyncMock()
+        mock_progress_service = AsyncMock()
+        mock_stats_service = AsyncMock()
+        mock_service = VocabularyService(mock_query_service, mock_progress_service, mock_stats_service)
         mock_service.mark_word_known = AsyncMock(
             return_value={
                 "success": True,
@@ -668,7 +671,10 @@ class TestVocabularyRoutesCore:
             from core.dependencies import get_vocabulary_service
             from services.vocabulary.vocabulary_service import VocabularyService
 
-            mock_service = VocabularyService()
+            mock_query_service = AsyncMock()
+            mock_progress_service = AsyncMock()
+            mock_stats_service = AsyncMock()
+            mock_service = VocabularyService(mock_query_service, mock_progress_service, mock_stats_service)
             mock_service.extract_blocking_words_from_srt = AsyncMock(return_value=[])
             app.dependency_overrides[get_vocabulary_service] = lambda: mock_service
 

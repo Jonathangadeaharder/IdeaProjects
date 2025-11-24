@@ -18,20 +18,26 @@ class TestVocabularyServiceArchitecture:
 
     def test_service_initialization(self):
         """Test that facade initializes with all sub-services"""
-        service = VocabularyService()
+        mock_query_service = AsyncMock()
+        mock_progress_service = AsyncMock()
+        mock_stats_service = AsyncMock()
+        service = VocabularyService(mock_query_service, mock_progress_service, mock_stats_service)
 
         assert service.query_service is not None
         assert service.progress_service is not None
         assert service.stats_service is not None
 
-        assert isinstance(service.query_service, VocabularyQueryService)
-        assert isinstance(service.progress_service, VocabularyProgressService)
-        assert isinstance(service.stats_service, VocabularyStatsService)
+        assert service.query_service is mock_query_service
+        assert service.progress_service is mock_progress_service
+        assert service.stats_service is mock_stats_service
 
     @pytest.mark.asyncio
     async def test_facade_delegates_to_query_service(self):
         """Test that query methods delegate to query service"""
-        service = VocabularyService()
+        mock_query_service = AsyncMock()
+        mock_progress_service = AsyncMock()
+        mock_stats_service = AsyncMock()
+        service = VocabularyService(mock_query_service, mock_progress_service, mock_stats_service)
         mock_db = AsyncMock()
 
         # Mock the query service method
@@ -45,7 +51,10 @@ class TestVocabularyServiceArchitecture:
     @pytest.mark.asyncio
     async def test_facade_delegates_to_progress_service(self):
         """Test that progress methods delegate to progress service"""
-        service = VocabularyService()
+        mock_query_service = AsyncMock()
+        mock_progress_service = AsyncMock()
+        mock_stats_service = AsyncMock()
+        service = VocabularyService(mock_query_service, mock_progress_service, mock_stats_service)
         mock_db = AsyncMock()
 
         # Mock the progress service method
@@ -61,7 +70,10 @@ class TestVocabularyServiceArchitecture:
     @pytest.mark.asyncio
     async def test_facade_delegates_to_stats_service(self):
         """Test that stats methods delegate to stats service"""
-        service = VocabularyService()
+        mock_query_service = AsyncMock()
+        mock_progress_service = AsyncMock()
+        mock_stats_service = AsyncMock()
+        service = VocabularyService(mock_query_service, mock_progress_service, mock_stats_service)
 
         # Mock the stats service method
         service.stats_service.get_vocabulary_stats = AsyncMock(

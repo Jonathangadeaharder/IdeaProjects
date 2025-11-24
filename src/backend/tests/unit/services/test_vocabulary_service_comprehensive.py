@@ -11,14 +11,23 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from services.vocabulary.vocabulary_service import VocabularyService, get_vocabulary_service
 
 
+@pytest.fixture
+def vocab_service():
+    """Fixture providing a VocabularyService with mocked dependencies"""
+    mock_query_service = AsyncMock()
+    mock_progress_service = AsyncMock()
+    mock_stats_service = AsyncMock()
+    return VocabularyService(mock_query_service, mock_progress_service, mock_stats_service)
+
+
 class TestVocabularyServiceFacadePatternFunctionality:
     """Test that VocabularyService correctly delegates to sub-services"""
 
     @pytest.mark.asyncio
-    async def test_get_vocabulary_library_delegates_to_query_service(self):
+    async def test_get_vocabulary_library_delegates_to_query_service(self, vocab_service):
         """Verify get_vocabulary_library delegates to query_service"""
         # Arrange
-        service = VocabularyService()
+        service = vocab_service
         mock_db = AsyncMock(spec=AsyncSession)
 
         expected_result = {
@@ -43,10 +52,10 @@ class TestVocabularyServiceFacadePatternFunctionality:
         assert len(result["words"]) == 2
 
     @pytest.mark.asyncio
-    async def test_search_vocabulary_delegates_to_query_service(self):
+    async def test_search_vocabulary_delegates_to_query_service(self, vocab_service):
         """Verify search_vocabulary delegates to query_service"""
         # Arrange
-        service = VocabularyService()
+        service = vocab_service
         mock_db = AsyncMock(spec=AsyncSession)
 
         expected_result = [
@@ -66,10 +75,10 @@ class TestVocabularyServiceFacadePatternFunctionality:
         assert result[0]["word"] == "Haus"
 
     @pytest.mark.asyncio
-    async def test_bulk_mark_level_delegates_to_progress_service(self):
+    async def test_bulk_mark_level_delegates_to_progress_service(self, vocab_service):
         """Verify bulk_mark_level delegates to progress_service"""
         # Arrange
-        service = VocabularyService()
+        service = vocab_service
         mock_db = AsyncMock(spec=AsyncSession)
 
         expected_result = {
@@ -90,10 +99,10 @@ class TestVocabularyServiceFacadePatternFunctionality:
         assert result["words_updated"] == 25
 
     @pytest.mark.asyncio
-    async def test_get_vocabulary_stats_delegates_to_stats_service(self):
+    async def test_get_vocabulary_stats_delegates_to_stats_service(self, vocab_service):
         """Verify get_vocabulary_stats delegates to stats_service"""
         # Arrange
-        service = VocabularyService()
+        service = vocab_service
 
         expected_result = {
             "A1": 100,
@@ -113,10 +122,10 @@ class TestVocabularyServiceFacadePatternFunctionality:
         assert result["A2"] == 150
 
     @pytest.mark.asyncio
-    async def test_get_user_progress_summary_delegates_to_stats_service(self):
+    async def test_get_user_progress_summary_delegates_to_stats_service(self, vocab_service):
         """Verify get_user_progress_summary delegates to stats_service"""
         # Arrange
-        service = VocabularyService()
+        service = vocab_service
         mock_db = AsyncMock(spec=AsyncSession)
 
         expected_result = {
@@ -140,10 +149,10 @@ class TestVocabularyServiceFacadePatternFunctionality:
         assert result["by_level"]["A1"] == 80
 
     @pytest.mark.asyncio
-    async def test_get_supported_languages_delegates_to_stats_service(self):
+    async def test_get_supported_languages_delegates_to_stats_service(self, vocab_service):
         """Verify get_supported_languages delegates to stats_service"""
         # Arrange
-        service = VocabularyService()
+        service = vocab_service
 
         expected_result = ["de", "es", "fr", "it"]
 
@@ -163,11 +172,19 @@ class TestVocabularyServiceFacadePatternFunctionality:
 class TestExtractBlockingWordsFromSrt:
     """Test SRT subtitle parsing and word extraction"""
 
+    @pytest.fixture
+    def vocab_service(self):
+        """Fixture providing a VocabularyService with mocked dependencies"""
+        mock_query_service = AsyncMock()
+        mock_progress_service = AsyncMock()
+        mock_stats_service = AsyncMock()
+        return VocabularyService(mock_query_service, mock_progress_service, mock_stats_service)
+
     @pytest.mark.asyncio
-    async def test_extract_blocking_words_from_valid_srt(self):
+    async def test_extract_blocking_words_from_valid_srt(self, vocab_service):
         """Test extracting words from properly formatted SRT content"""
         # Arrange
-        service = VocabularyService()
+        service = vocab_service
         mock_db = AsyncMock(spec=AsyncSession)
 
         srt_content = """1
@@ -198,10 +215,10 @@ Heute lernen wir Deutsch sprechen
             assert word["known"] is False
 
     @pytest.mark.asyncio
-    async def test_extract_blocking_words_filters_common_words(self):
+    async def test_extract_blocking_words_filters_common_words(self, vocab_service):
         """Test that common words like 'und', 'der', 'die' are filtered out"""
         # Arrange
-        service = VocabularyService()
+        service = vocab_service
         mock_db = AsyncMock(spec=AsyncSession)
 
         srt_content = """1
@@ -219,10 +236,10 @@ und der die das ist sind war
         # All words should be filtered out (common words + short words)
 
     @pytest.mark.asyncio
-    async def test_extract_blocking_words_handles_empty_srt(self):
+    async def test_extract_blocking_words_handles_empty_srt(self, vocab_service):
         """Test handling of empty SRT content"""
         # Arrange
-        service = VocabularyService()
+        service = vocab_service
         mock_db = AsyncMock(spec=AsyncSession)
 
         srt_content = ""
@@ -236,10 +253,10 @@ und der die das ist sind war
         assert result == []
 
     @pytest.mark.asyncio
-    async def test_extract_blocking_words_handles_malformed_srt(self):
+    async def test_extract_blocking_words_handles_malformed_srt(self, vocab_service):
         """Test handling of malformed SRT content"""
         # Arrange
-        service = VocabularyService()
+        service = vocab_service
         mock_db = AsyncMock(spec=AsyncSession)
 
         srt_content = "Not a valid SRT format at all"
@@ -253,10 +270,10 @@ und der die das ist sind war
         assert isinstance(result, list)
 
     @pytest.mark.asyncio
-    async def test_extract_blocking_words_returns_unique_words(self):
+    async def test_extract_blocking_words_returns_unique_words(self, vocab_service):
         """Test that duplicate words are removed"""
         # Arrange
-        service = VocabularyService()
+        service = vocab_service
         mock_db = AsyncMock(spec=AsyncSession)
 
         srt_content = """1
@@ -279,10 +296,10 @@ Katze Katze Katze
         assert len(word_texts) == len(set(word_texts))
 
     @pytest.mark.asyncio
-    async def test_extract_blocking_words_limits_to_20_words(self):
+    async def test_extract_blocking_words_limits_to_20_words(self, vocab_service):
         """Test that result is limited to 20 words maximum"""
         # Arrange
-        service = VocabularyService()
+        service = vocab_service
         mock_db = AsyncMock(spec=AsyncSession)
 
         # Create SRT with many unique words
@@ -301,10 +318,10 @@ Katze Katze Katze
         assert len(result) <= 20  # Should be limited to 20
 
     @pytest.mark.asyncio
-    async def test_extract_blocking_words_handles_exception(self):
+    async def test_extract_blocking_words_handles_exception(self, vocab_service):
         """Test error handling when extraction fails"""
         # Arrange
-        service = VocabularyService()
+        service = vocab_service
         mock_db = AsyncMock(spec=AsyncSession)
 
         # Pass None instead of string to cause TypeError
@@ -325,7 +342,11 @@ class TestGetVocabularyService:
     def test_get_vocabulary_service_returns_instance(self):
         """Test that factory function returns VocabularyService instance"""
         # Act
-        service = get_vocabulary_service()
+        from unittest.mock import AsyncMock
+        mock_query_service = AsyncMock()
+        mock_progress_service = AsyncMock()
+        mock_stats_service = AsyncMock()
+        service = get_vocabulary_service(mock_query_service, mock_progress_service, mock_stats_service)
 
         # Assert
         assert isinstance(service, VocabularyService)
@@ -336,8 +357,16 @@ class TestGetVocabularyService:
     def test_get_vocabulary_service_returns_fresh_instance(self):
         """Test that each call returns a new instance"""
         # Act
-        service1 = get_vocabulary_service()
-        service2 = get_vocabulary_service()
+        from unittest.mock import AsyncMock
+        mock_query_service1 = AsyncMock()
+        mock_progress_service1 = AsyncMock()
+        mock_stats_service1 = AsyncMock()
+        service1 = get_vocabulary_service(mock_query_service1, mock_progress_service1, mock_stats_service1)
+
+        mock_query_service2 = AsyncMock()
+        mock_progress_service2 = AsyncMock()
+        mock_stats_service2 = AsyncMock()
+        service2 = get_vocabulary_service(mock_query_service2, mock_progress_service2, mock_stats_service2)
 
         # Assert
         assert service1 is not service2  # Different instances

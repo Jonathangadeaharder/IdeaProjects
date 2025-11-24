@@ -108,7 +108,7 @@ class DirectSubtitleProcessor:
         self.file_handler = srt_file_handler
 
     async def process_subtitles(
-        self, subtitles: list[FilteredSubtitle], user_id: int | str, user_level: str = "A1", language: str = "de"
+        self, subtitles: list[FilteredSubtitle], user_id: int | str, user_level: str = "A1", language: str = "de", db=None
     ) -> FilteringResult:
         """
         Process subtitles - delegates to SubtitleProcessor service
@@ -118,10 +118,13 @@ class DirectSubtitleProcessor:
             user_id: User ID for personalized filtering
             user_level: User's language level (A1, A2, B1, B2, C1, C2)
             language: Target language code
+            db: Optional database session (creates one if not provided)
 
         Returns:
             FilteringResult with categorized content
         """
+        from core.database import AsyncSessionLocal
+        
         user_id_str = str(user_id)
         logger.info(f"Processing {len(subtitles)} subtitles for user {user_id_str}")
 
@@ -129,10 +132,17 @@ class DirectSubtitleProcessor:
         user_known_words = await self.data_loader.get_user_known_words(user_id_str, language)
         await self.data_loader.load_word_difficulties(language)
 
-        # Delegate to SubtitleProcessor
-        result = await self.processor.process_subtitles(
-            subtitles, user_known_words, user_level, language, self.vocab_service
-        )
+        # Use provided db session or create new one
+        if db is None:
+            async with AsyncSessionLocal() as session:
+                result = await self.processor.process_subtitles(
+                    subtitles, user_known_words, user_level, language, self.vocab_service, session
+                )
+        else:
+            # Delegate to SubtitleProcessor
+            result = await self.processor.process_subtitles(
+                subtitles, user_known_words, user_level, language, self.vocab_service, db
+            )
 
         # Add user_id to statistics for backward compatibility
         result.statistics["user_id"] = user_id_str

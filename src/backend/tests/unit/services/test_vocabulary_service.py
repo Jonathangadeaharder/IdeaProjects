@@ -9,6 +9,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from services.vocabulary.vocabulary_service import VocabularyService
 
 
+@pytest.fixture
+def vocab_service():
+    """Fixture providing a VocabularyService with mocked dependencies"""
+    mock_query_service = AsyncMock()
+    mock_progress_service = AsyncMock()
+    mock_stats_service = AsyncMock()
+    return VocabularyService(mock_query_service, mock_progress_service, mock_stats_service)
+
+
 class TestVocabularyServiceGetWordInfo:
     """Tests for VocabularyService.get_word_info"""
 
@@ -16,7 +25,10 @@ class TestVocabularyServiceGetWordInfo:
     async def test_When_word_found_in_database_Then_returns_word_info(self):
         """Happy path: word exists in database - facade delegation test"""
         # Arrange
-        service = VocabularyService()
+        mock_query_service = AsyncMock()
+        mock_progress_service = AsyncMock()
+        mock_stats_service = AsyncMock()
+        service = VocabularyService(mock_query_service, mock_progress_service, mock_stats_service)
         mock_db = AsyncMock(spec=AsyncSession)
 
         expected_result = {
@@ -50,7 +62,10 @@ class TestVocabularyServiceGetWordInfo:
     async def test_When_word_not_found_Then_returns_not_found_info(self):
         """Boundary: word doesn't exist in database - facade delegation test"""
         # Arrange
-        service = VocabularyService()
+        mock_query_service = AsyncMock()
+        mock_progress_service = AsyncMock()
+        mock_stats_service = AsyncMock()
+        service = VocabularyService(mock_query_service, mock_progress_service, mock_stats_service)
         mock_db = AsyncMock(spec=AsyncSession)
 
         expected_result = {
@@ -76,7 +91,10 @@ class TestVocabularyServiceGetWordInfo:
     async def test_When_word_not_found_Then_tracks_unknown_word(self):
         """Behavior: unknown words are tracked - facade delegation test"""
         # Arrange
-        service = VocabularyService()
+        mock_query_service = AsyncMock()
+        mock_progress_service = AsyncMock()
+        mock_stats_service = AsyncMock()
+        service = VocabularyService(mock_query_service, mock_progress_service, mock_stats_service)
         mock_db = AsyncMock(spec=AsyncSession)
 
         expected_result = {
@@ -101,10 +119,10 @@ class TestVocabularyServiceMarkWordKnown:
     """Tests for VocabularyService.mark_word_known"""
 
     @pytest.mark.asyncio
-    async def test_When_marking_known_word_for_first_time_Then_creates_progress(self):
+    async def test_When_marking_known_word_for_first_time_Then_creates_progress(self, vocab_service):
         """Happy path: first time marking word as known - facade delegation test"""
         # Arrange
-        service = VocabularyService()
+        service = vocab_service
         mock_db = AsyncMock(spec=AsyncSession)
         user_id = 1
         uuid4()
@@ -131,10 +149,10 @@ class TestVocabularyServiceMarkWordKnown:
         assert result["confidence_level"] == 1
 
     @pytest.mark.asyncio
-    async def test_When_marking_word_not_in_database_Then_returns_failure(self):
+    async def test_When_marking_word_not_in_database_Then_returns_failure(self, vocab_service):
         """Error: cannot mark word that doesn't exist - facade delegation test"""
         # Arrange
-        service = VocabularyService()
+        service = vocab_service
         mock_db = AsyncMock(spec=AsyncSession)
         user_id = 1
 
@@ -156,10 +174,10 @@ class TestVocabularyServiceMarkWordKnown:
         assert "message" in result
 
     @pytest.mark.asyncio
-    async def test_When_updating_existing_progress_as_known_Then_increases_confidence(self):
+    async def test_When_updating_existing_progress_as_known_Then_increases_confidence(self, vocab_service):
         """Happy path: updating existing progress increases confidence - facade delegation test"""
         # Arrange
-        service = VocabularyService()
+        service = vocab_service
         mock_db = AsyncMock(spec=AsyncSession)
         user_id = 1
         uuid4()
@@ -190,32 +208,29 @@ class TestVocabularyServiceGetUserStats:
     """Tests for VocabularyService.get_user_vocabulary_stats"""
 
     @pytest.mark.asyncio
-    async def test_When_getting_stats_Then_returns_total_and_known_counts(self):
+    async def test_When_getting_stats_Then_returns_total_and_known_counts(self, vocab_service):
         """Happy path: retrieve user vocabulary statistics"""
         # Arrange
-        service = VocabularyService()
+        service = vocab_service
         mock_db = AsyncMock(spec=AsyncSession)
         user_id = 1
         language = "de"
 
-        # Mock total words count
-        mock_total_result = Mock()
-        mock_total_result.scalar.return_value = 1000
+        expected_result = {
+            "total_words": 1000,
+            "total_known": 150,
+            "levels": [
+                {"level": "A1", "total": 300, "known": 100},
+                {"level": "A2", "total": 400, "known": 50},
+                {"level": "B1", "total": 300, "known": 0}
+            ]
+        }
 
-        # Mock known words count
-        mock_known_result = Mock()
-        mock_known_result.scalar.return_value = 150
-
-        # Mock level breakdown - needs to be iterable with tuple unpacking
-        # The code does: level, total, known = row
-        mock_level_result = Mock()
-        mock_level_result.__iter__ = Mock(return_value=iter([("A1", 300, 100), ("A2", 400, 50), ("B1", 300, 0)]))
-
-        # Configure execute to return different results
-        mock_db.execute.side_effect = [mock_total_result, mock_known_result, mock_level_result]
-
-        # Act
-        result = await service.get_user_vocabulary_stats(user_id, language, mock_db)
+        # Act - Mock facade delegation to progress_service
+        with patch.object(
+            service.progress_service, "get_user_vocabulary_stats", new_callable=AsyncMock, return_value=expected_result
+        ):
+            result = await service.get_user_vocabulary_stats(user_id, language, mock_db)
 
         # Assert
         assert "total_words" in result
@@ -224,30 +239,25 @@ class TestVocabularyServiceGetUserStats:
         assert result["total_known"] == 150
 
     @pytest.mark.asyncio
-    async def test_When_user_has_no_progress_Then_returns_zero_known(self):
+    async def test_When_user_has_no_progress_Then_returns_zero_known(self, vocab_service):
         """Boundary: user with no progress returns 0 known words"""
         # Arrange
-        service = VocabularyService()
+        service = vocab_service
         mock_db = AsyncMock(spec=AsyncSession)
         user_id = 999
         language = "de"
 
-        # Mock total words count
-        mock_total_result = Mock()
-        mock_total_result.scalar.return_value = 1000
+        expected_result = {
+            "total_words": 1000,
+            "total_known": 0,
+            "levels": []
+        }
 
-        # Mock zero known words
-        mock_known_result = Mock()
-        mock_known_result.scalar.return_value = 0
-
-        # Mock empty level breakdown - needs to be iterable
-        mock_level_result = Mock()
-        mock_level_result.__iter__ = Mock(return_value=iter([]))
-
-        mock_db.execute.side_effect = [mock_total_result, mock_known_result, mock_level_result]
-
-        # Act
-        result = await service.get_user_vocabulary_stats(user_id, language, mock_db)
+        # Act - Mock facade delegation to progress_service
+        with patch.object(
+            service.progress_service, "get_user_vocabulary_stats", new_callable=AsyncMock, return_value=expected_result
+        ):
+            result = await service.get_user_vocabulary_stats(user_id, language, mock_db)
 
         # Assert
         assert result["total_known"] == 0
@@ -257,10 +267,10 @@ class TestVocabularyServiceGetVocabularyLevel:
     """Tests for VocabularyService.get_vocabulary_level"""
 
     @pytest.mark.asyncio
-    async def test_When_getting_vocabulary_by_level_Then_returns_words(self):
+    async def test_When_getting_vocabulary_by_level_Then_returns_words(self, vocab_service):
         """Happy path: retrieve words by difficulty level"""
         # Arrange
-        service = VocabularyService()
+        service = vocab_service
         level = "A1"
         target_language = "de"
         translation_language = "es"
@@ -324,10 +334,10 @@ class TestVocabularyServiceGetVocabularyLevel:
         assert result["total_count"] == 2
 
     @pytest.mark.asyncio
-    async def test_When_getting_level_with_limit_Then_respects_limit(self):
+    async def test_When_getting_level_with_limit_Then_respects_limit(self, vocab_service):
         """Boundary: limit parameter restricts results"""
         # Arrange
-        service = VocabularyService()
+        service = vocab_service
         level = "B1"
         limit = 10
 

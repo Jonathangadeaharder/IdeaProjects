@@ -12,7 +12,10 @@ from services.vocabulary.vocabulary_service import VocabularyService
 @pytest.fixture
 def service_with_stats(monkeypatch) -> VocabularyService:
     monkeypatch.setenv("TESTING", "1")
-    service = VocabularyService()
+    mock_query_service = AsyncMock()
+    mock_progress_service = AsyncMock()
+    mock_stats_service = AsyncMock()
+    service = VocabularyService(mock_query_service, mock_progress_service, mock_stats_service)
     return service
 
 
