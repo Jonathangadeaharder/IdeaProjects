@@ -2,15 +2,10 @@ import React from 'react'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { describe, it, expect, vi } from 'vitest'
 import { ThemeProvider } from 'styled-components'
+import { lightTheme } from '@/styles/theme'
 import { Button } from '../Button'
 
-const theme = {
-  colors: {
-    primary: '#3b82f6',
-    secondary: '#6b7280',
-    danger: '#dc2626',
-  },
-}
+const theme = lightTheme
 
 const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <ThemeProvider theme={theme}>{children}</ThemeProvider>
