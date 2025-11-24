@@ -26,7 +26,7 @@ test.describe('Video Processing Workflow @smoke', () => {
   test('WhenUserUploadsVideo_ThenProcessingStartsAndCompletes @smoke', async ({ page }) => {
     await test.step('Verify videos can be listed via API', async () => {
       // Test that the GET /api/videos endpoint works
-      const response = await page.request.get('http://localhost:8000/api/videos', {
+      const response = await page.request.get('http://127.0.0.1:8000/api/videos', {
         headers: {
           Authorization: `Bearer ${testUser.token}`
         }
@@ -45,7 +45,7 @@ test.describe('Video Processing Workflow @smoke', () => {
     await test.step('Verify processing status endpoint works', async () => {
       // Test that processing status can be checked via API
       // Using a non-existent video should return 404
-      const response = await page.request.get('http://localhost:8000/api/videos/nonexistent/status', {
+      const response = await page.request.get('http://127.0.0.1:8000/api/videos/nonexistent/status', {
         headers: {
           Authorization: `Bearer ${testUser.token}`
         }
@@ -62,7 +62,7 @@ test.describe('Video Processing Workflow @smoke', () => {
   test('WhenUserCancelsProcessing_ThenCanRestartLater @smoke', async ({ page }) => {
     await test.step('Verify video scan endpoint works', async () => {
       // Test that video directory scan works
-      const response = await page.request.post('http://localhost:8000/api/videos/scan', {
+      const response = await page.request.post('http://127.0.0.1:8000/api/videos/scan', {
         headers: {
           Authorization: `Bearer ${testUser.token}`
         }
@@ -80,7 +80,7 @@ test.describe('Video Processing Workflow @smoke', () => {
   test('WhenVideoProcessingCompletes_ThenVocabularyGameStarts @smoke', async ({ page }) => {
     await test.step('Verify health check endpoint works', async () => {
       // Test the simplest possible endpoint - health check
-      const response = await page.request.get('http://localhost:8000/health');
+      const response = await page.request.get('http://127.0.0.1:8000/health');
 
       // Should return 200 OK
       expect(response.status()).toBe(200);
@@ -92,3 +92,4 @@ test.describe('Video Processing Workflow @smoke', () => {
     // This tests the backend health check works
   });
 });
+

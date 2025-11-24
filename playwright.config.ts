@@ -2,6 +2,7 @@ import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
   testDir: './tests/e2e',
+  testMatch: ['**/*.spec.ts', '**/*.test.ts'], // Match both .spec.ts and .test.ts files
   fullyParallel: false,
   forbidOnly: process.env.CI ? true : false,
   retries: process.env.CI ? 2 : 1,
@@ -12,7 +13,7 @@ export default defineConfig({
     ['list'],
   ],
   use: {
-    baseURL: 'http://localhost:3000',
+    baseURL: 'http://127.0.0.1:3000', // Use IPv4 explicitly
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',

@@ -27,19 +27,19 @@ test.describe('Complete Learning Workflow @smoke', () => {
       // Test that authenticated user can access multiple API endpoints
 
       // 1. Videos API
-      const videosResponse = await page.request.get('http://localhost:8000/api/videos', {
+      const videosResponse = await page.request.get('http://127.0.0.1:8000/api/videos', {
         headers: { Authorization: `Bearer ${testUser.token}` }
       });
       expect(videosResponse.ok()).toBeTruthy();
 
       // 2. Vocabulary API
-      const vocabResponse = await page.request.get('http://localhost:8000/api/vocabulary?cefr_level=A1&limit=1', {
+      const vocabResponse = await page.request.get('http://127.0.0.1:8000/api/vocabulary?cefr_level=A1&limit=1', {
         headers: { Authorization: `Bearer ${testUser.token}` }
       });
       expect(vocabResponse.status()).not.toBe(401); // Should be authorized
 
       // 3. Video scan API
-      const scanResponse = await page.request.post('http://localhost:8000/api/videos/scan', {
+      const scanResponse = await page.request.post('http://127.0.0.1:8000/api/videos/scan', {
         headers: { Authorization: `Bearer ${testUser.token}` }
       });
       expect(scanResponse.ok()).toBeTruthy();
@@ -62,7 +62,7 @@ test.describe('Complete Learning Workflow @smoke', () => {
       expect(testVocab.id).toBeDefined();
 
       // Verify backend is still accessible with health check
-      const healthResponse = await page.request.get('http://localhost:8000/health');
+      const healthResponse = await page.request.get('http://127.0.0.1:8000/health');
       expect(healthResponse.status()).toBe(200);
     });
 
@@ -70,3 +70,4 @@ test.describe('Complete Learning Workflow @smoke', () => {
     // This tests that vocabulary can be created via backend API
   });
 });
+

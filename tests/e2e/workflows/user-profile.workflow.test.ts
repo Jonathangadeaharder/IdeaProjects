@@ -44,7 +44,7 @@ test.describe('User Profile Workflow @smoke', () => {
         ).toBeVisible({ timeout: 5000 });
       } else {
         // Profile UI not implemented - test backend API instead
-        const response = await page.request.get('http://localhost:8000/api/profile', {
+        const response = await page.request.get('http://127.0.0.1:8000/api/profile', {
           headers: { Authorization: `Bearer ${testUser.token}` }
         });
 

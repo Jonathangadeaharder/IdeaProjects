@@ -29,11 +29,12 @@ export class TestDataManager {
   private api: AxiosInstance;
   private readonly baseUrl: string;
 
-  constructor(baseUrl: string = 'http://localhost:8000') {
+  constructor(baseUrl: string = 'http://127.0.0.1:8000') {
     this.baseUrl = baseUrl;
     this.api = axios.create({
       baseURL: baseUrl,
       timeout: 10000,
+      family: 4, // Force IPv4
     });
   }
 
