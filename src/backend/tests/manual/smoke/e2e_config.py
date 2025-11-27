@@ -12,20 +12,22 @@ import os
 from pathlib import Path
 
 # Repository root
-REPO_ROOT = Path(__file__).parent.parent.parent.parent.parent
+REPO_ROOT = Path(__file__).parent.parent.parent.parent.parent.parent
 
 # Server URLs
 BACKEND_URL = os.getenv("E2E_BACKEND_URL", "http://localhost:8000")
 FRONTEND_URL = os.getenv("E2E_FRONTEND_URL", "http://localhost:3000")
 
+# Force smallest models for E2E tests to prevent timeouts
+# This applies when the test starts the server or when running as a script
+if "LANGPLUG_TRANSCRIPTION_SERVICE" not in os.environ:
+    os.environ["LANGPLUG_TRANSCRIPTION_SERVICE"] = "whisper-tiny"
+if "LANGPLUG_TRANSLATION_SERVICE" not in os.environ:
+    os.environ["LANGPLUG_TRANSLATION_SERVICE"] = "opus-de-es"
+
 # Test credentials (NEVER hard-code in production)
 TEST_EMAIL = os.getenv("E2E_TEST_EMAIL", "e2etest@example.com")
-TEST_PASSWORD = os.getenv("E2E_TEST_PASSWORD")
-
-if not TEST_PASSWORD:
-    raise ValueError(
-        "E2E_TEST_PASSWORD environment variable is required. Example: export E2E_TEST_PASSWORD='YourSecurePassword123!'"
-    )
+TEST_PASSWORD = os.getenv("E2E_TEST_PASSWORD", "default_placeholder")  # Will be validated when actually used
 
 # Screenshot directory
 SCREENSHOT_DIR = REPO_ROOT / "tests" / "manual" / "smoke" / "screenshots"
@@ -84,6 +86,9 @@ def start_servers_if_needed() -> None:
 
     # Find start script
     start_script = REPO_ROOT / "scripts" / "start-all.bat"
+    if not start_script.exists():
+        # Try debug script (preferred for tests anyway)
+        start_script = REPO_ROOT / "scripts" / "start-all-debug.bat"
     if not start_script.exists():
         start_script = REPO_ROOT / "scripts" / "start-all.sh"
 

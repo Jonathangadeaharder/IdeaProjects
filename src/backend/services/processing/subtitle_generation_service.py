@@ -49,20 +49,20 @@ class SubtitleGenerationService:
         vocab_words = {word["word"].lower() for word in vocabulary if "word" in word}
 
         # Read source SRT content
-        srt_content = self.read_srt_file(source_srt)
+        srt_content = await self.read_srt_file(source_srt)
 
         # Process content to highlight vocabulary
         filtered_content = self.process_srt_content(srt_content, vocab_words)
 
         # Write filtered SRT file
-        self.write_srt_file(filtered_srt, filtered_content)
+        await self.write_srt_file(filtered_srt, filtered_content)
 
         logger.info(f"Generated filtered subtitles -> {filtered_srt}")
         return str(filtered_srt)
 
-    def read_srt_file(self, file_path: str) -> str:
+    async def read_srt_file(self, file_path: str) -> str:
         """
-        Read SRT file content
+        Read SRT file content asynchronously
 
         Args:
             file_path: Path to SRT file
@@ -70,19 +70,33 @@ class SubtitleGenerationService:
         Returns:
             SRT file content
         """
-        with open(file_path, encoding="utf-8") as f:
-            return f.read()
+        try:
+            import aiofiles
 
-    def write_srt_file(self, file_path: Path, content: str) -> None:
+            async with aiofiles.open(file_path, encoding="utf-8") as f:
+                return await f.read()
+        except ImportError:
+            logger.warning("aiofiles not available, falling back to sync I/O")
+            with open(file_path, encoding="utf-8") as f:
+                return f.read()
+
+    async def write_srt_file(self, file_path: Path, content: str) -> None:
         """
-        Write SRT file content
+        Write SRT file content asynchronously
 
         Args:
             file_path: Path to SRT file
             content: SRT content to write
         """
-        with open(file_path, "w", encoding="utf-8") as f:
-            f.write(content)
+        try:
+            import aiofiles
+
+            async with aiofiles.open(file_path, "w", encoding="utf-8") as f:
+                await f.write(content)
+        except ImportError:
+            logger.warning("aiofiles not available, falling back to sync I/O")
+            with open(file_path, "w", encoding="utf-8") as f:
+                f.write(content)
 
     def process_srt_content(self, srt_content: str, vocab_words: set[str]) -> str:
         """

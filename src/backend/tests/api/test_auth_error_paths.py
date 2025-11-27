@@ -39,9 +39,9 @@ async def test_WhenLoginbad_credentials_ThenReturnscontract_error(async_http_cli
 
     assert response.status_code == 400
     payload = response.json()
-    assert "detail" in payload
+    assert "error" in payload
     # Check for the user-friendly message (translated from LOGIN_BAD_CREDENTIALS)
-    assert payload["detail"] == "Invalid email or password"
+    assert payload["error"]["message"] == "Invalid email or password"
 
 
 @pytest.mark.asyncio

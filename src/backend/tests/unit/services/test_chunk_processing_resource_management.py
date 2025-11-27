@@ -237,7 +237,7 @@ class TestChunkTranscriptionServiceErrorHandling:
             mock_transcription_service = Mock()
             mock_transcription_service.transcribe = Mock(side_effect=Exception("Transcription failed"))
 
-            with patch("core.service_dependencies.get_transcription_service", return_value=mock_transcription_service):
+            with patch("core.dependencies.get_transcription_service", return_value=mock_transcription_service):
                 # Act & Assert - Fail fast with clear error
                 with pytest.raises(ChunkTranscriptionError) as exc_info:
                     await service.transcribe_chunk("task123", task_progress, video_file, audio_file, {"target": "de"})
@@ -438,7 +438,7 @@ class TestChunkTranscriptionServiceProgressTracking:
             mock_result.segments = None  # Trigger full_text fallback path
             mock_transcription_service.transcribe = Mock(return_value=mock_result)
 
-            with patch("core.service_dependencies.get_transcription_service", return_value=mock_transcription_service):
+            with patch("core.dependencies.get_transcription_service", return_value=mock_transcription_service):
                 # Act
                 await service.transcribe_chunk("task123", task_progress, video_file, audio_file, {"target": "de"})
 

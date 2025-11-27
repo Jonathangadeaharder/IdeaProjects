@@ -5,6 +5,10 @@ from __future__ import annotations
 import os
 
 import pytest
+
+# Mark as manual test
+pytestmark = pytest.mark.manual
+
 from httpx import ASGITransport, AsyncClient
 
 from core.app import create_app

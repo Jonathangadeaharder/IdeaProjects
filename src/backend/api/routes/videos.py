@@ -3,21 +3,18 @@ Video management API routes
 """
 
 import logging
-from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, Depends, File, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse
-from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.error_handlers import handle_api_errors, raise_bad_request, raise_conflict, raise_not_found
+from api.models.processing import ProcessingStatus
 from api.models.video import VideoInfo
 from api.models.vocabulary import VocabularyWord
-from core.config import settings
 from core.database import get_async_session
 from core.dependencies import current_active_user, get_task_progress_registry, get_user_from_query_token
-from core.file_security import FileSecurityValidator
 from database.models import User
 from services.videoservice.video_service import VideoService
 
@@ -36,49 +33,6 @@ async def get_available_videos(
 ):
     """
     Retrieve list of all available videos and series for the current user.
-
-    Scans the configured videos directory and returns metadata for all accessible
-    video files, including subtitle availability and episode information.
-
-    **Authentication Required**: Yes
-
-    Args:
-        current_user (User): Authenticated user
-        video_service (VideoService): Video service dependency
-
-    Returns:
-        list[VideoInfo]: List of video metadata objects containing:
-            - series: Series/show name
-            - season: Season number
-            - episode: Episode number
-            - title: Episode title
-            - path: Relative file path
-            - has_subtitles: Whether subtitles exist
-            - duration: Video duration in seconds
-
-    Raises:
-        HTTPException: 500 if directory scanning fails
-
-    Example:
-        ```bash
-        curl -X GET "http://localhost:8000/api/videos" \
-          -H "Authorization: Bearer <token>"
-        ```
-
-        Response:
-        ```json
-        [
-            {
-                "series": "Learn German",
-                "season": "1",
-                "episode": "01",
-                "title": "Introduction",
-                "path": "Learn German/S01E01.mp4",
-                "has_subtitles": true,
-                "duration": 1200
-            }
-        ]
-        ```
     """
     return video_service.get_available_videos()
 
@@ -92,39 +46,6 @@ async def get_subtitles(
 ):
     """
     Serve subtitle files (SRT format) for video playback.
-
-    Returns subtitle file content as plain text with UTF-8 encoding.
-    Validates file existence and applies security checks to prevent path traversal.
-
-    **Authentication Required**: Yes
-
-    Args:
-        subtitle_path (str): Relative path to subtitle file
-        current_user (User): Authenticated user
-        video_service (VideoService): Video service dependency
-
-    Returns:
-        FileResponse: SRT file content with UTF-8 encoding
-
-    Raises:
-        HTTPException: 404 if subtitle file not found or invalid
-
-    Example:
-        ```bash
-        curl -X GET "http://localhost:8000/api/videos/subtitles/Learn German/S01E01.srt" \
-          -H "Authorization: Bearer <token>"
-        ```
-
-        Response: (plain text SRT content)
-        ```
-        1
-        00:00:00,000 --> 00:00:05,000
-        Hallo und willkommen!
-
-        2
-        00:00:05,500 --> 00:00:10,000
-        Heute lernen wir Deutsch.
-        ```
     """
     logger.info(f"Serving subtitles: {subtitle_path}")
 
@@ -163,7 +84,14 @@ async def stream_video(
     video_service: VideoService = Depends(get_video_service),
 ):
     """Stream video file - Requires authentication"""
-    video_file = video_service.get_video_file_path(series, episode)
+    try:
+        video_file = video_service.get_video_file_path(series, episode)
+    except HTTPException:
+        raise
+    except Exception as e:
+        # Map unexpected errors if any
+        logger.error(f"Error finding video: {e}")
+        raise_not_found("Video file", f"{series}/{episode}")
 
     if not video_file.exists():
         logger.error(f"Video file exists check failed: {video_file}")
@@ -191,7 +119,11 @@ async def upload_subtitle(
     Upload subtitle file for a video - Requires authentication
     Uses FileSecurityValidator for secure file handling
     """
-    # Validate file security using FileSecurityValidator
+    # Logic for subtitle upload is still partly in route due to direct file handling requirements
+    # TODO: Move to SubtitleService in future refactoring
+    from core.config import settings
+    from core.file_security import FileSecurityValidator
+
     allowed_extensions = {".srt", ".vtt", ".sub"}
     try:
         await FileSecurityValidator.validate_file_upload(subtitle_file, allowed_extensions)
@@ -243,31 +175,16 @@ async def get_user_videos(
 
 @router.get("/{video_id}/vocabulary", response_model=list[VocabularyWord], name="get_video_vocabulary")
 @handle_api_errors("extracting video vocabulary")
-async def get_video_vocabulary(video_id: str, current_user: User = Depends(current_active_user)):
+async def get_video_vocabulary(
+    video_id: str,
+    current_user: User = Depends(current_active_user),
+    video_service: VideoService = Depends(get_video_service),
+):
     """Get vocabulary words extracted from a video"""
-    videos_path = settings.get_videos_path()
-    video_path = videos_path / video_id
-
-    if not video_path.exists():
-        raise_not_found("Video", video_id)
-
-    srt_path = video_path.with_suffix(".srt")
-    if not srt_path.exists():
-        raise_not_found("Subtitles for video", video_id)
-
-    # TODO: Implement vocabulary extraction from SRT file
-    # The extract_blocking_words_for_segment function has been removed
-    # Use vocabulary service extract_blocking_words_from_srt instead
-    logger.warning(f"Vocabulary extraction not implemented for video {video_id}")
-    return []
-
-
-class ProcessingStatus(BaseModel):
-    status: str
-    progress: float
-    current_step: str
-    message: str = ""
-    subtitle_path: str = ""
+    try:
+        return video_service.get_video_vocabulary(video_id)
+    except FileNotFoundError as e:
+        raise_not_found("Video or Subtitles", video_id)
 
 
 @router.get("/{video_id}/status", response_model=ProcessingStatus, name="get_video_status")
@@ -276,133 +193,60 @@ async def get_video_status(
     video_id: str,
     current_user: User = Depends(current_active_user),
     task_progress: dict[str, Any] = Depends(get_task_progress_registry),
+    video_service: VideoService = Depends(get_video_service),
 ):
     """Get processing status for a video"""
-    video_tasks = [
-        (task_id, progress)
-        for task_id, progress in task_progress.items()
-        if video_id in task_id or video_id in str(progress.get("video_path", ""))
-    ]
-
-    if not video_tasks:
-        videos_path = settings.get_videos_path()
-        video_path = videos_path / video_id
-
-        if not video_path.exists():
-            raise_not_found("Video", video_id)
-
-        srt_path = video_path.with_suffix(".srt")
-        if srt_path.exists():
-            return ProcessingStatus(
-                status="completed",
-                progress=100.0,
-                current_step="Processing completed",
-                message="Video has been fully processed",
-                subtitle_path=str(srt_path.relative_to(videos_path)),
-            )
-        else:
-            return ProcessingStatus(
-                status="completed",
-                progress=0.0,
-                current_step="Not processed",
-                message="Video has not been processed yet",
-            )
-
-    _latest_task_id, latest_progress = video_tasks[-1]
-    return latest_progress
+    status = video_service.get_video_status(video_id, task_progress)
+    if status is None:
+        raise_not_found("Video", video_id)
+    return ProcessingStatus(**status)
 
 
-@router.post("/upload", name="upload_video_generic")
+@router.post("/upload", name="upload_video_generic", response_model=VideoInfo)
 async def upload_video_generic(
-    video_file: UploadFile = File(...), current_user: User = Depends(current_active_user), series: str = "Default"
+    video_file: UploadFile = File(...),
+    current_user: User = Depends(current_active_user),
+    series: str = "Default",
+    video_service: VideoService = Depends(get_video_service),
 ):
     """Upload a new video file (generic endpoint) - Requires authentication"""
-    return await upload_video(series, video_file, current_user)
-
-
-def _validate_series_name(series: str) -> str:
-    """Validate and sanitize series name to prevent path traversal"""
-    safe_series = FileSecurityValidator.sanitize_filename(series)
-    if safe_series != series or ".." in series or "/" in series or "\\" in series:
-        raise_bad_request("Invalid series name")
-    return safe_series
-
-
-async def _validate_video_file_upload(video_file: UploadFile) -> Path:
-    """Validate uploaded video file for security"""
-    allowed_extensions = {".mp4", ".avi", ".mkv", ".mov", ".webm"}
     try:
-        return await FileSecurityValidator.validate_file_upload(video_file, allowed_extensions)
+        return await video_service.upload_video(series, video_file)
     except ValueError as e:
         raise_bad_request(str(e))
+    except FileExistsError as e:
+        raise_conflict("Video file", str(e))
 
 
-async def _write_video_file(video_file: UploadFile, destination: Path) -> None:
-    """Write uploaded video file in chunks for memory efficiency"""
-    CHUNK_SIZE = 1024 * 1024  # 1MB chunks
-
-    with open(destination, "wb") as buffer:
-        while True:
-            chunk = await video_file.read(CHUNK_SIZE)
-            if not chunk:
-                break
-            buffer.write(chunk)
-
-
-def _build_video_info_response(destination: Path, safe_series: str) -> VideoInfo:
-    """Build VideoInfo response from uploaded video metadata"""
-    video_service = VideoService(None, None)
-    episode_info = video_service._parse_episode_filename(destination.stem)
-
-    return VideoInfo(
-        series=safe_series,
-        season=episode_info.get("season", "1"),
-        episode=episode_info.get("episode", "Unknown"),
-        title=episode_info.get("title", destination.stem),
-        path=str(destination.relative_to(settings.get_videos_path())),
-        has_subtitles=False,
-        duration=0,
-    )
-
-
-@router.post("/upload/{series}", name="upload_video_to_series")
+@router.post("/upload/{series}", name="upload_video_to_series", response_model=VideoInfo, status_code=200, responses={
+    200: {"description": "Video uploaded successfully", "model": VideoInfo},
+    400: {"description": "Bad request - invalid video file or parameters"},
+    401: {"description": "Unauthorized - authentication required"},
+    409: {"description": "Conflict - video file already exists"},
+})
 @handle_api_errors("uploading video file")
 async def upload_video(
-    series: str, video_file: UploadFile = File(...), current_user: User = Depends(current_active_user)
+    series: str,
+    video_file: UploadFile = File(...),
+    current_user: User = Depends(current_active_user),
+    video_service: VideoService = Depends(get_video_service),
 ):
     """
     Upload a new video file to a series - Requires authentication
-    Uses FileSecurityValidator for secure file handling with path traversal prevention
     """
-    safe_series = _validate_series_name(series)
-    safe_path = await _validate_video_file_upload(video_file)
-
-    series_path = settings.get_videos_path() / safe_series
-    series_path.mkdir(parents=True, exist_ok=True)
-
-    final_path = FileSecurityValidator.get_safe_upload_path(video_file.filename, preserve_name=True)
-    final_destination = series_path / final_path.name
-
-    if final_destination.exists():
-        raise_conflict("File", str(final_destination.name))
-
-    await _write_video_file(video_file, final_destination)
-
-    if safe_path.exists() and safe_path != final_destination:
-        safe_path.unlink(missing_ok=True)
-
-    logger.info(f"[SECURITY] Uploaded video: {final_destination}")
-
-    return _build_video_info_response(final_destination, safe_series)
+    try:
+        return await video_service.upload_video(series, video_file)
+    except ValueError as e:
+        raise_bad_request(str(e))
+    except FileExistsError as e:
+        raise_conflict("Video file", str(e))
 
 
 def parse_episode_filename(filename: str) -> dict[str, str | None]:
     """
     Parse episode information from filename.
-
     Args:
         filename: The filename to parse (without extension)
-
     Returns:
         Dict containing episode, season, and title information
     """

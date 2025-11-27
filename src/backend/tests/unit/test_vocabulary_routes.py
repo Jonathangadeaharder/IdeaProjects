@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock, patch
-from uuid import uuid4
 
 import pytest
 
@@ -257,7 +256,12 @@ class TestVocabularyRoutesCore:
             response = await async_client.get(url_builder.url_for("get_supported_languages"), headers=headers)
 
             assert response.status_code == 500
-            assert "Error retrieving languages" in response.json()["detail"]
+            # The error handler wraps the exception and returns a 500 with the detail
+            error_data = response.json()
+            if "error" in error_data:
+                assert "Error retrieving supported languages" in error_data["error"]["message"]
+            else:
+                assert "Error retrieving supported languages" in error_data["detail"]
         finally:
             # Clean up the override
             app.dependency_overrides.pop(get_async_session, None)
@@ -384,7 +388,11 @@ class TestVocabularyRoutesCore:
         )
 
         assert response.status_code == 422
-        assert "Invalid level" in response.json()["detail"]
+        error_data = response.json()
+        if "error" in error_data:
+            assert "Invalid level" in error_data["error"]["message"]
+        else:
+            assert "Invalid level" in error_data["detail"]
 
     @pytest.mark.asyncio
     async def test_mark_word_as_known_success(self, async_client, app):
@@ -397,10 +405,21 @@ class TestVocabularyRoutesCore:
         word = "haus"
 
         # Mock the service using dependency injection override
+        from unittest.mock import MagicMock
+
         from core.dependencies import get_vocabulary_service
         from services.vocabulary.vocabulary_service import VocabularyService
 
-        mock_service = VocabularyService()
+        # Create mock services for DI
+        mock_query_service = MagicMock()
+        mock_progress_service = MagicMock()
+        mock_stats_service = MagicMock()
+
+        mock_service = VocabularyService(
+            query_service=mock_query_service,
+            progress_service=mock_progress_service,
+            stats_service=mock_stats_service,
+        )
         mock_service.mark_word_known = AsyncMock(
             return_value={
                 "success": True,
@@ -416,7 +435,7 @@ class TestVocabularyRoutesCore:
         try:
             response = await async_client.post(
                 "/api/vocabulary/mark-known",
-                json={"word": word, "language": "de", "known": True},
+                json={"lemma": "haus", "language": "de", "known": True},
                 headers=headers,
             )
 
@@ -431,7 +450,7 @@ class TestVocabularyRoutesCore:
             # Verify service was called with correct parameters
             mock_service.mark_word_known.assert_called_once()
             call_args = mock_service.mark_word_known.call_args
-            assert call_args.kwargs["word"] == word
+            assert call_args.kwargs["word"] == "haus"
             assert call_args.kwargs["language"] == "de"
             assert call_args.kwargs["is_known"] is True
 
@@ -465,7 +484,7 @@ class TestVocabularyRoutesCore:
         try:
             response = await async_client.post(
                 "/api/vocabulary/mark-known",
-                json={"word": word, "language": "de", "known": False},
+                json={"lemma": "welt", "language": "de", "known": False},
                 headers=headers,
             )
 
@@ -478,7 +497,7 @@ class TestVocabularyRoutesCore:
             # Verify service was called with correct parameters
             mock_service.mark_word_known.assert_called_once()
             call_args = mock_service.mark_word_known.call_args
-            assert call_args.kwargs["word"] == word
+            assert call_args.kwargs["word"] == "welt"
             assert call_args.kwargs["language"] == "de"
             assert call_args.kwargs["is_known"] is False
         finally:
@@ -626,7 +645,11 @@ class TestVocabularyRoutesCore:
                 )
 
                 assert response.status_code == 404
-                assert "Subtitle file not found" in response.json()["detail"]
+                error_data = response.json()
+                if "error" in error_data:
+                    assert "Subtitle file not found" in error_data["error"]["message"]
+                else:
+                    assert "Subtitle file not found" in error_data["detail"]
 
     @pytest.mark.asyncio
     async def test_get_blocking_words_success(self, async_client, app):
@@ -702,11 +725,10 @@ class TestVocabularyRoutesErrorHandling:
 
         _user, _token, headers = await helper.create_authenticated_user()
 
-        # Test with valid UUID but non-existent word - new behavior allows marking unknown words
-        non_existent_uuid = str(uuid4())
+        # Test with valid lemma but non-existent word - new behavior allows marking unknown words
         response = await async_client.post(
             "/api/vocabulary/mark-known",
-            json={"concept_id": non_existent_uuid, "language": "de", "known": True},
+            json={"lemma": "unknown_word", "language": "de", "known": True},
             headers=headers,
         )
 

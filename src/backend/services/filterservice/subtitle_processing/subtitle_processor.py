@@ -7,8 +7,6 @@ import logging
 from datetime import datetime
 from typing import Any
 
-from core.database.database import AsyncSessionLocal
-
 from ..interface import FilteredSubtitle, FilteredWord, FilteringResult, WordStatus
 from .word_filter import WordFilter
 from .word_validator import WordValidator
@@ -30,6 +28,7 @@ class SubtitleProcessor:
         user_level: str,
         language: str,
         vocab_service: Any,
+        db: "AsyncSession",
     ) -> FilteringResult:
         """
         Process subtitles with filtering logic
@@ -40,6 +39,7 @@ class SubtitleProcessor:
             user_level: User's language level (A1-C2)
             language: Target language code
             vocab_service: Vocabulary service for word info
+            db: Database session (passed once, not created per word)
 
         Returns:
             FilteringResult with categorized content
@@ -52,7 +52,7 @@ class SubtitleProcessor:
         # Process each subtitle
         for subtitle in subtitles:
             await self._process_single_subtitle(
-                subtitle, user_known_words, user_level, language, vocab_service, processing_state
+                subtitle, user_known_words, user_level, language, vocab_service, db, processing_state
             )
 
         # Create and return result
@@ -76,6 +76,7 @@ class SubtitleProcessor:
         user_level: str,
         language: str,
         vocab_service: Any,
+        db: "AsyncSession",
         processing_state: dict,
     ) -> None:
         """Process a single subtitle and update processing state"""
@@ -86,7 +87,7 @@ class SubtitleProcessor:
             processing_state["total_words"] += 1
 
             processed_word = await self._process_and_filter_word(
-                word, user_known_words, user_level, language, vocab_service
+                word, user_known_words, user_level, language, vocab_service, db
             )
             processed_words.append(processed_word)
 
@@ -103,7 +104,7 @@ class SubtitleProcessor:
         self._categorize_subtitle(subtitle, subtitle_active_words, processing_state)
 
     async def _process_and_filter_word(
-        self, word: FilteredWord, user_known_words: set[str], user_level: str, language: str, vocab_service: Any
+        self, word: FilteredWord, user_known_words: set[str], user_level: str, language: str, vocab_service: Any, db: "AsyncSession"
     ) -> FilteredWord:
         """Process and filter a single word"""
         word_text = word.text.lower().strip()
@@ -115,11 +116,9 @@ class SubtitleProcessor:
             word.filter_reason = f"Non-vocabulary word ({reason})"
             return word
 
-        # Step 2: Get word info from vocabulary service
+        # Step 2: Get word info from vocabulary service (using passed session, not creating new one)
         try:
-            # Create a database session for the query
-            async with AsyncSessionLocal() as db:
-                word_info = await vocab_service.get_word_info(word_text, language, db)
+            word_info = await vocab_service.get_word_info(word_text, language, db)
         except Exception as exc:
             logger.error(f"Failed to load word info for '{word_text}': {exc}")
             word_info = None
@@ -130,18 +129,33 @@ class SubtitleProcessor:
     def _categorize_subtitle(
         self, subtitle: FilteredSubtitle, subtitle_active_words: list[FilteredWord], processing_state: dict
     ) -> None:
-        """Categorize subtitle based on active word count"""
-        active_count = len(subtitle_active_words)
+        """
+        Categorize subtitle based on difficulty level
 
-        if active_count >= 2:
-            # Good for learning - has multiple unknown words
+        FILTERING LOGIC (Language Learning):
+        - User level = what they've mastered (e.g., A2 = mastered A1-A2)
+        - If ALL words at/below level → FILTER OUT (user understands, no subtitle needed)
+        - If ANY word above level → KEEP (show for translation/learning)
+
+        Purpose: Hide subtitles user understands, show subtitles with words above their level
+        """
+        # Check if subtitle has words above user level (needs learning)
+        if subtitle.has_active_words:
+            # Subtitle has words above user level - KEEP for learning/translation
             processing_state["learning_subtitles"].append(subtitle)
-        elif active_count == 1:
-            # Single blocking word
-            processing_state["blocker_words"].extend(subtitle_active_words)
-        else:
-            # No learning content
+            logger.info(
+                f"[SUBTITLE FILTER] KEPT: '{subtitle.original_text[:50]}...' - Contains words above user level"
+            )
+        elif subtitle.all_words_understood:
+            # All words at/below level or known - user understands, FILTER OUT
             processing_state["empty_subtitles"].append(subtitle)
+            logger.info(
+                f"[SUBTITLE FILTER] FILTERED OUT: '{subtitle.original_text[:50]}...' - All words at/below user level"
+            )
+        else:
+            # No vocabulary content
+            processing_state["empty_subtitles"].append(subtitle)
+            logger.info(f"[SUBTITLE FILTER] FILTERED OUT: '{subtitle.original_text[:50]}...' - No vocabulary content")
 
     def _create_filtering_result(
         self, processing_state: dict, total_subtitles: int, user_level: str, language: str

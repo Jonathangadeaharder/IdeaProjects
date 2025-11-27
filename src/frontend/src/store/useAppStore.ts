@@ -35,12 +35,6 @@ export interface AppState {
   lastError: string | null
   errorHistory: Array<{ error: string; timestamp: number }>
 
-  // Performance tracking
-  performanceMetrics: {
-    loadTimes: Record<string, number>
-    apiResponseTimes: Record<string, number>
-  }
-
   // Actions
   setConfig: (config: Partial<AppConfig>) => void
   setLoading: (loading: boolean) => void
@@ -50,8 +44,6 @@ export interface AppState {
   setSidebarOpen: (open: boolean) => void
   setError: (error: string | null) => void
   clearErrorHistory: () => void
-  recordLoadTime: (page: string, time: number) => void
-  recordApiResponseTime: (endpoint: string, time: number) => void
   reset: () => void
 }
 
@@ -70,10 +62,6 @@ const initialState = {
   sidebarOpen: false,
   lastError: null,
   errorHistory: [],
-  performanceMetrics: {
-    loadTimes: {},
-    apiResponseTimes: {},
-  },
 }
 
 export const useAppStore = create<AppState>()(
@@ -153,18 +141,6 @@ export const useAppStore = create<AppState>()(
           })
         },
 
-        recordLoadTime: (page, time) => {
-          set(state => {
-            state.performanceMetrics.loadTimes[page] = time
-          })
-        },
-
-        recordApiResponseTime: (endpoint, time) => {
-          set(state => {
-            state.performanceMetrics.apiResponseTimes[endpoint] = time
-          })
-        },
-
         reset: () => {
           set(initialState)
         },
@@ -181,7 +157,6 @@ export const useAppConfig = () => useAppStore(state => state.config)
 export const useAppLoading = () => useAppStore(state => state.isLoading)
 export const useAppNotifications = () => useAppStore(state => state.notifications)
 export const useAppError = () => useAppStore(state => state.lastError)
-export const useAppPerformance = () => useAppStore(state => state.performanceMetrics)
 
 // Persist config to localStorage
 useAppStore.subscribe(

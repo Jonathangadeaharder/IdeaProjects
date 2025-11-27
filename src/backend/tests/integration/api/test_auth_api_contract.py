@@ -3,6 +3,7 @@ API Contract Tests for Authentication Endpoints
 Tests focus on verifying API responses match OpenAPI specification
 """
 
+
 import pytest
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
@@ -103,10 +104,15 @@ class TestAuthApiContractCompliance:
         elif response.status_code == 400:
             # Valid error response for bad credentials or unverified user
             error_response = response.json()
-            assert "detail" in error_response
-            # Accept either error codes or user-friendly messages
-            valid_errors = ["LOGIN_BAD_CREDENTIALS", "LOGIN_USER_NOT_VERIFIED", "Invalid email or password"]
-            assert error_response["detail"] in valid_errors
+            # Handle both old and new error formats
+            if "error" in error_response:
+                assert "message" in error_response["error"]
+                valid_errors = ["LOGIN_BAD_CREDENTIALS", "LOGIN_USER_NOT_VERIFIED", "Invalid email or password"]
+                assert error_response["error"]["message"] in valid_errors
+            else:
+                assert "detail" in error_response
+                valid_errors = ["LOGIN_BAD_CREDENTIALS", "LOGIN_USER_NOT_VERIFIED", "Invalid email or password"]
+                assert error_response["detail"] in valid_errors
         else:
             pytest.fail(f"Unexpected status code: {response.status_code}, response: {response.json()}")
 
@@ -121,7 +127,11 @@ class TestAuthApiContractCompliance:
 
         # Response should have proper error structure
         error_response = response.json()
-        assert "detail" in error_response
+        # Handle both old and new error formats
+        if "error" in error_response:
+            assert "message" in error_response["error"]
+        else:
+            assert "detail" in error_response
 
     def test_login_endpoint_validation_errors(self, client: TestClient, url_builder):
         """Test login endpoint validation follows contract"""
@@ -153,17 +163,44 @@ class TestAuthApiContractCompliance:
     def test_me_endpoint_contract(self, client: TestClient, url_builder):
         """Test /api/auth/me endpoint follows OpenAPI contract"""
         # Register and login to get token
-        register_data = {"username": "metest123", "email": "metest123@example.com", "password": "MeTestPass123"}
+        register_data = {"username": "metest123", "email": "metest123@example.com", "password": "MeTestPass123!"}
         client.post(url_builder.url_for("register:register"), json=register_data)
 
-        login_data = {"username": "metest123", "password": "MeTestPass123"}
+        # Manually verify the user in the DB using direct sqlite3 connection
+        # This avoids asyncio loop conflicts between TestClient and separate async engine
+        import sqlite3
+        db_path = client.app.state.test_db_path
+
+        # Retry logic for database locking
+        import time
+        max_retries = 5
+        for i in range(max_retries):
+            try:
+                with sqlite3.connect(db_path) as conn:
+                    # Check if user exists first
+                    cursor = conn.execute("SELECT id, is_verified FROM users WHERE username = 'metest123'")
+                    user = cursor.fetchone()
+                    # print(f"DEBUG: User before update: {user}")
+
+                    conn.execute("UPDATE users SET is_verified = 1 WHERE username = 'metest123'")
+                    conn.commit()
+                    break
+            except sqlite3.OperationalError:
+                if i < max_retries - 1:
+                    time.sleep(0.1)
+                else:
+                    raise
+
+        # IMPORTANT: FastAPI-Users expects EMAIL in 'username' field for login
+        login_data = {"username": "metest123@example.com", "password": "MeTestPass123!"}
         login_response = client.post(url_builder.url_for("auth:jwt.login"), data=login_data)
 
         # If login fails due to unverified user, skip the /me endpoint test
         if login_response.status_code != 200:
-            pytest.skip("Login failed (likely due to unverified user), skipping /me endpoint test")
+            pytest.fail(f"Login failed with {login_response.status_code}: {login_response.text}")
 
-        token = login_response.json()["token"]
+        # FastAPI-Users returns 'access_token', not 'token'
+        token = login_response.json()["access_token"]
 
         # Test authenticated request
         headers = {"Authorization": f"Bearer {token}"}
@@ -326,7 +363,11 @@ class TestAuthApiErrorHandling:
 
         assert response.status_code == 401
         error_data = response.json()
-        assert "detail" in error_data
+        # Handle both old and new error formats
+        if "error" in error_data:
+            assert "message" in error_data["error"]
+        else:
+            assert "detail" in error_data
 
 
 class TestAuthApiHeaders:

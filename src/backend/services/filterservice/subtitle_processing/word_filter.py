@@ -86,16 +86,19 @@ class WordFilter:
             f"[FILTER TRACE] Level check: word_level={word_difficulty} (rank={word_rank}) vs user_level={user_level} (rank={user_rank}) -> at_or_below={is_at_or_below}"
         )
         if is_at_or_below:
-            word.status = WordStatus.FILTERED_OTHER
-            word.filter_reason = f"Word level ({word_difficulty}) at or below user level ({user_level})"
-            logger.info(f"[FILTER TRACE] FILTERED: '{word.text}' (lemma='{lemma}') - At or below user level")
+            # Word is at or below user level - user has mastered this level
+            word.status = WordStatus.FILTERED_AT_LEVEL
+            word.filter_reason = f"Word level ({word_difficulty}) at or below user level ({user_level}) - considered mastered"
+            word.metadata.update({"user_level": user_level, "language": language})
+            logger.info(f"[FILTER TRACE] FILTERED_AT_LEVEL: '{word.text}' (lemma='{lemma}') - User has mastered this level")
             return word
 
-        # Word passed all filters - it's a learning target
+        # Word is above user level - needs learning/translation
         word.status = WordStatus.ACTIVE
+        word.filter_reason = None
         word.metadata.update({"user_level": user_level, "language": language})
         logger.info(
-            f"[FILTER TRACE] ACTIVE: '{word.text}' (lemma='{lemma}', level={word_difficulty}) - Learning target!"
+            f"[FILTER TRACE] ACTIVE: '{word.text}' (lemma='{lemma}', level={word_difficulty}) - Above user level (needs learning)"
         )
         return word
 
@@ -133,19 +136,20 @@ class WordFilter:
 
     def is_at_or_below_user_level(self, word_difficulty: str, user_level: str) -> bool:
         """
-        Check if word difficulty is below user's level (not at or above)
+        Check if word difficulty is at or below user's level (appropriate for user)
 
         Args:
             word_difficulty: Word difficulty level (A1-C2)
             user_level: User's level (A1-C2)
 
         Returns:
-            True if word is below user level (not including words at user's level)
+            True if word is at or below user level (appropriate), False if above (too difficult)
         """
         user_level_rank = self._get_level_rank(user_level)
         word_level_rank = self._get_level_rank(word_difficulty)
 
-        return word_level_rank < user_level_rank
+        # Word is appropriate if its level <= user level
+        return word_level_rank <= user_level_rank
 
     def _get_level_rank(self, level: str) -> int:
         """

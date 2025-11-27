@@ -24,7 +24,7 @@ async def main():
     srt_file_path = sys.argv[1]
 
     print(f"[INFO] Testing SRT filter with file: {srt_file_path}")
-    print(f"[INFO] Checking if file exists...")
+    print("[INFO] Checking if file exists...")
 
     if not Path(srt_file_path).exists():
         print(f"[ERROR] File not found: {srt_file_path}")
@@ -41,7 +41,7 @@ async def main():
     user_level = "B1"  # Intermediate level
     language = "de"  # German
 
-    print(f"[INFO] Processing with:")
+    print("[INFO] Processing with:")
     print(f"  - User ID: {user_id}")
     print(f"  - User Level: {user_level}")
     print(f"  - Language: {language}")
@@ -66,15 +66,15 @@ async def main():
 
         # Show sample of filtered content if available
         if Path(result['output_file']).exists():
-            print(f"\n[INFO] Reading first 500 chars of output...")
-            with open(result['output_file'], 'r', encoding='utf-8') as f:
+            print("\n[INFO] Reading first 500 chars of output...")
+            with open(result['output_file'], encoding='utf-8') as f:
                 sample = f.read(500)
                 print(f"[SAMPLE] {sample}...")
 
     except Exception as e:
         print(f"\n[ERROR] Processing failed: {e}")
         import traceback
-        print(f"[TRACEBACK]")
+        print("[TRACEBACK]")
         traceback.print_exc()
         sys.exit(1)
 

@@ -8,6 +8,13 @@ from core.auth.auth_dependencies import (
     get_user_from_query_token,
     security,
 )
+
+from .repository_dependencies import (
+    get_processing_session_repository,
+    get_user_repository,
+    get_user_vocabulary_progress_repository,
+    get_vocabulary_repository,
+)
 from .service_dependencies import (
     get_chunk_transcription_service,
     get_chunk_translation_service,
@@ -19,12 +26,6 @@ from .service_dependencies import (
     get_vocabulary_service,
 )
 from .task_dependencies import cleanup_services, get_task_progress_registry, init_services
-from .repository_dependencies import (
-    get_processing_session_repository,
-    get_user_repository,
-    get_user_vocabulary_progress_repository,
-    get_vocabulary_repository,
-)
 
 # Export for backward compatibility
 __all__ = [

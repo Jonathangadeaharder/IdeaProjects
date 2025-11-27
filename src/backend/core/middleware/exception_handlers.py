@@ -9,8 +9,9 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.exc import SQLAlchemyError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from core.exceptions import LangPlugException
+from api.models.common import ErrorDetail, ErrorResponse
 from core.config.sentry_config import capture_exception, set_context
+from core.exceptions import LangPlugException
 
 logger = structlog.get_logger(__name__)
 
@@ -31,7 +32,13 @@ def setup_exception_handlers(app: FastAPI):
 
         return JSONResponse(
             status_code=exc.status_code,
-            content={"detail": exc.message, "type": exc.__class__.__name__, "timestamp": datetime.utcnow().isoformat()},
+            content=ErrorResponse(
+                error=ErrorDetail(
+                    code=exc.__class__.__name__,
+                    message=exc.message,
+                    timestamp=datetime.utcnow().isoformat(),
+                )
+            ).model_dump(),
         )
 
     @app.exception_handler(HTTPException)
@@ -61,7 +68,16 @@ def setup_exception_handlers(app: FastAPI):
         if isinstance(detail, str) and detail in error_translations:
             detail = error_translations[detail]
 
-        return JSONResponse(status_code=exc.status_code, content={"detail": detail})
+        return JSONResponse(
+            status_code=exc.status_code,
+            content=ErrorResponse(
+                error=ErrorDetail(
+                    code="HTTP_ERROR",
+                    message=str(detail),
+                    details={"status_code": exc.status_code},
+                )
+            ).model_dump(),
+        )
 
     @app.exception_handler(StarletteHTTPException)
     async def starlette_http_exception_handler(request: Request, exc: StarletteHTTPException):
@@ -76,13 +92,18 @@ def setup_exception_handlers(app: FastAPI):
 
         return JSONResponse(
             status_code=exc.status_code,
-            content={"error": {"type": "http_error", "message": exc.detail, "status_code": exc.status_code}},
+            content=ErrorResponse(
+                error=ErrorDetail(
+                    code="HTTP_ERROR",
+                    message=str(exc.detail),
+                    details={"status_code": exc.status_code},
+                )
+            ).model_dump(),
         )
 
     @app.exception_handler(RequestValidationError)
     async def validation_exception_handler(request: Request, exc: RequestValidationError):
-        """Handle request validation errors"""
-        # Serialize error details to handle ValueError objects
+        """Handle FastAPI validation errors with standardized error response."""
         serialized_errors = []
         for error in exc.errors():
             serialized_error = dict(error)
@@ -97,13 +118,13 @@ def setup_exception_handlers(app: FastAPI):
 
         return JSONResponse(
             status_code=422,
-            content={
-                "error": {
-                    "type": "validation_error",
-                    "message": "Request validation failed",
-                    "details": serialized_errors,
-                }
-            },
+            content=ErrorResponse(
+                error=ErrorDetail(
+                    code="VALIDATION_ERROR",
+                    message="Request validation failed",
+                    details=serialized_errors,
+                )
+            ).model_dump(),
         )
 
     @app.exception_handler(SQLAlchemyError)
@@ -127,7 +148,13 @@ def setup_exception_handlers(app: FastAPI):
         capture_exception(exc)
 
         return JSONResponse(
-            status_code=500, content={"error": {"type": "database_error", "message": "A database error occurred"}}
+            status_code=500,
+            content=ErrorResponse(
+                error=ErrorDetail(
+                    code="DATABASE_ERROR",
+                    message="A database error occurred",
+                )
+            ).model_dump(),
         )
 
     @app.exception_handler(Exception)
@@ -152,5 +179,10 @@ def setup_exception_handlers(app: FastAPI):
 
         return JSONResponse(
             status_code=500,
-            content={"error": {"type": "internal_error", "message": "An internal server error occurred"}},
+            content=ErrorResponse(
+                error=ErrorDetail(
+                    code="INTERNAL_ERROR",
+                    message="An internal server error occurred",
+                )
+            ).model_dump(),
         )

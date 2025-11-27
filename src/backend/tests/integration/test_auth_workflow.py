@@ -110,8 +110,12 @@ class TestAuthenticationWorkflow:
         # Second registration with same email should fail
         response2 = await async_client.post(register_url, json=unique_user_data)
         assert response2.status_code == 400
-        # Accept both error codes and user-friendly messages
-        detail = response2.json()["detail"].lower()
+        # Handle both old and new error formats
+        error_data = response2.json()
+        if "error" in error_data:
+            detail = error_data["error"]["message"].lower()
+        else:
+            detail = error_data["detail"].lower()
         assert "already" in detail or "exists" in detail
 
     @pytest.mark.asyncio
@@ -130,8 +134,12 @@ class TestAuthenticationWorkflow:
             headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
         assert response.status_code == 400
-        # Accept both error codes and user-friendly messages
-        detail = response.json()["detail"].lower()
+        # Handle both old and new error formats
+        error_data = response.json()
+        if "error" in error_data:
+            detail = error_data["error"]["message"].lower()
+        else:
+            detail = error_data["detail"].lower()
         assert "invalid" in detail or "bad" in detail or "credentials" in detail
 
         # Test non-existent user

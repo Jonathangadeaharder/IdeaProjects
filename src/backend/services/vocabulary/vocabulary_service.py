@@ -79,34 +79,32 @@ class VocabularyService:
 
     Example:
         ```python
-        service = VocabularyService()
-
-        # Query operations
-        word = await service.get_word_info("Haus", "de", db)
-        library = await service.get_vocabulary_library(db, "de", level="A1")
-
-        # Progress operations
-        await service.mark_word_known(123, "Haus", "de", True, db)
-        await service.bulk_mark_level(db, 123, "de", "A1", True)
-
-        # Statistics
-        stats = await service.get_user_vocabulary_stats(123, "de", db)
+        # Use via dependency injection
+        @router.get("/word/{word}")
+        async def get_word(
+            word: str,
+            db: AsyncSession = Depends(get_async_session),
+            vocab_service = Depends(get_vocabulary_service)
+        ):
+            return await vocab_service.get_word_info(word, "de", db)
         ```
 
     Note:
-        This is a stateless facade - all state is managed by sub-services.
-        Safe to use as singleton (vocabulary_service instance).
+        Dependencies are injected to allow proper testing and mocking.
     """
 
-    def __init__(self):
-        # Get fresh instances via factory functions to avoid global state
-        from .vocabulary_progress_service import get_vocabulary_progress_service
-        from .vocabulary_query_service import get_vocabulary_query_service
-        from .vocabulary_stats_service import get_vocabulary_stats_service
+    def __init__(self, query_service, progress_service, stats_service):
+        """
+        Initialize with injected dependencies.
 
-        self.query_service = get_vocabulary_query_service()
-        self.progress_service = get_vocabulary_progress_service()
-        self.stats_service = get_vocabulary_stats_service()
+        Args:
+            query_service: Service for word lookups
+            progress_service: Service for progress tracking
+            stats_service: Service for statistics
+        """
+        self.query_service = query_service
+        self.progress_service = progress_service
+        self.stats_service = stats_service
 
     def _get_session(self):
         """Get database session context manager"""
@@ -194,7 +192,6 @@ class VocabularyService:
                 return []
 
             # Extract German words from the text
-            # Simple word extraction - in production this would use proper NLP
             german_words = re.findall(r"\b[A-Za-zäöüÄÖÜß]+(?:-[A-Za-zäöüÄÖÜß]+)*\b", full_text)
 
             # Filter out common words and short words
@@ -204,84 +201,15 @@ class VocabularyService:
                 if len(word) > 3
                 and word.lower()
                 not in {
-                    "und",
-                    "oder",
-                    "der",
-                    "die",
-                    "das",
-                    "ein",
-                    "eine",
-                    "einer",
-                    "eines",
-                    "den",
-                    "dem",
-                    "des",
-                    "sie",
-                    "wir",
-                    "ihr",
-                    "ich",
-                    "du",
-                    "er",
-                    "es",
-                    "ist",
-                    "sind",
-                    "war",
-                    "waren",
-                    "hat",
-                    "haben",
-                    "habe",
-                    "mit",
-                    "auf",
-                    "aus",
-                    "von",
-                    "zu",
-                    "für",
-                    "durch",
-                    "über",
-                    "unter",
-                    "vor",
-                    "nach",
-                    "bei",
-                    "als",
-                    "wie",
-                    "was",
-                    "wer",
-                    "wo",
-                    "wann",
-                    "warum",
-                    "viel",
-                    "viele",
-                    "wenig",
-                    "wenige",
-                    "mehr",
-                    "weniger",
-                    "am",
-                    "im",
-                    "um",
-                    "an",
-                    "in",
-                    "ab",
-                    "dann",
-                    "also",
-                    "aber",
-                    "sondern",
-                    "denn",
-                    "doch",
-                    "jedoch",
-                    "nur",
-                    "auch",
-                    "noch",
-                    "schon",
-                    "bereits",
-                    "immer",
-                    "nie",
-                    "oft",
-                    "selten",
-                    "manchmal",
-                    "vielleicht",
-                    "wahrscheinlich",
-                    "sicher",
-                    "bestimmt",
+                    "und", "oder", "der", "die", "das", "ein", "eine", "einer", "eines",
+                    "den", "dem", "des", "sie", "wir", "ihr", "ich", "du", "er", "es",
+                    "ist", "sind", "war", "waren", "hat", "haben", "habe", "mit", "auf",
+                    "aus", "von", "zu", "für", "durch", "über", "unter", "vor", "nach",
+                    "bei", "als", "wie", "was", "wer", "wo", "wann", "warum", "viel",
+                    "viele", "wenig", "wenige", "mehr", "weniger", "am", "im", "um", "an",
+                    "in", "ab", "dann", "also", "aber", "sondern", "denn", "doch", "jedoch",
+                    "nur", "auch", "noch", "schon", "bereits", "immer", "nie", "oft",
+                    "selten", "manchmal", "vielleicht", "wahrscheinlich", "sicher", "bestimmt",
                 }
             ]
 
@@ -290,12 +218,11 @@ class VocabularyService:
 
             blocking_words = []
             for word in unique_words:
-                # Create a vocabulary entry matching the expected schema
                 blocking_words.append(
                     {
                         "word": word,
-                        "translation": f"Translation for {word}",  # Placeholder translation
-                        "difficulty_level": "B1",  # Use difficulty_level not level
+                        "translation": f"Translation for {word}",
+                        "difficulty_level": "B1",
                         "lemma": word.lower(),
                         "concept_id": None,
                         "semantic_category": None,
@@ -312,6 +239,8 @@ class VocabularyService:
             return []
 
 
-def get_vocabulary_service() -> VocabularyService:
-    """Get vocabulary service instance - returns fresh instance to avoid global state"""
-    return VocabularyService()
+def get_vocabulary_service(
+    query_service, progress_service, stats_service
+) -> VocabularyService:
+    """Factory function with dependency injection"""
+    return VocabularyService(query_service, progress_service, stats_service)

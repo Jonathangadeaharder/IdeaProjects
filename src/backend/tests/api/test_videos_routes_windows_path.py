@@ -10,7 +10,8 @@ from tests.helpers import AsyncAuthHelper
 
 
 def _set_videos_path(monkeypatch, module, tmp_path: Path):
-    monkeypatch.setattr(type(module.settings), "get_videos_path", lambda self: tmp_path)
+    from core.config import settings
+    monkeypatch.setattr(type(settings), "get_videos_path", lambda self: tmp_path)
 
 
 @pytest.mark.asyncio

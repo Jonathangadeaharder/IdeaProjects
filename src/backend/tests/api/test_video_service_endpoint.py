@@ -123,5 +123,11 @@ class TestVideoServiceEndpoint:
 
             # Assert: Verify error response structure
             error_data = response.json()
-            assert "detail" in error_data
-            assert "not found" in error_data["detail"].lower()
+            # Handle both old and new error formats
+            if "error" in error_data and "message" in error_data["error"]:
+                # New standardized format
+                assert "not found" in error_data["error"]["message"].lower()
+            else:
+                # Old format fallback
+                assert "detail" in error_data
+                assert "not found" in error_data["detail"].lower()

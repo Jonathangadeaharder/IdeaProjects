@@ -24,7 +24,12 @@ async def test_Whenmultilingual_vocabulary_statsWithoutauthentication_ThenReturn
     response = await async_client.get(url_builder.url_for("get_vocabulary_stats"))
 
     assert response.status_code == 401
-    assert "detail" in response.json()
+    error_data = response.json()
+    # Handle both old and new error formats
+    if "error" in error_data:
+        assert "message" in error_data["error"]
+    else:
+        assert "detail" in error_data
 
 
 @pytest.mark.asyncio

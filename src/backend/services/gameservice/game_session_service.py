@@ -108,9 +108,23 @@ class GameSessionService:
         - Validate session access permissions
     """
 
-    def __init__(self, db_session: AsyncSession):
+    def __init__(
+        self,
+        db_session: AsyncSession,
+        question_service: "GameQuestionService",
+        scoring_service: "GameScoringService",
+    ):
+        """
+        Initialize with injected dependencies.
+
+        Args:
+            db_session: Database session
+            question_service: Service for generating questions
+            scoring_service: Service for scoring answers
+        """
         self.db_session = db_session
-        self.scoring_service = GameScoringService()
+        self.question_service = question_service
+        self.scoring_service = scoring_service
 
     async def create_session(self, user_id: str, request: StartGameRequest) -> GameSession:
         """
@@ -129,9 +143,8 @@ class GameSessionService:
         session_id = str(uuid.uuid4())
         now = datetime.utcnow()
 
-        # Create question service with database session and user_id for filtering known words
-        question_service = GameQuestionService(db_session=self.db_session, user_id=user_id)
-        questions = await question_service.generate_questions(
+        # Use injected question service
+        questions = await self.question_service.generate_questions(
             request.game_type, request.difficulty, request.video_id, request.total_questions
         )
 

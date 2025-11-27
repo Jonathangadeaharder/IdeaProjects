@@ -11,7 +11,7 @@ import pytest
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 
-from core.security_middleware import LoggingMiddleware
+from core.security.security_middleware import LoggingMiddleware
 
 
 @pytest.mark.asyncio

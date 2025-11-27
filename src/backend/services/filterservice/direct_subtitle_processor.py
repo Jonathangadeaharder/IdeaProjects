@@ -91,11 +91,14 @@ class DirectSubtitleProcessor:
         Automatically pre-loads user data for efficient processing.
     """
 
-    def __init__(self):
-        # Import the vocabulary service
-        from services.vocabulary.vocabulary_service import VocabularyService
+    def __init__(self, vocab_service=None):
+        """
+        Initialize subtitle processor with optional vocabulary service.
 
-        self.vocab_service = VocabularyService()
+        Args:
+            vocab_service: Vocabulary service instance (optional for backward compatibility)
+        """
+        self.vocab_service = vocab_service
 
         # Initialize focused services
         self.data_loader = user_data_loader

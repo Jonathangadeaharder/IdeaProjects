@@ -12,7 +12,7 @@ from unittest.mock import Mock
 import pytest
 from jose import jwt
 
-from core.auth_security import LoginAttemptTracker, SecurityConfig, SecurityHeaders
+from core.auth.auth_security import LoginAttemptTracker, SecurityConfig, SecurityHeaders
 
 
 class TestPasswordHashing:

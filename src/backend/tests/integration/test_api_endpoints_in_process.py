@@ -164,7 +164,7 @@ class TestVocabularyEndpoints:
         assert_vocabulary_response_structure(data)
 
     @pytest.mark.asyncio
-    async def test_When_authenticated_user_marks_word_known_Then_success_returned(self, async_client, url_builder):
+    async def test_When_authenticated_user_marks_word_known_Then_success_returned(self, async_client, url_builder, seeded_vocabulary):
         """Authenticated user should be able to mark a word as known."""
         # Arrange
         auth_helper = AsyncAuthHelper(async_client)
@@ -182,20 +182,21 @@ class TestVocabularyEndpoints:
         if not vocab_data.get("words") or len(vocab_data["words"]) == 0:
             pytest.skip("No vocabulary words found in database for testing")
 
-        concept_id = vocab_data["words"][0]["concept_id"]
+        lemma = vocab_data["words"][0]["lemma"]
 
         # Act
         response = await async_client.post(
             url_builder.url_for("mark_word_known"),
-            json={"concept_id": concept_id, "known": True},
+            json={"lemma": lemma, "language": "de", "known": True},
             headers=headers,
         )
 
         # Assert
-        data = assert_json_response(response, 200)
-        assert "success" in data
-        assert "concept_id" in data
-        assert "known" in data
+        assert response.status_code == 200, f"Mark known failed: {response.text}"
+        result = response.json()
+        assert result["success"] is True
+        assert result["lemma"] == lemma
+        assert result["known"] is True
 
     @pytest.mark.asyncio
     async def test_When_unauthenticated_user_accesses_vocabulary_Then_authentication_required(

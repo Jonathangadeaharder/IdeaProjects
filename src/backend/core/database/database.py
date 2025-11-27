@@ -73,11 +73,13 @@ async def init_db():
 
 
 async def create_default_admin_user():
-    """Create default admin user with secure credentials"""
+    """Create default admin user with secure credentials from environment"""
+    import os
+
     from sqlalchemy import select
 
     from core.auth import User
-    from core.auth_security import SecurityConfig
+    from core.auth.auth_security import SecurityConfig
 
     async with AsyncSessionLocal() as session:
         # Check if admin user already exists
@@ -85,9 +87,25 @@ async def create_default_admin_user():
         existing_admin = result.scalar_one_or_none()
 
         if not existing_admin:
-            # Create admin user with secure password meeting validation requirements
-            # Password: AdminPass123! (12+ chars, upper, lower, digit, special)
-            hashed_password = SecurityConfig.hash_password("AdminPass123!")
+            # Get admin password from environment, with fallback to a secure default
+            admin_password = os.getenv("LANGPLUG_ADMIN_PASSWORD")
+
+            if not admin_password:
+                logger.warning(
+                    "LANGPLUG_ADMIN_PASSWORD environment variable not set. "
+                    "Please set a strong password for the admin account. "
+                    "Using a temporary secure password for this session."
+                )
+                # Generate a temporary secure password
+                import secrets
+                import string
+
+                chars = string.ascii_letters + string.digits + string.punctuation
+                admin_password = ''.join(secrets.choice(chars) for _ in range(24))
+                logger.info(f"Temporary admin password (save this): {admin_password}")
+
+            # Create admin user with password from environment or generated
+            hashed_password = SecurityConfig.hash_password(admin_password)
             admin_user = User(
                 email="admin@langplug.com",
                 username="admin",
@@ -99,7 +117,8 @@ async def create_default_admin_user():
             session.add(admin_user)
             await session.commit()
             logger.info(
-                "Default admin user created (username: admin, email: admin@langplug.com, password: AdminPass123!)"
+                "Default admin user created (username: admin, email: admin@langplug.com). "
+                "Password from LANGPLUG_ADMIN_PASSWORD environment variable."
             )
 
 

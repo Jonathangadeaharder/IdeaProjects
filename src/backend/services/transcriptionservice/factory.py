@@ -111,6 +111,22 @@ class TranscriptionServiceFactory:
         Raises:
             ValueError: If service_name is not registered
         """
+        import os
+
+        # Force whisper-tiny in test environment to prevent timeouts and high resource usage
+        if os.environ.get("TESTING") == "1":
+            # Override service name and config for tests
+            if service_name != "whisper-tiny":
+                # Only log if we're actually changing it
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.info(f"[TEST MODE] Overriding transcription service '{service_name}' with 'whisper-tiny'")
+
+            service_name = "whisper-tiny"
+            # Ensure model_size matches if provided in kwargs
+            if "model_size" in kwargs:
+                kwargs["model_size"] = "tiny"
+
         service_name = service_name.lower()
 
         # Determine the service class (resolve lazily)

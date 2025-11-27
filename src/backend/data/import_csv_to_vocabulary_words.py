@@ -7,7 +7,13 @@ Populates the correct table that the application uses for lookups.
 import asyncio
 import csv
 import logging
+import sys
 from pathlib import Path
+
+# Add backend directory to path
+BACKEND_DIR = Path(__file__).resolve().parent.parent
+if str(BACKEND_DIR) not in sys.path:
+    sys.path.insert(0, str(BACKEND_DIR))
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -125,7 +131,8 @@ async def main():
     # Initialize database
     await init_db()
 
-    # CSV files to import
+    # CSV files to import (relative to data directory)
+    data_dir = Path(__file__).parent
     csv_files = {
         "A1_vokabeln.csv": "A1",
         "A2_vokabeln.csv": "A2",
@@ -138,11 +145,11 @@ async def main():
 
     async with AsyncSessionLocal() as session:
         for csv_file, level in csv_files.items():
-            csv_path = Path(csv_file)
+            csv_path = data_dir / csv_file
 
             if csv_path.exists():
                 logger.info(f"Processing {csv_file} ({level} level)...")
-                pairs = read_csv_vocabulary(csv_file, level)
+                pairs = read_csv_vocabulary(str(csv_path), level)
 
                 if pairs:
                     imported = await import_to_vocabulary_words(pairs, session, language="de")

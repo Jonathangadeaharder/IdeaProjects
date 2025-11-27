@@ -34,12 +34,12 @@ from api.routes import (
 )
 
 from .config import settings
-from .middleware.contract_middleware import setup_contract_validation
-from .dependencies import cleanup_services, init_services
-from .middleware.exception_handlers import setup_exception_handlers
 from .config.logging_config import configure_logging, get_logger
-from .security.security_middleware import setup_security_middleware
 from .config.sentry_config import configure_sentry
+from .dependencies import cleanup_services, init_services
+from .middleware.contract_middleware import setup_contract_validation
+from .middleware.exception_handlers import setup_exception_handlers
+from .security.security_middleware import setup_security_middleware
 
 # Initialize logging and Sentry
 configure_logging()
@@ -135,7 +135,7 @@ def create_app() -> FastAPI:
 
         Returns 200 when ready, 503 when still initializing
         """
-        from .task_dependencies import is_services_ready
+        from .dependencies.task_dependencies import is_services_ready
 
         ready = is_services_ready()
 
@@ -170,7 +170,7 @@ def create_app() -> FastAPI:
         tags=["auth"],
     )
 
-    # Include API routers with /api prefix
+    # Include custom auth routes for additional endpoints (not provided by FastAPI-Users)
     app.include_router(auth.router, prefix="/api/auth")
     app.include_router(videos.router, prefix="/api/videos")
     app.include_router(processing.router, prefix="/api/process")

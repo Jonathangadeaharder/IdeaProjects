@@ -291,7 +291,7 @@ class TestTranscribeChunk:
         task_id = "test_task"
         task_progress = {task_id: Mock(progress=0, current_step="", message="")}
 
-        with patch("core.service_dependencies.get_transcription_service", return_value=None):
+        with patch("core.dependencies.get_transcription_service", return_value=None):
             with pytest.raises(ChunkTranscriptionError, match="not available"):
                 await service.transcribe_chunk(
                     task_id, task_progress, video_file, audio_file, {"target": "de"}, 0.0, 30.0
@@ -307,7 +307,7 @@ class TestTranscribeChunk:
         task_progress = {task_id: Mock(progress=0, current_step="", message="")}
 
         mock_service = Mock()
-        with patch("core.service_dependencies.get_transcription_service", return_value=mock_service):
+        with patch("core.dependencies.get_transcription_service", return_value=mock_service):
             with pytest.raises(ChunkTranscriptionError, match="Audio extraction did not produce a separate audio file"):
                 await service.transcribe_chunk(
                     task_id, task_progress, video_file, video_file, {"target": "de"}, 0.0, 30.0
@@ -336,7 +336,7 @@ class TestTranscribeChunk:
             language="de",
         )
 
-        with patch("core.service_dependencies.get_transcription_service", return_value=mock_service):
+        with patch("core.dependencies.get_transcription_service", return_value=mock_service):
             with patch("asyncio.to_thread", return_value=mock_result):
                 result = await service.transcribe_chunk(
                     task_id, task_progress, video_file, audio_file, {"target": "de"}, 0.0, 30.0
@@ -370,7 +370,7 @@ class TestTranscribeChunk:
             language="de",
         )
 
-        with patch("core.service_dependencies.get_transcription_service", return_value=mock_service):
+        with patch("core.dependencies.get_transcription_service", return_value=mock_service):
             with patch("asyncio.to_thread", return_value=mock_result):
                 result = await service.transcribe_chunk(
                     task_id, task_progress, video_file, audio_file, {"target": "de"}, 0.0, 30.0
@@ -394,7 +394,7 @@ class TestTranscribeChunk:
         # Mock transcription service that raises error
         mock_service = Mock()
 
-        with patch("core.service_dependencies.get_transcription_service", return_value=mock_service):
+        with patch("core.dependencies.get_transcription_service", return_value=mock_service):
             with patch("asyncio.to_thread", side_effect=Exception("Transcription failed")):
                 with pytest.raises(ChunkTranscriptionError, match="Chunk transcription failed"):
                     await service.transcribe_chunk(

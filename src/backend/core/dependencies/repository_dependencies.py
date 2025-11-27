@@ -32,6 +32,7 @@ from typing import Annotated
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from core.database.database import get_async_session
 from database.repositories.interfaces import (
     ProcessingSessionRepositoryInterface,
     UserRepositoryInterface,
@@ -42,8 +43,6 @@ from database.repositories.processing_session_repository import ProcessingSessio
 from database.repositories.user_repository import UserRepository
 from database.repositories.user_vocabulary_progress_repository import UserVocabularyProgressRepository
 from database.repositories.vocabulary_repository import VocabularyRepository
-
-from core.database.database import get_async_session
 
 
 def get_user_repository(db: Annotated[AsyncSession, Depends(get_async_session)]) -> UserRepositoryInterface:

@@ -13,6 +13,8 @@ from core.database import get_async_session
 from core.dependencies import current_active_user
 from database.models import User
 from services.gameservice import GameSessionService
+from services.gameservice.game_question_service import GameQuestionService
+from services.gameservice.game_scoring_service import GameScoringService
 from services.gameservice.game_session_service import (
     AnswerRequest,
     GameSession,
@@ -28,9 +30,13 @@ logger = logging.getLogger(__name__)
 router = APIRouter(tags=["game"])
 
 
-def _get_game_service(db: AsyncSession = Depends(get_async_session)) -> GameSessionService:
+def _get_game_service(
+    db: AsyncSession = Depends(get_async_session),
+) -> GameSessionService:
     """Dependency for GameSessionService"""
-    return GameSessionService(db)
+    question_service = GameQuestionService(db)
+    scoring_service = GameScoringService()
+    return GameSessionService(db, question_service, scoring_service)
 
 
 @router.post("/start", response_model=GameSession, name="game_start_session")

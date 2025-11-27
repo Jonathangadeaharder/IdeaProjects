@@ -21,10 +21,8 @@ import pytest
 try:
     from playwright.async_api import TimeoutError as PlaywrightTimeout
     from playwright.async_api import async_playwright
-except ImportError as e:
-    raise ImportError(
-        "Playwright not installed. Install with: pip install playwright && python -m playwright install chromium"
-    ) from e
+except ImportError:
+    pytest.skip("Playwright not installed. Install with: pip install playwright", allow_module_level=True)
 
 try:
     from .e2e_config import (
@@ -111,15 +109,32 @@ async def test_e2e_subtitle_display_workflow():
         )
 
         try:
-            # Step 1: Navigate to frontend
-            await page.goto(FRONTEND_URL, timeout=15000)
+            # Step 1: Navigate to login page directly
+            await page.goto(f"{FRONTEND_URL}/login", timeout=15000)
             await page.wait_for_load_state("networkidle")
-            await page.screenshot(path=str(SCREENSHOT_DIR / "00_homepage.png"))
+            await page.screenshot(path=str(SCREENSHOT_DIR / "00_login_page.png"))
+
+            # Debug: Check current page state
+            current_url = page.url
+            print(f"[DEBUG] Current URL after navigation: {current_url}")
+
+            # Check all input elements on the page
+            all_inputs = await page.locator('input').all()
+            print(f"[DEBUG] Found {len(all_inputs)} input elements")
+            for i, input_elem in enumerate(all_inputs[:5]):  # Show first 5
+                input_type = await input_elem.get_attribute('type')
+                input_name = await input_elem.get_attribute('name')
+                input_placeholder = await input_elem.get_attribute('placeholder')
+                is_enabled = await input_elem.is_enabled()
+                print(f"[DEBUG] Input {i}: type={input_type}, name={input_name}, placeholder={input_placeholder}, enabled={is_enabled}")
 
             # Step 2: Login
             email_input = page.locator('input[type="email"]').first
             password_input = page.locator('input[type="password"]').first
             submit_button = page.locator('button:has-text("Sign In")').first
+
+            # Wait for email input to be visible
+            await email_input.wait_for(state="visible", timeout=10000)
 
             await email_input.fill(TEST_EMAIL)
             await password_input.fill(TEST_PASSWORD)
@@ -148,13 +163,30 @@ async def test_e2e_subtitle_display_workflow():
             # Save debug screenshot
             await page.screenshot(path=str(SCREENSHOT_DIR / "02_after_login.png"))
 
-            # Debug: Save page HTML
+            # Debug: Save page HTML and check what's on the videos page
             page_html = await page.content()
             (SCREENSHOT_DIR / "02_after_login.html").write_text(page_html, encoding="utf-8")
 
             # Check if we're actually logged in or still on login page
             current_url = page.url
             print(f"[DEBUG] Current URL after login: {current_url}")
+
+            # Debug: Check all elements with data-testid on the videos page
+            all_data_testids = await page.locator('[data-testid]').all()
+            print(f"[DEBUG] Found {len(all_data_testids)} elements with data-testid")
+            for i, elem in enumerate(all_data_testids[:10]):  # Show first 10
+                testid = await elem.get_attribute('data-testid')
+                tag_name = await elem.evaluate('el => el.tagName.toLowerCase()')
+                is_visible = await elem.is_visible()
+                print(f"[DEBUG] Element {i}: data-testid={testid}, tag={tag_name}, visible={is_visible}")
+
+            # Debug: Look for any series-related elements
+            series_elements = await page.locator('[data-testid*="series"], [data-testid*="card"]').all()
+            print(f"[DEBUG] Found {len(series_elements)} series/card elements")
+            for i, elem in enumerate(series_elements[:5]):
+                testid = await elem.get_attribute('data-testid')
+                text_content = await elem.text_content()
+                print(f"[DEBUG] Series element {i}: data-testid={testid}, text={text_content[:50] if text_content else 'None'}")
 
             # Step 3: Navigate to Superstore
             superstore_card = page.locator('[data-testid="series-card-superstore"]')

@@ -59,9 +59,14 @@ Filename Parsing Patterns:
 
 import logging
 from pathlib import Path
+from typing import Any
+
+from fastapi import UploadFile
 
 from api.models.video import VideoInfo
+from api.models.vocabulary import VocabularyWord
 from core.config import settings
+from core.file_security import FileSecurityValidator
 
 logger = logging.getLogger(__name__)
 
@@ -69,40 +74,119 @@ logger = logging.getLogger(__name__)
 class VideoService:
     """
     Service for video library management and metadata extraction.
-
-    Handles video file discovery, series organization, episode parsing, and subtitle detection.
-    Supports both standalone videos and series directory structures.
-
-    Attributes:
-        db: Database manager instance
-        auth_service: Authentication service instance
-
-    Example:
-        ```python
-        service = VideoService(db_manager, auth_service)
-
-        # Discover all videos
-        videos = service.get_available_videos()
-        for video in videos:
-            print(f"{video.series} - {video.episode}: {video.title}")
-            print(f"  Has subtitles: {video.has_subtitles}")
-
-        # Get video path for playback
-        video_file = service.get_video_file_path("Dark", "Episode 1")
-
-        # Resolve subtitle path (handles Windows/WSL paths)
-        subtitle_file = service.get_subtitle_file_path("Dark/s01e01.srt")
-        ```
-
-    Note:
-        Methods are refactored to keep complexity low (<15 lines per method).
-        Supports Windows absolute paths and WSL path conversion.
-        Episode parsing is case-insensitive and flexible (handles multiple formats).
     """
 
     def __init__(self, db_manager, auth_service):
         self.db = db_manager
         self.auth_service = auth_service
+
+    def validate_series_name(self, series: str) -> str:
+        """Validate and sanitize series name to prevent path traversal"""
+        safe_series = FileSecurityValidator.sanitize_filename(series)
+        if safe_series != series or ".." in series or "/" in series or "\\" in series:
+            raise ValueError("Invalid series name")
+        return safe_series
+
+    async def validate_video_file_upload(self, video_file: UploadFile) -> Path:
+        """Validate uploaded video file for security"""
+        allowed_extensions = {".mp4", ".avi", ".mkv", ".mov", ".webm"}
+        return await FileSecurityValidator.validate_file_upload(video_file, allowed_extensions)
+
+    async def write_video_file(self, video_file: UploadFile, destination: Path) -> None:
+        """Write uploaded video file in chunks for memory efficiency"""
+        CHUNK_SIZE = 1024 * 1024  # 1MB chunks
+
+        with open(destination, "wb") as buffer:
+            while True:
+                chunk = await video_file.read(CHUNK_SIZE)
+                if not chunk:
+                    break
+                buffer.write(chunk)
+
+    async def upload_video(self, series: str, video_file: UploadFile) -> VideoInfo:
+        """Upload a new video file to a series"""
+        safe_series = self.validate_series_name(series)
+        safe_path = await self.validate_video_file_upload(video_file)
+
+        series_path = settings.get_videos_path() / safe_series
+        series_path.mkdir(parents=True, exist_ok=True)
+
+        final_path = FileSecurityValidator.get_safe_upload_path(video_file.filename, preserve_name=True)
+        final_destination = series_path / final_path.name
+
+        if final_destination.exists():
+            raise FileExistsError(f"File already exists: {final_destination.name}")
+
+        await self.write_video_file(video_file, final_destination)
+
+        if safe_path.exists() and safe_path != final_destination:
+            safe_path.unlink(missing_ok=True)
+
+        logger.info(f"[SECURITY] Uploaded video: {final_destination}")
+
+        # Build VideoInfo response
+        episode_info = self._parse_episode_filename(final_destination.stem)
+        return VideoInfo(
+            series=safe_series,
+            season=episode_info.get("season", "1"),
+            episode=episode_info.get("episode", "Unknown"),
+            title=episode_info.get("title", final_destination.stem),
+            path=str(final_destination.relative_to(settings.get_videos_path())),
+            has_subtitles=False,
+            duration=0,
+        )
+
+    def get_video_status(self, video_id: str, task_progress: dict[str, Any]) -> dict[str, Any]:
+        """Get processing status for a video"""
+        # Logic moved from routes
+        video_tasks = [
+            (task_id, progress)
+            for task_id, progress in task_progress.items()
+            if video_id in task_id or video_id in str(progress.get("video_path", ""))
+        ]
+
+        if not video_tasks:
+            videos_path = settings.get_videos_path()
+            video_path = videos_path / video_id
+
+            if not video_path.exists():
+                return None # Not found
+
+            srt_path = video_path.with_suffix(".srt")
+            if srt_path.exists():
+                return {
+                    "status": "completed",
+                    "progress": 100.0,
+                    "current_step": "Processing completed",
+                    "message": "Video has been fully processed",
+                    "subtitle_path": str(srt_path.relative_to(videos_path)),
+                }
+            else:
+                return {
+                    "status": "completed",
+                    "progress": 0.0,
+                    "current_step": "Not processed",
+                    "message": "Video has not been processed yet",
+                }
+
+        _latest_task_id, latest_progress = video_tasks[-1]
+        return latest_progress
+
+    def get_video_vocabulary(self, video_id: str) -> list[VocabularyWord]:
+        """Get vocabulary words extracted from a video"""
+        videos_path = settings.get_videos_path()
+        video_path = videos_path / video_id
+
+        if not video_path.exists():
+            raise FileNotFoundError(f"Video not found: {video_id}")
+
+        srt_path = video_path.with_suffix(".srt")
+        if not srt_path.exists():
+            raise FileNotFoundError(f"Subtitles not found for video: {video_id}")
+
+        # Placeholder for extraction logic
+        logger.warning(f"Vocabulary extraction not implemented for video {video_id}")
+        return []
 
     def _validate_videos_path(self, videos_path: Path) -> bool:
         """Validate videos path exists and is accessible"""

@@ -113,18 +113,21 @@ class Settings(BaseSettings):
             return self.database_url
 
         # Default SQLite database path
-        base_path = Path(self.data_path) if self.data_path else Path(__file__).parent.parent / "data"
+        base_path = Path(self.data_path) if self.data_path else Path(__file__).parent.parent.parent / "data"
         base_path.mkdir(exist_ok=True)
         db_path = base_path / "langplug.db"
-        return f"sqlite:///{db_path}"
+        return f"sqlite+aiosqlite:///{db_path}"
 
     def get_database_path(self) -> Path:
         """Get the database file path (for SQLite only)"""
+        if self.database_url and self.database_url.startswith("sqlite+aiosqlite:///"):
+            return Path(self.database_url.replace("sqlite+aiosqlite:///", ""))
+
         if self.database_url and self.database_url.startswith("sqlite:///"):
             return Path(self.database_url.replace("sqlite:///", ""))
 
         # Default database path
-        base_path = Path(self.data_path) if self.data_path else Path(__file__).parent.parent / "data"
+        base_path = Path(self.data_path) if self.data_path else Path(__file__).parent.parent.parent / "data"
         base_path.mkdir(exist_ok=True)
         return base_path / "langplug.db"
 
@@ -142,11 +145,11 @@ class Settings(BaseSettings):
             # Handle WSL path conversion if needed
             return self._ensure_accessible_path(path)
 
-        # Default videos path (Backend/../videos)
+        # Default videos path (Project root/videos)
         # Use absolute path calculation to avoid working directory issues
         config_file = Path(__file__).resolve()
         logger.debug(f"Config file: {config_file}")
-        default_path = config_file.parent.parent.parent / "videos"
+        default_path = config_file.parent.parent.parent.parent.parent / "videos"
         logger.debug(f"Calculated default path: {default_path}")
         return self._ensure_accessible_path(default_path)
 
@@ -194,7 +197,7 @@ class Settings(BaseSettings):
             return path
 
         # Default data path
-        path = Path(__file__).parent.parent / "data"
+        path = Path(__file__).parent.parent.parent / "data"
         path.mkdir(exist_ok=True)
         return path
 
@@ -223,7 +226,7 @@ class Settings(BaseSettings):
             return Path(self.logs_path)
 
         # Default logs path
-        path = Path(__file__).parent.parent / "logs"
+        path = Path(__file__).parent.parent.parent / "logs"
         path.mkdir(exist_ok=True)
         return path
 

@@ -11,7 +11,6 @@ Provides comprehensive file security validation for uploads, including:
 import re
 import uuid
 from pathlib import Path
-from typing import Set
 
 from fastapi import UploadFile
 
@@ -152,7 +151,7 @@ class FileSecurityValidator:
 
     @staticmethod
     async def validate_file_upload(
-        file: UploadFile, allowed_extensions: Set[str] | None = None
+        file: UploadFile, allowed_extensions: set[str] | None = None
     ) -> Path:
         """
         Validate uploaded file for security and constraints

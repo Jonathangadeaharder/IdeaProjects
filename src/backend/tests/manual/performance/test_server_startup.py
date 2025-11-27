@@ -8,10 +8,13 @@ from unittest.mock import AsyncMock, Mock
 
 import pytest
 
+# Mark as manual test
+pytestmark = pytest.mark.manual
+
 from core.app import create_app
 
 
-@pytest.mark.asyncio("asyncio")
+@pytest.mark.asyncio
 @pytest.mark.timeout(30)
 async def test_Whenlifespan_skips_service_init_in_test_modeCalled_ThenSucceeds(monkeypatch) -> None:
     """When TESTING is set, service initialization should be bypassed."""
@@ -25,7 +28,7 @@ async def test_Whenlifespan_skips_service_init_in_test_modeCalled_ThenSucceeds(m
     init_mock.assert_not_called()
 
 
-@pytest.mark.asyncio("asyncio")
+@pytest.mark.asyncio
 @pytest.mark.timeout(30)
 async def test_Whenlifespan_schedules_cleanupCalled_ThenSucceeds(monkeypatch) -> None:
     """Cleanup should be scheduled even if no loop is running during shutdown."""

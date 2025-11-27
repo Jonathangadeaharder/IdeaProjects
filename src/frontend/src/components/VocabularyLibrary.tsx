@@ -672,7 +672,7 @@ const WordCardItem = memo(({ word, onWordClick, onDelete }: WordCardItemProps) =
   }
 
   return (
-    <WordCard $known={word.known} onClick={() => onWordClick(word)}>
+    <WordCard $known={word.known} onClick={() => onWordClick(word)} data-testid={`word-card-${word.id}`}>
       {onDelete && (
         <DeleteButtonWrapper>
           <DeleteButton onClick={handleDelete} />
@@ -718,7 +718,7 @@ interface LevelTabItemProps {
 const LevelTabItem = memo(
   ({ level, active, userKnown, totalWords, onClick }: LevelTabItemProps) => {
     return (
-      <LevelTab $active={active} onClick={() => onClick(level)}>
+      <LevelTab $active={active} onClick={() => onClick(level)} data-testid={`level-tab-${level}`}>
         {level}
         <div style={{ fontSize: '0.8rem', opacity: 0.8 }}>
           {userKnown} / {totalWords}

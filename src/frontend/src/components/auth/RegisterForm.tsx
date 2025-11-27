@@ -7,6 +7,7 @@ import { useAuthStore } from '@/store/useAuthStore'
 import { NetflixButton, ErrorMessage, SuccessMessage } from '@/styles/GlobalStyles'
 import { schemas } from '@/schemas/api-schemas'
 import { zodErrorToFormErrors } from '@/schemas/helpers'
+import { formatApiError } from '@/utils/error-formatter'
 
 const RegisterContainer = styled.div`
   min-height: 100vh;
@@ -172,29 +173,11 @@ export const RegisterForm: React.FC = () => {
       toast.success('Account created successfully! Redirecting to dashboard...')
       setTimeout(() => navigate('/'), 2000)
     } catch (error: unknown) {
-      // Handle validation errors from backend
-      const apiError = error as { response?: { data?: { detail?: unknown } } }
-      if (apiError?.response?.data?.detail) {
-        // Handle array of validation errors
-        if (Array.isArray(apiError.response.data.detail)) {
-          const messages = apiError.response.data.detail.map((err: { msg?: string }) => {
-            if (err.msg) {
-              // Extract user-friendly message from validation error
-              const msg = err.msg.includes('Value error,')
-                ? err.msg.split('Value error, ')[1]
-                : err.msg
-              return msg
-            }
-            return 'Invalid input'
-          })
-          setError(messages.join('. '))
-        } else if (typeof apiError.response.data.detail === 'string') {
-          setError(apiError.response.data.detail)
-        }
-      } else {
-        const errorMessage = authError || 'Failed to create account. Please try again.'
-        setError(errorMessage)
-      }
+      // Handle validation errors from backend using standardized formatter
+      // This correctly handles both Pydantic/FastAPI validation errors (422)
+      // and generic API errors
+      const errorMessage = formatApiError(error, 'Failed to create account. Please try again.')
+      setError(errorMessage)
     }
   }
 

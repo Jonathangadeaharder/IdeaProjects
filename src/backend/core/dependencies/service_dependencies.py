@@ -6,40 +6,53 @@ from typing import Annotated
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from core.auth.auth_dependencies import current_active_user
+from core.database.database import get_async_session as get_db_session
 from database.models import User
 from services.interfaces import (
     IChunkTranscriptionService,
     IChunkTranslationService,
 )
 
-from core.auth.auth_dependencies import current_active_user
-from core.database.database import get_async_session as get_db_session
-
 logger = logging.getLogger(__name__)
 
 
 # Core service dependencies using direct imports
-def get_vocabulary_service(db: Annotated[AsyncSession, Depends(get_db_session)]):
-    """Get vocabulary service instance via factory - creates fresh instance per request"""
+def get_vocabulary_service(
+    db: Annotated[AsyncSession, Depends(get_db_session)]
+):
+    """Get vocabulary service instance with proper dependency injection"""
+    from services.vocabulary.vocabulary_progress_service import get_vocabulary_progress_service
+    from services.vocabulary.vocabulary_query_service import get_vocabulary_query_service
     from services.vocabulary.vocabulary_service import get_vocabulary_service as _get_vocab_service
+    from services.vocabulary.vocabulary_stats_service import get_vocabulary_stats_service
 
-    return _get_vocab_service()
+    query_service = get_vocabulary_query_service()
+    progress_service = get_vocabulary_progress_service()
+    stats_service = get_vocabulary_stats_service()
+
+    return _get_vocab_service(query_service, progress_service, stats_service)
 
 
-def get_subtitle_processor(db: Annotated[AsyncSession, Depends(get_db_session)]):
-    """Get subtitle processor instance"""
+def get_subtitle_processor(
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    vocab_service = Depends(get_vocabulary_service)
+):
+    """Get subtitle processor instance with injected vocab service"""
     from services.filterservice.direct_subtitle_processor import DirectSubtitleProcessor
 
-    return DirectSubtitleProcessor()
+    return DirectSubtitleProcessor(vocab_service=vocab_service)
 
 
 def get_user_subtitle_processor(
-    current_user: Annotated[User, Depends(current_active_user)], db: Annotated[AsyncSession, Depends(get_db_session)]
+    current_user: Annotated[User, Depends(current_active_user)],
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    vocab_service = Depends(get_vocabulary_service)
 ):
-    """Get subtitle processor for authenticated user"""
+    """Get subtitle processor for authenticated user with injected vocab service"""
     from services.filterservice.direct_subtitle_processor import DirectSubtitleProcessor
 
-    return DirectSubtitleProcessor()
+    return DirectSubtitleProcessor(vocab_service=vocab_service)
 
 
 def get_processing_service():
@@ -52,9 +65,8 @@ def get_processing_service():
 def get_transcription_service():
     """Get transcription service instance (singleton)"""
     try:
-        from services.transcriptionservice.factory import get_transcription_service as _get_transcription_service
-
         from core.config.config import settings
+        from services.transcriptionservice.factory import get_transcription_service as _get_transcription_service
 
         logger.info(f"Initializing transcription service: {settings.transcription_service}")
         service = _get_transcription_service(settings.transcription_service)
@@ -75,9 +87,8 @@ def get_transcription_service():
 def get_translation_service():
     """Get translation service instance"""
     try:
-        from services.translationservice.factory import get_translation_service as _get_translation_service
-
         from core.config.config import settings
+        from services.translationservice.factory import get_translation_service as _get_translation_service
 
         logger.info(f"Initializing translation service: {settings.translation_service}")
         service = _get_translation_service(settings.translation_service)

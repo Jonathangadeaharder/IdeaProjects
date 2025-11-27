@@ -49,13 +49,17 @@ async def test_Whenmark_known_can_unmarkCalled_ThenSucceeds(async_client, url_bu
 @pytest.mark.timeout(30)
 async def test_Whenbulk_markCalled_ThenReturnscounts(async_client, url_builder, app):
     """Happy path: bulk mark returns the number of affected words."""
-    from unittest.mock import AsyncMock
+    from unittest.mock import AsyncMock, MagicMock
 
     from core.dependencies import get_vocabulary_service
     from services.vocabulary.vocabulary_service import VocabularyService
 
-    # Create mock service with mocked progress_service
-    mock_service = VocabularyService()
+    # Create mock service with mocked sub-services
+    mock_query_service = MagicMock()
+    mock_progress_service = MagicMock()
+    mock_stats_service = MagicMock()
+
+    mock_service = VocabularyService(mock_query_service, mock_progress_service, mock_stats_service)
     mock_bulk_mark = AsyncMock(return_value={"updated_count": 7})
     mock_service.progress_service.bulk_mark_level = mock_bulk_mark
 

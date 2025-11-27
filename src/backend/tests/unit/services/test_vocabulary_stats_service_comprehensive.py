@@ -306,20 +306,6 @@ class TestGetSupportedLanguages:
     def service(self):
         return VocabularyStatsService()
 
-    @pytest.mark.skip(
-        reason="ImportError edge case - difficult to test in isolation. Main functionality tested in other tests."
-    )
-    async def test_supported_languages_no_language_table(self, service):
-        """Test get_supported_languages when Language model doesn't exist (ImportError path)
-
-        This test is skipped because:
-        1. The ImportError path is a defensive fallback for when Language table doesn't exist
-        2. Testing import failures in isolation is fragile and complex
-        3. The main functionality (Language table exists) is covered by other tests
-        4. In practice, if Language table exists, this code path never executes
-        """
-        pass
-
     @patch("services.vocabulary.vocabulary_stats_service.AsyncSessionLocal")
     async def test_supported_languages_with_language_table(self, mock_session_local, service):
         """Test get_supported_languages when Language model exists and has data"""

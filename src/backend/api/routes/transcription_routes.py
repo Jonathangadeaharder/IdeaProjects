@@ -16,15 +16,18 @@ from core.dependencies import (
     get_transcription_service,
 )
 from database.models import User
+from services.transcriptionservice.interface import ITranscriptionService
 from utils.media_validator import is_valid_video_file
 
-from ..models.processing import TranscribeRequest
+from ..models.processing import TaskResponse, TranscribeRequest
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["transcription"])
 
 
-async def run_transcription(video_path: str, task_id: str, task_progress: dict[str, Any]) -> None:
+async def run_transcription(
+    video_path: str, task_id: str, task_progress: dict[str, Any], transcription_service: ITranscriptionService
+) -> None:
     """Run transcription in background"""
     try:
         logger.info(f"Starting transcription task: {task_id}")
@@ -36,16 +39,7 @@ async def run_transcription(video_path: str, task_id: str, task_progress: dict[s
             "started_at": datetime.now().isoformat(),
         }
 
-        transcription_service = get_transcription_service()
-        if transcription_service is None:
-            logger.error("Transcription service not available")
-            task_progress[task_id] = {
-                "status": "failed",
-                "progress": 0,
-                "message": "Transcription service not available",
-                "error": "Service configuration error",
-            }
-            return
+        # Service is already injected and validated
 
         video_file = Path(video_path)
         if not video_file.exists():
@@ -109,12 +103,13 @@ async def run_transcription(video_path: str, task_id: str, task_progress: dict[s
         }
 
 
-@router.post("/transcribe", name="transcribe_video")
+@router.post("/transcribe", name="transcribe_video", response_model=TaskResponse)
 async def transcribe_video(
     request: TranscribeRequest,
     background_tasks: BackgroundTasks,
     current_user: User = Depends(current_active_user),
     task_progress: dict[str, Any] = Depends(get_task_progress_registry),
+    transcription_service: ITranscriptionService = Depends(get_transcription_service),
 ):
     """
     Transcribe video audio to generate SRT subtitles using speech recognition.
@@ -130,45 +125,23 @@ async def transcribe_video(
         background_tasks (BackgroundTasks): FastAPI background task manager
         current_user (User): Authenticated user
         task_progress (dict): Task progress tracking registry
+        transcription_service (ITranscriptionService): Injected transcription service
 
     Returns:
-        dict: Task initiation response with:
-            - task_id: Unique task identifier for progress tracking
-            - status: "started"
+        TaskResponse: Task initiation response with task_id and status
 
     Raises:
         HTTPException: 404 if video file not found
-        HTTPException: 422 if transcription service unavailable or invalid video format
+        HTTPException: 422 if invalid video format
         HTTPException: 500 if task initialization fails
-
-    Example:
-        ```bash
-        curl -X POST "http://localhost:8000/api/processing/transcribe" \
-          -H "Authorization: Bearer <token>" \
-          -H "Content-Type: application/json" \
-          -d '{
-            "video_path": "Learn German/S01E01.mp4"
-          }'
-        ```
-
-        Response:
-        ```json
-        {
-            "task_id": "transcribe_123_1234567890.123",
-            "status": "started"
-        }
-        ```
-
-    Note:
-        Use the returned task_id with /api/processing/progress/{task_id} to monitor
-        transcription progress. Completed transcription generates an SRT file with
-        the same name as the video file.
     """
     try:
         logger.info(f"Transcribe request received: {request.video_path}")
 
-        transcription_service = get_transcription_service()
+        # Service availability check handled by dependency injection (would raise 500 if fails instantiation)
+        # But we can check if it's None (though Depends usually implies success or error)
         if transcription_service is None:
+             # This shouldn't happen with proper DI unless factory returns None
             logger.warning("Transcription service not available")
             raise HTTPException(
                 status_code=422, detail="Transcription service is not available. Please check server configuration."
@@ -203,10 +176,11 @@ async def transcribe_video(
             str(full_path),
             task_id,
             task_progress,
+            transcription_service,
         )
 
         logger.info(f"Started transcription task: {task_id}")
-        return {"task_id": task_id, "status": "started"}
+        return TaskResponse(task_id=task_id, status="started")
 
     except HTTPException:
         raise

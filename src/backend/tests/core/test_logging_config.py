@@ -9,7 +9,7 @@ import logging
 
 import pytest
 
-from core.logging_config import JSONFormatter, setup_logging
+from core.config.logging_config import JSONFormatter, setup_logging
 
 
 @pytest.mark.timeout(30)

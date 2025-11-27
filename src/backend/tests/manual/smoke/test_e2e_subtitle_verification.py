@@ -22,10 +22,8 @@ import pytest
 try:
     from playwright.async_api import TimeoutError as PlaywrightTimeout
     from playwright.async_api import async_playwright
-except ImportError as e:
-    raise ImportError(
-        "Playwright not installed. Install with: pip install playwright && python -m playwright install chromium"
-    ) from e
+except ImportError:
+    pytest.skip("Playwright not installed. Install with: pip install playwright", allow_module_level=True)
 
 try:
     from .e2e_config import (
@@ -115,13 +113,16 @@ async def test_e2e_comprehensive_subtitle_workflow():
         page = await context.new_page()
 
         try:
-            # Step 1: Navigate to frontend
-            await page.goto(FRONTEND_URL, wait_until="networkidle", timeout=30000)
+            # Step 1: Navigate to frontend login page
+            await page.goto(f"{FRONTEND_URL}/login", wait_until="networkidle", timeout=30000)
 
             # Step 2: Login
             email_input = page.locator('input[type="email"]').first
             password_input = page.locator('input[type="password"]').first
             submit_button = page.locator('button[type="submit"], button:has-text("Sign In")').first
+
+            # Wait for form to be visible
+            await email_input.wait_for(state="visible", timeout=10000)
 
             await email_input.fill(TEST_EMAIL)
             await password_input.fill(TEST_PASSWORD)
@@ -206,7 +207,7 @@ async def test_e2e_comprehensive_subtitle_workflow():
 
                     # Check for processing status
                     if elapsed % 20 == 0:
-                        processing_indicator = page.locator('text*="Processing"').first
+                        processing_indicator = page.locator('text="Processing"').first
                         if await processing_indicator.count() > 0:
                             try:
                                 status_text = await processing_indicator.inner_text()

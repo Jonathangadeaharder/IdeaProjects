@@ -7,12 +7,12 @@ And Bug #7: concept_id must be valid UUID
 
 AI/ML Dependency: spaCy German Language Model
 ---------------------------------------------
-Two tests in this suite require the spaCy 'de_core_news_lg' German language model
+Two tests in this suite require the spaCy 'de_core_news_sm' German language model
 for vocabulary extraction and lemmatization. These tests are skipped in CI environments.
 
 To run all tests locally:
     pip install spacy
-    python -m spacy download de_core_news_lg
+    python -m spacy download de_core_news_sm
 
 The spaCy model is used for:
 - German word lemmatization
@@ -106,7 +106,6 @@ class TestFrontendBackendContract:
     """Test that backend responses match frontend type expectations"""
 
     @pytest.mark.asyncio
-    @pytest.mark.skip(reason="Requires spaCy de_core_news_lg model (python -m spacy download de_core_news_lg)")
     async def test_vocabulary_response_matches_frontend_type(self, german_vocabulary):
         """
         Test that vocabulary response has ALL required fields for frontend VocabularyWord type
@@ -324,7 +323,6 @@ class TestEndToEndContractValidation:
     """
 
     @pytest.mark.asyncio
-    @pytest.mark.skip(reason="Requires spaCy de_core_news_lg model (python -m spacy download de_core_news_lg)")
     async def test_chunk_processing_vocabulary_contract(self, test_user, german_vocabulary):
         """
         Test the complete flow from subtitle processing to vocabulary extraction

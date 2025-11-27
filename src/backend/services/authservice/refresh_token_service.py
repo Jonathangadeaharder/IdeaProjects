@@ -45,9 +45,9 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from core.exceptions import AuthenticationError
 from core.config.logging_config import get_logger
 from core.database.transaction import transactional
+from core.exceptions import AuthenticationError
 from database.models import RefreshTokenFamily, User
 
 UTC = UTC

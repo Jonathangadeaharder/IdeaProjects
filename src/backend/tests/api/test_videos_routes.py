@@ -21,10 +21,10 @@ async def test_Whenlist_videosCalled_ThenReturnsempty_when_path_missing(
     """Boundary: missing videos directory yields empty list without error."""
     headers = await _auth(async_client)
 
-    from api.routes import videos as vids
+    from core.config import settings
 
     missing = tmp_path / "none"
-    monkeypatch.setattr(type(vids.settings), "get_videos_path", lambda self: missing)
+    monkeypatch.setattr(type(settings), "get_videos_path", lambda self: missing)
 
     response = await async_client.get(url_builder.url_for("get_videos"), headers=headers)
 
@@ -38,9 +38,9 @@ async def test_WhenGetSubtitlesServesExistingFile_ThenSucceeds(async_client, url
     """Happy path: subtitle retrieval returns stored content."""
     headers = await _auth(async_client)
 
-    from api.routes import videos as vids
+    from core.config import settings
 
-    monkeypatch.setattr(type(vids.settings), "get_videos_path", lambda self: tmp_path)
+    monkeypatch.setattr(type(settings), "get_videos_path", lambda self: tmp_path)
 
     subtitle = tmp_path / "example.srt"
     subtitle.write_text("1\n00:00:00,000 --> 00:00:01,000\nHello\n", encoding="utf-8")
@@ -59,9 +59,9 @@ async def test_WhenStreamVideoSetsAcceptRanges_ThenSucceeds(async_client, url_bu
     """Happy path: streaming video responds with Accept-Ranges header."""
     headers = await _auth(async_client)
 
-    from api.routes import videos as vids
+    from core.config import settings
 
-    monkeypatch.setattr(type(vids.settings), "get_videos_path", lambda self: tmp_path)
+    monkeypatch.setattr(type(settings), "get_videos_path", lambda self: tmp_path)
 
     series_dir = tmp_path / "Series"
     series_dir.mkdir(parents=True)

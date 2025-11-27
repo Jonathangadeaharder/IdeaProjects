@@ -10,7 +10,7 @@ from unittest.mock import AsyncMock, Mock, patch
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from core.transaction import TransactionContext, transactional
+from core.database.transaction import TransactionContext, transactional
 
 
 class TestTransactionalDecorator:

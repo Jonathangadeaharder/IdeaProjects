@@ -6,7 +6,7 @@ UTC = UTC
 
 import pytest
 
-from core.token_blacklist import TokenBlacklist
+from core.auth.token_blacklist import TokenBlacklist
 
 
 class TestTokenBlacklistInitialization:
@@ -50,8 +50,10 @@ class TestTokenBlacklistOperations:
         assert token in blacklist._blacklist
         expiry = blacklist._blacklist[token]
         now = datetime.now(UTC)
-        assert (expiry - now).days == 0
-        assert (expiry - now).seconds > 23 * 3600
+        # Check that expiry is within 24 hours (allowing for day boundary issues)
+        time_diff = expiry - now
+        assert time_diff.total_seconds() > 23 * 3600  # More than 23 hours
+        assert time_diff.total_seconds() < 24 * 3600 + 60  # Less than 24 hours + 1 minute buffer
 
     @pytest.mark.asyncio
     async def test_is_blacklisted(self, blacklist):

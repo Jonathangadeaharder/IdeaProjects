@@ -165,17 +165,27 @@ class TestBuildTranslationSegments:
             assert result[0].text == "Hello World"
 
     @pytest.mark.asyncio
-    @pytest.mark.skip(reason="Requires PyTorch for translation models (pip install torch transformers)")
     async def test_build_translation_segments_no_active_words_in_segments(self, service, task_progress):
         """Test when no active words found in segments - still translates all segments"""
         vocabulary = [{"word": "test", "active": True}]
         segments = [SRTSegment(1, "00:00:00,000", "00:00:02,000", "Other text")]
+
+        # Mock the translation service to avoid slow transformers import
+        from services.translationservice.interface import TranslationResult
+        mock_translation_service = Mock()
+        mock_translation_service.translate.return_value = TranslationResult(
+            original_text="Other text",
+            translated_text="Translated text",
+            source_language="en",
+            target_language="de"
+        )
 
         with patch("services.processing.chunk_translation_service.SRTParser") as MockParser:
             mock_parser = MockParser.return_value
             mock_parser.parse_file.return_value = segments
 
             service._map_active_words_to_segments = Mock(return_value=[])
+            service.get_translation_service = Mock(return_value=mock_translation_service)
 
             result = await service.build_translation_segments(
                 task_id="test_task",

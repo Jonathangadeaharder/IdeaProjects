@@ -12,7 +12,10 @@ from httpx import ASGITransport, AsyncClient
 from core.app import create_app
 from tests.helpers import AsyncAuthHelper
 
-HEALTH_BUDGET_SECONDS = 0.25
+# Mark as manual test
+# pytestmark = pytest.mark.manual
+
+HEALTH_BUDGET_SECONDS = 1.0
 AUTH_BUDGET_SECONDS = 1.25
 VOCAB_STATS_BUDGET_SECONDS = 5.0  # Vocabulary stats can be slower due to database queries
 

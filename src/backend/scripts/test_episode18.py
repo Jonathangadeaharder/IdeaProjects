@@ -15,9 +15,9 @@ async def main():
     # Use the Windows path directly (no command line args to avoid quoting issues)
     srt_file_path = r"C:\Users\jogah\Downloads\Episode 18 Staffel 1 von Desperate Housewives.m4a.srt"
 
-    print(f"[INFO] Testing SRT filter with Episode 18")
+    print("[INFO] Testing SRT filter with Episode 18")
     print(f"[INFO] File path: {srt_file_path}")
-    print(f"[INFO] Checking if file exists...")
+    print("[INFO] Checking if file exists...")
 
     if not Path(srt_file_path).exists():
         print(f"[ERROR] File not found: {srt_file_path}")
@@ -35,7 +35,7 @@ async def main():
     user_level = "B1"  # Intermediate level
     language = "de"  # German
 
-    print(f"[INFO] Processing with:")
+    print("[INFO] Processing with:")
     print(f"  - User ID: {user_id}")
     print(f"  - User Level: {user_level}")
     print(f"  - Language: {language}")
@@ -55,7 +55,7 @@ async def main():
 
         # Show statistics
         stats = result.get('statistics', {})
-        print(f"\n[STATISTICS]")
+        print("\n[STATISTICS]")
         print(f"  - Total words processed: {stats.get('total_words_processed', 0):,}")
         print(f"  - Unique words: {stats.get('unique_words', 0):,}")
         print(f"  - Blocking words: {stats.get('blocking_words_count', 0):,}")
@@ -63,7 +63,7 @@ async def main():
         print(f"  - Known words: {stats.get('known_words_count', 0):,}")
 
         # Show counts
-        print(f"\n[SUBTITLES]")
+        print("\n[SUBTITLES]")
         print(f"  - Filtered subtitles: {len(result.get('filtered_subtitles', [])):,}")
         print(f"  - Learning subtitles: {len(result.get('learning_subtitles', [])):,}")
         print(f"  - Empty subtitles: {len(result.get('empty_subtitles', [])):,}")
@@ -88,7 +88,7 @@ async def main():
         # Show sample of filtered subtitles
         filtered_subs = result.get('filtered_subtitles', [])
         if filtered_subs:
-            print(f"\n[FILTERED SUBTITLES] First 10:")
+            print("\n[FILTERED SUBTITLES] First 10:")
             for i, sub in enumerate(filtered_subs[:10], 1):
                 original = sub.original_text
                 active = sub.active_text
@@ -103,10 +103,10 @@ async def main():
                 print(f"      Active:   {active}")
 
     except Exception as e:
-        print(f"\n[ERROR] Processing failed!")
+        print("\n[ERROR] Processing failed!")
         print(f"[ERROR] Exception type: {type(e).__name__}")
         print(f"[ERROR] Message: {e}")
-        print(f"\n[TRACEBACK]")
+        print("\n[TRACEBACK]")
         import traceback
         traceback.print_exc()
         sys.exit(1)

@@ -23,6 +23,7 @@ from services.processing.translation_management_service import (
     TranslationManagementService,
     get_translation_management_service,
 )
+from utils.srt_parser import SRTParser
 
 from ..models.processing import FilterRequest, ProcessingStatus, SelectiveTranslationRequest
 
@@ -257,7 +258,9 @@ async def _save_filtered_subtitles_to_file(filtered_subtitles: list[FilteredSubt
             # Create SRT block for each subtitle
             # FilteredSubtitle has: original_text, start_time, end_time, words
             srt_block = f"{index}\n"
-            srt_block += f"{subtitle.start_time} --> {subtitle.end_time}\n"
+            start_ts = SRTParser.format_timestamp(subtitle.start_time)
+            end_ts = SRTParser.format_timestamp(subtitle.end_time)
+            srt_block += f"{start_ts} --> {end_ts}\n"
             srt_block += f"{subtitle.original_text}\n\n"
             srt_content.append(srt_block)
 

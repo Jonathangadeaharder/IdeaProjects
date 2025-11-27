@@ -51,7 +51,7 @@ def pytest_collection_modifyitems(config, items):
     if not run_manual:
         skip_manual = pytest.mark.skip(reason="Manual test - run with: pytest -m manual")
         for item in items:
-            if "manual" in item.keywords:
+            if item.get_closest_marker("manual"):
                 item.add_marker(skip_manual)
 
 
@@ -213,6 +213,9 @@ def app(tmp_path: Path) -> Generator[FastAPI, None, None]:
 
         # Expose engine for cleanup
         application.state._test_async_engine = async_engine
+
+        # Expose DB path for direct access (e.g. via sqlite3)
+        application.state.test_db_path = db_file.name
 
         yield application
     finally:
@@ -409,6 +412,26 @@ def vocabulary_level_response() -> dict:
         "total_count": 100,
         "known_count": 25,
     }
+
+
+
+
+# --- Service Fixtures ---
+@pytest.fixture
+def vocabulary_service(app: FastAPI) -> "services.vocabulary.vocabulary_service.VocabularyService":
+    """Provide VocabularyService with mocked sub-services for testing."""
+    from unittest.mock import MagicMock
+
+    from services.vocabulary.vocabulary_service import VocabularyService
+
+    # Create mock services
+    query_service = MagicMock()
+    progress_service = MagicMock()
+    stats_service = MagicMock()
+
+    # Create the service
+    service = VocabularyService(query_service, progress_service, stats_service)
+    return service
 
 
 # --- Transaction Isolation Fixtures for Robust Testing ---

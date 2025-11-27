@@ -31,8 +31,15 @@ def assert_validation_error_response(response, field_name: str | None = None) ->
             assert any(err["loc"][-1] == field_name for err in errors)
         elif "error" in response_data and "details" in response_data["error"]:
             # Custom validation error format
-            errors = response_data["error"]["details"]
-            assert any(err["loc"][-1] == field_name for err in errors)
+            details = response_data["error"]["details"]
+            if "errors" in details:
+                # New standardized format with nested errors list
+                errors = details["errors"]
+                assert any(err["loc"][-1] == field_name for err in errors)
+            else:
+                # Direct errors list (if we change the handler format)
+                errors = details
+                assert any(err["loc"][-1] == field_name for err in errors)
 
 
 def assert_auth_error_response(response) -> None:

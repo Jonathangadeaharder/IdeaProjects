@@ -1,5 +1,6 @@
 /**
- * Enhanced API client with better error handling and caching
+ * Enhanced API client with better error handling
+ * Caching is handled by React Query, not here
  */
 import axios, { AxiosInstance, AxiosRequestConfig } from 'axios'
 import { toast } from 'react-hot-toast'
@@ -21,7 +22,6 @@ export interface ApiError {
 
 class ApiClient {
   private client: AxiosInstance
-  private cache = new Map<string, { data: unknown; timestamp: number; ttl: number }>()
 
   constructor() {
     this.client = axios.create({
@@ -129,47 +129,8 @@ class ApiClient {
     }
   }
 
-  private getCacheKey(url: string, params?: Record<string, unknown>): string {
-    return `${url}${params ? `?${JSON.stringify(params)}` : ''}`
-  }
-
-  private getFromCache<T>(key: string): T | null {
-    const cached = this.cache.get(key)
-    if (cached && Date.now() - cached.timestamp < cached.ttl) {
-      return cached.data as T
-    }
-    this.cache.delete(key)
-    return null
-  }
-
-  private setCache<T>(key: string, data: T, ttl: number = 5 * 60 * 1000): void {
-    this.cache.set(key, {
-      data,
-      timestamp: Date.now(),
-      ttl,
-    })
-  }
-
-  async get<T>(
-    url: string,
-    config?: AxiosRequestConfig & { cache?: boolean; cacheTtl?: number }
-  ): Promise<ApiResponse<T>> {
-    const { cache = false, cacheTtl = 5 * 60 * 1000, ...axiosConfig } = config || {}
-
-    if (cache) {
-      const cacheKey = this.getCacheKey(url, axiosConfig.params)
-      const cached = this.getFromCache<T>(cacheKey)
-      if (cached) {
-        return { data: cached, status: 200 }
-      }
-    }
-
-    const response = await this.client.get<T>(url, axiosConfig)
-
-    if (cache) {
-      const cacheKey = this.getCacheKey(url, axiosConfig.params)
-      this.setCache(cacheKey, response.data, cacheTtl)
-    }
+  async get<T>(url: string, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
+    const response = await this.client.get<T>(url, config)
 
     return {
       data: response.data,
@@ -200,18 +161,6 @@ class ApiClient {
       status: response.status,
     }
   }
-
-  clearCache(): void {
-    this.cache.clear()
-  }
-
-  clearCachePattern(pattern: string): void {
-    for (const key of this.cache.keys()) {
-      if (key.includes(pattern)) {
-        this.cache.delete(key)
-      }
-    }
-  }
 }
 
 // Global API client instance
@@ -225,10 +174,9 @@ export const api = {
       apiClient.post('/auth/login', credentials),
     register: (userData: { username: string; email: string; password: string }) =>
       apiClient.post('/auth/register', userData),
-    getCurrentUser: () => apiClient.get('/auth/me', { cache: true, cacheTtl: 60000 }),
+    getCurrentUser: () => apiClient.get('/auth/me'),
     logout: () => {
       localStorage.removeItem('authToken')
-      apiClient.clearCache()
     },
   },
 
@@ -237,20 +185,14 @@ export const api = {
     search: (query: string, language = 'de', limit = 20) =>
       apiClient.get('/vocabulary/search', {
         params: { query, language, limit },
-        cache: true,
-        cacheTtl: 10 * 60 * 1000, // 10 minutes
       }),
     getByLevel: (level: string, language = 'de', skip = 0, limit = 100) =>
       apiClient.get(`/vocabulary/level/${level}`, {
         params: { language, skip, limit },
-        cache: true,
-        cacheTtl: 30 * 60 * 1000, // 30 minutes
       }),
     getRandom: (language = 'de', levels?: string[], limit = 10) =>
       apiClient.get('/vocabulary/random', {
         params: { language, levels, limit },
-        cache: true,
-        cacheTtl: 5 * 60 * 1000, // 5 minutes
       }),
     markWord: (vocabularyId: number, isKnown: boolean) =>
       apiClient.post('/vocabulary/mark', { vocabulary_id: vocabularyId, is_known: isKnown }),
@@ -259,21 +201,17 @@ export const api = {
     getProgress: (language = 'de') =>
       apiClient.get('/vocabulary/progress', {
         params: { language },
-        cache: true,
-        cacheTtl: 30 * 1000, // 30 seconds
       }),
     getStats: (language = 'de') =>
       apiClient.get('/vocabulary/stats', {
         params: { language },
-        cache: true,
-        cacheTtl: 60 * 1000, // 1 minute
       }),
   },
 
   // Videos and processing
   videos: {
-    getList: () => apiClient.get('/api/videos', { cache: true }),
-    getEpisodes: (series: string) => apiClient.get(`/api/videos/${series}`, { cache: true }),
+    getList: () => apiClient.get('/api/videos'),
+    getEpisodes: (series: string) => apiClient.get(`/api/videos/${series}`),
     getStreamUrl: (series: string, episode: string) => {
       const base = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
       const token = localStorage.getItem('authToken')

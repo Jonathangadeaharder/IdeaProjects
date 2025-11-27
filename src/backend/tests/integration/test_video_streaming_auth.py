@@ -48,7 +48,11 @@ class TestVideoStreamingAuthentication:
         # If we get here, authentication worked!
         if response.status_code == 404:
             # This is fine - video doesn't exist, but auth passed
-            assert "not found" in response.json().get("detail", "").lower()
+            error_data = response.json()
+            if "error" in error_data:
+                assert "not found" in error_data["error"]["message"].lower()
+            else:
+                assert "not found" in error_data.get("detail", "").lower()
         elif response.status_code in [200, 206]:
             # Video streaming is working!
             pass
@@ -94,7 +98,11 @@ class TestVideoStreamingAuthentication:
 
         # Should be 401 Unauthorized
         assert response.status_code == 401
-        assert "authentication" in response.json().get("detail", "").lower()
+        error_data = response.json()
+        if "error" in error_data:
+            assert "authentication" in error_data["error"]["message"].lower()
+        else:
+            assert "authentication" in error_data.get("detail", "").lower()
 
     async def test_video_endpoint_with_invalid_token_fails(self, async_client: AsyncClient, url_builder):
         """Test that video endpoint rejects invalid tokens"""

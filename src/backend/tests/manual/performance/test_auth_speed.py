@@ -7,6 +7,9 @@ import time
 
 import pytest
 
+# Mark as manual test
+pytestmark = pytest.mark.manual
+
 from tests.helpers import AsyncAuthHelper
 
 AUTH_ROUND_TRIP_BUDGET = 1.5

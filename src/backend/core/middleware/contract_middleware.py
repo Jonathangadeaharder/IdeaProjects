@@ -4,6 +4,7 @@ Provides server-side validation of requests and responses against OpenAPI schema
 """
 
 import logging
+import os
 from typing import Any
 
 from fastapi import FastAPI, Request
@@ -28,12 +29,18 @@ class ContractValidationMiddleware(BaseHTTPMiddleware):
     """Middleware to validate requests and responses against OpenAPI contract"""
 
     def __init__(
-        self, app: ASGIApp, validate_requests: bool = True, validate_responses: bool = True, log_violations: bool = True
+        self,
+        app: ASGIApp,
+        validate_requests: bool = True,
+        validate_responses: bool = True,
+        log_violations: bool = True,
+        strict_mode: bool = False,
     ):
         super().__init__(app)
         self.validate_requests = validate_requests
         self.validate_responses = validate_responses
         self.log_violations = log_violations
+        self.strict_mode = strict_mode
         self._openapi_schema: dict[str, Any] | None = None
 
     def get_openapi_schema(self, app: FastAPI) -> dict[str, Any]:
@@ -79,6 +86,7 @@ class ContractValidationMiddleware(BaseHTTPMiddleware):
         # Allow common HTTP status codes that can come from middleware layers
         # These don't need to be explicitly documented in every endpoint
         STANDARD_HTTP_CODES = {
+            204,  # No Content
             400,  # Bad Request
             401,  # Unauthorized
             403,  # Forbidden
@@ -101,10 +109,15 @@ class ContractValidationMiddleware(BaseHTTPMiddleware):
         if path in paths:
             matching_path = path
         else:
+            # Find all potential matches and select the most specific one
+            potential_matches = []
             for schema_path in paths:
                 if self._path_matches_pattern(path, schema_path):
-                    matching_path = schema_path
-                    break
+                    potential_matches.append(schema_path)
+
+            if potential_matches:
+                # Select the most specific match (fewest parameters)
+                matching_path = min(potential_matches, key=lambda p: p.count("{"))
 
         if not matching_path:
             return False
@@ -136,8 +149,12 @@ class ContractValidationMiddleware(BaseHTTPMiddleware):
             return None
 
         if not self.validate_request_path(method, path, schema):
+            msg = f"Contract violation: Undefined endpoint {method} {path}"
+            if self.strict_mode:
+                raise ContractValidationError(msg, details={"path": path, "method": method})
+
             if self.log_violations:
-                logger.warning(f"Contract violation: Undefined endpoint {method} {path}")
+                logger.warning(msg)
 
             return JSONResponse(
                 status_code=404,
@@ -152,8 +169,13 @@ class ContractValidationMiddleware(BaseHTTPMiddleware):
             return
 
         status_valid = self.validate_response_status(path, method, response.status_code, schema)
-        if not status_valid and self.log_violations:
-            logger.warning(f"Contract violation: Undefined response status {response.status_code} for {method} {path}")
+        if not status_valid:
+            msg = f"Contract violation: Undefined response status {response.status_code} for {method} {path}"
+            if self.strict_mode:
+                raise ContractValidationError(msg, details={"status_code": response.status_code})
+
+            if self.log_violations:
+                logger.warning(msg)
 
     def _add_validation_headers(self, response) -> None:
         """Add contract validation headers to response"""
@@ -194,6 +216,37 @@ class ContractValidationMiddleware(BaseHTTPMiddleware):
                 content={"detail": "Request validation failed", "errors": e.errors(), "path": path, "method": method},
             )
 
+        except ContractValidationError as e:
+            # Handle contract validation errors by returning proper HTTP responses
+            if self.log_violations:
+                logger.error(f"Contract validation error for {method} {path}: {e}")
+
+            # Return a 404 for undefined endpoints, 500 for other contract violations
+            if "Undefined endpoint" in str(e):
+                from api.models.common import ErrorDetail, ErrorResponse
+                return JSONResponse(
+                    status_code=404,
+                    content=ErrorResponse(
+                        error=ErrorDetail(
+                            code="ENDPOINT_NOT_FOUND",
+                            message=str(e),
+                            details=e.details if hasattr(e, 'details') else {},
+                        )
+                    ).model_dump(),
+                )
+            else:
+                from api.models.common import ErrorDetail, ErrorResponse
+                return JSONResponse(
+                    status_code=500,
+                    content=ErrorResponse(
+                        error=ErrorDetail(
+                            code="CONTRACT_VIOLATION",
+                            message=str(e),
+                            details=e.details if hasattr(e, 'details') else {},
+                        )
+                    ).model_dump(),
+                )
+
         except Exception as e:
             if self.log_violations:
                 logger.error(f"Contract validation error for {method} {path}: {e}", exc_info=True)
@@ -204,11 +257,18 @@ def setup_contract_validation(
     app: FastAPI, validate_requests: bool = True, validate_responses: bool = True, log_violations: bool = True
 ) -> None:
     """Setup contract validation middleware for the FastAPI app"""
+
+    # Enable strict mode in testing environment or if explicitly requested
+    # TESTING=1: Unit tests (mocks, fast)
+    # STRICT_CONTRACTS=1: Integration/E2E tests (real services, strict contracts)
+    strict_mode = os.environ.get("TESTING") == "1" or os.environ.get("STRICT_CONTRACTS") == "1"
+
     ContractValidationMiddleware(
         app=app,
         validate_requests=validate_requests,
         validate_responses=validate_responses,
         log_violations=log_violations,
+        strict_mode=strict_mode,
     )
 
     app.add_middleware(
@@ -216,6 +276,7 @@ def setup_contract_validation(
         validate_requests=validate_requests,
         validate_responses=validate_responses,
         log_violations=log_violations,
+        strict_mode=strict_mode,
     )
 
     logger.info(

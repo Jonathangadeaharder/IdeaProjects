@@ -305,19 +305,23 @@ class TestVocabularyServiceGetVocabularyLevel:
         mock_result.scalars.return_value.all.return_value = mock_vocab_words
 
         # Act
-        with patch("services.vocabulary.vocabulary_service.AsyncSessionLocal") as mock_session_local:
-            mock_db = AsyncMock(spec=AsyncSession)
-            mock_db.execute.return_value = mock_result
-            mock_session_local.return_value.__aenter__.return_value = mock_db
+        with patch.object(service.query_service, "get_vocabulary_library", new_callable=AsyncMock) as mock_get_lib:
+            # Setup mock return
+            mock_get_lib.return_value = {
+                "words": mock_vocab_words,
+                "total_count": 2,
+                "limit": 50,
+                "offset": 0
+            }
 
-            result = await service.get_vocabulary_level(
-                level, target_language, translation_language, user_id, limit=50, offset=0
+            mock_db = AsyncMock(spec=AsyncSession)
+            result = await service.get_vocabulary_library(
+                mock_db, target_language, level, user_id, limit=50, offset=0
             )
 
         # Assert
         assert result is not None
-        # The exact return format depends on implementation
-        # but it should contain word data
+        assert result["total_count"] == 2
 
     @pytest.mark.asyncio
     async def test_When_getting_level_with_limit_Then_respects_limit(self):
@@ -327,18 +331,19 @@ class TestVocabularyServiceGetVocabularyLevel:
         level = "B1"
         limit = 10
 
-        mock_result = Mock()
-        mock_result.scalars.return_value.all.return_value = []
-
         # Act
-        with patch("services.vocabulary.vocabulary_service.AsyncSessionLocal") as mock_session_local:
-            mock_db = AsyncMock(spec=AsyncSession)
-            mock_db.execute.return_value = mock_result
-            mock_session_local.return_value.__aenter__.return_value = mock_db
+        with patch.object(service.query_service, "get_vocabulary_library", new_callable=AsyncMock) as mock_get_lib:
+            mock_get_lib.return_value = {"words": [], "total_count": 0}
 
-            result = await service.get_vocabulary_level(level, "de", "es", None, limit=limit, offset=0)
+            mock_db = AsyncMock(spec=AsyncSession)
+            result = await service.get_vocabulary_library(
+                mock_db, "de", level, None, limit=limit, offset=0
+            )
+
+            # Verify call args
+            mock_get_lib.assert_called_with(
+                mock_db, "de", level, None, limit, 0
+            )
 
         # Assert
         assert result is not None
-        # Verify execute was called (which would include the limit)
-        mock_db.execute.assert_called()

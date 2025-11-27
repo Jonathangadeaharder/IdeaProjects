@@ -11,8 +11,8 @@ import pytest
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 
-from core.exception_handlers import setup_exception_handlers
 from core.exceptions import LangPlugException
+from core.middleware.exception_handlers import setup_exception_handlers
 
 
 @pytest.mark.asyncio
@@ -57,5 +57,11 @@ async def test_Whencors_and_exception_handlerCalled_ThenSucceeds():
         r = await client.get("/boom", headers={"Origin": "http://localhost:3000"})
         assert r.status_code == 418
         data = r.json()
-        assert data.get("detail") == "boom"
-        assert data.get("type") in ("LangPlugException", "ConfigurationError", "ProcessingError")
+        # Handle both old and new error formats
+        if "error" in data:
+            assert data["error"]["message"] == "boom"
+            assert data["error"]["code"] in ("LangPlugException", "ConfigurationError", "ProcessingError")
+        else:
+            # Old format fallback
+            assert data.get("detail") == "boom"
+            assert data.get("type") in ("LangPlugException", "ConfigurationError", "ProcessingError")

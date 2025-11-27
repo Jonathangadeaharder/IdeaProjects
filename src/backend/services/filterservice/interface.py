@@ -12,9 +12,10 @@ from typing import Any
 class WordStatus(Enum):
     """Status of a word during filtering"""
 
-    ACTIVE = "active"  # Word should be shown/learned
+    ACTIVE = "active"  # Word is above user level (needs learning/translation)
     FILTERED_INVALID = "invalid"  # Not proper vocabulary (oh, ah, names)
     FILTERED_KNOWN = "known"  # User already knows this word
+    FILTERED_AT_LEVEL = "at_level"  # Word is at or below user level (considered mastered)
     FILTERED_OTHER = "other"  # Other filtering reasons
 
 
@@ -64,6 +65,21 @@ class FilteredSubtitle:
     def is_empty(self) -> bool:
         """Check if subtitle is empty after filtering"""
         return len(self.active_words) == 0
+
+    @property
+    def has_active_words(self) -> bool:
+        """Check if subtitle contains words above user level (needs learning)"""
+        return any(w.status == WordStatus.ACTIVE for w in self.words)
+
+    @property
+    def all_words_understood(self) -> bool:
+        """Check if ALL vocabulary words are understood (at/below level or known)"""
+        # Only check vocabulary words (exclude invalid/proper names)
+        vocab_words = [w for w in self.words if w.status != WordStatus.FILTERED_INVALID]
+        if not vocab_words:
+            return True  # No vocabulary content = understood
+        # All vocabulary words must be FILTERED_KNOWN or FILTERED_AT_LEVEL (understood)
+        return all(w.status in [WordStatus.FILTERED_KNOWN, WordStatus.FILTERED_AT_LEVEL] for w in vocab_words)
 
 
 @dataclass

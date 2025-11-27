@@ -2,37 +2,14 @@
 
 from __future__ import annotations
 
-from contextlib import asynccontextmanager
 from uuid import uuid4
 
 import pytest
 
-from services.vocabulary.vocabulary_service import VocabularyService
-
-
-@pytest.fixture
-def service(app):
-    """Vocabulary service with test database session"""
-    svc = VocabularyService()
-
-    # Get the database session override from the app
-    from core.database import get_async_session
-
-    override_session = app.dependency_overrides[get_async_session]
-
-    # Replace the service's session context manager
-    @asynccontextmanager
-    async def mock_get_session():
-        async for session in override_session():
-            yield session
-
-    svc._get_session = mock_get_session
-    return svc
-
 
 @pytest.mark.timeout(30)
 @pytest.mark.asyncio
-async def test_Whenmark_concept_known_persists_entriesCalled_ThenSucceeds(service):
+async def test_Whenmark_concept_known_persists_entriesCalled_ThenSucceeds(vocabulary_service):
     """Happy path: marked concepts are persisted in user progress."""
     user_id = 1
     concept_id = str(uuid4())
@@ -41,9 +18,9 @@ async def test_Whenmark_concept_known_persists_entriesCalled_ThenSucceeds(servic
     async def mock_mark_concept_known(user_id, concept_id, known):
         return {"success": True, "concept_id": concept_id, "known": known}
 
-    service.mark_concept_known = mock_mark_concept_known
+    vocabulary_service.mark_concept_known = mock_mark_concept_known
 
-    result = await service.mark_concept_known(user_id, concept_id, True)
+    result = await vocabulary_service.mark_concept_known(user_id, concept_id, True)
 
     assert result["success"] is True
     assert result["concept_id"] == concept_id
@@ -52,7 +29,7 @@ async def test_Whenmark_concept_known_persists_entriesCalled_ThenSucceeds(servic
 
 @pytest.mark.timeout(30)
 @pytest.mark.asyncio
-async def test_Whenget_vocabulary_level_handles_emptyCalled_ThenSucceeds(service):
+async def test_Whenget_vocabulary_level_handles_emptyCalled_ThenSucceeds(vocabulary_service):
     """Boundary path: querying empty level returns proper structure."""
 
     # Mock the get_vocabulary_level method
@@ -66,9 +43,9 @@ async def test_Whenget_vocabulary_level_handles_emptyCalled_ThenSucceeds(service
             "known_count": 0,
         }
 
-    service.get_vocabulary_level = mock_get_vocabulary_level
+    vocabulary_service.get_vocabulary_level = mock_get_vocabulary_level
 
-    result = await service.get_vocabulary_level("A1", "de", "es", 10, 0, 1)
+    result = await vocabulary_service.get_vocabulary_level("A1", "de", "es", 10, 0, 1)
 
     assert result["level"] == "A1"
     assert result["target_language"] == "de"
@@ -78,7 +55,7 @@ async def test_Whenget_vocabulary_level_handles_emptyCalled_ThenSucceeds(service
 
 @pytest.mark.timeout(30)
 @pytest.mark.asyncio
-async def test_Whenget_vocabulary_stats_reports_countsCalled_ThenSucceeds(service):
+async def test_Whenget_vocabulary_stats_reports_countsCalled_ThenSucceeds(vocabulary_service):
     """Boundary: statistics reflect multilingual vocabulary data."""
 
     # Mock the get_vocabulary_stats method
@@ -91,9 +68,9 @@ async def test_Whenget_vocabulary_stats_reports_countsCalled_ThenSucceeds(servic
             "total_known": 25,
         }
 
-    service.get_vocabulary_stats = mock_get_vocabulary_stats
+    vocabulary_service.get_vocabulary_stats = mock_get_vocabulary_stats
 
-    stats = await service.get_vocabulary_stats("de", "es", 1)
+    stats = await vocabulary_service.get_vocabulary_stats("de", "es", 1)
 
     assert stats["total_words"] == 125
     assert stats["total_known"] == 25

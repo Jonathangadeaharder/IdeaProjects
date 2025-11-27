@@ -52,6 +52,7 @@ async def init_services():
         # Initialize transcription service
         logger.info("[STARTUP] Step 3/5: Initializing transcription service...")
         from core.config.config import settings
+
         from .service_dependencies import get_transcription_service
 
         logger.info(f"[STARTUP] Using transcription model: {settings.transcription_service}")

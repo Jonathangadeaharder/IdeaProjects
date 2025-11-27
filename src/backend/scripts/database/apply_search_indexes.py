@@ -8,9 +8,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from alembic.config import Config
-
 from alembic import command
+from alembic.config import Config
 
 
 def apply_migration():

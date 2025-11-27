@@ -119,3 +119,17 @@ class SelectiveTranslationRequest(BaseModel):
             "example": {"srt_path": "/subtitles/episode_german.srt", "known_words": ["der", "die", "das", "und", "ist"]}
         }
     )
+
+
+class TaskResponse(BaseModel):
+    task_id: str = Field(..., min_length=1, description="Unique task identifier for progress tracking")
+    status: str = Field(..., description="Initial status of the task (e.g., 'started')")
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "task_id": "transcribe_123_1234567890.123",
+                "status": "started"
+            }
+        }
+    )

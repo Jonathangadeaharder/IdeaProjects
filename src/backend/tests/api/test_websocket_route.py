@@ -71,6 +71,8 @@ async def test_ws_InvalidToken_closes(monkeypatch):
 @pytest.mark.asyncio
 @pytest.mark.timeout(30)
 async def test_Whenws_success_connect_and_disconnectCalled_ThenSucceeds(monkeypatch):
+    from fastapi import WebSocketDisconnect
+
     from api.routes import websocket as wsmod
     from database.models import User
 
@@ -91,29 +93,62 @@ async def test_Whenws_success_connect_and_disconnectCalled_ThenSucceeds(monkeypa
                 return fake_user
             return None
 
+    # Improved FakeWS that simulates message reception and disconnect
+    class ImprovedFakeWS(FakeWS):
+        async def receive_json(self):
+            # Simulate one message then disconnect
+            if not hasattr(self, '_msg_sent'):
+                self._msg_sent = True
+                return {"type": "ping"}
+            raise WebSocketDisconnect()
+
     events = {"connected": False, "disconnected": False}
 
     async def fake_connect(ws, user_id):
         events["connected"] = True
 
     async def fake_handle_message(ws, data):
-        # Immediately simulate disconnect by raising the same exception
-        from fastapi import WebSocketDisconnect
-
-        raise WebSocketDisconnect
+        pass # Just handle the message
 
     def fake_disconnect(ws):
         events["disconnected"] = True
 
-    # Mock JWT authentication instead of auth service
-    monkeypatch.setattr("core.auth.jwt_authentication", MockJWTAuth())
+    # Mock dependencies
+    mock_jwt_auth = MockJWTAuth()
+
+    # Brute force patch all loaded modules that might have jwt_authentication
+    # This ensures we catch core.auth, core.auth.auth, and any other aliases
+    import sys
+
+    import core.auth
+
+    patched_count = 0
+    for name, module in list(sys.modules.items()):
+        if name.startswith("core.auth") and hasattr(module, "jwt_authentication"):
+            monkeypatch.setattr(module, "jwt_authentication", mock_jwt_auth)
+            patched_count += 1
+
+    # Ensure core.auth package is patched even if not in loop
+    monkeypatch.setattr(core.auth, "jwt_authentication", mock_jwt_auth)
+
+    class MockDbSession:
+        async def __aenter__(self):
+            return None
+        async def __aexit__(self, exc_type, exc_val, exc_tb):
+            pass
+
+    monkeypatch.setattr("core.database.AsyncSessionLocal", MockDbSession)
+
+
+
+    # Use the imported wsmod to patch manager
     monkeypatch.setattr(wsmod.manager, "connect", fake_connect)
     monkeypatch.setattr(wsmod.manager, "handle_message", fake_handle_message)
     monkeypatch.setattr(wsmod.manager, "disconnect", fake_disconnect)
 
-    ws = FakeWS()
+    ws = ImprovedFakeWS()
     await wsmod.websocket_endpoint(ws, token="ok")
-    # Our fake connect does not call accept; just ensure lifecycle hooks ran
+
     assert events["connected"] is True
     assert events["disconnected"] is True
 
